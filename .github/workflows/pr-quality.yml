@@ -10,4 +10,5 @@ jobs:
   pr-quality:
     uses: netresearch/skill-repo-skill/.github/workflows/pr-quality.yml@main
     permissions:
+      contents: read
       pull-requests: write
