@@ -1,0 +1,5 @@
+/vendor/
+/dist/
+/composer.lock
+composer.json.skill-trust.lock
+.phpunit.result.cache

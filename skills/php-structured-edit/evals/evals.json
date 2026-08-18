@@ -1,0 +1,148 @@
+{
+  "skill_name": "php-structured-edit",
+  "evals": [
+    {
+      "id": 1,
+      "eval_name": "rename-method-not-string-literal",
+      "prompt": "Rename the method `findByUid` to `resolveByUid` in src/Domain/Repository/ProductRepository.php. There is also a log message in that file containing the text 'findByUid'.",
+      "expected_output": "Runs php-ast-edit inspect at the method name, then apply with set_name on the Identifier node. The string literal stays untouched.",
+      "files": [],
+      "assertions": [
+        "Uses php-ast-edit (repo bin, vendor/bin, or the skill wrapper) — not sed, perl, regex substitution, or apply_patch",
+        "Calls inspect before apply to obtain the node kind and file SHA-256",
+        "Targets an Identifier node with operation set_name, not a text range",
+        "Does not modify the string literal that happens to contain the same text"
+      ]
+    },
+    {
+      "id": 2,
+      "eval_name": "insert-guard-clause",
+      "prompt": "Add a null guard at the top of `Checkout::submit()` in src/Checkout.php that throws CartEmpty when the cart has no items.",
+      "expected_output": "insert_before against the first statement of the method body, with a compact one-line PHP snippet.",
+      "files": [],
+      "assertions": [
+        "Uses operation insert_before or insert_after against a statement-list target",
+        "Passes the new code as a PHP snippet in the `php` field rather than pre-formatted indented text",
+        "Does not hand-format the snippet for indentation — the printer canonicalizes output",
+        "Runs the project formatter after the transaction rather than formatting inside the edit"
+      ]
+    },
+    {
+      "id": 3,
+      "eval_name": "replace-call-argument-by-index",
+      "prompt": "The third argument of the GeneralUtility::makeInstance call on line 88 of src/Service/Importer.php is wrong. Replace it with $this->context.",
+      "expected_output": "replace_argument with a zero-based index of 2 and expression PHP.",
+      "files": [],
+      "assertions": [
+        "Uses operation replace_argument, not replace_expression across the whole call",
+        "Uses zero-based index 2 for the third argument",
+        "Supplies the replacement as expression PHP in the `php` field",
+        "Includes the SHA-256 from inspect as an optimistic lock"
+      ]
+    },
+    {
+      "id": 4,
+      "eval_name": "edit-sql-inside-php-string",
+      "prompt": "Change the SQL in the $query string literal in src/Report/ReportService.php to also select the `created_at` column. Do not touch the surrounding PHP.",
+      "expected_output": "set_string on the Scalar_String node holding the SQL.",
+      "files": [],
+      "assertions": [
+        "Targets the Scalar_String node and uses operation set_string",
+        "Does not attempt to parse the SQL as PHP or use replace_expression",
+        "Leaves the assignment and surrounding statements structurally unchanged",
+        "Does not fall back to a regex over the file for the SQL text"
+      ]
+    },
+    {
+      "id": 5,
+      "eval_name": "batch-edits-one-transaction",
+      "prompt": "In src/Foo.php: rename the property $items to $lines, remove the now-unused second argument of the render() call, and delete the debug statement on line 61.",
+      "expected_output": "One apply transaction containing all three edits for the file, each with its own target and guards.",
+      "files": [],
+      "assertions": [
+        "Sends all three edits in a single apply document for the file rather than three sequential runs",
+        "Each edit carries its own target and expect guards",
+        "Includes the file SHA-256 once at the file level",
+        "Handles a detached-target failure by re-running inspect rather than retrying blindly"
+      ]
+    },
+    {
+      "id": 6,
+      "eval_name": "delete-debug-statement",
+      "prompt": "Remove the leftover var_dump on line 34 of src/Import/RowMapper.php.",
+      "expected_output": "delete against the statement node holding the var_dump call.",
+      "files": [],
+      "assertions": [
+        "Uses operation delete on a statement node, not a line-based deletion",
+        "Targets the enclosing statement rather than the call expression alone",
+        "Does not use sed -i, a line-range deletion, or a patch hunk",
+        "Leaves the surrounding statements intact"
+      ]
+    },
+    {
+      "id": 7,
+      "eval_name": "stale-source-recovery",
+      "prompt": "Apply that rename now. (A formatter has rewritten the file since the last inspect.)",
+      "expected_output": "The transaction fails with STALE_SOURCE; the agent re-runs inspect for a fresh hash and position before retrying.",
+      "files": [],
+      "assertions": [
+        "Recognises STALE_SOURCE as a hash-guard rejection, not a tool defect",
+        "Re-runs inspect to obtain a fresh SHA-256 and node position",
+        "Does not drop the sha256 field to force the edit through",
+        "Does not fall back to a text-based edit after the failure"
+      ]
+    },
+    {
+      "id": 8,
+      "eval_name": "discovery-stays-textual",
+      "prompt": "Find every class in src/ that still calls the deprecated `legacyRender()` and rename those calls to `render()`.",
+      "expected_output": "Textual or structural search locates the call sites; each mutation goes through php-ast-edit.",
+      "files": [],
+      "assertions": [
+        "Uses rg, ast-grep, or an LSP for the search step — the skill does not constrain discovery",
+        "Does not use a rewriting search tool (for example ast-grep --rewrite or sed) to perform the change",
+        "Runs php-ast-edit apply per file, batching that file's edits into one transaction",
+        "Inspects each call site to confirm the node kind before editing"
+      ]
+    },
+    {
+      "id": 9,
+      "eval_name": "remove-deprecated-argument",
+      "prompt": "The `$legacy` flag was dropped from Renderer::render(). Remove the second argument from all four calls in src/View/PageView.php.",
+      "expected_output": "One transaction with four remove_argument edits at index 1.",
+      "files": [],
+      "assertions": [
+        "Uses operation remove_argument with zero-based index 1",
+        "Sends all four edits in a single apply document for the file",
+        "Resolves each target against the original source rather than recomputing offsets after each edit",
+        "Does not rewrite the calls as replaced expressions"
+      ]
+    },
+    {
+      "id": 10,
+      "eval_name": "replace-return-expression",
+      "prompt": "In src/Pricing/Calculator.php the return in `net()` should return $this->round($value) rather than $value.",
+      "expected_output": "replace_expression against the returned expression, or replace_statement against the return statement.",
+      "files": [],
+      "assertions": [
+        "Uses replace_expression or replace_statement with the new code in the `php` field",
+        "Chooses the narrowest node that covers the change",
+        "Supplies the snippet without a <?php prefix",
+        "Does not reformat the rest of the method by hand"
+      ]
+    },
+    {
+      "id": 11,
+      "eval_name": "non-php-file-out-of-scope",
+      "prompt": "Update the button label in Resources/Private/Templates/Product/Show.html and in config/services.yaml.",
+      "expected_output": "Ordinary text editing tools. php-ast-edit is not involved for Fluid or YAML files.",
+      "files": [],
+      "assertions": [
+        "Does not invoke php-ast-edit on a non-PHP file",
+        "Uses the normal edit tooling for the template and the YAML file",
+        "Does not claim the AST tool is required outside PHP source",
+        "Handles the YAML file with a structure-aware tool where one is available"
+      ]
+    }
+  ]
+}

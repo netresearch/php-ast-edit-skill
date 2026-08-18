@@ -1,0 +1,12 @@
+interface:
+  display_name: "PHP Structured Edit"
+  description: >-
+    Edits PHP source through its abstract syntax tree. Find the code however you
+    like — ripgrep, ast-grep, an LSP, or reasoning — then let this skill perform
+    the change: renames, guard clauses, expression and statement replacement,
+    string literals, and call arguments. Every edit is checked against the
+    expected syntax node, the file is reparsed before it is written, and a change
+    that would produce invalid PHP fails rather than landing.
+  when_to_use: >-
+    Any modification to a .php file where the alternative would be sed, a regex
+    substitution, raw string replacement, or a unified-diff patch.

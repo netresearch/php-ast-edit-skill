@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_BIN="$(cd "$SCRIPT_DIR/../../.." 2>/dev/null && pwd)/bin/php-ast-edit"
+
+if [ -x "$REPO_BIN" ]; then
+  exec "$REPO_BIN" "$@"
+fi
+
+if [ -x "./vendor/bin/php-ast-edit" ]; then
+  exec ./vendor/bin/php-ast-edit "$@"
+fi
+
+if [ -f "$SCRIPT_DIR/php-ast-edit.phar" ]; then
+  exec php "$SCRIPT_DIR/php-ast-edit.phar" "$@"
+fi
+
+if command -v php-ast-edit >/dev/null 2>&1; then
+  exec php-ast-edit "$@"
+fi
+
+echo "php-ast-edit executable not found. Install the package with Composer or place php-ast-edit.phar next to this wrapper." >&2
+exit 127

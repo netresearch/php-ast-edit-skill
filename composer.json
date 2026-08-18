@@ -1,0 +1,37 @@
+{
+  "name": "netresearch/php-ast-edit-skill",
+  "description": "AST-native PHP source mutations for coding agents.",
+  "type": "ai-agent-skill",
+  "license": "(MIT AND CC-BY-SA-4.0)",
+  "authors": [
+    {
+      "name": "Netresearch DTT GmbH",
+      "homepage": "https://www.netresearch.de/",
+      "role": "Manufacturer"
+    }
+  ],
+  "require": {
+    "php": ">=8.2",
+    "ext-json": "*",
+    "ext-tokenizer": "*",
+    "nikic/php-parser": "^5.8",
+    "netresearch/composer-agent-skill-plugin": "*"
+  },
+  "config": {
+    "allow-plugins": {
+      "netresearch/composer-agent-skill-plugin": false
+    },
+    "sort-packages": true
+  },
+  "autoload": {
+    "psr-4": {
+      "Netresearch\\PhpAstEdit\\": "src/"
+    }
+  },
+  "bin": [
+    "bin/php-ast-edit"
+  ],
+  "extra": {
+    "ai-agent-skill": "skills/php-structured-edit/SKILL.md"
+  }
+}
