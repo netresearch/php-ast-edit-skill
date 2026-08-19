@@ -185,7 +185,7 @@ Contributions welcome — open an issue or a PR against `main`. Use [`.github/pu
 ## Repository extras
 
 - Checkpoints: none (justified — the skill governs how a mutation is performed at authoring time. A file edited through the AST and the same file edited by a lucky regex are byte-identical afterwards, so no post-hoc repository state can grade adherence.)
-- **CI exception:** `.github/workflows/php-tests.yml` is a repo-local workflow. The skill-repo reusable set covers shell and Python tests; this repository ships a PHP tool, and its test gate needs `composer install` plus a PHP matrix. All other CI delegates to `netresearch/skill-repo-skill` reusables.
+- **CI split:** the `netresearch/skill-repo-skill` reusables run the suite on one PHP version, including `composer install`. `.github/workflows/php-tests.yml` stays repo-local for the version matrix (8.2/8.3/8.4), which a shared reusable running a single version cannot provide.
 - **Proposed GitHub topics:** `agent-skill`, `php`, `ast`, `refactoring`, `code-editing`, `php-parser`.
 - **Marketplace sync:** when the classification table, example prompts or related skills change here, update the entry in [`netresearch/claude-code-marketplace`](https://github.com/netresearch/claude-code-marketplace) in the same change.
 
