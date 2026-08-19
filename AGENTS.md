@@ -59,9 +59,9 @@ PHP CLI plus Agent Skill for AST-native PHP source mutations.
 
 | Workflow | Source |
 | --- | --- |
-| `validate.yml`, `release.yml`, `pr-quality.yml`, `harness-verify.yml`, `eval-validate.yml` | `netresearch/skill-repo-skill` reusables |
+| `validate.yml`, `release.yml`, `pr-quality.yml`, `harness-verify.yml`, `eval-validate.yml`, `tests.yml` | `netresearch/skill-repo-skill` reusables |
 | `auto-merge-deps.yml` | `netresearch/.github` reusable |
-| `php-tests.yml` | repo-local — the reusable set covers shell and Python tests, not PHP |
+| `php-tests.yml` | repo-local — the reusable runs one PHP version; this carries the 8.2/8.3/8.4 matrix |
 
 The repository's default `GITHUB_TOKEN` is read-only, so every caller job declares its own `permissions:` block matching what the reusable requires. A caller without one fails at startup with no logs.
 
