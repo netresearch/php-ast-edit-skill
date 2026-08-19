@@ -1,0 +1,15 @@
+name: Skill Tests
+
+on:
+  push:
+  pull_request:
+
+permissions: {}
+
+jobs:
+  tests:
+    permissions:
+      contents: read
+    uses: netresearch/skill-repo-skill/.github/workflows/tests.yml@feat/tests-php-leg
+    with:
+      php_glob: tests/run.php
