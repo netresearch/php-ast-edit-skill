@@ -8,4 +8,6 @@ permissions: {}
 
 jobs:
   harness-verify:
+    permissions:
+      contents: read
     uses: netresearch/skill-repo-skill/.github/workflows/harness-verify.yml@main

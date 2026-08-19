@@ -9,4 +9,8 @@ permissions: {}
 
 jobs:
   release:
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
     uses: netresearch/skill-repo-skill/.github/workflows/release.yml@main

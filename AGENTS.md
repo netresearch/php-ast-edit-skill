@@ -63,6 +63,8 @@ PHP CLI plus Agent Skill for AST-native PHP source mutations.
 | `auto-merge-deps.yml` | `netresearch/.github` reusable |
 | `php-tests.yml` | repo-local — the reusable set covers shell and Python tests, not PHP |
 
+The repository's default `GITHUB_TOKEN` is read-only, so every caller job declares its own `permissions:` block matching what the reusable requires. A caller without one fails at startup with no logs.
+
 ## References
 
 - [SKILL.md](skills/php-structured-edit/SKILL.md) — agent runtime instructions and workflow

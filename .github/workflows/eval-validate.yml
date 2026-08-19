@@ -8,4 +8,6 @@ permissions: {}
 
 jobs:
   eval-validate:
+    permissions:
+      contents: read
     uses: netresearch/skill-repo-skill/.github/workflows/eval-validate.yml@main
