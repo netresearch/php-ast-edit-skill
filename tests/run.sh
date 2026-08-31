@@ -27,6 +27,10 @@ else
 fi
 echo "::endgroup::"
 
+echo "::group::tests/php-floor.php (source stays within the composer PHP floor)"
+php tests/php-floor.php || fail=1
+echo "::endgroup::"
+
 echo "::group::tests/formatting.php (canonical printing, fallback, doctor)"
 php tests/formatting.php || fail=1
 echo "::endgroup::"

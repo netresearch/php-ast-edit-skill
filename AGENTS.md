@@ -38,6 +38,7 @@ PHP CLI plus Agent Skill for AST-native PHP source mutations.
 │   ├── cli.sh                          # CLI surface: arguments, output fields, exit codes
 │   ├── catalog.php                     # Dispatcher, `contexts` output and docs must agree
 │   ├── formatting.php                  # Printer width, printer choice, fallback, doctor
+│   ├── php-floor.php                   # Source stays within the composer PHP floor
 │   ├── corpus.php                      # Round trip over php-parser's own source
 │   ├── hook.py                         # Enforcement gate behaviour table
 │   └── fixtures/sample.php             # Fixture for the round-trip
@@ -66,6 +67,7 @@ PHP CLI plus Agent Skill for AST-native PHP source mutations.
 - `php tests/catalog.php` — operation and context catalog parity across code, CLI and docs
 - `php tests/corpus.php` — print-and-reparse fidelity over 270 real files
 - `php tests/formatting.php` — printer width, printer choice, the fallback, doctor
+- `php tests/php-floor.php` — no syntax above the PHP version composer.json requires
 - `python3 tests/hook.py` — what the enforcement gate denies and allows
 
 ## Rules

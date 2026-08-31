@@ -100,7 +100,7 @@ final class Application
         }
 
         $dryRun = isset($options['dry-run']);
-        $result = new Formatter($options['php-version'] ?? null)->format($paths, $width, $dryRun);
+        $result = (new Formatter($options['php-version'] ?? null))->format($paths, $width, $dryRun);
 
         $payload = [
             'scanned' => $result['scanned'],
@@ -124,7 +124,7 @@ final class Application
 
     private function doctor(array $options): int
     {
-        $report = new Doctor()->examine((string) ($options['path'] ?? '.'));
+        $report = (new Doctor())->examine((string) ($options['path'] ?? '.'));
         $this->json($report);
         return $report['status'] === 'ready' ? 0 : 1;
     }

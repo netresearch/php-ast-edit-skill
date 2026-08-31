@@ -186,7 +186,7 @@ final class Editor
         // format-preserving printing needs to diff the two and can only map a node back to
         // the source when the original object is still intact.
         $tokens = $parser->getTokens();
-        $mutable = new NodeTraverser(new CloningVisitor())->traverse($roots);
+        $mutable = (new NodeTraverser(new CloningVisitor()))->traverse($roots);
 
         $transaction = new FileTransaction(
             $path,

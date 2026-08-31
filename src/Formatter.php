@@ -35,8 +35,8 @@ final class Formatter
     {
         $version = $this->phpVersion === null ? null : PhpVersion::fromString($this->phpVersion);
         $parser = $version === null
-            ? new ParserFactory()->createForHostVersion()
-            : new ParserFactory()->createForVersion($version);
+            ? (new ParserFactory())->createForHostVersion()
+            : (new ParserFactory())->createForVersion($version);
         $printer = new CanonicalPrinter($version, $width);
 
         $scanned = 0;

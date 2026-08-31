@@ -51,18 +51,18 @@ function removeTree(string $directory): void
     @rmdir($directory);
 }
 
-$parser = new ParserFactory()->createForHostVersion();
+$parser = (new ParserFactory())->createForHostVersion();
 
 // ---- The printer breaks by width -------------------------------------------------------
 $long = "<?php\n\$x = foo('aaaaaaaaaaaaaaaaaaaa', 'bbbbbbbbbbbbbbbbbbbb', 'cccccccccccccccccccc', 'dddddddddddddddddddd');\n";
-$wide = new CanonicalPrinter(null, 200)->prettyPrintFile($parser->parse($long));
-$narrow = new CanonicalPrinter(null, 40)->prettyPrintFile($parser->parse($long));
+$wide = (new CanonicalPrinter(null, 200))->prettyPrintFile($parser->parse($long));
+$narrow = (new CanonicalPrinter(null, 40))->prettyPrintFile($parser->parse($long));
 check('a list within budget stays on one line', substr_count(trim($wide), "\n") === 2, trim($wide));
 check('a list over budget is broken', substr_count($narrow, "\n") > 4, trim($narrow));
 check('breaking puts one argument per line', str_contains($narrow, "'aaaaaaaaaaaaaaaaaaaa',\n"));
 
 $params = "<?php\nfunction f(string \$aaaaaaaaaaaaaaaaaaaa, string \$bbbbbbbbbbbbbbbbbbbb, string \$cccccccccccccccccccc) {}\n";
-$narrowParams = new CanonicalPrinter(null, 40)->prettyPrintFile($parser->parse($params));
+$narrowParams = (new CanonicalPrinter(null, 40))->prettyPrintFile($parser->parse($params));
 check('a parameter list over budget is broken', substr_count($narrowParams, "\n") > 4, trim($narrowParams));
 
 // The width must actually be the lever, and printing must be a fixed point of itself.
@@ -167,15 +167,15 @@ $dir = workspace();
 file_put_contents($dir.'/a.php', "<?php\nclass  Foo{\npublic function bar(){return 1;}\n}\n");
 $before = (string) file_get_contents($dir.'/a.php');
 
-$dry = new Formatter()->format([$dir], 80, true);
+$dry = (new Formatter())->format([$dir], 80, true);
 check('format --dry-run reports the file', $dry['changed'] === [$dir.'/a.php'], implode(',', $dry['changed']));
 check('format --dry-run writes nothing', file_get_contents($dir.'/a.php') === $before);
 
-$run = new Formatter()->format([$dir], 80, false);
+$run = (new Formatter())->format([$dir], 80, false);
 check('format rewrites the file', file_get_contents($dir.'/a.php') !== $before);
 check('format reports no failures', $run['failed'] === []);
 
-$again = new Formatter()->format([$dir], 80, false);
+$again = (new Formatter())->format([$dir], 80, false);
 check('format is idempotent', $again['changed'] === [], implode(',', $again['changed']));
 
 $path = RepositoryConfig::write($dir, 100);
@@ -196,7 +196,7 @@ removeTree($dir);
 
 // ---- doctor ------------------------------------------------------------------------------
 $dir = workspace();
-$report = new Doctor()->examine($dir);
+$report = (new Doctor())->examine($dir);
 check('a bare repository is not ready', $report['status'] === 'warn');
 check('and the missing formatter is named', str_contains(implode(' ', $report['findings']), 'No formatter configuration'));
 
@@ -204,7 +204,7 @@ mkdir($dir.'/.github/workflows', 0700, true);
 file_put_contents($dir.'/.php-cs-fixer.php', "<?php\n");
 file_put_contents($dir.'/.github/workflows/ci.yml', "run: php-cs-fixer fix --dry-run\n");
 RepositoryConfig::write($dir, 80);
-$report = new Doctor()->examine($dir);
+$report = (new Doctor())->examine($dir);
 check('a repository meeting the contract is ready', $report['status'] === 'ready', implode(' | ', $report['findings']));
 check('and the formatter is identified', ($report['formatters'][0]['tool'] ?? '') === 'php-cs-fixer');
 removeTree($dir);

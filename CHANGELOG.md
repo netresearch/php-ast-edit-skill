@@ -16,6 +16,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - `references/formatting-contract.md` — the precondition, the one-time setup, the decay without a CI gate, and a measured table of which PHP tools can canonicalise line breaking (php-cs-fixer, Pint, ECS and PHP_CodeSniffer cannot; `@prettier/plugin-php` and this printer can).
 - `tests/formatting.php` — 33 checks: width behaviour and idempotence at three budgets, printer selection from the declaration, the explicit override, and the format-preserving footprint for six operation classes rather than for renames alone.
 
+### Fixed
+
+- Nine uses of `new Foo()->bar()` — PHP 8.4 syntax — in a package whose floor is 8.2. It was the second time in one session: the host here runs 8.5, so `php -l` cannot see it, and neither can parsing, because php-parser's grammar is not version-gated for that construct. `tests/php-floor.php` closes it by reading the source position after the `new`: a parenthesised one is followed by `)`, the bare form by the dereference. Scoped deliberately to that construct rather than pretending to cover every version difference — for that, run the floor interpreter.
+
 ### Changed
 
 - `apply` mutates a clone of the parsed tree and keeps the pristine tree and its tokens, which format-preserving printing needs to map a node back to the source.
