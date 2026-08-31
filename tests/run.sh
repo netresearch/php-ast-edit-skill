@@ -27,6 +27,10 @@ else
 fi
 echo "::endgroup::"
 
+echo "::group::tests/cli.sh (CLI surface: inspect, apply, exit codes)"
+bash tests/cli.sh || fail=1
+echo "::endgroup::"
+
 echo "::group::scripts/build-phar.php (PHAR builds and answers)"
 if [ -f vendor/autoload.php ]; then
   php -d phar.readonly=0 scripts/build-phar.php

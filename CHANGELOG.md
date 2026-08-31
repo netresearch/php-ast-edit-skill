@@ -34,6 +34,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - `remove_doc_comment` deleted every comment attached to the node, line comments included.
 - The parse context for a sub node name is resolved against the node: `stmts` is a member list on a class-like node and a statement list everywhere else, `uses` is a closure binding on a `Closure` and an imported name on a `use` statement, `vars` is a static variable on `static` and an expression on `unset`. Inserting a statement into a function body without an explicit `parseAs` previously failed with a syntax error from the class host.
 - `inspect` truncated its source excerpt at a fixed byte count, which lands mid-character often enough to matter; the resulting broken UTF-8 sequence failed `json_encode` and took down the whole command. The excerpt is cut on a character boundary, and the CLI substitutes invalid sequences instead of failing, so a latin-1 source file stays inspectable.
+- `inspect --kind` was accepted and then ignored, so the ancestry came back unfiltered. It now filters, and `tests/cli.sh` covers the CLI surface the skill actually tells agents to drive — arguments, output fields and exit codes — which neither `run.php` nor `matrix.php` touched.
 - A file that changed on disk while the transaction was being prepared was written over. Every file is now re-compared against its snapshot immediately before the first write and the transaction fails with `CONCURRENT_CHANGE`.
 
 ### Deprecated

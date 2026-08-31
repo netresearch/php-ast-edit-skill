@@ -110,7 +110,7 @@ through this tool. PHP text is accepted as construction input only: it is parsed
 mutated as an AST, and written back exclusively from that AST.
 
 Usage:
-  php-ast-edit inspect --file FILE (--offset N | --line N --column N) [--php-version 8.4]
+  php-ast-edit inspect --file FILE (--offset N | --line N --column N) [--kind TYPE] [--php-version 8.4]
   php-ast-edit validate --file FILE [--php-version 8.4]
   php-ast-edit contexts
   php-ast-edit apply [--input FILE|-] [--dry-run]

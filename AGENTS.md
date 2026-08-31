@@ -28,9 +28,10 @@ PHP CLI plus Agent Skill for AST-native PHP source mutations.
 │   ├── check.php                       # php -l over every shipped PHP file
 │   └── build-phar.php                  # Build dist/php-ast-edit.phar
 ├── tests/
-│   ├── run.sh                          # Test entrypoint (syntax gate, round-trip, matrix)
+│   ├── run.sh                          # Test entrypoint (syntax gate, round-trip, matrix, CLI)
 │   ├── run.php                         # Inspect/apply integration test
 │   ├── matrix.php                      # Table-driven grammar and failure-mode matrix
+│   ├── cli.sh                          # CLI surface: arguments, output fields, exit codes
 │   └── fixtures/sample.php             # Fixture for the round-trip
 ├── plugin.json                         # Portable Agent Plugins 1.0.0 manifest (source of truth)
 ├── .claude-plugin/plugin.json          # Generated Claude Code manifest
@@ -50,6 +51,7 @@ PHP CLI plus Agent Skill for AST-native PHP source mutations.
 - `vendor/bin/php-ast-edit validate --file <path>` — parse check
 - `vendor/bin/php-ast-edit contexts` — parseAs contexts, operations and file modes
 - `php tests/matrix.php` — grammar and operation coverage matrix on its own
+- `bash tests/cli.sh` — CLI arguments, output fields and exit codes
 
 ## Rules
 

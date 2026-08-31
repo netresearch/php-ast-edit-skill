@@ -47,6 +47,15 @@ final class Editor
         $offset = $this->targetOffset($source, $target);
         $locations = $this->locator->ancestry($roots, $offset);
 
+        if (isset($target['kind'])) {
+            $kind = (string) $target['kind'];
+            $locations = array_values(array_filter(
+                $locations,
+                static fn (NodeLocation $location): bool => $location->node->getType() === $kind
+                    || $location->node::class === $kind,
+            ));
+        }
+
         return [
             'file' => $path,
             'sha256' => hash('sha256', $source),
