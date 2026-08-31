@@ -656,7 +656,9 @@ foreach ($cases as $case) {
 
 // The write phase itself must roll back. An unwritable directory is the cheapest real
 // write failure that does not depend on the caller running as root.
-if (posix_geteuid() !== 0) {
+// Root can write into a directory it has no write bit for, so the rollback case cannot be
+// provoked there; ext-posix is also not guaranteed to be present.
+if (!function_exists('posix_geteuid') || posix_geteuid() !== 0) {
     $base = sys_get_temp_dir().'/php-ast-edit-rollback-'.bin2hex(random_bytes(6));
     mkdir($base.'/locked', 0700, true);
     file_put_contents($base.'/first.php', "<?php\nclass First {}\n");
