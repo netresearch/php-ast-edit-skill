@@ -17,7 +17,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - **`contexts` command** listing the live `parseAs` catalog, operation groups and file modes.
 - **`hooks/php-ast-only.py`**, a `PreToolUse` gate that denies `Edit`/`Write`/`MultiEdit`/`NotebookEdit` on `.php` and `sed -i`-style shell mutation, so the AST-only rule is enforced before the write rather than by instruction alone. Wiring: `references/enforcement.md`.
 - A snippet may now carry a PHP open tag inside a string literal (`'<?xml …'`). The check is structural — a snippet that actually leaves the PHP context is rejected — instead of a substring search for `<?`.
-- **`tests/matrix.php`**, a table-driven grammar and failure-mode matrix (56 cases) covering file root, namespace, use, class, interface, trait, enum, members, params, types, modifiers, statements, expressions, arrays, match, attributes, anonymous classes and closures, comments, empty containers and the file lifecycle, plus stale SHA, wrong kind, detached target, invalid contextual snippet, duplicate path, `phpVersion` pinning and write-phase rollback.
+- **`tests/matrix.php`**, a table-driven grammar and failure-mode matrix (61 cases) covering file root, namespace, use, class, interface, trait, enum, members, params, types, modifiers, statements, expressions, arrays, match, attributes, anonymous classes and closures, comments, empty containers and the file lifecycle, plus stale SHA, wrong kind, detached target, invalid contextual snippet, duplicate path, `phpVersion` pinning and write-phase rollback.
 - PHP 8.5 in the CI matrix.
 
 ### Changed
@@ -29,6 +29,13 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Fixed
 
+- A contextual snippet that escaped its synthetic host — `echo 1;` in the `attribute` context, `} echo 1; class Y {` in `member` — reached into a node the extractor never expected and produced an undefined-property warning followed by a `TypeError`. The host node is now checked before extraction.
+- `create` prepended a missing `<?php` open tag, which shifted every byte offset the same document's `edits` used. The tag is required and its absence is named.
+- Emptying a slot that cannot be null (`Param::$var`) raised a `TypeError` at the assignment. It is refused by name, pointing at `replace_child` / `replace_node`.
+- A mutation that only fails when printed or re-parsed surfaced as a raw printer or parser exception; those become `INVALID_RESULT` naming the file.
+- Path identity did not collapse `.` and `..` below a directory that does not exist yet, so two `create` entries for the same new file could both run. Paths are collapsed textually before the deepest existing ancestor is resolved.
+- The enforcement gate judged the whole command line at once: a `php-ast-edit` invocation anywhere in it exempted everything after a `;`, a path-qualified `/usr/bin/sed -i` was missed, `1> file.php` was missed, and `sed -n f.php | grep -i x` was denied as an in-place edit. The line is now split into its simple commands and each is judged on its own; `tests/hook.py` pins 39 command and tool shapes, the known dataflow blind spot included.
+- `mb_check_encoding()` was used without `ext-mbstring` in the package requirements; the UTF-8 check now goes through PCRE, which needs no extra extension.
 - Two spellings of one path (`src/A.php` and `./src/A.php`) produced two transactions on the same file; both resolved against the same snapshot and the second write silently discarded the first one's edits. Paths are now compared by identity.
 - `insert_into` on a property that holds a single node rather than a list (`returnType`, `default`, a class's `extends`) raised a `TypeError` from inside the printer. It is now refused by name, pointing at `replace_child`.
 - `remove_doc_comment` deleted every comment attached to the node, line comments included.

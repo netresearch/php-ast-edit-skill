@@ -376,6 +376,56 @@ $cases = [
         'unchanged' => ['a.php'],
     ],
 
+    // ---- The synthetic host must hold what the extractor reaches for -------------------------
+    [
+        'name' => 'a snippet that escapes its synthetic host is refused, not crashed on',
+        'files' => ['a.php' => EMPTY_CLASS],
+        'edits' => [
+            ['target' => ['ref' => CLASS_REF], 'operation' => 'add_attribute', 'php' => 'echo 1;'],
+        ],
+        'error' => 'does not fit the "attribute" context',
+        'unchanged' => ['a.php'],
+    ],
+    [
+        'name' => 'a member snippet that closes the class is refused',
+        'files' => ['a.php' => EMPTY_CLASS],
+        'edits' => [
+            ['target' => ['ref' => CLASS_REF], 'operation' => 'add_member', 'php' => '} echo 1; class Y {'],
+        ],
+        'error' => 'does not fit the',
+        'unchanged' => ['a.php'],
+    ],
+    [
+        'name' => 'create requires the open tag rather than shifting every offset',
+        'files' => [],
+        'document' => fn (array $p): array => ['files' => [[
+            'path' => $p['dir'].'/NoTag.php',
+            'mode' => 'create',
+            'php' => 'class NoTag {}',
+        ]]],
+        'error' => 'must start with the <?php open tag',
+        'absent' => ['NoTag.php'],
+    ],
+    [
+        'name' => 'a slot that cannot be empty is refused by name',
+        'files' => ['a.php' => "<?php\nfunction foo(int \$a) {}\n"],
+        'edits' => [
+            ['target' => ['ref' => 'stmts[0].params[0]'], 'operation' => 'delete_child', 'property' => 'var'],
+        ],
+        'error' => 'cannot be empty',
+        'unchanged' => ['a.php'],
+    ],
+    [
+        'name' => 'two creates under the same missing directory collide',
+        'files' => [],
+        'document' => fn (array $p): array => ['files' => [
+            ['path' => $p['dir'].'/deep/sub/A.php', 'mode' => 'create', 'php' => '<?php class A {}'],
+            ['path' => $p['dir'].'/deep/../deep/sub/A.php', 'mode' => 'create', 'php' => '<?php class B {}'],
+        ]],
+        'error' => 'are the same file',
+        'absent' => ['deep/sub/A.php'],
+    ],
+
     // ---- Failure modes ---------------------------------------------------------------------
     [
         'name' => 'stale sha aborts before any write',
@@ -648,8 +698,16 @@ foreach ($cases as $case) {
         $failures[] = $case['name'].":\n  - ".implode("\n  - ", $problems);
     }
 
-    foreach (glob($dir.'/*') ?: [] as $file) {
-        @unlink($file);
+    foreach (glob($dir.'/*', GLOB_MARK) ?: [] as $entry) {
+        if (str_ends_with($entry, DIRECTORY_SEPARATOR)) {
+            foreach (glob($entry.'*') ?: [] as $nested) {
+                @unlink($nested);
+                @rmdir($nested);
+            }
+            @rmdir($entry);
+            continue;
+        }
+        @unlink($entry);
     }
     @rmdir($dir);
 }

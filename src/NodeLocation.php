@@ -75,6 +75,14 @@ final class NodeLocation
             if ($this->parent->{$this->property} !== $this->node) {
                 throw new EditException('AST target is no longer attached at its original property.');
             }
+            $type = (new \ReflectionProperty($this->parent, $this->property))->getType();
+            if ($type !== null && !$type->allowsNull()) {
+                throw new EditException(sprintf(
+                    'Property "%s" of %s cannot be empty. Use replace_node to put something else there.',
+                    $this->property,
+                    $this->parent->getType(),
+                ));
+            }
             $this->parent->{$this->property} = null;
             return;
         }
@@ -149,6 +157,7 @@ final class NodeLocation
                     $property,
                 ));
             }
+            $this->assertNullable($property);
             $this->node->{$property} = null;
             return;
         }
@@ -209,6 +218,23 @@ final class NodeLocation
             ));
         }
         return $position;
+    }
+
+    /**
+     * A slot that is not declared nullable cannot be emptied — `Param::$var` must always
+     * hold an expression. Assigning null anyway raises a TypeError at the assignment, which
+     * tells the caller nothing about which edit was wrong.
+     */
+    private function assertNullable(string $property): void
+    {
+        $type = (new \ReflectionProperty($this->node, $property))->getType();
+        if ($type !== null && !$type->allowsNull()) {
+            throw new EditException(sprintf(
+                'Property "%s" of %s cannot be empty. Use replace_child to put something else there.',
+                $property,
+                $this->node->getType(),
+            ));
+        }
     }
 
     public function isList(string $property): bool

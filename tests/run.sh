@@ -35,6 +35,10 @@ echo "::group::tests/cli.sh (CLI surface: inspect, apply, exit codes)"
 bash tests/cli.sh || fail=1
 echo "::endgroup::"
 
+echo "::group::tests/hook.py (enforcement gate behaviour table)"
+python3 tests/hook.py || fail=1
+echo "::endgroup::"
+
 echo "::group::tests/corpus.php (real-world round trip through the AST)"
 php -d memory_limit=1G tests/corpus.php || fail=1
 echo "::endgroup::"

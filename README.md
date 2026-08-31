@@ -264,7 +264,7 @@ Copyright Netresearch DTT GmbH.
 
 ## German summary
 
-`php-ast-edit` ist die Schreibschicht für Coding-Agenten in PHP-Projekten: Agenten schreiben PHP nicht mehr direkt, sie beschreiben Syntax. Die wird geparst, als AST verändert, und nur aus dem AST entsteht wieder eine `.php`-Datei — neue Dateien eingeschlossen. Gesucht wird weiterhin mit ripgrep, ast-grep oder LSP. Eine kleine vollständige Primitivebene (`replace_node`, `delete_node`, `insert_into`, `replace_child`, `move_node`) deckt jeden Knoten und jeden Container ab; die benannten Operationen sind die bequeme Oberfläche darüber. Jede Transaktion ist per SHA-256 und erwartetem Knoten abgesichert, umfasst alle beteiligten Dateien und wird vor dem Schreiben neu geparst. Eine Umbenennung trifft damit nur den Bezeichner und nicht das gleichnamige String-Literal daneben.
+`php-ast-edit` ist die Schreibschicht für Coding-Agenten in PHP-Projekten: Agenten schreiben PHP nicht mehr direkt, sie beschreiben Syntax. Die wird geparst, als AST verändert, und nur aus dem AST entsteht wieder eine `.php`-Datei — neue Dateien eingeschlossen. Gesucht wird weiterhin mit ripgrep, ast-grep oder LSP. Eine kleine vollständige Primitivebene (`replace_node`, `delete_node`, `insert_into`, `replace_child`, `delete_child`, `move_node`) deckt jeden Knoten und jeden Container ab; die benannten Operationen sind die bequeme Oberfläche darüber. Jede Transaktion ist per SHA-256 und erwartetem Knoten abgesichert, umfasst alle beteiligten Dateien und wird vor dem Schreiben neu geparst. Eine Umbenennung trifft damit nur den Bezeichner und nicht das gleichnamige String-Literal daneben.
 
 ---
 

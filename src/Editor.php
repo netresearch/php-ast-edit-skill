@@ -254,10 +254,22 @@ final class Editor
         if ($transaction->phpVersion !== null) {
             $printerOptions['phpVersion'] = PhpVersion::fromString($transaction->phpVersion);
         }
-        $printer = new Standard($printerOptions);
-        $output = rtrim($printer->prettyPrintFile($transaction->roots), "\r\n")."\n";
-
-        $this->parser($transaction->phpVersion)->parse($output);
+        try {
+            $printer = new Standard($printerOptions);
+            $output = rtrim($printer->prettyPrintFile($transaction->roots), "\r\n")."\n";
+            $this->parser($transaction->phpVersion)->parse($output);
+        } catch (EditException $failure) {
+            throw $failure;
+        } catch (\Throwable $failure) {
+            // The printer and the parser both speak in their own exception types, and a
+            // mutation that left the AST in an impossible state only shows up here. Name the
+            // file, so the caller knows which one of a multi-file transaction was at fault.
+            throw new EditException(sprintf(
+                'INVALID_RESULT: %s could not be printed and re-parsed after the edits: %s',
+                $transaction->path,
+                $failure->getMessage(),
+            ));
+        }
 
         $transaction->output = $output;
         $transaction->changed = $transaction->source !== $output;
@@ -435,9 +447,10 @@ final class Editor
             case 'move_node':
                 $this->moveNode($location, $edit, $roots);
                 return true;
-        }
 
-        return false;
+            default:
+                return false;
+        }
     }
 
     /**
@@ -458,9 +471,10 @@ final class Editor
             case 'remove_doc_comment':
                 $this->setDocComment($node, null);
                 return true;
-        }
 
-        return false;
+            default:
+                return false;
+        }
     }
 
     /**
@@ -526,9 +540,10 @@ final class Editor
                 }
                 $this->editArgument($node, $edit, $snippets, $operation);
                 return true;
-        }
 
-        return false;
+            default:
+                return false;
+        }
     }
 
     /**
@@ -610,9 +625,10 @@ final class Editor
                     $snippets->parseOne('type', $this->requiredString($edit, 'php')),
                 );
                 return true;
-        }
 
-        return false;
+            default:
+                return false;
+        }
     }
 
     private function moveNode(NodeLocation $location, array $edit, array &$roots): void
@@ -1018,8 +1034,9 @@ final class Editor
     {
         if (strlen($code) > $limit) {
             $code = substr($code, 0, $limit - 3);
-            // Drop a trailing incomplete UTF-8 sequence; a continuation byte is 10xxxxxx.
-            while ($code !== '' && !mb_check_encoding($code, 'UTF-8')) {
+            // Drop a trailing incomplete UTF-8 sequence. preg's /u check needs no extension
+            // beyond PCRE, which ext-mbstring would have added to the package requirements.
+            while ($code !== '' && preg_match('//u', $code) !== 1) {
                 $code = substr($code, 0, -1);
             }
             $code .= '...';
@@ -1055,8 +1072,46 @@ final class Editor
         if ($real !== false) {
             return $real;
         }
-        $directory = realpath(dirname($path));
-        return ($directory === false ? dirname($path) : $directory).DIRECTORY_SEPARATOR.basename($path);
+        // realpath() fails for every ancestor that does not exist yet, so collapse the path
+        // textually first and then resolve the deepest ancestor that does exist. Two creates
+        // under the same missing directory must still collide, however they were spelled.
+        $collapsed = $this->collapse($path);
+        $directory = dirname($collapsed);
+        $suffix = [basename($collapsed)];
+        while (($resolved = realpath($directory)) === false) {
+            $parent = dirname($directory);
+            if ($parent === $directory) {
+                return $collapsed;
+            }
+            array_unshift($suffix, basename($directory));
+            $directory = $parent;
+        }
+
+        return $resolved.DIRECTORY_SEPARATOR.implode(DIRECTORY_SEPARATOR, $suffix);
+    }
+
+    /**
+     * Resolve `.` and `..` textually.
+     *
+     * Only ever applied to a path that does not exist yet, where there is no symlink for the
+     * lexical answer to disagree with.
+     */
+    private function collapse(string $path): string
+    {
+        $absolute = str_starts_with($path, DIRECTORY_SEPARATOR);
+        $segments = [];
+        foreach (explode(DIRECTORY_SEPARATOR, $path) as $segment) {
+            if ($segment === '' || $segment === '.') {
+                continue;
+            }
+            if ($segment === '..' && $segments !== [] && end($segments) !== '..') {
+                array_pop($segments);
+                continue;
+            }
+            $segments[] = $segment;
+        }
+
+        return ($absolute ? DIRECTORY_SEPARATOR : '').implode(DIRECTORY_SEPARATOR, $segments);
     }
 
     private function readFile(string $path): string

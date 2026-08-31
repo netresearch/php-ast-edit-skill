@@ -31,6 +31,7 @@ final class ContextParser
     {
         $this->contexts = [
             'expr' => [
+                'host' => Stmt\Expression::class,
                 'template' => '<?php %s;',
                 'extract' => static function (array $stmts): array {
                     if (count($stmts) !== 1 || !$stmts[0] instanceof Stmt\Expression) {
@@ -40,26 +41,32 @@ final class ContextParser
                 },
             ],
             'stmt' => [
+                'host' => Stmt::class,
                 'template' => '<?php %s',
                 'extract' => static fn (array $stmts): array => $stmts,
             ],
             'member' => [
+                'host' => Stmt\Class_::class,
                 'template' => '<?php class __AstContext { %s }',
                 'extract' => static fn (array $stmts): array => $stmts[0]->stmts,
             ],
             'enum_case' => [
+                'host' => Stmt\Enum_::class,
                 'template' => '<?php enum __AstContext { %s }',
                 'extract' => static fn (array $stmts): array => $stmts[0]->stmts,
             ],
             'param' => [
+                'host' => Stmt\Function_::class,
                 'template' => '<?php function __astContext(%s) {}',
                 'extract' => static fn (array $stmts): array => $stmts[0]->params,
             ],
             'arg' => [
+                'host' => Stmt\Expression::class,
                 'template' => '<?php __astContext(%s);',
                 'extract' => static fn (array $stmts): array => $stmts[0]->expr->args,
             ],
             'type' => [
+                'host' => Stmt\Function_::class,
                 'template' => '<?php function __astContext(): %s {}',
                 'extract' => static function (array $stmts): array {
                     $type = $stmts[0]->returnType;
@@ -70,6 +77,7 @@ final class ContextParser
                 },
             ],
             'array_item' => [
+                'host' => Stmt\Expression::class,
                 'template' => '<?php [%s];',
                 'extract' => static fn (array $stmts): array => array_values(array_filter(
                     $stmts[0]->expr->items,
@@ -77,34 +85,42 @@ final class ContextParser
                 )),
             ],
             'match_arm' => [
+                'host' => Stmt\Expression::class,
                 'template' => '<?php match (__AST_CONTEXT) { %s };',
                 'extract' => static fn (array $stmts): array => $stmts[0]->expr->arms,
             ],
             'attribute' => [
+                'host' => Stmt\Class_::class,
                 'template' => '<?php %s class __AstContext {}',
                 'extract' => static fn (array $stmts): array => $stmts[0]->attrGroups,
             ],
             'closure_use' => [
+                'host' => Stmt\Expression::class,
                 'template' => '<?php function () use (%s) {};',
                 'extract' => static fn (array $stmts): array => $stmts[0]->expr->uses,
             ],
             'catch' => [
+                'host' => Stmt\TryCatch::class,
                 'template' => '<?php try {} %s',
                 'extract' => static fn (array $stmts): array => $stmts[0]->catches,
             ],
             'const' => [
+                'host' => Stmt\Const_::class,
                 'template' => '<?php const %s;',
                 'extract' => static fn (array $stmts): array => $stmts[0]->consts,
             ],
             'use' => [
+                'host' => Stmt\Use_::class,
                 'template' => '<?php use %s;',
                 'extract' => static fn (array $stmts): array => $stmts[0]->uses,
             ],
             'property_item' => [
+                'host' => Stmt\Class_::class,
                 'template' => '<?php class __AstContext { public $%s; }',
                 'extract' => static fn (array $stmts): array => $stmts[0]->stmts[0]->props,
             ],
             'static_var' => [
+                'host' => Stmt\Function_::class,
                 'template' => '<?php function __astContext() { static $%s; }',
                 'extract' => static fn (array $stmts): array => $stmts[0]->stmts[0]->vars,
             ],
@@ -163,11 +179,33 @@ final class ContextParser
             throw new EditException(sprintf('Snippet produced no AST nodes in the "%s" context.', $context));
         }
 
+        // A snippet can close the host construct and open its own — `} echo 1; class Y {` in
+        // the member context — and the host then holds something the extractor never expected.
+        // Check what actually came back before reaching into it, or the mismatch surfaces as
+        // an undefined-property warning and a TypeError from inside a closure.
+        $host = $spec['host'];
+        if (!$stmts[0] instanceof $host) {
+            throw new EditException(sprintf(
+                'Snippet does not fit the "%s" context: it produced a %s where a %s was expected.',
+                $context,
+                $stmts[0]->getType(),
+                (new \ReflectionClass($host))->getShortName(),
+            ));
+        }
+
         // A snippet that closes the PHP context would smuggle literal output into the tree.
         // Checking for the resulting InlineHTML node rather than for an open-tag substring
         // keeps an open tag inside a string literal perfectly legal.
         if ((new NodeFinder())->findFirstInstanceOf($stmts, Stmt\InlineHTML::class) !== null) {
             throw new EditException('Snippet must not leave the PHP context.');
+        }
+
+        if (count($stmts) !== 1) {
+            throw new EditException(sprintf(
+                'Snippet does not fit the "%s" context: it produced %d top-level statements.',
+                $context,
+                count($stmts),
+            ));
         }
 
         $nodes = ($spec['extract'])($stmts);
@@ -241,7 +279,10 @@ final class ContextParser
             throw new EditException('File source must not be empty.');
         }
         if (!str_starts_with($code, '<?php')) {
-            $code = "<?php\n".$code;
+            // Prepending it silently would shift every byte offset in the same document's
+            // edits by the length of the tag, and the caller would never learn why a
+            // line/column target missed.
+            throw new EditException('File source must start with the <?php open tag.');
         }
 
         try {

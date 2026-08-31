@@ -30,8 +30,10 @@ foreach (['applyPrimitive', 'applyComment', 'applyShorthand', 'applySemantic'] a
         $problems[] = 'Editor has no handler '.$handler.'; the catalog check is out of date.';
         continue;
     }
-    $end = strpos($editor, "\n        return false;", $start);
-    preg_match_all("/case '([a-z_]+)':/", substr($editor, $start, $end - $start), $matches);
+    // Bound the handler by the next method, not by a formatting detail inside it.
+    $end = strpos($editor, "\n    private function ", $start + 1);
+    $body = substr($editor, $start, ($end === false ? strlen($editor) : $end) - $start);
+    preg_match_all("/^\s+case '([a-z0-9_]+)':/m", $body, $matches);
     $dispatchers = array_merge($dispatchers, $matches[1]);
 }
 sort($dispatchers);

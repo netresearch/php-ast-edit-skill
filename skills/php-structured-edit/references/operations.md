@@ -58,7 +58,7 @@ A `ref` is only valid together with the `sha256` it was produced from. Refs surv
 | `mode` | Requires | Notes |
 | --- | --- | --- |
 | `edit` (default) | `edits` | `sha256` guards the snapshot |
-| `create` | `php` | Full construction syntax including `<?php`. It is parsed and only the resulting AST is written. Fails when the file exists unless `"expectAbsent": false`. `edits` may then address the fresh AST. |
+| `create` | `php` | Full construction syntax. The `<?php` open tag is **required**: prepending it silently would shift every byte offset the same document's `edits` use. Only the resulting AST is written. Fails when the file exists unless `"expectAbsent": false`; `edits` may then address the fresh AST. |
 | `delete` | — | `sha256` guards the removal |
 
 ### Transaction semantics
@@ -91,7 +91,7 @@ A snippet is parsed inside a synthetic host construct, so the grammar always com
 | `use` | `use <snippet>;` | `UseItem` |
 | `property_item` | `class X { public $<snippet>; }` | `PropertyItem` |
 | `static_var` | `function f() { static $<snippet>; }` | `StaticVar` |
-| `file` | the snippet itself | full statement list, `<?php` required |
+| `file` | the snippet itself | full statement list; the `<?php` open tag is required |
 
 `parseAs` is inferred from the target node and the addressed property, so it rarely needs to be given. The inference is node-aware where a sub node name is shared: `stmts` is a member list on a class-like node and a statement list everywhere else, `uses` is a closure binding on a `Closure` and an imported name on a `use` statement, `vars` is a static variable on `static` and an expression on `unset`. Where a node still admits more than one shape — an enum body takes cases, methods and constants — the candidates are tried in order and the parser decides. Pass `parseAs` explicitly for anything the tool cannot name; the error message lists the known contexts.
 

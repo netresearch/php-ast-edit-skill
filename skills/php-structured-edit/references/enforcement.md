@@ -40,6 +40,8 @@ Where no hook layer exists, the fallback is the CI check every reviewer can run:
 
 ## What it cannot catch
 
+The command line is split into its simple commands, so an AST invocation exempts only its own segment — `php-ast-edit inspect …; sed -i … a.php` is still denied — and a flag in a later command cannot incriminate an earlier read. What it does not do is follow data: in `for f in *.php; do sed -i … $f; done` the path and the mutation live in different commands, and connecting them needs dataflow. `tests/hook.py` asserts that case as allowed, so a future change to it is a deliberate one.
+
 A shell can write a file in unboundedly many ways: `python3 -c 'open("A.php","w")…'`, `php -r 'file_put_contents(…)'`, a script that does it three call frames down. The gate matches the shapes an agent actually reaches for — the editing tools, in-place `sed`/`perl`, redirects, `tee`, `apply_patch` — and does not pretend to be a sandbox. Its job is to make the wrong move cost a round trip and name the right one, not to make it impossible.
 
 Two consequences worth stating. It fails open: a payload it cannot parse is allowed through, because a hook that bricks the session on a malformed input is worse than one that misses a case. And it is not a security boundary — an agent that means to circumvent it can, so it belongs in the same category as a linter, not a permission system.

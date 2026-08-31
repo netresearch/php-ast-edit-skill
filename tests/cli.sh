@@ -7,7 +7,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
-if [ ! -f vendor/autoload.php ]; then
+if [[ ! -f vendor/autoload.php ]]; then
   echo "SKIP: vendor/autoload.php missing; the CLI needs the parser."
   exit 0
 fi
@@ -20,7 +20,7 @@ fail=0
 
 expect() {
   local label="$1" expected="$2" actual="$3"
-  if [ "$expected" = "$actual" ]; then
+  if [[ "$expected" == "$actual" ]]; then
     echo "ok   $label"
   else
     echo "FAIL $label: expected [$expected], got [$actual]" >&2
@@ -28,19 +28,25 @@ expect() {
   fi
 }
 
-printf '<?php\nclass Foo\n{\n}\n' > "$WORK/a.php"
+# The fixture itself goes through the tool: this repository does not write PHP as text, and
+# it doubles as the CLI's only coverage of mode "create".
+printf '{"files":[{"path":"%s","mode":"create","php":"<?php class Foo {}"}]}' "$WORK/a.php" \
+  | $BIN apply > /dev/null
+expect "apply mode create writes a new file" "1" "$(grep -c 'class Foo' "$WORK/a.php")"
 
 expect "inspect --line/--column names the smallest node" "Identifier" \
-  "$($BIN inspect --file "$WORK/a.php" --line 2 --column 7 | php -r 'echo json_decode(stream_get_contents(STDIN), true)["nodes"][0]["type"];')"
+  "$($BIN inspect --file "$WORK/a.php" --line 3 --column 7 | php -r 'echo json_decode(stream_get_contents(STDIN), true)["nodes"][0]["type"];')"
 
 expect "inspect returns a structural ref" "stmts[0].name" \
-  "$($BIN inspect --file "$WORK/a.php" --line 2 --column 7 | php -r 'echo json_decode(stream_get_contents(STDIN), true)["nodes"][0]["ref"];')"
+  "$($BIN inspect --file "$WORK/a.php" --line 3 --column 7 | php -r 'echo json_decode(stream_get_contents(STDIN), true)["nodes"][0]["ref"];')"
 
+# The canonical print is deterministic, so the byte offset of the class name is too.
+OFFSET="$(php -r 'echo strpos(file_get_contents($argv[1]), "Foo");' "$WORK/a.php")"
 expect "inspect --offset addresses the same node" "Identifier" \
-  "$($BIN inspect --file "$WORK/a.php" --offset 12 | php -r 'echo json_decode(stream_get_contents(STDIN), true)["nodes"][0]["type"];')"
+  "$($BIN inspect --file "$WORK/a.php" --offset "$OFFSET" | php -r 'echo json_decode(stream_get_contents(STDIN), true)["nodes"][0]["type"];')"
 
 expect "inspect --kind filters the ancestry" "1" \
-  "$($BIN inspect --file "$WORK/a.php" --offset 12 --kind Stmt_Class | php -r 'echo count(json_decode(stream_get_contents(STDIN), true)["nodes"]);')"
+  "$($BIN inspect --file "$WORK/a.php" --offset "$OFFSET" --kind Stmt_Class | php -r 'echo count(json_decode(stream_get_contents(STDIN), true)["nodes"]);')"
 
 expect "contexts lists the file mode catalog" "edit create delete" \
   "$($BIN contexts | php -r 'echo implode(" ", json_decode(stream_get_contents(STDIN), true)["fileModes"]);')"
@@ -73,7 +79,7 @@ code=$?
 set -e
 expect "an unknown command exits 2" "2" "$code"
 
-if [ "$fail" -ne 0 ]; then
+if [[ "$fail" -ne 0 ]]; then
   echo "FAIL: CLI surface check failed." >&2
   exit 1
 fi
