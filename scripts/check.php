@@ -2,8 +2,9 @@
 
 declare (strict_types=1);
 $root = dirname(__DIR__);
-$paths = [$root . '/src', $root . '/bin/php-ast-edit', $root . '/scripts/build-phar.php', $root . '/tests/run.php', $root . '/scripts/check.php', $root . '/tests/matrix.php'];
+$paths = [$root . '/src', $root . '/bin/php-ast-edit', $root . '/scripts/build-phar.php', $root . '/tests/run.php', $root . '/scripts/check.php', $root . '/tests/matrix.php', $root . '/tests/catalog.php'];
 $files = [];
+$missing = [];
 foreach ($paths as $path) {
     if (is_dir($path)) {
         $iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($path, FilesystemIterator::SKIP_DOTS));
@@ -14,7 +15,13 @@ foreach ($paths as $path) {
         }
     } elseif (is_file($path)) {
         $files[] = $path;
+    } else {
+        $missing[] = $path;
     }
+}
+if ($missing !== []) {
+    fwrite(STDERR, 'Listed path does not exist: ' . implode(', ', $missing) . "\n");
+    exit(1);
 }
 $failed = false;
 foreach ($files as $file) {

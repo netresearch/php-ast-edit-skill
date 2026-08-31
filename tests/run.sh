@@ -27,6 +27,10 @@ else
 fi
 echo "::endgroup::"
 
+echo "::group::tests/catalog.php (dispatcher, contexts catalog and docs agree)"
+php tests/catalog.php || fail=1
+echo "::endgroup::"
+
 echo "::group::tests/cli.sh (CLI surface: inspect, apply, exit codes)"
 bash tests/cli.sh || fail=1
 echo "::endgroup::"

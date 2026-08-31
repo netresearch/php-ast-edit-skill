@@ -32,6 +32,7 @@ PHP CLI plus Agent Skill for AST-native PHP source mutations.
 │   ├── run.php                         # Inspect/apply integration test
 │   ├── matrix.php                      # Table-driven grammar and failure-mode matrix
 │   ├── cli.sh                          # CLI surface: arguments, output fields, exit codes
+│   ├── catalog.php                     # Dispatcher, `contexts` output and docs must agree
 │   └── fixtures/sample.php             # Fixture for the round-trip
 ├── plugin.json                         # Portable Agent Plugins 1.0.0 manifest (source of truth)
 ├── .claude-plugin/plugin.json          # Generated Claude Code manifest
@@ -52,6 +53,7 @@ PHP CLI plus Agent Skill for AST-native PHP source mutations.
 - `vendor/bin/php-ast-edit contexts` — parseAs contexts, operations and file modes
 - `php tests/matrix.php` — grammar and operation coverage matrix on its own
 - `bash tests/cli.sh` — CLI arguments, output fields and exit codes
+- `php tests/catalog.php` — operation and context catalog parity across code, CLI and docs
 
 ## Rules
 

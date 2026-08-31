@@ -117,11 +117,6 @@ final class ContextParser
         return array_keys($this->contexts);
     }
 
-    public function supports(string $context): bool
-    {
-        return isset($this->contexts[$context]);
-    }
-
     /**
      * Parse a snippet inside the named synthetic context.
      *

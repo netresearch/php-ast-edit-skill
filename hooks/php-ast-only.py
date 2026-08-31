@@ -75,7 +75,7 @@ def php_paths(tool_input: dict) -> list[str]:
         for edit in edits:
             if isinstance(edit, dict) and isinstance(edit.get("file_path"), str):
                 candidates.append(edit["file_path"])
-    return [p for p in candidates if p.endswith(PHP_SUFFIXES)]
+    return [p for p in candidates if p.lower().endswith(PHP_SUFFIXES)]
 
 
 def is_in_place_flag(token: str) -> bool:
@@ -90,7 +90,8 @@ def text_mutation_of_php(command: str) -> str | None:
     Deliberately token-based rather than one large regular expression: a hook runs before
     every Bash call, so it must be linear in the length of the command line.
     """
-    if not any(suffix in command for suffix in PHP_SUFFIXES):
+    lowered = command.lower()
+    if not any(suffix in lowered for suffix in PHP_SUFFIXES):
         return None
 
     try:
@@ -109,7 +110,7 @@ def text_mutation_of_php(command: str) -> str | None:
             return f"{program} in place"
         if token in REDIRECTS or token == "tee":
             return "a shell redirect into a .php file"
-        if token.startswith(">") and token.lstrip(">").endswith(PHP_SUFFIXES):
+        if token.startswith(">") and token.lstrip(">").lower().endswith(PHP_SUFFIXES):
             return "a shell redirect into a .php file"
 
     return None
