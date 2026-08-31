@@ -118,38 +118,50 @@ def segments(command: str) -> list[list[str]]:
     return [part for part in parts if part]
 
 
+def program_name(token: str) -> str:
+    """A program may be path-qualified: /usr/bin/sed is the same tool as sed."""
+    return PurePosixPath(token).name if "/" in token else token
+
+
+def is_php_path(token: str) -> bool:
+    return token.lower().endswith(PHP_SUFFIXES)
+
+
+def redirect_target(tokens: list[str], index: int) -> str | None:
+    """The destination of a redirect at `index`, whether it is glued on or a separate token."""
+    token = tokens[index]
+    if is_redirect(token):
+        return tokens[index + 1] if index + 1 < len(tokens) else None
+    if token.startswith(">"):
+        return token.lstrip(">")
+    return None
+
+
 def mutates_php(tokens: list[str]) -> str | None:
-    """Name the text mutation this simple command performs on a PHP file, if any."""
-    if not any(token.lower().endswith(PHP_SUFFIXES) for token in tokens):
+    """Name the text mutation this simple command performs on a PHP file, if any.
+
+    Only called for a command that already names a PHP path, which is what lets the
+    in-place check below be a simple flag test: splitting the line on pipes and `;` first
+    means `sed -n f.php | grep -i x` never reaches here as one command.
+    """
+    if not any(is_php_path(token) for token in tokens):
         return None
 
     program = None
     for index, token in enumerate(tokens):
-        # A program may be path-qualified: /usr/bin/sed is the same tool as sed.
-        name = PurePosixPath(token).name if "/" in token else token
+        name = program_name(token)
 
         if name in IN_PLACE_PROGRAMS:
             program = name
-            continue
-        if name == "apply_patch":
+        elif name == "apply_patch":
             return "apply_patch"
-
-        # A redirect counts only when the destination is a PHP file.
-        if is_redirect(token):
-            target = tokens[index + 1] if index + 1 < len(tokens) else ""
-            if target.lower().endswith(PHP_SUFFIXES):
-                return "a shell redirect into a .php file"
-            continue
-        if token.startswith(">") and token.lstrip(">").lower().endswith(PHP_SUFFIXES):
-            return "a shell redirect into a .php file"
-        if name == "tee" and any(
-            t.lower().endswith(PHP_SUFFIXES) for t in tokens[index + 1 :]
-        ):
+        elif name == "tee" and any(is_php_path(t) for t in tokens[index + 1 :]):
             return "tee into a .php file"
 
-        # Splitting on pipes and `;` first is what keeps this honest: the guard above proved a
-        # PHP path is in THIS command, so `sed -n f.php | grep -i x` no longer reads as an
-        # in-place edit just because a later command carries an -i.
+        target = redirect_target(tokens, index)
+        if target is not None and is_php_path(target):
+            return "a shell redirect into a .php file"
+
         if program is not None and is_in_place_flag(token):
             return f"{program} in place"
 

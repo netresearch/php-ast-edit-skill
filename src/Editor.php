@@ -740,16 +740,13 @@ final class Editor
 
         $node = $location->node;
 
-        switch ($property) {
-            case 'stmts':
-                return $node instanceof Stmt\ClassLike ? $this->memberContexts($node) : ['stmt'];
-            case 'uses':
-                return $node instanceof Expr\Closure ? ['closure_use'] : ['use'];
-            case 'vars':
-                return $node instanceof Stmt\Static_ ? ['static_var'] : ['expr'];
-        }
+        $context = match ($property) {
+            'stmts' => $node instanceof Stmt\ClassLike ? $this->memberContexts($node) : ['stmt'],
+            'uses' => $node instanceof Expr\Closure ? ['closure_use'] : ['use'],
+            'vars' => $node instanceof Stmt\Static_ ? ['static_var'] : ['expr'],
+            default => self::PROPERTY_CONTEXTS[$property] ?? null,
+        };
 
-        $context = self::PROPERTY_CONTEXTS[$property] ?? null;
         if ($context === null) {
             throw new EditException(sprintf(
                 'Cannot infer a parse context for property "%s" of %s; pass "parseAs" explicitly.',
@@ -758,7 +755,7 @@ final class Editor
             ));
         }
 
-        return [$context];
+        return is_array($context) ? $context : [$context];
     }
 
     /**
