@@ -217,6 +217,12 @@ TEXT;
 
     private function json(array $data): void
     {
-        echo json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR)."\n";
+        // A source file need not be UTF-8. Substituting keeps `inspect` usable on a latin-1
+        // file instead of failing the whole command over one byte in an excerpt.
+        echo json_encode(
+            $data,
+            JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE
+                | JSON_INVALID_UTF8_SUBSTITUTE | JSON_THROW_ON_ERROR,
+        )."\n";
     }
 }

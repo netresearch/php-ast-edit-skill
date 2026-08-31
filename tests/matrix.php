@@ -36,6 +36,7 @@ const FIRST_MEMBER_REF = 'stmts[0].stmts[0]';
  *   document?: callable(array<string, string>): array,
  *   contains?: list<array{0: string, 1: string}>,
  *   notContains?: list<array{0: string, 1: string}>,
+ *   inspect?: array<string, int>,
  *   unchanged?: list<string>,
  *   absent?: list<string>,
  *   present?: list<string>,
@@ -297,6 +298,15 @@ $cases = [
         'notContains' => [['a.php', 'Old text.']],
     ],
     [
+        'name' => 'removing a docblock leaves the other comments alone',
+        'files' => ['a.php' => "<?php\n// keep me\n/** drop me */\nfunction foo() {}\n"],
+        'edits' => [
+            ['target' => ['ref' => CLASS_REF], 'operation' => 'remove_doc_comment'],
+        ],
+        'contains' => [['a.php', '// keep me']],
+        'notContains' => [['a.php', 'drop me']],
+    ],
+    [
         'name' => 'docblock is removed',
         'files' => ['a.php' => "<?php\n/** Doc. */\nfunction foo() {}\n"],
         'edits' => [
@@ -320,6 +330,49 @@ $cases = [
             ['target' => ['ref' => CLASS_REF], 'operation' => 'insert_into', 'property' => 'stmts', 'parseAs' => 'stmt', 'php' => '$a = 1; ?' . '> text <?php $b = 2;'],
         ],
         'error' => 'must not leave the PHP context',
+        'unchanged' => ['a.php'],
+    ],
+
+    // ---- Shared sub node names must resolve against the node, not the name -------------------
+    [
+        'name' => 'stmts on a function is a statement list, not a member list',
+        'files' => ['a.php' => EMPTY_FUNCTION],
+        'edits' => [
+            ['target' => ['ref' => CLASS_REF], 'operation' => 'insert_into', 'property' => 'stmts', 'php' => 'return 1;'],
+        ],
+        'contains' => [['a.php', 'return 1;']],
+    ],
+    [
+        'name' => 'uses on a use statement imports a name',
+        'files' => ['a.php' => "<?php\nuse A\\B;\n"],
+        'edits' => [
+            ['target' => ['ref' => CLASS_REF], 'operation' => 'insert_into', 'property' => 'uses', 'php' => 'C\\D as E'],
+        ],
+        'contains' => [['a.php', 'C\\D as E']],
+    ],
+    [
+        'name' => 'uses on a closure binds a variable',
+        'files' => ['a.php' => "<?php\n\$f = function () use (\$a) {\n};\n"],
+        'edits' => [
+            ['target' => ['ref' => 'stmts[0].expr.expr'], 'operation' => 'insert_into', 'property' => 'uses', 'php' => '&$b'],
+        ],
+        'contains' => [['a.php', 'use ($a, &$b)']],
+    ],
+    [
+        'name' => 'vars on unset is an expression, on static it is a static variable',
+        'files' => ['a.php' => "<?php\nunset(\$a);\n"],
+        'edits' => [
+            ['target' => ['ref' => CLASS_REF], 'operation' => 'insert_into', 'property' => 'vars', 'php' => '$b'],
+        ],
+        'contains' => [['a.php', 'unset($a, $b)']],
+    ],
+    [
+        'name' => 'inserting into a single slot is refused with a usable message',
+        'files' => ['a.php' => "<?php\nfunction foo() {}\n"],
+        'edits' => [
+            ['target' => ['ref' => CLASS_REF], 'operation' => 'insert_into', 'property' => 'returnType', 'parseAs' => 'type', 'php' => 'int'],
+        ],
+        'error' => 'holds a single node, not a list',
         'unchanged' => ['a.php'],
     ],
 
@@ -406,6 +459,16 @@ $cases = [
         'unchanged' => ['a.php', 'b.php', 'c.php'],
     ],
     [
+        'name' => 'two spellings of one path are recognised as the same file',
+        'files' => ['a.php' => "<?php\nclass A {}\n"],
+        'document' => fn (array $p): array => ['files' => [
+            ['path' => $p['a.php'], 'edits' => [['target' => [ 'ref' => CLASS_NAME_REF], 'operation' => 'set_name', 'value' => 'B']]],
+            ['path' => $p['dir'].'/./a.php', 'edits' => [['target' => ['ref' => CLASS_REF], 'operation' => 'add_member', 'php' => 'public int $n = 1;']]],
+        ]],
+        'error' => 'are the same file',
+        'unchanged' => ['a.php'],
+    ],
+    [
         'name' => 'the same path may not appear twice in one transaction',
         'files' => ['a.php' => "<?php\nclass A {}\n"],
         'document' => fn (array $p): array => ['files' => [
@@ -444,6 +507,27 @@ $cases = [
         ],
         'error' => 'its own subtree',
         'unchanged' => ['a.php'],
+    ],
+
+    [
+        'name' => 'an unparseable phpVersion is refused by name',
+        'files' => ['a.php' => ONE_LINE_CLASS],
+        'document' => fn (array $p): array => ['files' => [[
+            'path' => $p['a.php'],
+            'phpVersion' => 'nope',
+            'edits' => [['target' => ['ref' => CLASS_NAME_REF], 'operation' => 'set_name', 'value' => 'Bar']],
+        ]]],
+        'error' => 'is not a PHP version',
+        'unchanged' => ['a.php'],
+    ],
+    [
+        'name' => 'an inspect excerpt stays valid UTF-8 when truncated mid-character',
+        'files' => ['a.php' => "<?php\n\$s = \"".str_repeat("\u{e4}", 200)."\";\n"],
+        'edits' => [
+            ['target' => ['ref' => 'stmts[0].expr.expr'], 'operation' => 'replace_expression', 'php' => "'short'"],
+        ],
+        'contains' => [['a.php', "'short'"]],
+        'inspect' => ['line' => 2, 'column' => 1],
     ],
 
     // ---- phpVersion handling ------------------------------------------------------------------
@@ -494,18 +578,29 @@ foreach ($cases as $case) {
         $originals[$name] = $source;
     }
 
-    $document = isset($case['document'])
-        ? ($case['document'])($paths)
-        : ['files' => [['path' => $paths['a.php'], 'edits' => $case['edits']]]];
+    $problems = [];
 
-    $error = null;
-    try {
-        (new Editor())->apply($document);
-    } catch (Throwable $throwable) {
-        $error = $throwable->getMessage();
+    // Inspect runs against the pristine files, before any transaction touches them.
+    if (isset($case['inspect'])) {
+        try {
+            $ancestry = (new Editor())->inspect($paths['a.php'], $case['inspect']);
+            json_encode($ancestry, JSON_THROW_ON_ERROR);
+        } catch (Throwable $throwable) {
+            $problems[] = 'inspect failed: '.$throwable->getMessage();
+        }
     }
 
-    $problems = [];
+    $error = null;
+    if (isset($case['document']) || isset($case['edits'])) {
+        $document = isset($case['document'])
+            ? ($case['document'])($paths)
+            : ['files' => [['path' => $paths['a.php'], 'edits' => $case['edits']]]];
+        try {
+            (new Editor())->apply($document);
+        } catch (Throwable $throwable) {
+            $error = $throwable->getMessage();
+        }
+    }
 
     if (isset($case['error'])) {
         if ($error === null) {

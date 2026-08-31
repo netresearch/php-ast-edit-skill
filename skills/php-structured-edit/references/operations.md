@@ -67,6 +67,8 @@ Every file is read, guarded, resolved, mutated, printed and re-parsed **before t
 
 The re-parse before the write is the universal net: an operation that would produce invalid PHP — an emptied slot that must not be empty, a snippet that does not fit its position — fails the whole transaction.
 
+Immediately before the first write, every file is compared against the snapshot it was resolved from. A file that changed, appeared or disappeared while the transaction was being prepared fails with `CONCURRENT_CHANGE` and nothing is written — otherwise the output, built from a version that no longer exists, would silently discard whoever else wrote.
+
 ## parseAs contexts
 
 A snippet is parsed inside a synthetic host construct, so the grammar always comes from `nikic/php-parser`. `php-ast-edit contexts` prints the live list.
@@ -91,7 +93,7 @@ A snippet is parsed inside a synthetic host construct, so the grammar always com
 | `static_var` | `function f() { static $<snippet>; }` | `StaticVar` |
 | `file` | the snippet itself | full statement list, `<?php` required |
 
-`parseAs` is inferred from the target node or the addressed property whenever it is unambiguous. Pass it explicitly otherwise; the error message names the known contexts.
+`parseAs` is inferred from the target node and the addressed property, so it rarely needs to be given. The inference is node-aware where a sub node name is shared: `stmts` is a member list on a class-like node and a statement list everywhere else, `uses` is a closure binding on a `Closure` and an imported name on a `use` statement, `vars` is a static variable on `static` and an expression on `unset`. Where a node still admits more than one shape — an enum body takes cases, methods and constants — the candidates are tried in order and the parser decides. Pass `parseAs` explicitly for anything the tool cannot name; the error message lists the known contexts.
 
 ## Primitives
 
@@ -99,7 +101,7 @@ A snippet is parsed inside a synthetic host construct, so the grammar always com
 | --- | --- | --- |
 | `replace_node` | `php`, optional `parseAs` | Replace the target node, whatever its class |
 | `delete_node` | — | Splice the node out of its list, or null its slot |
-| `insert_into` | `property`, `php`, optional `parseAs`, optional `position` | Insert into a child list of the target. **No sibling anchor needed** — this is what writes into empty classes, bodies, parameter lists and arrays |
+| `insert_into` | `property`, `php`, optional `parseAs`, optional `position` | Insert into a child list of the target. **No sibling anchor needed** — this is what writes into empty classes, bodies, parameter lists and arrays. A property that holds a single node rather than a list is refused by name; use `replace_child` there |
 | `replace_child` | `property`, optional `index`, `php`, optional `parseAs` | Replace a slot, or one list element |
 | `delete_child` | `property`, optional `index` | Remove a slot or one list element |
 | `move_node` | `into: {ref, property, position}` | Relocate an existing node inside the same file |
@@ -123,7 +125,7 @@ Shorthands over the primitives. They are ergonomics, not the coverage boundary.
 - `set_visibility` — `public`, `protected` or `private` in `value`.
 - `add_implements` / `set_extends` — class hierarchy. Require `php`.
 - `set_doc_comment` — set the docblock. `value` is plain text or a complete `/** … */` block; an existing docblock is replaced, not duplicated.
-- `remove_doc_comment` — drop the docblock.
+- `remove_doc_comment` — drop the docblock. Line and block comments on the same node are left alone.
 
 ## Limits
 

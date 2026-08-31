@@ -203,6 +203,23 @@ final class ContextParser
         throw $last ?? new EditException('No parse context was offered.');
     }
 
+    /**
+     * Parse a snippet in the first context that accepts it, requiring exactly one node.
+     *
+     * @param non-empty-list<string> $contexts
+     */
+    public function parseFirstOne(array $contexts, string $code): Node
+    {
+        $nodes = $this->parseFirst($contexts, $code);
+        if (count($nodes) !== 1) {
+            throw new EditException(sprintf(
+                'Snippet must produce exactly one node, got %d.',
+                count($nodes),
+            ));
+        }
+        return $nodes[0];
+    }
+
     /** Parse a snippet that must produce exactly one node. */
     public function parseOne(string $context, string $code): Node
     {

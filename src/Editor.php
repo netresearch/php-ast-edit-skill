@@ -90,10 +90,15 @@ final class Editor
                 throw new EditException('Each files entry must be an object.');
             }
             $transaction = $this->prepare($spec);
-            if (isset($seen[$transaction->path])) {
-                throw new EditException('Duplicate path in one transaction: '.$transaction->path);
+            $key = $this->canonicalPath($transaction->path);
+            if (isset($seen[$key])) {
+                throw new EditException(sprintf(
+                    'Duplicate path in one transaction: %s and %s are the same file.',
+                    $seen[$key],
+                    $transaction->path,
+                ));
             }
-            $seen[$transaction->path] = true;
+            $seen[$key] = $transaction->path;
             $transactions[] = $transaction;
         }
 
@@ -125,7 +130,7 @@ final class Editor
         if (!in_array($mode, ['edit', 'create', 'delete'], true)) {
             throw new EditException('mode must be edit, create or delete.');
         }
-        $phpVersion = isset($spec['phpVersion']) ? (string) $spec['phpVersion'] : null;
+        $phpVersion = isset($spec['phpVersion']) ? $this->assertPhpVersion((string) $spec['phpVersion']) : null;
 
         if ($mode === 'delete') {
             if (!is_file($path)) {
@@ -252,6 +257,16 @@ final class Editor
     /** @param list<FileTransaction> $transactions */
     private function commit(array $transactions): void
     {
+        // Phase 1 read the sources; everything since then happened in memory. If a file moved
+        // underneath us in the meantime, its resolved targets and its printed output both
+        // describe a version that no longer exists — writing now would discard whoever else
+        // wrote. The sha guard is only worth as much as this check.
+        foreach ($transactions as $transaction) {
+            if ($transaction->changed) {
+                $this->assertUnchangedOnDisk($transaction);
+            }
+        }
+
         /** @var list<array{path: string, previous: ?string}> $done */
         $done = [];
         try {
@@ -291,6 +306,35 @@ final class Editor
                 $message .= ' All files were rolled back.';
             }
             throw new EditException($message);
+        }
+    }
+
+    private function assertUnchangedOnDisk(FileTransaction $transaction): void
+    {
+        $exists = is_file($transaction->path);
+
+        if ($transaction->source === null) {
+            if ($exists) {
+                throw new EditException(sprintf(
+                    'CONCURRENT_CHANGE: %s appeared while the transaction was being prepared.',
+                    $transaction->path,
+                ));
+            }
+            return;
+        }
+
+        if (!$exists) {
+            throw new EditException(sprintf(
+                'CONCURRENT_CHANGE: %s disappeared while the transaction was being prepared.',
+                $transaction->path,
+            ));
+        }
+
+        if (!hash_equals(hash('sha256', $this->readFile($transaction->path)), (string) $transaction->beforeSha())) {
+            throw new EditException(sprintf(
+                'CONCURRENT_CHANGE: %s changed while the transaction was being prepared; nothing was written.',
+                $transaction->path,
+            ));
         }
     }
 
@@ -353,20 +397,25 @@ final class Editor
 
             case 'insert_into':
                 $property = $this->requiredString($edit, 'property');
-                $php = $this->requiredString($edit, 'php');
-                $nodes = !isset($edit['parseAs']) && $property === 'stmts' && $node instanceof Stmt\ClassLike
-                    ? $snippets->parseFirst($this->memberContexts($node), $php)
-                    : $snippets->parse($this->contextForProperty($edit, $property), $php);
-                $location->insertInto($property, $nodes, $this->position($edit));
+                $location->insertInto(
+                    $property,
+                    $snippets->parseFirst(
+                        $this->contextsForProperty($edit, $location, $property),
+                        $this->requiredString($edit, 'php'),
+                    ),
+                    $this->position($edit),
+                );
                 return true;
 
             case 'replace_child':
                 $property = $this->requiredString($edit, 'property');
-                $context = $this->contextForProperty($edit, $property);
                 $location->replaceChild(
                     $property,
                     $this->optionalIndex($edit),
-                    $snippets->parseOne($context, $this->requiredString($edit, 'php')),
+                    $snippets->parseFirstOne(
+                        $this->contextsForProperty($edit, $location, $property),
+                        $this->requiredString($edit, 'php'),
+                    ),
                 );
                 return true;
 
@@ -580,8 +629,19 @@ final class Editor
     private function setDocComment(Node $node, ?string $text): void
     {
         $attributes = $node->getAttributes();
+        $others = array_values(array_filter(
+            $node->getComments(),
+            static fn (\PhpParser\Comment $comment): bool => !$comment instanceof Doc,
+        ));
+
         if ($text === null) {
-            unset($attributes['comments']);
+            // Only the docblock goes; line and block comments on the same node are not ours
+            // to delete.
+            if ($others === []) {
+                unset($attributes['comments']);
+            } else {
+                $attributes['comments'] = $others;
+            }
             $node->setAttributes($attributes);
             return;
         }
@@ -595,12 +655,8 @@ final class Editor
             ))."\n */";
         }
 
-        $comments = array_values(array_filter(
-            $node->getComments(),
-            static fn (\PhpParser\Comment $comment): bool => !$comment instanceof Doc,
-        ));
-        $comments[] = new Doc($text);
-        $attributes['comments'] = $comments;
+        $others[] = new Doc($text);
+        $attributes['comments'] = $others;
         $node->setAttributes($attributes);
     }
 
@@ -639,19 +695,45 @@ final class Editor
         ));
     }
 
-    private function contextForProperty(array $edit, string $property): string
+    /**
+     * Which parse contexts may produce a child of `$property` on this node?
+     *
+     * Several sub node names are shared by nodes that hold entirely different children:
+     * `stmts` is a member list on a class but a statement list on a function, `uses` is a
+     * closure binding on a Closure but an imported name on a use statement, `vars` is a
+     * static variable on `static` but an expression on `unset`. Resolving the name alone
+     * would answer confidently and wrongly, so the node decides, and where the node still
+     * admits more than one shape the parser does.
+     *
+     * @return non-empty-list<string>
+     */
+    private function contextsForProperty(array $edit, NodeLocation $location, string $property): array
     {
         if (isset($edit['parseAs'])) {
-            return (string) $edit['parseAs'];
+            return [(string) $edit['parseAs']];
         }
+
+        $node = $location->node;
+
+        switch ($property) {
+            case 'stmts':
+                return $node instanceof Stmt\ClassLike ? $this->memberContexts($node) : ['stmt'];
+            case 'uses':
+                return $node instanceof Expr\Closure ? ['closure_use'] : ['use'];
+            case 'vars':
+                return $node instanceof Stmt\Static_ ? ['static_var'] : ['expr'];
+        }
+
         $context = self::PROPERTY_CONTEXTS[$property] ?? null;
         if ($context === null) {
             throw new EditException(sprintf(
-                'Cannot infer a parse context for property "%s"; pass "parseAs" explicitly.',
+                'Cannot infer a parse context for property "%s" of %s; pass "parseAs" explicitly.',
                 $property,
+                $node->getType(),
             ));
         }
-        return $context;
+
+        return [$context];
     }
 
     /**
@@ -666,19 +748,20 @@ final class Editor
         return $node instanceof Stmt\Enum_ ? ['enum_case', 'member'] : ['member', 'enum_case'];
     }
 
-    /** Property name → synthetic parse context. */
+    /**
+     * Property name → synthetic parse context, for the names that mean the same thing on
+     * every node that has them. The ambiguous ones — `stmts`, `uses`, `vars` — are resolved
+     * against the node in contextsForProperty() and deliberately absent here.
+     */
     private const PROPERTY_CONTEXTS = [
-        'stmts' => 'member',
         'params' => 'param',
         'args' => 'arg',
         'items' => 'array_item',
         'arms' => 'match_arm',
         'attrGroups' => 'attribute',
-        'uses' => 'closure_use',
         'catches' => 'catch',
         'consts' => 'const',
         'props' => 'property_item',
-        'vars' => 'static_var',
         'type' => 'type',
         'returnType' => 'type',
         'implements' => 'type',
@@ -897,10 +980,7 @@ final class Editor
         $node = $location->node;
         $start = $location->start();
         $end = $location->end();
-        $code = substr($source, $start, $end - $start + 1);
-        if (strlen($code) > 240) {
-            $code = substr($code, 0, 237).'...';
-        }
+        $code = $this->excerpt(substr($source, $start, $end - $start + 1));
         return array_filter([
             'type' => $node->getType(),
             'class' => $node::class,
@@ -918,6 +998,26 @@ final class Editor
         ], static fn (mixed $value): bool => $value !== null);
     }
 
+    /**
+     * A short, JSON-safe excerpt of the node's source.
+     *
+     * Cutting at a fixed byte count lands in the middle of a multi-byte character often
+     * enough to matter — and the CLI encodes its answer with JSON_THROW_ON_ERROR, so the
+     * broken sequence would take down `inspect` on any file with umlauts in the wrong place.
+     */
+    private function excerpt(string $code, int $limit = 240): string
+    {
+        if (strlen($code) > $limit) {
+            $code = substr($code, 0, $limit - 3);
+            // Drop a trailing incomplete UTF-8 sequence; a continuation byte is 10xxxxxx.
+            while ($code !== '' && !mb_check_encoding($code, 'UTF-8')) {
+                $code = substr($code, 0, -1);
+            }
+            $code .= '...';
+        }
+        return $code;
+    }
+
     /** @return array{0:string,1:Parser,2:list<Stmt>} */
     private function parseFile(string $path, ?string $phpVersion): array
     {
@@ -931,6 +1031,23 @@ final class Editor
             $roots = [];
         }
         return [$source, $parser, $roots];
+    }
+
+    /**
+     * Identity of a path, for the duplicate guard.
+     *
+     * Two spellings of one file must not become two transactions: both would resolve their
+     * targets against the same pristine source and the second write would silently discard
+     * the first one's edits.
+     */
+    private function canonicalPath(string $path): string
+    {
+        $real = realpath($path);
+        if ($real !== false) {
+            return $real;
+        }
+        $directory = realpath(dirname($path));
+        return ($directory === false ? dirname($path) : $directory).DIRECTORY_SEPARATOR.basename($path);
     }
 
     private function readFile(string $path): string
@@ -947,6 +1064,25 @@ final class Editor
         if (isset($spec['sha256']) && !hash_equals((string) $spec['sha256'], $actual)) {
             throw new EditException(sprintf('STALE_SOURCE: %s no longer matches expected sha256.', $path));
         }
+    }
+
+    private function assertPhpVersion(string $phpVersion): string
+    {
+        try {
+            PhpVersion::fromString($phpVersion);
+        } catch (\Throwable $failure) {
+            throw new EditException(sprintf(
+                'phpVersion "%s" is not a PHP version; use a "major.minor" string such as "8.4". Newest supported: %s.',
+                $phpVersion,
+                $this->versionLabel(PhpVersion::getNewestSupported()),
+            ));
+        }
+        return $phpVersion;
+    }
+
+    private function versionLabel(PhpVersion $version): string
+    {
+        return intdiv($version->id, 10000).'.'.(intdiv($version->id, 100) % 100);
     }
 
     private function parser(?string $phpVersion): Parser

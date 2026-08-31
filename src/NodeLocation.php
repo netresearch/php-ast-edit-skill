@@ -119,8 +119,7 @@ final class NodeLocation
         $this->assertProperty($property);
 
         if ($index === null) {
-            $current = $this->node->{$property};
-            if (is_array($current)) {
+            if ($this->isList($property)) {
                 throw new EditException(sprintf(
                     'Property "%s" holds a list; replace_child requires an index.',
                     $property,
@@ -144,7 +143,7 @@ final class NodeLocation
         $this->assertProperty($property);
 
         if ($index === null) {
-            if (is_array($this->node->{$property})) {
+            if ($this->isList($property)) {
                 throw new EditException(sprintf(
                     'Property "%s" holds a list; deleting from it requires an index.',
                     $property,
@@ -165,19 +164,27 @@ final class NodeLocation
     /** @return list<mixed> */
     public function childList(string $property): array
     {
-        $this->assertProperty($property);
+        $this->assertList($property);
         $items = $this->node->{$property};
-        if ($items === null) {
-            return [];
+        return is_array($items) ? array_values($items) : [];
+    }
+
+    /**
+     * A nullable single slot and an empty list both read as "nothing there", so the current
+     * value cannot tell them apart. php-parser declares its sub nodes as typed properties,
+     * so ask the declaration instead of guessing — otherwise assigning a list into a slot
+     * raises a TypeError from deep inside the printer rather than a usable message here.
+     */
+    private function assertList(string $property): void
+    {
+        if ($this->isList($property)) {
+            return;
         }
-        if (!is_array($items)) {
-            throw new EditException(sprintf(
-                'Property "%s" of %s is not an AST list.',
-                $property,
-                $this->node->getType(),
-            ));
-        }
-        return array_values($items);
+        throw new EditException(sprintf(
+            'Property "%s" of %s holds a single node, not a list. Use replace_child or delete_child.',
+            $property,
+            $this->node->getType(),
+        ));
     }
 
     /** @param int|'start'|'end' $position */
@@ -202,6 +209,16 @@ final class NodeLocation
             ));
         }
         return $position;
+    }
+
+    public function isList(string $property): bool
+    {
+        $this->assertProperty($property);
+        if (is_array($this->node->{$property})) {
+            return true;
+        }
+        $type = (new \ReflectionProperty($this->node, $property))->getType();
+        return $type instanceof \ReflectionNamedType && $type->getName() === 'array';
     }
 
     private function assertProperty(string $property): void
