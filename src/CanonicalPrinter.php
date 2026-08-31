@@ -1,6 +1,6 @@
 <?php
 
-declare (strict_types=1);
+declare(strict_types=1);
 
 namespace Netresearch\PhpAstEdit;
 
@@ -26,25 +26,32 @@ use PhpParser\PrettyPrinter\Standard;
 final class CanonicalPrinter extends Standard
 {
     public const DEFAULT_WIDTH = 80;
+
     private readonly int $width;
+
     public function __construct(?PhpVersion $phpVersion = null, int $width = self::DEFAULT_WIDTH)
     {
         parent::__construct($phpVersion === null ? [] : ['phpVersion' => $phpVersion]);
         $this->width = max(RepositoryConfig::MIN_WIDTH, $width);
     }
+
     public function width(): int
     {
         return $this->width;
     }
+
     /** @param (Node|null)[] $nodes */
     protected function pMaybeMultiline(array $nodes, bool $trailingComma = false): string
     {
         $single = $this->fitsOnOneLine($nodes);
+
         if ($single !== null) {
             return $single;
         }
+
         return $this->pCommaSeparatedMultiline($nodes, $trailingComma) . $this->nl;
     }
+
     /** @param Node\Param[] $params */
     protected function pParams(array $params): string
     {
@@ -54,11 +61,14 @@ final class CanonicalPrinter extends Standard
             return $this->pCommaSeparatedMultiline($params, $this->phpVersion->supportsTrailingCommaInParamList()) . $this->nl;
         }
         $single = $this->fitsOnOneLine($params);
+
         if ($single !== null) {
             return $single;
         }
+
         return $this->pCommaSeparatedMultiline($params, $this->phpVersion->supportsTrailingCommaInParamList()) . $this->nl;
     }
+
     /**
      * Standard keeps its own copy of this private, so the subclass carries one.
      *
@@ -71,8 +81,10 @@ final class CanonicalPrinter extends Standard
                 return true;
             }
         }
+
         return false;
     }
+
     /**
      * The single-line rendering, or null when the list has to be broken.
      *
@@ -91,9 +103,11 @@ final class CanonicalPrinter extends Standard
             return null;
         }
         $single = $this->pCommaSeparated($nodes);
+
         if (str_contains($single, "\n")) {
             return null;
         }
+
         return $this->indentLevel + strlen($single) <= $this->width ? $single : null;
     }
 }

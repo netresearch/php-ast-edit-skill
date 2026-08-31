@@ -1,6 +1,6 @@
 <?php
 
-declare (strict_types=1);
+declare(strict_types=1);
 
 namespace Netresearch\PhpAstEdit;
 
@@ -24,26 +24,31 @@ use PhpParser\PhpVersion;
 final class Formatter
 {
     public function __construct(private readonly ?string $phpVersion = null) {}
+
     /**
      * @param list<string> $paths files or directories
      * @param list<string> $exclude repository-relative paths to leave alone
      * @return array{scanned: int, changed: list<string>, failed: array<string, string>}
      */
-    public function format(array $paths, int $width, bool $dryRun, array $exclude = [], string $root = ''): array
+    public function format(array $paths, ?int $width, bool $dryRun, array $exclude = [], string $root = ''): array
     {
         $version = $this->phpVersion === null ? null : PhpVersion::fromString($this->phpVersion);
         $parser = $version === null ? (new ParserFactory())->createForHostVersion() : (new ParserFactory())->createForVersion($version);
-        $printer = new CanonicalPrinter($version, $width);
+        $printer = new CanonicalPrinter($version, $width ?? CanonicalPrinter::DEFAULT_WIDTH);
         $scanned = 0;
         $changed = [];
         $failed = [];
+
         foreach ($this->collect($paths, $exclude, $root) as $file) {
             ++$scanned;
             $source = file_get_contents($file);
+
             if ($source === false) {
                 $failed[$file] = 'cannot read';
+
                 continue;
             }
+
             try {
                 $roots = $parser->parse($source) ?? [];
                 $output = rtrim($printer->prettyPrintFile($roots), "\r\n") . "\n";
@@ -51,15 +56,19 @@ final class Formatter
                 $parser->parse($output);
             } catch (ParserError $error) {
                 $failed[$file] = $error->getRawMessage();
+
                 continue;
             }
+
             if ($output === $source) {
                 continue;
             }
             $changed[] = $file;
+
             if ($dryRun) {
                 continue;
             }
+
             try {
                 // Same discipline as a transaction: a crash mid-write must not truncate
                 // somebody's source file.
@@ -68,8 +77,10 @@ final class Formatter
                 $failed[$file] = $failure->getMessage();
             }
         }
+
         return ['scanned' => $scanned, 'changed' => $changed, 'failed' => $failed];
     }
+
     /**
      * @param list<string> $paths
      * @return list<string>
@@ -77,34 +88,42 @@ final class Formatter
     private function collect(array $paths, array $exclude = [], string $root = ''): array
     {
         $excluded = [];
+
         foreach ($exclude as $entry) {
             $absolute = $root === '' ? $entry : rtrim($root, '/') . '/' . ltrim($entry, '/');
             $real = realpath($absolute);
+
             if ($real !== false) {
                 $excluded[] = $real;
             }
         }
         $files = [];
+
         foreach ($paths as $path) {
             if (is_file($path)) {
                 if (!$this->isExcluded(realpath($path) ?: $path, $excluded)) {
                     $files[] = $path;
                 }
+
                 continue;
             }
+
             if (!is_dir($path)) {
                 throw new EditException('No such file or directory: ' . $path);
             }
             $iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($path, \FilesystemIterator::SKIP_DOTS));
+
             foreach ($iterator as $entry) {
                 if (!$entry->isFile() || $entry->getExtension() !== 'php') {
                     continue;
                 }
                 $real = $entry->getPathname();
+
                 // Nobody's dependencies are ours to reformat.
                 if (preg_match('#(^|/)(vendor|node_modules|\.Build|\.git)/#', $real) === 1) {
                     continue;
                 }
+
                 // Compared resolved: a scan started from `.` yields ./a/b.php, while the
                 // exclusions were resolved from the repository root, and the two strings
                 // never match.
@@ -115,8 +134,10 @@ final class Formatter
             }
         }
         sort($files);
+
         return array_values(array_unique($files));
     }
+
     /**
      * A fixture is input data, not source. Normalising it would mean the suite only ever
      * sees code this printer already agrees with, which is the opposite of what a fixture
@@ -131,6 +152,7 @@ final class Formatter
                 return true;
             }
         }
+
         return false;
     }
 }

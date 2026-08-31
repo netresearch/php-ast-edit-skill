@@ -1,6 +1,7 @@
 <?php
 
-declare (strict_types=1);
+declare(strict_types=1);
+
 /**
  * The promise is that only the AST writes PHP. That is worth exactly as much as the
  * print-and-reparse round trip is faithful, and a hand-picked fixture cannot show it: the
@@ -13,6 +14,7 @@ declare (strict_types=1);
  */
 $root = dirname(__DIR__);
 $autoload = $root . '/vendor/autoload.php';
+
 if (!is_file($autoload)) {
     fwrite(STDERR, "SKIP: vendor/autoload.php missing; the corpus check needs the parser.\n");
     exit(0);
@@ -27,17 +29,20 @@ use PhpParser\NodeVisitorAbstract;
 use PhpParser\ParserFactory;
 
 $corpus = $root . '/vendor/nikic/php-parser/lib';
+
 if (!is_dir($corpus)) {
     fwrite(STDERR, "SKIP: corpus directory missing.\n");
     exit(0);
 }
 $files = [];
+
 foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator($corpus, FilesystemIterator::SKIP_DOTS)) as $file) {
     if ($file->isFile() && $file->getExtension() === 'php') {
         $files[] = $file->getPathname();
     }
 }
 sort($files);
+
 if ($files === []) {
     fwrite(STDERR, "SKIP: corpus is empty.\n");
     exit(0);
@@ -50,10 +55,12 @@ $traverser->addVisitor(
         public function enterNode(Node $node): ?Node
         {
             $node->setAttributes([]);
+
             return null;
         }
     },
 );
+
 /**
  * Comments php-parser's printer is known to drop, with the mechanism that drops them.
  *
@@ -67,6 +74,7 @@ $traverser->addVisitor(
  * if php-parser ever fixes it the entry stops matching and says so.
  */
 const KNOWN_COMMENT_LOSSES = ['// TODO Handle non-space indentation', '// Everything else is case-insensitive'];
+
 /**
  * Every comment in a tree, sorted, so two trees can be compared as sets.
  *
@@ -76,6 +84,7 @@ const KNOWN_COMMENT_LOSSES = ['// TODO Handle non-space indentation', '// Everyt
 function commentTexts(array $ast): array
 {
     $texts = [];
+
     foreach ((new PhpParser\NodeFinder())->find($ast, static fn (): bool => true) as $node) {
         foreach ($node->getComments() as $comment) {
             // Compared by content, not by layout. php-parser re-indents a docblock when it
@@ -88,6 +97,7 @@ function commentTexts(array $ast): array
         }
     }
     sort($texts);
+
     return $texts;
 }
 $problems = [];
@@ -96,6 +106,7 @@ $editor = new Editor();
 $work = sys_get_temp_dir() . '/php-ast-edit-corpus-' . bin2hex(random_bytes(6));
 mkdir($work, 0700, true);
 $scratch = $work . '/f.php';
+
 foreach ($files as $source) {
     // Print from the AST as the Editor does — the canonical printer, attributes intact so
     // comments and literal kinds survive — and strip only for the comparison. The printer
@@ -106,6 +117,7 @@ foreach ($files as $source) {
     $commentsBefore = commentTexts($original);
     $before = $traverser->traverse($original);
     $after = $traverser->traverse($parser->parse($printed));
+
     if (print_r($before, true) !== print_r($after, true)) {
         $problems[] = 'round trip changed the AST of ' . basename($source);
     }
@@ -116,11 +128,13 @@ foreach ($files as $source) {
     // attachment moves in 206 files and not one comment goes missing.
     $lost = array_values(array_diff($commentsBefore, commentTexts($parser->parse($printed))));
     $unexpected = array_values(array_diff($lost, KNOWN_COMMENT_LOSSES));
+
     if ($unexpected !== []) {
         $problems[] = 'round trip lost a comment in ' . basename($source) . ': ' . implode(' | ', $unexpected);
     }
     copy($source, $scratch);
     $length = max(1, (int) filesize($scratch));
+
     for ($step = 1; $step <= 8; ++$step) {
         try {
             $editor->inspect($scratch, ['offset' => intdiv($length * $step, 9)]);
@@ -140,6 +154,7 @@ foreach ($files as $source) {
 }
 @unlink($scratch);
 @rmdir($work);
+
 if ($problems !== []) {
     fwrite(
         STDERR,

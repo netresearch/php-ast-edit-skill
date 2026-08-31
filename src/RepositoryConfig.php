@@ -1,6 +1,6 @@
 <?php
 
-declare (strict_types=1);
+declare(strict_types=1);
 
 namespace Netresearch\PhpAstEdit;
 
@@ -21,55 +21,73 @@ use Netresearch\PhpAstEdit\Exception\EditException;
 final class RepositoryConfig
 {
     public const FILE = '.php-ast-edit.json';
+
     public const MIN_WIDTH = 20;
-    /** @param list<string> $exclude repository-relative paths normalisation must not touch */
+
+    /**
+     * @param list<string> $exclude repository-relative paths normalisation must not touch
+     * @param ?int $width the width the last normalisation ran at — a record, not the source.
+     *                    The source is the project's own `.editorconfig`; this exists so drift
+     *                    between the two can be reported.
+     */
     private function __construct(
         public readonly bool $canonical,
         public readonly int $width,
         public readonly ?string $path,
         public readonly array $exclude = [],
     ) {}
+
     /** Walk up from a file or directory until the marker turns up. */
     public static function discover(string $start): self
     {
         $directory = is_dir($start) ? $start : dirname($start);
         $directory = realpath($directory) ?: $directory;
+
         while (true) {
             $candidate = $directory . DIRECTORY_SEPARATOR . self::FILE;
+
             if (is_file($candidate)) {
                 return self::fromFile($candidate);
             }
             $parent = dirname($directory);
+
             if ($parent === $directory) {
                 return new self(false, CanonicalPrinter::DEFAULT_WIDTH, null);
             }
             $directory = $parent;
         }
     }
+
     public static function fromFile(string $path): self
     {
         $raw = file_get_contents($path);
+
         if ($raw === false) {
             throw new EditException('Cannot read ' . $path);
         }
+
         try {
             $data = json_decode($raw, true, 32, JSON_THROW_ON_ERROR);
         } catch (\JsonException $failure) {
             throw new EditException(sprintf('%s is not valid JSON: %s', $path, $failure->getMessage()));
         }
+
         if (!is_array($data)) {
             throw new EditException($path . ' must contain a JSON object.');
         }
         $width = $data['printWidth'] ?? CanonicalPrinter::DEFAULT_WIDTH;
+
         if (!is_int($width)) {
             throw new EditException($path . ': printWidth must be an integer.');
         }
         self::assertWidth($width, $path . ': ');
         $exclude = $data['exclude'] ?? [];
+
         if (!is_array($exclude)) {
             throw new EditException($path . ': exclude must be an array of paths.');
         }
         self::assertExclusions($exclude, $path . ': ');
+
         return new self(
             (bool) ($data['canonical'] ?? false),
             $width,
@@ -77,6 +95,7 @@ final class RepositoryConfig
             array_values(array_map(strval(...), $exclude)),
         );
     }
+
     /**
      * The repository root: where composer.json or .git lives.
      *
@@ -89,6 +108,7 @@ final class RepositoryConfig
         $directory = is_dir($start) ? $start : dirname($start);
         $directory = realpath($directory) ?: $directory;
         $fallback = $directory;
+
         while (true) {
             foreach (['composer.json', '.git'] as $marker) {
                 if (file_exists($directory . DIRECTORY_SEPARATOR . $marker)) {
@@ -96,18 +116,41 @@ final class RepositoryConfig
                 }
             }
             $parent = dirname($directory);
+
             if ($parent === $directory) {
                 return $fallback;
             }
             $directory = $parent;
         }
     }
+
     /**
      * The one place that decides what a usable width is.
      *
      * Writing a width the read path would reject leaves a repository that declares itself
      * canonical and then fails every command until somebody edits the file by hand.
      */
+    /**
+     * The width the printer must use for this repository, and where it came from.
+     *
+     * The project declares it in `.editorconfig`, which no single formatter owns. This
+     * package does not carry a default: a repository that declares nothing does not get
+     * canonical printing, it gets the fallback and a reason.
+     *
+     * @return array{width: ?int, source: ?string, recorded: ?int}
+     */
+    public static function widthFor(string $start): array
+    {
+        $declared = EditorConfig::discover($start);
+        $recorded = self::discover($start)->width;
+
+        return [
+            'width' => $declared->maxLineLength,
+            'source' => $declared->maxLineLength === null ? null : $declared->path,
+            'recorded' => $recorded,
+        ];
+    }
+
     public static function assertWidth(int $width, string $prefix = ''): void
     {
         if ($width < self::MIN_WIDTH) {
@@ -121,6 +164,7 @@ final class RepositoryConfig
             );
         }
     }
+
     /** @param list<string> $exclude */
     /**
      * An exclusion must name something.
@@ -145,6 +189,7 @@ final class RepositoryConfig
             }
         }
     }
+
     public static function write(string $directory, int $width, array $exclude = []): string
     {
         self::assertWidth($width);
@@ -157,9 +202,11 @@ final class RepositoryConfig
             ),
             JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR,
         ) . "\n";
+
         if (file_put_contents($path, $payload) === false) {
             throw new EditException('Cannot write ' . $path);
         }
+
         return $path;
     }
 }

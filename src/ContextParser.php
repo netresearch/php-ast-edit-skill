@@ -1,6 +1,6 @@
 <?php
 
-declare (strict_types=1);
+declare(strict_types=1);
 
 namespace Netresearch\PhpAstEdit;
 
@@ -27,6 +27,7 @@ final class ContextParser
      * @var array<string, array{host: class-string<Stmt>, template: string, extract: callable(array<Stmt>): list<Node>}>
      */
     private array $contexts;
+
     public function __construct(private readonly Parser $parser)
     {
         $this->contexts = [
@@ -37,6 +38,7 @@ final class ContextParser
                     if (count($stmts) !== 1 || !$stmts[0] instanceof Stmt\Expression) {
                         throw new EditException('Snippet must parse as exactly one PHP expression.');
                     }
+
                     return [$stmts[0]->expr];
                 },
             ],
@@ -70,9 +72,11 @@ final class ContextParser
                 'template' => '<?php function __astContext(): %s {}',
                 'extract' => static function (array $stmts): array {
                     $type = $stmts[0]->returnType;
+
                     if ($type === null) {
                         throw new EditException('Snippet did not produce a type node.');
                     }
+
                     return [$type];
                 },
             ],
@@ -125,11 +129,13 @@ final class ContextParser
             ],
         ];
     }
+
     /** @return list<string> */
     public function contexts(): array
     {
         return array_keys($this->contexts);
     }
+
     /**
      * Parse a snippet inside the named synthetic context.
      *
@@ -140,9 +146,11 @@ final class ContextParser
         if ($context === 'stmts') {
             $context = 'stmt';
         }
+
         if ($context === 'file') {
             return $this->file($code);
         }
+
         if (!isset($this->contexts[$context])) {
             throw new EditException(
                 sprintf(
@@ -153,14 +161,17 @@ final class ContextParser
             );
         }
         $code = trim($code);
+
         if ($code === '') {
             throw new EditException('Snippet must not be empty.');
         }
+
         if ($context === 'expr') {
             $code = rtrim($code, "; \t\n\r\x00\v");
         }
         $spec = $this->contexts[$context];
         $source = sprintf($spec['template'], $code);
+
         try {
             $stmts = $this->parser->parse($source);
         } catch (ParserError $error) {
@@ -168,6 +179,7 @@ final class ContextParser
                 sprintf('Snippet is not valid in the "%s" context: %s', $context, $error->getRawMessage()),
             );
         }
+
         if ($stmts === null || $stmts === []) {
             throw new EditException(sprintf('Snippet produced no AST nodes in the "%s" context.', $context));
         }
@@ -176,6 +188,7 @@ final class ContextParser
         // Check what actually came back before reaching into it, or the mismatch surfaces as
         // an undefined-property warning and a TypeError from inside a closure.
         $host = $spec['host'];
+
         if (!$stmts[0] instanceof $host) {
             throw new EditException(
                 sprintf(
@@ -186,12 +199,14 @@ final class ContextParser
                 ),
             );
         }
+
         // A snippet that closes the PHP context would smuggle literal output into the tree.
         // Checking for the resulting InlineHTML node rather than for an open-tag substring
         // keeps an open tag inside a string literal perfectly legal.
         if ((new NodeFinder())->findFirstInstanceOf($stmts, Stmt\InlineHTML::class) !== null) {
             throw new EditException('Snippet must not leave the PHP context.');
         }
+
         if (count($stmts) !== 1) {
             throw new EditException(
                 sprintf(
@@ -203,11 +218,14 @@ final class ContextParser
         }
         $nodes = $spec['extract']($stmts);
         $nodes = array_values(array_filter($nodes, static fn (mixed $node): bool => $node instanceof Node));
+
         if ($nodes === []) {
             throw new EditException(sprintf('Snippet produced no AST nodes in the "%s" context.', $context));
         }
+
         return $nodes;
     }
+
     /**
      * Parse a snippet in the first context that accepts it.
      *
@@ -217,6 +235,7 @@ final class ContextParser
     public function parseFirst(array $contexts, string $code): array
     {
         $last = null;
+
         foreach ($contexts as $context) {
             try {
                 return $this->parse($context, $code);
@@ -224,8 +243,10 @@ final class ContextParser
                 $last ??= $exception;
             }
         }
+
         throw $last ?? new EditException('No parse context was offered.');
     }
+
     /**
      * Parse a snippet in the first context that accepts it, requiring exactly one node.
      *
@@ -234,20 +255,26 @@ final class ContextParser
     public function parseFirstOne(array $contexts, string $code): Node
     {
         $nodes = $this->parseFirst($contexts, $code);
+
         if (count($nodes) !== 1) {
             throw new EditException(sprintf('Snippet must produce exactly one node, got %d.', count($nodes)));
         }
+
         return $nodes[0];
     }
+
     /** Parse a snippet that must produce exactly one node. */
     public function parseOne(string $context, string $code): Node
     {
         $nodes = $this->parse($context, $code);
+
         if (count($nodes) !== 1) {
             throw new EditException(sprintf('Snippet must produce exactly one %s node, got %d.', $context, count($nodes)));
         }
+
         return $nodes[0];
     }
+
     /**
      * Parse a complete PHP file, open tag included.
      *
@@ -256,23 +283,28 @@ final class ContextParser
     public function file(string $code): array
     {
         $code = trim($code);
+
         if ($code === '') {
             throw new EditException('File source must not be empty.');
         }
+
         if (!str_starts_with($code, '<?php')) {
             // Prepending it silently would shift every byte offset in the same document's
             // edits by the length of the tag, and the caller would never learn why a
             // line/column target missed.
             throw new EditException('File source must start with the <?php open tag.');
         }
+
         try {
             $stmts = $this->parser->parse($code);
         } catch (ParserError $error) {
             throw new EditException('File source is not valid PHP: ' . $error->getRawMessage());
         }
+
         if ($stmts === null) {
             throw new EditException('File source produced no AST.');
         }
+
         return $stmts;
     }
 }

@@ -67,24 +67,32 @@ expect "apply --input writes the change" "1" "$(grep -c 'class Bar' "$WORK/a.php
 expect "doctor reports a bare workspace as warn" "warn" \
   "$(cd "$WORK" && $BIN doctor | php -r 'echo json_decode(stream_get_contents(STDIN), true)["status"];')"
 
-# normalize declares the repository and format is then idempotent
+# The width is the project's declaration, so the workspace has to make it before normalize
+# will declare anything — the same thing the tool asks of a real repository.
 printf '{}\n' > "$WORK/composer.json"
-$BIN normalize --path "$WORK" --width 80 > "$WORK/norm.json"
+$BIN normalize --path "$WORK" > "$WORK/nodecl.json"
+# `?? ` reads an explicit null as absent, which is exactly the value under test.
+expect "normalize refuses without a declared width" "null" \
+  "$(php -r '$d = json_decode(file_get_contents($argv[1]), true); echo array_key_exists("declared", $d) && $d["declared"] === null ? "null" : "set";' "$WORK/nodecl.json")"
+
+set +e
+$BIN normalize --path "$WORK" --width 80 > /dev/null 2>&1
+code=$?
+set -e
+expect "--width is refused, the project declares it" "2" "$code"
+
+printf 'root = true\n\n[*]\nmax_line_length = 80\n' > "$WORK/.editorconfig"
+$BIN normalize --path "$WORK" > "$WORK/norm.json"
 expect "normalize declares the repository" "1" \
   "$(test -f "$WORK/.php-ast-edit.json" && echo 1 || echo 0)"
-expect "normalize records the width it used" "80" \
-  "$(php -r 'echo json_decode(file_get_contents($argv[1]), true)["printWidth"];' "$WORK/.php-ast-edit.json")"
+expect "the width comes from .editorconfig" "80" \
+  "$(php -r 'echo json_decode(file_get_contents($argv[1]), true)["printWidth"];' "$WORK/norm.json")"
 expect "format is idempotent afterwards" "0" \
   "$($BIN format --path "$WORK" | php -r 'echo count(json_decode(stream_get_contents(STDIN), true)["changed"]);')"
 expect "an edit on a declared repository prints canonically" "canonical" \
   "$(printf '{"files":[{"path":"%s","edits":[{"target":{"ref":"stmts[0].name"},"operation":"set_name","value":"Baz"}]}]}' "$WORK/a.php" \
     | $BIN apply --dry-run | php -r 'echo json_decode(stream_get_contents(STDIN), true)["files"][0]["printer"];')"
 
-set +e
-$BIN format --path "$WORK" --width 100 > /dev/null 2>&1
-code=$?
-set -e
-expect "format refuses a width of its own" "2" "$code"
 
 # failures are JSON on stderr with a non-zero exit
 set +e

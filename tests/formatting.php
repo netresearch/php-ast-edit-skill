@@ -1,12 +1,14 @@
 <?php
 
-declare (strict_types=1);
+declare(strict_types=1);
+
 /**
  * The formatting contract: canonical by declaration, format-preserving as the announced
  * fallback, and a printer whose output a human can read.
  */
 $root = dirname(__DIR__);
 $autoload = $root . '/vendor/autoload.php';
+
 if (!is_file($autoload)) {
     fwrite(STDERR, "SKIP: vendor/autoload.php missing; run composer install.\n");
     exit(0);
@@ -15,6 +17,7 @@ require_once $autoload;
 use Netresearch\PhpAstEdit\CanonicalPrinter;
 use Netresearch\PhpAstEdit\Doctor;
 use Netresearch\PhpAstEdit\Editor;
+use Netresearch\PhpAstEdit\EditorConfig;
 use Netresearch\PhpAstEdit\Formatter;
 use Netresearch\PhpAstEdit\RepositoryConfig;
 use PhpParser\ParserFactory;
@@ -24,8 +27,10 @@ $passed = 0;
 function check(string $name, bool $condition, string $detail = ''): void
 {
     global $problems, $passed;
+
     if ($condition) {
         ++$passed;
+
         return;
     }
     $problems[] = $name . ($detail === '' ? '' : ': ' . $detail);
@@ -36,6 +41,10 @@ function workspace(): string
     mkdir($dir, 0700, true);
     // A repository root, so the marker lands where RepositoryConfig looks for it.
     file_put_contents($dir . '/composer.json', "{}\n");
+    // The width is the project's declaration, so a workspace that wants canonical printing
+    // has to make it — the same thing the tool asks of a real repository.
+    file_put_contents($dir . '/.editorconfig', "root = true\n\n[*]\nmax_line_length = 80\n");
+
     return $dir;
 }
 function removeTree(string $directory): void
@@ -56,6 +65,7 @@ check('breaking puts one argument per line', str_contains($narrow, "'aaaaaaaaaaa
 $params = "<?php\nfunction f(string \$aaaaaaaaaaaaaaaaaaaa, string \$bbbbbbbbbbbbbbbbbbbb, string \$cccccccccccccccccccc) {}\n";
 $narrowParams = (new CanonicalPrinter(null, 40))->prettyPrintFile($parser->parse($params));
 check('a parameter list over budget is broken', substr_count($narrowParams, "\n") > 4, trim($narrowParams));
+
 // The width must actually be the lever, and printing must be a fixed point of itself.
 foreach ([40, 80, 200] as $width) {
     $printer = new CanonicalPrinter(null, $width);
@@ -99,7 +109,20 @@ check(
 RepositoryConfig::write($dir, 80);
 $result = $editor->apply($document($dir . '/a.php'), true)['files'][0];
 check('a declared repository prints canonically', $result['printer'] === 'canonical', $result['printer']);
-check('and carries no warning', !isset($result['warning']));
+check('and carries no warning', !isset($result['warning']), $result['warning'] ?? '');
+// A repository declared canonical before the width moved into .editorconfig still prints —
+// by the width its normalisation recorded — and is told what to add.
+unlink($dir . '/.editorconfig');
+$migrating = $editor->apply($document($dir . '/a.php'), true)['files'][0];
+check(
+    'a repository without a declared width still prints canonically',
+    $migrating['printer'] === 'canonical',
+);
+check(
+    'and is told the width belongs in .editorconfig',
+    str_contains($migrating['warning'] ?? '', 'NO_DECLARED_WIDTH'),
+);
+file_put_contents($dir . '/.editorconfig', "root = true\n\n[*]\nmax_line_length = 80\n");
 $forced = $editor->apply(
     [
         'files' => [
@@ -119,6 +142,7 @@ $forced = $editor->apply(
     true,
 )['files'][0];
 check('an explicit printer overrides the declaration', $forced['printer'] === 'format-preserving');
+
 try {
     $editor->apply(
         [
@@ -190,6 +214,7 @@ $cases = [
         2,
     ],
 ];
+
 foreach ($cases as $label => [$source, $edit, $budget]) {
     $dir = workspace();
     file_put_contents($dir . '/a.php', $source);
@@ -229,6 +254,7 @@ check('the marker names its own path', $config->path === $path);
 check('the root is where composer.json is', RepositoryConfig::rootFor($dir . '/a.php') === realpath($dir));
 // A broken declaration must be named, not ignored.
 file_put_contents($dir . '/' . RepositoryConfig::FILE, "{ not json\n");
+
 try {
     RepositoryConfig::discover($dir);
     check('invalid declaration JSON is refused', false, 'accepted');
@@ -246,9 +272,10 @@ $app = static function (array $argv) use ($dir): array {
         escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg(dirname(__DIR__) . '/bin/php-ast-edit') . ' ' . implode(' ', array_map('escapeshellarg', $argv)) . ' 2>/dev/null',
         $out,
     );
+
     return json_decode(implode("\n", $out), true) ?? [];
 };
-$partial = $app(['normalize', '--path', $dir . '/sub', '--width', '80']);
+$partial = $app(['normalize', '--path', $dir . '/sub']);
 // `?? ` treats an explicit null as absent, which is exactly the value under test here.
 check(
     'a partial normalize does not declare the repository',
@@ -257,12 +284,13 @@ check(
 );
 check('and says why', str_contains($partial['next'] ?? '', 'whole'));
 check('no marker was written', !is_file($dir . '/' . RepositoryConfig::FILE));
-$whole = $app(['normalize', '--path', $dir, '--width', '80']);
+$whole = $app(['normalize', '--path', $dir]);
 check('a full normalize declares the repository', is_string($whole['declared'] ?? null));
 removeTree($dir);
 // A width the read path would reject must never be written.
 $dir = workspace();
 file_put_contents($dir . '/a.php', "<?php\nclass Foo {}\n");
+
 try {
     RepositoryConfig::write($dir, 10);
     check('a width below the minimum is refused', false, 'accepted');
@@ -309,6 +337,54 @@ check(
 );
 removeTree($dir . '/real');
 removeTree($dir);
+// ---- the width is the project's declaration, read from .editorconfig ---------------------
+$dir = workspace();
+check('a width under [*] is read', EditorConfig::discover($dir)->maxLineLength === 80);
+file_put_contents(
+    $dir . '/.editorconfig',
+    "root = true\n\n[*]\nmax_line_length = 80\n\n[*.php]\nmax_line_length = 120\n",
+);
+check('a php-specific section outranks the catch-all', EditorConfig::discover($dir)->maxLineLength === 120);
+file_put_contents(
+    $dir . '/.editorconfig',
+    "root = true\n\n[*.php]\nmax_line_length = 120\n\n[*]\nmax_line_length = 80\n",
+);
+check('and does so whatever the order', EditorConfig::discover($dir)->maxLineLength === 120);
+file_put_contents($dir . '/.editorconfig', "root = true\n\n[*]\nmax_line_length = off\n");
+check('"off" is not a width', EditorConfig::discover($dir)->maxLineLength === null);
+file_put_contents($dir . '/.editorconfig', "root = true\n\n[*.md]\nmax_line_length = 80\n");
+check('a section for other files is ignored', EditorConfig::discover($dir)->maxLineLength === null);
+file_put_contents($dir . '/.editorconfig', "root = true\n\n[*]\nindent_size = 4\n");
+check('a config without the key declares nothing', EditorConfig::discover($dir)->maxLineLength === null);
+// The nearest file wins, and root = true stops the walk.
+mkdir($dir . '/nested', 0700, true);
+file_put_contents($dir . '/nested/.editorconfig', "[*]\nmax_line_length = 60\n");
+check('the nearest declaration wins', EditorConfig::discover($dir . '/nested')->maxLineLength === 60);
+file_put_contents($dir . '/.editorconfig', "root = true\n\n[*]\nmax_line_length = 80\n");
+unlink($dir . '/nested/.editorconfig');
+check(
+    'a nested directory inherits upwards',
+    EditorConfig::discover($dir . '/nested')->maxLineLength === 80,
+);
+removeTree($dir);
+// normalize refuses to declare a repository canonical when the project states no width.
+$dir = sys_get_temp_dir() . '/php-ast-edit-nowidth-' . bin2hex(random_bytes(6));
+mkdir($dir, 0700, true);
+file_put_contents($dir . '/composer.json', "{}\n");
+file_put_contents($dir . '/a.php', "<?php\nclass  Foo{}\n");
+$out = [];
+exec(
+    escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg(dirname(__DIR__) . '/bin/php-ast-edit') . ' normalize --path ' . escapeshellarg($dir) . ' 2>/dev/null',
+    $out,
+);
+$report = json_decode(implode("\n", $out), true) ?? [];
+check(
+    'no declared width, no declaration',
+    array_key_exists('declared', $report) && $report['declared'] === null,
+);
+check('and the reason names .editorconfig', str_contains($report['next'] ?? '', 'max_line_length'));
+check('the marker was not written', !is_file($dir . '/' . RepositoryConfig::FILE));
+removeTree($dir);
 // ---- exclusions: a fixture is input data, not source ------------------------------------
 $dir = workspace();
 mkdir($dir . '/fixtures', 0700, true);
@@ -336,6 +412,7 @@ check(
 RepositoryConfig::write($dir, 80, ['fixtures']);
 check('the exclusions are recorded', RepositoryConfig::discover($dir)->exclude === ['fixtures']);
 removeTree($dir);
+
 // An exclusion that names nothing excludes everything, and the formatting gate would then
 // pass without having looked at a single file.
 foreach ([[''], ['   '], ['.'], ['./']] as $blank) {
@@ -353,6 +430,7 @@ check(
     'a real path is still accepted',
     (static function (): bool {
         RepositoryConfig::assertExclusions(['tests/fixtures']);
+
         return true;
     })(),
 );
@@ -365,7 +443,11 @@ check(
     str_contains(implode(' ', $report['findings']), 'No formatter configuration'),
 );
 mkdir($dir . '/.github/workflows', 0700, true);
-file_put_contents($dir . '/.php-cs-fixer.php', "<?php\n");
+// A configuration that actually carries the restoring rules — doctor reads it as text.
+file_put_contents(
+    $dir . '/.php-cs-fixer.php',
+    "<?php\nreturn ['class_attributes_separation' => true, " . "'blank_line_before_statement' => true, 'blank_line_after_opening_tag' => true, " . "'declare_parentheses' => true];\n",
+);
 file_put_contents($dir . '/.github/workflows/ci.yml', "run: php-cs-fixer fix --dry-run\n");
 RepositoryConfig::write($dir, 80);
 $report = (new Doctor())->examine($dir);
@@ -376,6 +458,7 @@ check(
 );
 check('and the formatter is identified', ($report['formatters'][0]['tool'] ?? '') === 'php-cs-fixer');
 removeTree($dir);
+
 if ($problems !== []) {
     fwrite(
         STDERR,

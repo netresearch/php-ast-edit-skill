@@ -1,6 +1,6 @@
 <?php
 
-declare (strict_types=1);
+declare(strict_types=1);
 
 namespace Netresearch\PhpAstEdit;
 
@@ -16,6 +16,7 @@ final class Application
         try {
             $command = $argv[1] ?? 'help';
             $options = $this->options(array_slice($argv, 2));
+
             return match ($command) {
                 'inspect' => $this->inspect($options),
                 'apply' => $this->apply($options),
@@ -35,6 +36,7 @@ final class Application
                     JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE,
                 ) . "\n",
             );
+
             return 2;
         } catch (\Throwable $exception) {
             fwrite(
@@ -44,9 +46,11 @@ final class Application
                     JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE,
                 ) . "\n",
             );
+
             return 3;
         }
     }
+
     private function inspect(array $options): int
     {
         $file = $this->requiredOption($options, 'file');
@@ -54,49 +58,59 @@ final class Application
         $editor = new Editor();
         $result = $editor->inspect($file, $target, $options['php-version'] ?? null);
         $this->json($result);
+
         return 0;
     }
+
     private function validate(array $options): int
     {
         $file = $this->requiredOption($options, 'file');
         $editor = new Editor();
         $this->json($editor->validate($file, $options['php-version'] ?? null));
+
         return 0;
     }
+
     private function apply(array $options): int
     {
         $input = $options['input'] ?? '-';
+
         if (!is_string($input)) {
             throw new EditException('--input requires a path or -.');
         }
         $json = $input === '-' ? stream_get_contents(STDIN) : file_get_contents($input);
+
         if ($json === false || trim($json) === '') {
             throw new EditException('No apply JSON received.');
         }
         $document = json_decode($json, true, 512, JSON_THROW_ON_ERROR);
+
         if (!is_array($document)) {
             throw new EditException('Apply input must decode to a JSON object.');
         }
         $editor = new Editor();
         $this->json($editor->apply($document, isset($options['dry-run'])));
+
         return 0;
     }
+
     private function format(array $options, bool $normalize): int
     {
         $paths = isset($options['path']) ? [(string) $options['path']] : ['.'];
         $root = RepositoryConfig::rootFor($paths[0]);
         $config = RepositoryConfig::discover($root);
-        $width = $config->width;
+        // The width is the project's to declare, not this tool's to carry. `.editorconfig` is
+        // where a project states it without handing the decision to one formatter.
+        $declared = RepositoryConfig::widthFor($root);
+        $width = $declared['width'] ?? $declared['recorded'];
+
         if (isset($options['width'])) {
-            RepositoryConfig::assertWidth($this->integerOption($options, 'width'));
-            if (!$normalize) {
-                throw new EditException(
-                    '--width belongs to normalize, which records it in ' . RepositoryConfig::FILE . '. ' . 'Formatting at a different width than the repository was normalised with moves ' . 'the fixed point and reflows every file.',
-                );
-            }
-            $width = $this->integerOption($options, 'width');
+            throw new EditException(
+                '--width is gone: line width is a project rule and belongs in .editorconfig, under ' . '[*] or [*.php] as max_line_length. This tool reads it and holds the repository ' . 'to it; it does not bring one.',
+            );
         }
         $exclude = $config->exclude;
+
         if (isset($options['exclude'])) {
             if (!$normalize) {
                 throw new EditException(
@@ -111,17 +125,21 @@ final class Application
             'scanned' => $result['scanned'],
             'changed' => array_values($result['changed']),
             'printWidth' => $width,
+            'widthSource' => $declared['source'],
             'exclude' => $exclude,
             'dryRun' => $dryRun,
         ];
+
         if ($result['failed'] !== []) {
             $payload['failed'] = $result['failed'];
         }
+
         if ($normalize && !$dryRun) {
             // The marker describes the whole repository, so only a run that covered the whole
             // repository may write it. A partial normalise that declared the root would leave
             // everything beside it printed canonically against a source that never was.
             $scanned = realpath($paths[0]);
+
             if ($scanned !== realpath($root)) {
                 $payload['declared'] = null;
                 $payload['next'] = sprintf(
@@ -134,20 +152,29 @@ final class Application
                 // saying otherwise is worse than none.
                 $payload['declared'] = null;
                 $payload['next'] = 'Not declared: ' . count($result['failed']) . ' file(s) could not be formatted. Fix those, then run normalize again.';
+            } elseif ($declared['width'] === null) {
+                // Declaring a repository canonical without a declared width would pin it to a
+                // number this tool picked, which is the decision that belongs to the project.
+                $payload['declared'] = null;
+                $payload['next'] = 'Not declared: no max_line_length in .editorconfig. Add it under ' . '[*] or [*.php] — the width is a project rule — then run normalize again.';
             } else {
                 $payload['declared'] = RepositoryConfig::write($root, $width, $exclude);
                 $payload['next'] = 'Run the project formatter now and commit both in one change ' . 'of their own — normalisation is not a feature commit.';
             }
         }
         $this->json($payload);
+
         return $result['failed'] === [] ? 0 : 1;
     }
+
     private function doctor(array $options): int
     {
         $report = (new Doctor())->examine((string) ($options['path'] ?? '.'));
         $this->json($report);
+
         return $report['status'] === 'ready' ? 0 : 1;
     }
+
     private function contexts(): int
     {
         $parser = (new ParserFactory())->createForHostVersion();
@@ -188,8 +215,10 @@ final class Application
                 'fileModes' => ['edit', 'create', 'delete'],
             ],
         );
+
         return 0;
     }
+
     private function help(): int
     {
         echo <<<'TEXT'
@@ -205,7 +234,7 @@ final class Application
           php-ast-edit contexts
           php-ast-edit apply [--input FILE|-] [--dry-run]
           php-ast-edit format [--path DIR|FILE] [--dry-run] [--php-version 8.4]
-          php-ast-edit normalize [--path DIR] [--width 80] [--exclude a,b] [--dry-run]
+          php-ast-edit normalize [--path DIR] [--exclude a,b] [--dry-run]
           php-ast-edit doctor [--path DIR]
         
         Coordinates:
@@ -254,62 +283,82 @@ final class Application
         the printer decides the layout.
         TEXT;
         echo "\n";
+
         return 0;
     }
+
     private function targetFromOptions(array $options): array
     {
         $target = [];
+
         if (isset($options['offset'])) {
             $target['offset'] = $this->integerOption($options, 'offset');
         } else {
             $target['line'] = $this->integerOption($options, 'line');
             $target['column'] = $this->integerOption($options, 'column');
         }
+
         if (isset($options['kind'])) {
             $target['kind'] = (string) $options['kind'];
         }
+
         return $target;
     }
+
     private function options(array $args): array
     {
         $options = [];
+
         for ($i = 0, $count = count($args); $i < $count; ++$i) {
             $arg = $args[$i];
+
             if (!str_starts_with($arg, '--')) {
                 throw new EditException('Unexpected argument: ' . $arg);
             }
             $arg = substr($arg, 2);
+
             if (str_contains($arg, '=')) {
                 [$name, $value] = explode('=', $arg, 2);
                 $options[$name] = $value;
+
                 continue;
             }
+
             if (in_array($arg, ['dry-run'], true)) {
                 $options[$arg] = true;
+
                 continue;
             }
+
             if ($i + 1 >= $count || str_starts_with($args[$i + 1], '--')) {
                 throw new EditException('--' . $arg . ' requires a value.');
             }
             $options[$arg] = $args[++$i];
         }
+
         return $options;
     }
+
     private function integerOption(array $options, string $key): int
     {
         if (!isset($options[$key]) || filter_var($options[$key], FILTER_VALIDATE_INT) === false) {
             throw new EditException('--' . $key . ' requires an integer.');
         }
+
         return (int) $options[$key];
     }
+
     private function requiredOption(array $options, string $key): string
     {
         $value = $options[$key] ?? null;
+
         if (!is_string($value) || $value === '') {
             throw new EditException('--' . $key . ' is required.');
         }
+
         return $value;
     }
+
     private function json(array $data): void
     {
         // A source file need not be UTF-8. Substituting keeps `inspect` usable on a latin-1

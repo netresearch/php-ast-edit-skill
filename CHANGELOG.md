@@ -6,6 +6,14 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Changed
+
+- **Line width is the project's declaration, not this tool's.** It is read from `.editorconfig` — `max_line_length` under `[*]` or a section naming `php` — and `normalize --width` is gone. A repository that declares no width cannot be normalised: the printer would be breaking lines by a number nobody chose, which is exactly the decision that belongs to the project. `printWidth` in `.php-ast-edit.json` stays as the record of what the last normalisation ran at, so a repository declared canonical before this change keeps printing at that width and is told what to add.
+- **`doctor` checks that the rules exist, not only that a formatter does.** Canonical printing removes blank lines, and part of that is restorable by rule. Measured on a 121-file TYPO3 extension whose formatting was clean beforehand: 23% of the removed blank lines preceded a member (`class_attributes_separation`), 7% the file head, 7% a docblock, 5% a `return` or `throw`, 3% a scope block (`blank_line_before_statement`) — **44% restorable, 45% not**, the rest being the author's paragraphing between ordinary statements, which no rule reconstructs. `doctor` names the rules a project is missing and what each recovers, and states the share that no rule reaches.
+- Against intuition, scope blocks are 3% of it rather than the bulk; the large restorable share sits before declarations.
+- No php-cs-fixer rule breaks a method chain that is already on one line, and the printer does not either — that would be a rule this tool brought with it. `formatting-contract.md` records it as the reason a project may not be able to hold its declared width.
+- This repository declares `max_line_length = 100` and carries the four restoring rules its own `doctor` asked for.
+
 ## [0.2.0] - 2026-08-31
 
 ### Added

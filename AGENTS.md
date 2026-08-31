@@ -18,6 +18,7 @@ PHP CLI plus Agent Skill for AST-native PHP source mutations.
 │   ├── Editor.php                      # Transaction engine, primitives and convenience ops
 │   ├── CanonicalPrinter.php            # Width-aware canonical printing
 │   ├── RepositoryConfig.php            # .php-ast-edit.json — the canonical declaration
+│   ├── EditorConfig.php                # max_line_length — the project's own declaration
 │   ├── Formatter.php                   # format / normalize over a tree
 │   ├── AtomicWriter.php                # temp file + rename, symlink-aware
 │   ├── Doctor.php                      # Is the repository set up for the contract?
@@ -62,7 +63,7 @@ PHP CLI plus Agent Skill for AST-native PHP source mutations.
 - `vendor/bin/php-ast-edit validate --file <path>` — parse check
 - `vendor/bin/php-ast-edit contexts` — parseAs contexts, operations and file modes
 - `vendor/bin/php-ast-edit doctor` — is this repository set up for canonical formatting?
-- `vendor/bin/php-ast-edit normalize --width 80` — canonical print plus the declaration
+- `vendor/bin/php-ast-edit normalize` — canonical print plus the declaration; the width comes from `.editorconfig`
 - `vendor/bin/php-ast-edit format` — canonical print only
 - `php tests/matrix.php` — grammar and operation coverage matrix on its own
 - `bash tests/cli.sh` — CLI arguments, output fields and exit codes
