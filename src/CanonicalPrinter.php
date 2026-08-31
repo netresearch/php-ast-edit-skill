@@ -1,5 +1,6 @@
 <?php
-declare(strict_types=1);
+
+declare (strict_types=1);
 
 namespace Netresearch\PhpAstEdit;
 
@@ -25,20 +26,16 @@ use PhpParser\PrettyPrinter\Standard;
 final class CanonicalPrinter extends Standard
 {
     public const DEFAULT_WIDTH = 80;
-
     private readonly int $width;
-
     public function __construct(?PhpVersion $phpVersion = null, int $width = self::DEFAULT_WIDTH)
     {
         parent::__construct($phpVersion === null ? [] : ['phpVersion' => $phpVersion]);
         $this->width = max(RepositoryConfig::MIN_WIDTH, $width);
     }
-
     public function width(): int
     {
         return $this->width;
     }
-
     /** @param (Node|null)[] $nodes */
     protected function pMaybeMultiline(array $nodes, bool $trailingComma = false): string
     {
@@ -46,25 +43,22 @@ final class CanonicalPrinter extends Standard
         if ($single !== null) {
             return $single;
         }
-        return $this->pCommaSeparatedMultiline($nodes, $trailingComma).$this->nl;
+        return $this->pCommaSeparatedMultiline($nodes, $trailingComma) . $this->nl;
     }
-
     /** @param Node\Param[] $params */
     protected function pParams(array $params): string
     {
         // A parameter carrying an attribute is only expressible inline from PHP 8.0 on; the
         // parent class breaks in that case regardless of width, and so must this one.
         if (!$this->phpVersion->supportsAttributes() && $this->anyParamHasAttributes($params)) {
-            return $this->pCommaSeparatedMultiline($params, $this->phpVersion->supportsTrailingCommaInParamList()).$this->nl;
+            return $this->pCommaSeparatedMultiline($params, $this->phpVersion->supportsTrailingCommaInParamList()) . $this->nl;
         }
-
         $single = $this->fitsOnOneLine($params);
         if ($single !== null) {
             return $single;
         }
-        return $this->pCommaSeparatedMultiline($params, $this->phpVersion->supportsTrailingCommaInParamList()).$this->nl;
+        return $this->pCommaSeparatedMultiline($params, $this->phpVersion->supportsTrailingCommaInParamList()) . $this->nl;
     }
-
     /**
      * Standard keeps its own copy of this private, so the subclass carries one.
      *
@@ -79,7 +73,6 @@ final class CanonicalPrinter extends Standard
         }
         return false;
     }
-
     /**
      * The single-line rendering, or null when the list has to be broken.
      *

@@ -1,0 +1,45 @@
+name: Formatting
+
+on:
+  push:
+  pull_request:
+
+permissions: {}
+
+jobs:
+  canonical:
+    name: Canonical formatting
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@05e31511f85b41b11d1cf0ef85d0992719546e2c  # v2.21.0
+        with:
+          egress-policy: audit
+
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240  # 2.37.2
+        with:
+          php-version: '8.4'
+          extensions: json, tokenizer
+          coverage: none
+
+      - name: Install dependencies
+        uses: ramsey/composer-install@65e4f84970763564f46a70b8a54b90d033b3bdda  # 4.0.0
+
+      # The fixed point belongs to the printer and the formatter together, so neither half
+      # is a check on its own: `php-ast-edit format` undoes what the formatter did last, and
+      # the formatter accepts shapes the printer would not produce. Run both, then let the
+      # clean tree be the assertion.
+      - name: Print canonically
+        run: php bin/php-ast-edit format --path .
+
+      - name: Apply the project's formatting rules
+        run: php vendor/bin/php-cs-fixer fix
+
+      - name: The tree must be unchanged
+        run: git diff --exit-code

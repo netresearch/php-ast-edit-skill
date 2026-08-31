@@ -1,5 +1,6 @@
 <?php
-declare(strict_types=1);
+
+declare (strict_types=1);
 
 namespace Netresearch\PhpAstEdit;
 
@@ -20,24 +21,21 @@ use Netresearch\PhpAstEdit\Exception\EditException;
 final class RepositoryConfig
 {
     public const FILE = '.php-ast-edit.json';
-
     public const MIN_WIDTH = 20;
-
+    /** @param list<string> $exclude repository-relative paths normalisation must not touch */
     private function __construct(
         public readonly bool $canonical,
         public readonly int $width,
         public readonly ?string $path,
-    ) {
-    }
-
+        public readonly array $exclude = [],
+    ) {}
     /** Walk up from a file or directory until the marker turns up. */
     public static function discover(string $start): self
     {
         $directory = is_dir($start) ? $start : dirname($start);
         $directory = realpath($directory) ?: $directory;
-
         while (true) {
-            $candidate = $directory.DIRECTORY_SEPARATOR.self::FILE;
+            $candidate = $directory . DIRECTORY_SEPARATOR . self::FILE;
             if (is_file($candidate)) {
                 return self::fromFile($candidate);
             }
@@ -48,12 +46,11 @@ final class RepositoryConfig
             $directory = $parent;
         }
     }
-
     public static function fromFile(string $path): self
     {
         $raw = file_get_contents($path);
         if ($raw === false) {
-            throw new EditException('Cannot read '.$path);
+            throw new EditException('Cannot read ' . $path);
         }
         try {
             $data = json_decode($raw, true, 32, JSON_THROW_ON_ERROR);
@@ -61,18 +58,24 @@ final class RepositoryConfig
             throw new EditException(sprintf('%s is not valid JSON: %s', $path, $failure->getMessage()));
         }
         if (!is_array($data)) {
-            throw new EditException($path.' must contain a JSON object.');
+            throw new EditException($path . ' must contain a JSON object.');
         }
-
         $width = $data['printWidth'] ?? CanonicalPrinter::DEFAULT_WIDTH;
         if (!is_int($width)) {
-            throw new EditException($path.': printWidth must be an integer.');
+            throw new EditException($path . ': printWidth must be an integer.');
         }
-        self::assertWidth($width, $path.': ');
-
-        return new self((bool) ($data['canonical'] ?? false), $width, $path);
+        self::assertWidth($width, $path . ': ');
+        $exclude = $data['exclude'] ?? [];
+        if (!is_array($exclude)) {
+            throw new EditException($path . ': exclude must be an array of paths.');
+        }
+        return new self(
+            (bool) ($data['canonical'] ?? false),
+            $width,
+            $path,
+            array_values(array_map(strval(...), $exclude)),
+        );
     }
-
     /**
      * The repository root: where composer.json or .git lives.
      *
@@ -85,10 +88,9 @@ final class RepositoryConfig
         $directory = is_dir($start) ? $start : dirname($start);
         $directory = realpath($directory) ?: $directory;
         $fallback = $directory;
-
         while (true) {
             foreach (['composer.json', '.git'] as $marker) {
-                if (file_exists($directory.DIRECTORY_SEPARATOR.$marker)) {
+                if (file_exists($directory . DIRECTORY_SEPARATOR . $marker)) {
                     return $directory;
                 }
             }
@@ -99,7 +101,6 @@ final class RepositoryConfig
             $directory = $parent;
         }
     }
-
     /**
      * The one place that decides what a usable width is.
      *
@@ -109,25 +110,30 @@ final class RepositoryConfig
     public static function assertWidth(int $width, string $prefix = ''): void
     {
         if ($width < self::MIN_WIDTH) {
-            throw new EditException(sprintf(
-                '%sprintWidth must be at least %d; %d cannot hold a useful line.',
-                $prefix,
-                self::MIN_WIDTH,
-                $width,
-            ));
+            throw new EditException(
+                sprintf(
+                    '%sprintWidth must be at least %d; %d cannot hold a useful line.',
+                    $prefix,
+                    self::MIN_WIDTH,
+                    $width,
+                ),
+            );
         }
     }
-
-    public static function write(string $directory, int $width): string
+    /** @param list<string> $exclude */
+    public static function write(string $directory, int $width, array $exclude = []): string
     {
         self::assertWidth($width);
-        $path = rtrim($directory, DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR.self::FILE;
+        $path = rtrim($directory, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . self::FILE;
         $payload = json_encode(
-            ['canonical' => true, 'printWidth' => $width],
+            array_filter(
+                ['canonical' => true, 'printWidth' => $width, 'exclude' => array_values($exclude)],
+                static fn (mixed $value): bool => $value !== [],
+            ),
             JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR,
-        )."\n";
+        ) . "\n";
         if (file_put_contents($path, $payload) === false) {
-            throw new EditException('Cannot write '.$path);
+            throw new EditException('Cannot write ' . $path);
         }
         return $path;
     }

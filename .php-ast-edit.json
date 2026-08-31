@@ -1,0 +1,7 @@
+{
+    "canonical": true,
+    "printWidth": 100,
+    "exclude": [
+        "tests/fixtures"
+    ]
+}

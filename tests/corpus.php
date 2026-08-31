@@ -18,13 +18,14 @@ if (!is_file($autoload)) {
     exit(0);
 }
 require_once $autoload;
+use Netresearch\PhpAstEdit\CanonicalPrinter;
 use Netresearch\PhpAstEdit\Editor;
 use Netresearch\PhpAstEdit\Exception\EditException;
 use PhpParser\Node;
 use PhpParser\NodeTraverser;
 use PhpParser\NodeVisitorAbstract;
 use PhpParser\ParserFactory;
-use Netresearch\PhpAstEdit\CanonicalPrinter;
+
 $corpus = $root . '/vendor/nikic/php-parser/lib';
 if (!is_dir($corpus)) {
     fwrite(STDERR, "SKIP: corpus directory missing.\n");
@@ -44,14 +45,15 @@ if ($files === []) {
 $parser = (new ParserFactory())->createForHostVersion();
 $printer = new CanonicalPrinter();
 $traverser = new NodeTraverser();
-$traverser->addVisitor(new class extends NodeVisitorAbstract
-{
-    public function enterNode(Node $node): ?Node
-    {
-        $node->setAttributes([]);
-        return null;
-    }
-});
+$traverser->addVisitor(
+    new class () extends NodeVisitorAbstract {
+        public function enterNode(Node $node): ?Node
+        {
+            $node->setAttributes([]);
+            return null;
+        }
+    },
+);
 /**
  * Comments php-parser's printer is known to drop, with the mechanism that drops them.
  *
@@ -64,11 +66,7 @@ $traverser->addVisitor(new class extends NodeVisitorAbstract
  * They are listed rather than tolerated by a wildcard: any other loss fails this test, and
  * if php-parser ever fixes it the entry stops matching and says so.
  */
-const KNOWN_COMMENT_LOSSES = [
-    '// TODO Handle non-space indentation',
-    '// Everything else is case-insensitive',
-];
-
+const KNOWN_COMMENT_LOSSES = ['// TODO Handle non-space indentation', '// Everything else is case-insensitive'];
 /**
  * Every comment in a tree, sorted, so two trees can be compared as sets.
  *
@@ -131,14 +129,26 @@ foreach ($files as $source) {
             ++$inspections;
             // A typed refusal is a result, not a failure.
         } catch (Throwable $throwable) {
-            $problems[] = sprintf('inspect raised %s on %s: %s', $throwable::class, basename($source), $throwable->getMessage());
+            $problems[] = sprintf(
+                'inspect raised %s on %s: %s',
+                $throwable::class,
+                basename($source),
+                $throwable->getMessage(),
+            );
         }
     }
 }
 @unlink($scratch);
 @rmdir($work);
 if ($problems !== []) {
-    fwrite(STDERR, 'FAIL: ' . count($problems) . " corpus problem(s)\n  - " . implode("\n  - ", array_slice($problems, 0, 20)) . "\n");
+    fwrite(
+        STDERR,
+        'FAIL: ' . count($problems) . " corpus problem(s)\n  - " . implode("\n  - ", array_slice($problems, 0, 20)) . "\n",
+    );
     exit(1);
 }
-printf("OK: %d corpus files round-tripped unchanged, %d inspections raised nothing untyped.\n", count($files), $inspections);
+printf(
+    "OK: %d corpus files round-tripped unchanged, %d inspections raised nothing untyped.\n",
+    count($files),
+    $inspections,
+);
