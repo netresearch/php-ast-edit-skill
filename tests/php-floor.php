@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 /**
- * Does the shipped source stay inside the PHP version composer.json requires?
+ * Does the shipped source avoid the one construct that has broken the floor jobs twice?
  *
  * `php -l` answers for the interpreter that runs it, so on a PHP 8.5 host it says nothing
  * about the 8.2 floor — which is how `new Foo()->bar()` reached CI twice. Parsing does not
@@ -142,7 +142,8 @@ if ($offenders !== []) {
 }
 
 printf(
-    "OK: %d files stay within the PHP %d.%d floor composer.json requires.\n",
+    "OK: %d files carry no dereferenced `new` that PHP %d.%d would reject (not a general "
+    ."compatibility check — that needs the floor interpreter).\n",
     count($files),
     intdiv($floor->id, 10000),
     intdiv($floor->id, 100) % 100,
