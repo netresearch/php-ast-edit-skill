@@ -64,6 +64,28 @@ printf '{"files":[{"path":"%s","edits":[{"target":{"ref":"stmts[0].name"},"opera
 $BIN apply --input "$WORK/edits.json" > /dev/null
 expect "apply --input writes the change" "1" "$(grep -c 'class Bar' "$WORK/a.php")"
 
+expect "doctor reports a bare workspace as warn" "warn" \
+  "$(cd "$WORK" && $BIN doctor | php -r 'echo json_decode(stream_get_contents(STDIN), true)["status"];')"
+
+# normalize declares the repository and format is then idempotent
+printf '{}\n' > "$WORK/composer.json"
+$BIN normalize --path "$WORK" --width 80 > "$WORK/norm.json"
+expect "normalize declares the repository" "1" \
+  "$(test -f "$WORK/.php-ast-edit.json" && echo 1 || echo 0)"
+expect "normalize records the width it used" "80" \
+  "$(php -r 'echo json_decode(file_get_contents($argv[1]), true)["printWidth"];' "$WORK/.php-ast-edit.json")"
+expect "format is idempotent afterwards" "0" \
+  "$($BIN format --path "$WORK" | php -r 'echo count(json_decode(stream_get_contents(STDIN), true)["changed"]);')"
+expect "an edit on a declared repository prints canonically" "canonical" \
+  "$(printf '{"files":[{"path":"%s","edits":[{"target":{"ref":"stmts[0].name"},"operation":"set_name","value":"Baz"}]}]}' "$WORK/a.php" \
+    | $BIN apply --dry-run | php -r 'echo json_decode(stream_get_contents(STDIN), true)["files"][0]["printer"];')"
+
+set +e
+$BIN format --path "$WORK" --width 100 > /dev/null 2>&1
+code=$?
+set -e
+expect "format refuses a width of its own" "2" "$code"
+
 # failures are JSON on stderr with a non-zero exit
 set +e
 $BIN inspect --file "$WORK/missing.php" --line 1 --column 1 > /dev/null 2> "$WORK/err.json"

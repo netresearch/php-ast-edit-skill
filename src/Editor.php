@@ -27,10 +27,11 @@ use PhpParser\Node\Stmt;
 use PhpParser\Node\UseItem;
 use PhpParser\Node\VarLikeIdentifier;
 use PhpParser\Modifiers;
+use PhpParser\NodeTraverser;
+use PhpParser\NodeVisitor\CloningVisitor;
 use PhpParser\Parser;
 use PhpParser\ParserFactory;
 use PhpParser\PhpVersion;
-use PhpParser\PrettyPrinter\Standard;
 
 final class Editor
 {
@@ -140,6 +141,10 @@ final class Editor
             throw new EditException('mode must be edit, create or delete.');
         }
         $phpVersion = isset($spec['phpVersion']) ? $this->assertPhpVersion((string) $spec['phpVersion']) : null;
+        $printer = $spec['printer'] ?? 'auto';
+        if (!in_array($printer, ['auto', 'canonical', 'format-preserving'], true)) {
+            throw new EditException('printer must be auto, canonical or format-preserving.');
+        }
 
         if ($mode === 'delete') {
             if (!is_file($path)) {
@@ -176,13 +181,65 @@ final class Editor
 
         [$source, $parser, $roots] = $this->parseFile($path, $phpVersion);
         $this->assertSha($spec, $path, hash('sha256', $source));
-        $transaction = new FileTransaction($path, 'edit', $source, $roots, $parser, $phpVersion, true);
+
+        // The edits mutate a clone; the pristine tree and its tokens stay behind, because
+        // format-preserving printing needs to diff the two and can only map a node back to
+        // the source when the original object is still intact.
+        $tokens = $parser->getTokens();
+        $mutable = (new NodeTraverser(new CloningVisitor()))->traverse($roots);
+
+        $transaction = new FileTransaction(
+            $path,
+            'edit',
+            $source,
+            $mutable,
+            $parser,
+            $phpVersion,
+            true,
+            $roots,
+            $tokens,
+        );
         $edits = $spec['edits'] ?? null;
         if (!is_array($edits) || $edits === []) {
             throw new EditException(sprintf('%s requires a non-empty edits array.', $path));
         }
+        $this->choosePrinter($transaction, (string) $printer);
         $this->resolveTargets($transaction, $spec, $source);
         return $transaction;
+    }
+
+    /**
+     * Canonical or format-preserving — declared, never inferred.
+     *
+     * Whether a file may be rewritten canonically cannot be read off the file. The fixed
+     * point belongs to the printer and the project's formatter together, and the formatter
+     * runs last: on a correctly normalised extension, re-printing differed from disk in 48 of
+     * 63 files, every difference the formatter's own (blank lines, `declare` spacing,
+     * operator alignment). A measurement over that cannot tell a well-kept repository from a
+     * neglected one, so `php-ast-edit normalize` writes a marker and this reads it.
+     */
+    private function choosePrinter(FileTransaction $transaction, string $requested): void
+    {
+        if ($requested !== 'auto') {
+            $transaction->printer = $requested;
+            return;
+        }
+
+        $config = RepositoryConfig::discover($transaction->path);
+        if ($config->canonical) {
+            $transaction->printer = 'canonical';
+            return;
+        }
+
+        $transaction->printer = 'format-preserving';
+        $transaction->warning = sprintf(
+            'NOT_CANONICAL: no %s declaring this repository canonically formatted, so the edit '
+            .'was printed format-preserving to keep the diff small. Canonical printing is the '
+            .'intended mode: run `php-ast-edit normalize`, then the project formatter, and '
+            .'commit that separately. Until then a node this printer cannot map back to the '
+            .'source is re-printed anyway, so parts of the file may still be reflowed.',
+            RepositoryConfig::FILE,
+        );
     }
 
     private function resolveTargets(FileTransaction $transaction, array $spec, string $source): void
@@ -250,13 +307,8 @@ final class Editor
             return;
         }
 
-        $printerOptions = [];
-        if ($transaction->phpVersion !== null) {
-            $printerOptions['phpVersion'] = PhpVersion::fromString($transaction->phpVersion);
-        }
         try {
-            $printer = new Standard($printerOptions);
-            $output = rtrim($printer->prettyPrintFile($transaction->roots), "\r\n")."\n";
+            $output = rtrim($this->print($transaction), "\r\n")."\n";
             $this->parser($transaction->phpVersion)->parse($output);
         } catch (EditException $failure) {
             throw $failure;
@@ -273,6 +325,107 @@ final class Editor
 
         $transaction->output = $output;
         $transaction->changed = $transaction->source !== $output;
+        $transaction->changedLines = $transaction->source === null
+            ? substr_count($output, "\n")
+            : $this->countChangedLines($transaction->source, $output);
+    }
+
+    /**
+     * Print the mutated tree with the printer this file is entitled to.
+     *
+     * Canonical printing is the intended mode: it gives one output per AST, so an edit to a
+     * repository that already sits on that fixed point changes only the lines the edit
+     * touches. On a repository that does not, it rewrites everything it disagrees with — 105
+     * lines for a one-identifier rename in the case this was measured on. Format-preserving
+     * printing is the fallback for exactly that situation, and it is never silent.
+     */
+    private function print(FileTransaction $transaction): string
+    {
+        $version = $transaction->phpVersion === null ? null : PhpVersion::fromString($transaction->phpVersion);
+        $printer = new CanonicalPrinter($version, $this->widthFor($transaction));
+
+        if ($transaction->printer === 'format-preserving'
+            && $transaction->original !== null
+            && $transaction->tokens !== null
+        ) {
+            return $printer->printFormatPreserving(
+                $transaction->roots,
+                $transaction->original,
+                $transaction->tokens,
+            );
+        }
+
+        $transaction->printer = 'canonical';
+        return $printer->prettyPrintFile($transaction->roots);
+    }
+
+    private function widthFor(FileTransaction $transaction): int
+    {
+        return RepositoryConfig::discover($transaction->path)->width;
+    }
+
+    /**
+     * Lines this write changes on disk, as a diff would count them.
+     *
+     * Reported for information, never as a decision: after canonical printing the number
+     * also contains everything the project's formatter will put back when it runs — blank
+     * lines, operator alignment, the licence header — so on a healthy repository it is
+     * expected to be larger than the edit. What it does answer honestly is the
+     * format-preserving case, where it is the edit's real footprint, and it exposes a
+     * silent fallback to full printing for a subtree that printer could not map.
+     */
+    private function countChangedLines(string $before, string $after): int
+    {
+        if ($before === $after) {
+            return 0;
+        }
+        $a = explode("\n", $before);
+        $b = explode("\n", $after);
+
+        $head = 0;
+        $lastA = count($a) - 1;
+        $lastB = count($b) - 1;
+        while ($head <= $lastA && $head <= $lastB && $a[$head] === $b[$head]) {
+            ++$head;
+        }
+        while ($lastA >= $head && $lastB >= $head && $a[$lastA] === $b[$lastB]) {
+            --$lastA;
+            --$lastB;
+        }
+
+        $a = array_slice($a, $head, $lastA - $head + 1);
+        $b = array_slice($b, $head, $lastB - $head + 1);
+        if ($a === [] || $b === []) {
+            return count($a) + count($b);
+        }
+
+        // A full LCS is quadratic and these are whole files; cap it and fall back to the
+        // block size, which is what a reviewer sees anyway when the change is that large.
+        if (count($a) * count($b) > 4_000_000) {
+            return count($a) + count($b);
+        }
+
+        $lcs = $this->longestCommonSubsequence($a, $b);
+        return (count($a) - $lcs) + (count($b) - $lcs);
+    }
+
+    /**
+     * @param list<string> $a
+     * @param list<string> $b
+     */
+    private function longestCommonSubsequence(array $a, array $b): int
+    {
+        $previous = array_fill(0, count($b) + 1, 0);
+        foreach ($a as $lineA) {
+            $current = [0];
+            foreach ($b as $j => $lineB) {
+                $current[$j + 1] = $lineA === $lineB
+                    ? $previous[$j] + 1
+                    : max($previous[$j + 1], $current[$j]);
+            }
+            $previous = $current;
+        }
+        return $previous[count($b)];
     }
 
     /** @param list<FileTransaction> $transactions */
@@ -367,9 +520,14 @@ final class Editor
             'beforeSha256' => $transaction->beforeSha(),
             'afterSha256' => $transaction->output === null ? null : hash('sha256', $transaction->output),
             'changed' => $transaction->changed,
+            'changedLines' => $transaction->changedLines,
+            'printer' => $transaction->printer,
             'editsApplied' => count($transaction->resolved),
             'dryRun' => $dryRun,
         ];
+        if ($transaction->warning !== null) {
+            $result['warning'] = $transaction->warning;
+        }
         if ($dryRun && $transaction->output !== null) {
             $result['code'] = $transaction->output;
         }
@@ -1196,37 +1354,7 @@ final class Editor
 
     private function atomicWrite(string $path, string $contents): void
     {
-        $directory = dirname($path);
-        if (!is_dir($directory) && !@mkdir($directory, 0777, true) && !is_dir($directory)) {
-            throw new EditException('Cannot create directory '.$directory);
-        }
-        if (!is_writable($directory)) {
-            throw new EditException('Directory is not writable: '.$directory);
-        }
-        $existed = is_file($path);
-        $temp = @tempnam($directory, '.php-ast-edit-');
-        if ($temp === false || realpath(dirname($temp)) !== realpath($directory)) {
-            // tempnam() silently falls back to the system temp directory, which would turn
-            // the rename below into a cross-device move and lose atomicity.
-            if (is_string($temp) && is_file($temp)) {
-                @unlink($temp);
-            }
-            throw new EditException('Cannot create temporary file next to '.$path);
-        }
-        try {
-            $mode = $existed ? fileperms($path) : false;
-            if (@file_put_contents($temp, $contents) === false) {
-                throw new EditException('Cannot write temporary file for '.$path);
-            }
-            @chmod($temp, $mode !== false ? ($mode & 0777) : (0666 & ~umask()));
-            if (!@rename($temp, $path)) {
-                throw new EditException('Atomic rename failed for '.$path);
-            }
-        } finally {
-            if (is_file($temp)) {
-                @unlink($temp);
-            }
-        }
+        (new AtomicWriter())->write($path, $contents);
     }
 
     private function requiredString(array $data, string $key): string

@@ -239,7 +239,7 @@ php-ast-edit-skill/
 ├── .claude-plugin/plugin.json      # Generated Claude Code manifest
 ├── composer.json                   # PHP distribution
 ├── bin/php-ast-edit                # CLI entrypoint
-├── src/                            # Editor, NodeLocator, NodeLocation, ContextParser, …
+├── src/                            # Editor, NodeLocator, CanonicalPrinter, Doctor, …
 ├── hooks/php-ast-only.py           # PreToolUse gate: no text mutation of PHP
 ├── scripts/                        # check.php (php -l gate), build-phar.php
 ├── tests/                          # run.sh, run.php, matrix.php, fixtures
@@ -249,7 +249,7 @@ php-ast-edit-skill/
         ├── SKILL.md                # Agent runtime instructions
         ├── agents/openai.yaml      # OpenAI-style agent descriptor
         ├── evals/evals.json        # Trigger evals
-        ├── references/             # operations.md, enforcement.md
+        ├── references/             # operations.md, formatting-contract.md, enforcement.md
         └── scripts/php-ast-edit    # Wrapper resolving the binary or PHAR
 ```
 
