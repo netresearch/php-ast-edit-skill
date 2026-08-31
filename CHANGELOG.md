@@ -6,6 +6,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-08-31
+
 ### Added
 
 - **This repository now holds the contract it ships.** `doctor` reported `warn` on it until now — no formatter configured, not normalised, no gate — which is a poor argument for a tool whose whole thesis is that repositories need those three things. It carries `.php-cs-fixer.php`, a `.php-ast-edit.json` declaring it canonical at width 100, `composer cgl`, and `formatting.yml` running the two-step gate. `doctor` reports `ready`.
@@ -82,5 +84,6 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - `php-structured-edit` Agent Skill with the operation reference and a wrapper resolving the repository binary, `vendor/bin`, a local PHAR, or `PATH`.
 - PHAR build via `scripts/build-phar.php`.
 
-[Unreleased]: https://github.com/netresearch/php-ast-edit-skill/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/netresearch/php-ast-edit-skill/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/netresearch/php-ast-edit-skill/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/netresearch/php-ast-edit-skill/releases/tag/v0.1.0
