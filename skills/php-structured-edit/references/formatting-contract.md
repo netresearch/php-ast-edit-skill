@@ -20,6 +20,51 @@ That is not a printer defect. It is what canonical printing means: one rendering
 The cost falls entirely on repositories whose code sits somewhere else. On a repository
 that sits on the fixed point, the same rename changes **2 lines**.
 
+## Whose rules these are
+
+The tool brings no formatting rules and sets no defaults. It reads what the project has
+declared and holds the repository to it:
+
+- **Line width** comes from the project's `.editorconfig` — `max_line_length` under `[*]` or
+  a section naming `php`. A repository that declares none cannot be normalised: the printer
+  would be breaking lines by a number nobody chose. `normalize` refuses, and says so.
+- **Everything else** is the project formatter's. `doctor` checks that the rules which put
+  back what canonical printing removes are configured, and names the ones that are not.
+
+Canonical printing removes blank lines the printer has no reason to emit. Measured on a
+121-file TYPO3 extension whose formatting was clean beforehand, by classifying every blank
+line the print removed according to what followed it:
+
+| the blank line preceded | share | the rule that restores it |
+| --- | --- | --- |
+| a call or expression | 24.7% | **none** |
+| an assignment | 23.2% | **none** |
+| a member or declaration | 22.9% | `class_attributes_separation` |
+| a comment | 8.4% | **none** |
+| the file head (namespace, use, declare) | 7.0% | `blank_line_after_opening_tag`, namespace spacing |
+| a docblock | 6.6% | `blank_line_before_statement: [phpdoc]` |
+| `return` / `throw` | 4.5% | `blank_line_before_statement` |
+| a scope block (`if`, `foreach`, …) | 2.7% | `blank_line_before_statement` |
+| a closing brace | 0.1% | — |
+
+**43.6% is restorable by rule, 56.4% is not** — 1954 of 4483 blank lines against 2529. The
+unrestorable share is the author's own paragraphing between ordinary statements, and no
+formatter reconstructs intent. That is the honest price of canonical formatting, and the
+reason it is a decision a project makes rather than an improvement a tool applies.
+
+Two things worth noting against intuition. Scope blocks account for 2.7%, not the bulk — the
+large restorable share sits before declarations. And the majority is not restorable at all,
+which is the opposite of what a first, coarser classification of the same data suggested;
+that one silently dropped a ninth of the sample into an unlisted remainder.
+
+### What no tool can do at all
+
+No php-cs-fixer rule breaks a method chain that is already on one line —
+`method_chaining_indentation` only indents chains that are already broken. The printer does
+not break them either, deliberately: a chain-breaking rule would be a rule this tool brought
+with it. On the same extension that left 177 lines over the declared width. `doctor` reports
+it; it does not paper over it.
+
 ## The contract
 
 | Condition | Who satisfies it |

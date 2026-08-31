@@ -1,8 +1,9 @@
 <?php
 
-declare (strict_types=1);
+declare(strict_types=1);
 $root = dirname(__DIR__);
 $autoload = $root . '/vendor/autoload.php';
+
 if (!is_file($autoload)) {
     fwrite(
         STDERR,
@@ -21,12 +22,14 @@ function check(bool $condition, string $message): void
 }
 $source = file_get_contents(__DIR__ . '/fixtures/sample.php');
 $tmpBase = tempnam(sys_get_temp_dir(), 'php-ast-edit-test-');
+
 if ($tmpBase === false) {
     throw new RuntimeException('Could not create test file.');
 }
 $tmp = $tmpBase . '.php';
 rename($tmpBase, $tmp);
 file_put_contents($tmp, $source);
+
 try {
     $editor = new Editor();
     $inspect = $editor->inspect($tmp, ['line' => 9, 'column' => 40]);
@@ -72,11 +75,14 @@ try {
     $lines = file($tmp);
     $callLine = null;
     $callColumn = null;
+
     foreach ($lines as $i => $line) {
         $pos = strpos($line, '->find(');
+
         if ($pos !== false) {
             $callLine = $i + 1;
             $callColumn = $pos + 3;
+
             break;
         }
     }
@@ -118,9 +124,11 @@ try {
     $hash = hash_file('sha256', $tmp);
     $lines = file($tmp);
     $returnLine = null;
+
     foreach ($lines as $i => $line) {
         if (str_contains($line, 'return $customer->name;')) {
             $returnLine = $i + 1;
+
             break;
         }
     }
@@ -149,10 +157,12 @@ try {
     $lines = file($tmp);
     $sqlLine = null;
     $returnLine = null;
+
     foreach ($lines as $i => $line) {
         if (str_contains($line, '$sql =')) {
             $sqlLine = $i + 1;
         }
+
         if (str_contains($line, 'return $customer->name;')) {
             $returnLine = $i + 1;
         }

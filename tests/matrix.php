@@ -1,6 +1,7 @@
 <?php
 
-declare (strict_types=1);
+declare(strict_types=1);
+
 /**
  * Table-driven grammar and operation coverage.
  *
@@ -12,6 +13,7 @@ declare (strict_types=1);
  */
 $root = dirname(__DIR__);
 $autoload = $root . '/vendor/autoload.php';
+
 if (!is_file($autoload)) {
     fwrite(STDERR, "SKIP: vendor/autoload.php missing; run composer install to execute the matrix.\n");
     exit(0);
@@ -27,6 +29,7 @@ const CLASS_NAME_REF = 'stmts[0].name';
 const FIRST_MEMBER_REF = 'stmts[0].stmts[0]';
 const FIRST_PARAM_REF = 'stmts[0].params[0]';
 const USE_ITEM = 'C\D as E';
+
 /**
  * @var list<array{
  *   name: string,
@@ -53,12 +56,14 @@ function removeTree(string $directory): void
     foreach (glob($directory . '/*') ?: [] as $entry) {
         if (is_dir($entry)) {
             removeTree($entry);
+
             continue;
         }
         @unlink($entry);
     }
     @rmdir($directory);
 }
+
 /**
  * A transaction document, so a case names its file specs and nothing else. Repeating the
  * `['files' => [[ … ]]]` scaffolding once per case is duplication in the literal sense and
@@ -84,6 +89,7 @@ function src(string $php): array
 {
     return ['a.php' => $php];
 }
+
 /** @return list<array{0: string, 1: string}> */
 function inA(string ...$needles): array
 {
@@ -664,17 +670,20 @@ $cases = [
 ];
 $failures = [];
 $passed = 0;
+
 foreach ($cases as $case) {
     $dir = sys_get_temp_dir() . '/php-ast-edit-matrix-' . bin2hex(random_bytes(6));
     mkdir($dir, 0700, true);
     $paths = ['dir' => $dir];
     $originals = [];
+
     foreach ($case['files'] ?? [] as $name => $source) {
         $paths[$name] = $dir . '/' . $name;
         file_put_contents($paths[$name], $source);
         $originals[$name] = $source;
     }
     $problems = [];
+
     // Inspect runs against the pristine files, before any transaction touches them.
     if (isset($case['inspect'])) {
         try {
@@ -685,14 +694,17 @@ foreach ($cases as $case) {
         }
     }
     $error = null;
+
     if (isset($case['document']) || isset($case['edits'])) {
         $document = isset($case['document']) ? $case['document']($paths) : ['files' => [['path' => $paths['a.php'], 'edits' => $case['edits']]]];
+
         try {
             (new Editor())->apply($document);
         } catch (Throwable $throwable) {
             $error = $throwable->getMessage();
         }
     }
+
     if (isset($case['error'])) {
         if ($error === null) {
             $problems[] = 'expected failure containing "' . $case['error'] . '", but the transaction succeeded';
@@ -702,35 +714,43 @@ foreach ($cases as $case) {
     } elseif ($error !== null) {
         $problems[] = 'unexpected failure: ' . $error;
     }
+
     foreach ($case['contains'] ?? [] as [$name, $needle]) {
         $file = $paths[$name] ?? $dir . '/' . $name;
         $actual = is_file($file) ? (string) file_get_contents($file) : '';
+
         if (!str_contains($actual, $needle)) {
             $problems[] = $name . ' does not contain "' . $needle . '"; got:' . "\n" . $actual;
         }
     }
+
     foreach ($case['notContains'] ?? [] as [$name, $needle]) {
         $file = $paths[$name] ?? $dir . '/' . $name;
         $actual = is_file($file) ? (string) file_get_contents($file) : '';
+
         if (str_contains($actual, $needle)) {
             $problems[] = $name . ' still contains "' . $needle . '"';
         }
     }
+
     foreach ($case['unchanged'] ?? [] as $name) {
         if (file_get_contents($paths[$name]) !== $originals[$name]) {
             $problems[] = $name . ' was modified although the transaction had to abort';
         }
     }
+
     foreach ($case['absent'] ?? [] as $name) {
         if (is_file($paths[$name] ?? $dir . '/' . $name)) {
             $problems[] = $name . ' still exists';
         }
     }
+
     foreach ($case['present'] ?? [] as $name) {
         if (!is_file($paths[$name] ?? $dir . '/' . $name)) {
             $problems[] = $name . ' was not created';
         }
     }
+
     if ($problems === []) {
         ++$passed;
     } else {
@@ -738,6 +758,7 @@ foreach ($cases as $case) {
     }
     removeTree($dir);
 }
+
 // The write phase itself must roll back. An unwritable directory is the cheapest real
 // write failure that does not depend on the caller running as root.
 // Root can write into a directory it has no write bit for, so the rollback case cannot be
@@ -749,6 +770,7 @@ if (!function_exists('posix_geteuid') || posix_geteuid() !== 0) {
     file_put_contents($base . '/locked/second.php', "<?php\nclass Second {}\n");
     chmod($base . '/locked', 0500);
     $error = null;
+
     try {
         (new Editor())->apply(
             [
@@ -768,6 +790,7 @@ if (!function_exists('posix_geteuid') || posix_geteuid() !== 0) {
         $error = $throwable->getMessage();
     }
     $first = (string) file_get_contents($base . '/first.php');
+
     if ($error === null || !str_contains($error, 'COMMIT_FAILED')) {
         $failures[] = 'write-phase rollback: expected COMMIT_FAILED, got ' . var_export($error, true);
     } elseif (!str_contains($first, 'class First {}') && !str_contains($first, 'class First')) {
@@ -783,6 +806,7 @@ if (!function_exists('posix_geteuid') || posix_geteuid() !== 0) {
     @unlink($base . '/first.php');
     @rmdir($base);
 }
+
 if ($failures !== []) {
     fwrite(
         STDERR,

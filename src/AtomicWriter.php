@@ -1,6 +1,6 @@
 <?php
 
-declare (strict_types=1);
+declare(strict_types=1);
 
 namespace Netresearch\PhpAstEdit;
 
@@ -25,26 +25,33 @@ final class AtomicWriter
     {
         $path = $this->resolveSymlink($path);
         $directory = dirname($path);
+
         if (!is_dir($directory) && !@mkdir($directory, 0777, true) && !is_dir($directory)) {
             throw new EditException('Cannot create directory ' . $directory);
         }
+
         if (!is_writable($directory)) {
             throw new EditException('Directory is not writable: ' . $directory);
         }
         $existed = is_file($path);
         $temp = @tempnam($directory, '.php-ast-edit-');
+
         if ($temp === false || realpath(dirname($temp)) !== realpath($directory)) {
             if (is_string($temp) && is_file($temp)) {
                 @unlink($temp);
             }
+
             throw new EditException('Cannot create a temporary file next to ' . $path);
         }
+
         try {
             $mode = $existed ? fileperms($path) : false;
+
             if (@file_put_contents($temp, $contents) === false) {
                 throw new EditException('Cannot write a temporary file for ' . $path);
             }
             @chmod($temp, $mode !== false ? $mode & 0777 : 0666 & ~umask());
+
             if (!@rename($temp, $path)) {
                 throw new EditException('Atomic rename failed for ' . $path);
             }
@@ -54,20 +61,24 @@ final class AtomicWriter
             }
         }
     }
+
     /** Follow a chain of links to the file that actually holds the bytes. */
     private function resolveSymlink(string $path): string
     {
         $seen = 0;
+
         while (is_link($path)) {
             if (++$seen > 40) {
                 throw new EditException('Too many levels of symbolic links: ' . $path);
             }
             $target = readlink($path);
+
             if ($target === false) {
                 throw new EditException('Cannot read the symlink ' . $path);
             }
             $path = str_starts_with($target, DIRECTORY_SEPARATOR) ? $target : dirname($path) . DIRECTORY_SEPARATOR . $target;
         }
+
         return $path;
     }
 }

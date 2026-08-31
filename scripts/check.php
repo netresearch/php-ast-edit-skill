@@ -1,6 +1,6 @@
 <?php
 
-declare (strict_types=1);
+declare(strict_types=1);
 $root = dirname(__DIR__);
 $paths = [
     $root . '/src',
@@ -16,9 +16,11 @@ $paths = [
 ];
 $files = [];
 $missing = [];
+
 foreach ($paths as $path) {
     if (is_dir($path)) {
         $iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($path, FilesystemIterator::SKIP_DOTS));
+
         foreach ($iterator as $file) {
             if ($file->isFile() && $file->getExtension() === 'php') {
                 $files[] = $file->getPathname();
@@ -30,20 +32,24 @@ foreach ($paths as $path) {
         $missing[] = $path;
     }
 }
+
 if ($missing !== []) {
     fwrite(STDERR, 'Listed path does not exist: ' . implode(', ', $missing) . "\n");
     exit(1);
 }
 $failed = false;
+
 foreach ($files as $file) {
     $command = escapeshellarg(PHP_BINARY) . ' -l ' . escapeshellarg($file) . ' 2>&1';
     exec($command, $output, $status);
+
     if ($status !== 0) {
         $failed = true;
         fwrite(STDERR, implode("\n", $output) . "\n");
     }
     $output = [];
 }
+
 if ($failed) {
     exit(1);
 }
