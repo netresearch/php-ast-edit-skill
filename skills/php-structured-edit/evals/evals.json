@@ -143,6 +143,79 @@
         "Does not claim the AST tool is required outside PHP source",
         "Handles the YAML file with a structure-aware tool where one is available"
       ]
+    },
+    {
+      "id": 12,
+      "eval_name": "create-new-php-file",
+      "prompt": "Create src/Support/Clock.php with a final class Clock in namespace App\\Support that has a now() method returning a DateTimeImmutable.",
+      "expected_output": "A single apply transaction with a file entry in mode create, full construction syntax in php, and the class body either in that syntax or added with add_member.",
+      "files": [],
+      "assertions": [
+        "Uses php-ast-edit apply with \"mode\": \"create\" — does not write the .php file with Write, a heredoc, or a shell redirect",
+        "Passes the whole file as construction syntax in the php field including the <?php open tag",
+        "Relies on expectAbsent rather than checking for the file separately",
+        "Does not hand-format the output — the printer canonicalizes it"
+      ]
+    },
+    {
+      "id": 13,
+      "eval_name": "first-method-into-empty-class",
+      "prompt": "src/Registry.php contains an empty class Registry with no members. Add a public method register(string $name): void to it.",
+      "expected_output": "insert_into (or add_member) against the Stmt_Class node with property stmts — no sibling anchor exists, so insert_before/insert_after cannot apply.",
+      "files": [],
+      "assertions": [
+        "Uses insert_into with \"property\": \"stmts\", or the add_member shorthand",
+        "Does not claim the operation is unsupported and fall back to sed, Write, or apply_patch",
+        "Targets the Stmt_Class node, not a position inside the braces",
+        "Passes the member as a compact PHP snippet in the php field"
+      ]
+    },
+    {
+      "id": 14,
+      "eval_name": "add-first-parameter-to-signature",
+      "prompt": "Give the function App\\bootstrap() in src/bootstrap.php a first parameter `private readonly LoggerInterface $logger`.",
+      "expected_output": "add_parameter (or insert_into on property params) against the function node; the parameter list is empty, so there is no anchor to insert around.",
+      "files": [],
+      "assertions": [
+        "Uses add_parameter or insert_into with \"property\": \"params\"",
+        "Passes the parameter as a param snippet, promoted property syntax included",
+        "Does not rewrite the whole function signature as a text replacement"
+      ]
+    },
+    {
+      "id": 15,
+      "eval_name": "change-return-type-to-union",
+      "prompt": "Change the return type of Checkout::submit() in src/Checkout.php from string to string|false.",
+      "expected_output": "set_return_type (or replace_child on the returnType slot) with a type snippet; the union type is constructed by the parser, not assembled by hand.",
+      "files": [],
+      "assertions": [
+        "Uses set_return_type or replace_child with \"property\": \"returnType\"",
+        "Passes the type as a snippet (\"string|false\"), not as raw AST JSON",
+        "Does not edit the signature line as text"
+      ]
+    },
+    {
+      "id": 16,
+      "eval_name": "delete-obsolete-php-file",
+      "prompt": "src/Legacy/OldMailer.php is no longer referenced anywhere. Remove it.",
+      "expected_output": "A file entry with \"mode\": \"delete\" and the sha256 from inspect or validate.",
+      "files": [],
+      "assertions": [
+        "Uses php-ast-edit apply with \"mode\": \"delete\" rather than rm",
+        "Passes the sha256 guard so a concurrently changed file is not deleted blindly"
+      ]
+    },
+    {
+      "id": 17,
+      "eval_name": "multi-file-transaction-is-all-or-nothing",
+      "prompt": "Rename the interface Payable to Billable and update the two classes that implement it, in src/Payable.php, src/Invoice.php and src/Order.php.",
+      "expected_output": "One apply document listing all three files, so either every file changes or none does.",
+      "files": [],
+      "assertions": [
+        "Sends all three files in a single apply document, not three separate transactions",
+        "Includes the sha256 for each file",
+        "Does not write the first files and then discover the third one fails"
+      ]
     }
   ]
 }
