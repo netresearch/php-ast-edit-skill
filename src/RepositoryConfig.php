@@ -21,6 +21,8 @@ final class RepositoryConfig
 {
     public const FILE = '.php-ast-edit.json';
 
+    public const MIN_WIDTH = 20;
+
     private function __construct(
         public readonly bool $canonical,
         public readonly int $width,
@@ -63,9 +65,10 @@ final class RepositoryConfig
         }
 
         $width = $data['printWidth'] ?? CanonicalPrinter::DEFAULT_WIDTH;
-        if (!is_int($width) || $width < 20) {
-            throw new EditException($path.': printWidth must be an integer of at least 20.');
+        if (!is_int($width)) {
+            throw new EditException($path.': printWidth must be an integer.');
         }
+        self::assertWidth($width, $path.': ');
 
         return new self((bool) ($data['canonical'] ?? false), $width, $path);
     }
@@ -97,8 +100,27 @@ final class RepositoryConfig
         }
     }
 
+    /**
+     * The one place that decides what a usable width is.
+     *
+     * Writing a width the read path would reject leaves a repository that declares itself
+     * canonical and then fails every command until somebody edits the file by hand.
+     */
+    public static function assertWidth(int $width, string $prefix = ''): void
+    {
+        if ($width < self::MIN_WIDTH) {
+            throw new EditException(sprintf(
+                '%sprintWidth must be at least %d; %d cannot hold a useful line.',
+                $prefix,
+                self::MIN_WIDTH,
+                $width,
+            ));
+        }
+    }
+
     public static function write(string $directory, int $width): string
     {
+        self::assertWidth($width);
         $path = rtrim($directory, DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR.self::FILE;
         $payload = json_encode(
             ['canonical' => true, 'printWidth' => $width],

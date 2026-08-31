@@ -15,19 +15,6 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - **`format`** prints canonically; `--dry-run` lists what would change. Deliberately no `--check`: on the intended state it would be red, because the formatter has been over the files since. The gate is the chain `php-ast-edit format && <project formatter> && git diff --exit-code`, documented as such.
 - `references/formatting-contract.md` — the precondition, the one-time setup, the decay without a CI gate, and a measured table of which PHP tools can canonicalise line breaking (php-cs-fixer, Pint, ECS and PHP_CodeSniffer cannot; `@prettier/plugin-php` and this printer can).
 - `tests/formatting.php` — 33 checks: width behaviour and idempotence at three budgets, printer selection from the declaration, the explicit override, and the format-preserving footprint for six operation classes rather than for renames alone.
-
-### Fixed
-
-- Nine uses of `new Foo()->bar()` — PHP 8.4 syntax — in a package whose floor is 8.2. It was the second time in one session: the host here runs 8.5, so `php -l` cannot see it, and neither can parsing, because php-parser's grammar is not version-gated for that construct. `tests/php-floor.php` closes it by reading the source position after the `new`: a parenthesised one is followed by `)`, the bare form by the dereference. Scoped deliberately to that construct rather than pretending to cover every version difference — for that, run the floor interpreter.
-
-### Changed
-
-- `apply` mutates a clone of the parsed tree and keeps the pristine tree and its tokens, which format-preserving printing needs to map a node back to the source.
-- `tests/corpus.php` round-trips through `CanonicalPrinter`, so the printer that `apply` uses is the one whose fidelity is proven.
-- `printWidth` lives in `.php-ast-edit.json` only. `format --width` is refused: formatting at a width the repository was not normalised with moves the fixed point and reflows everything.
-
-### Added
-
 - **AST mutation primitives.** `replace_node`, `delete_node`, `insert_into`, `replace_child`, `delete_child` and `move_node` form a complete CRUD algebra over the AST. `insert_into` addresses a container by node, property and position, so it needs no existing sibling — adding the first method to an empty class, the first statement to an empty function body or the first parameter to an empty signature is now expressible.
 - **Contextual snippet parsing.** A snippet is parsed inside a synthetic host construct, so the grammar comes from `nikic/php-parser` instead of being modelled a second time here: `expr`, `stmt`, `member`, `enum_case`, `param`, `arg`, `type`, `array_item`, `match_arm`, `attribute`, `closure_use`, `catch`, `const`, `use`, `property_item`, `static_var`, `file`. `parseAs` is inferred where unambiguous.
 - **Structural node references.** `inspect` returns a `ref` (`stmts[1].stmts[0].params[0]`) and the node's `slots` alongside the byte coordinates; `target` accepts `ref` as an alternative to `offset` or `line`/`column`. A ref is only valid together with the snapshot it came from.
@@ -42,6 +29,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Changed
 
+- `apply` mutates a clone of the parsed tree and keeps the pristine tree and its tokens, which format-preserving printing needs to map a node back to the source.
+- `tests/corpus.php` round-trips through `CanonicalPrinter`, so the printer that `apply` uses is the one whose fidelity is proven.
+- `printWidth` lives in `.php-ast-edit.json` only. `format --width` is refused: formatting at a width the repository was not normalised with moves the fixed point and reflows everything.
 - **The contract is now "write PHP through the AST", not "edit PHP through the AST".** Any creation, modification, replacement, deletion or movement of PHP syntax goes through `php-ast-edit`; text mutation is never the fallback when an operation looks unsupported.
 - **`apply` is transactional across files.** Every file is read, guarded, resolved, mutated, printed and re-parsed before the first byte is written, and a failure during the write phase rolls the already written files back. Previously each file was written as soon as it succeeded, so a failure in file three could leave files one and two changed.
 - The existing typed operations are now convenience shorthands over the primitives rather than the coverage boundary.
@@ -49,6 +39,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Fixed
 
+- `normalize` declared a repository canonical even when it had only been pointed at a subdirectory, or when files had failed to format. Both now refuse the declaration and say which. A marker that speaks for code it never covered is worse than none.
+- `printWidth` was validated on read but not on write, so `normalize --width 10` persisted a value every later command then rejected. One method decides the minimum for both paths.
+- `Formatter` wrote with a plain `file_put_contents`; it now uses the same temporary-file-and-rename the transaction engine does, so a crash mid-write cannot truncate a source file.
+- `tests/corpus.php` stripped every attribute before comparing, comments included — which made comment loss invisible in the test that exists to prove nothing is lost. Comments are now compared as a set, by content: attachment moves in 206 of 270 files while the text survives, and **two genuine losses** surfaced. An `else` block whose only statement is an `if` prints as `else if`, collapsing the block and the comment attached to that inner `if`. That is php-parser's own behaviour — reproduced with its `Standard` printer — so the two are listed by their text and any other loss fails the suite.
+- Nine uses of `new Foo()->bar()` — PHP 8.4 syntax — in a package whose floor is 8.2. It was the second time in one session: the host here runs 8.5, so `php -l` cannot see it, and neither can parsing, because php-parser's grammar is not version-gated for that construct. `tests/php-floor.php` closes it by reading the source position after the `new`: a parenthesised one is followed by `)`, the bare form by the dereference. Scoped deliberately to that construct rather than pretending to cover every version difference — for that, run the floor interpreter.
 - A contextual snippet that escaped its synthetic host — `echo 1;` in the `attribute` context, `} echo 1; class Y {` in `member` — reached into a node the extractor never expected and produced an undefined-property warning followed by a `TypeError`. The host node is now checked before extraction.
 - `create` prepended a missing `<?php` open tag, which shifted every byte offset the same document's `edits` used. The tag is required and its absence is named.
 - Emptying a slot that cannot be null (`Param::$var`) raised a `TypeError` at the assignment. It is refused by name, pointing at `replace_child` / `replace_node`.

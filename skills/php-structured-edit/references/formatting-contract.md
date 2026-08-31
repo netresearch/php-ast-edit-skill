@@ -87,6 +87,18 @@ after printing rather than as intended.
 
 Force either printer per file with `"printer": "canonical" | "format-preserving"`.
 
+## One thing canonical printing loses
+
+An `else` block whose only statement is an `if` is printed as `else if`, which collapses the
+block — and a comment attached to that inner `if` has nowhere left to go. This is
+php-parser's own behaviour, reproduced with its `Standard` printer, not something added
+here. It hit **2 of 270** files in the corpus this package tests against.
+
+`tests/corpus.php` lists those two by their text rather than tolerating comment loss in
+general, so any other loss fails the suite. It is also the sharpest argument for keeping the
+fallback: format-preserving printing does not re-render the statements it does not touch, so
+it cannot hit this at all.
+
 ## What the tools can and cannot do
 
 Every claim here was measured against `friendsofphp/php-cs-fixer` 3.95 and
@@ -105,9 +117,12 @@ So a PHP repository that wants canonical *and* readable formatting has two optio
 Prettier, or let this printer own line breaking and keep the existing formatter for
 everything else. The second is what this package implements.
 
-The printer breaks call arguments, array items, attribute arguments and parameter lists at
-a column budget. It does not break string concatenations or method chains — that needs the
-kind of document IR Prettier builds. Measured against the same extension:
+The printer breaks every comma-separated list php-parser routes through its two multiline
+hooks — call arguments, array items, parameter lists, attribute arguments, `match` arms,
+`implements` lists and closure `use` clauses — at a column budget. It does not break string
+concatenations or method chains: that needs the kind of document IR Prettier builds, and the
+measurement says it is not what stands between this output and the authors'. Measured
+against the same extension:
 
 | | longest line | lines > 120 |
 | --- | --- | --- |

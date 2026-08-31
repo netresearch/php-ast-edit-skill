@@ -47,9 +47,15 @@ for the printer to agree with, so every edit is a style decision nobody made.
    `inspect`. Refs and coordinates are resolved against that snapshot.
 5. Write compact, syntactically valid snippets. Spend no tokens on formatting; the
    printer canonicalizes the output.
-6. Run the project's formatter and normal validation after the transaction. That is not a
-   courtesy: the fixed point belongs to the printer and the formatter together, so the file
-   is only back on it once the formatter has run.
+6. Close the transaction with the whole chain, not just the formatter:
+
+   ```bash
+   scripts/php-ast-edit format && <the project's formatter> && git diff --exit-code
+   ```
+
+   The fixed point belongs to the printer and the formatter together, so the file is only
+   back on it once both have run; `git diff --exit-code` is what proves it, since neither
+   tool reports drift on its own. Then the project's normal validation.
 
 For foreign code stored inside a PHP string, target the `Scalar_String` node and use
 `set_string` unless a dedicated nested-language editor exists.

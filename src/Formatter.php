@@ -63,12 +63,48 @@ final class Formatter
                 continue;
             }
             $changed[] = $file;
-            if (!$dryRun && file_put_contents($file, $output) === false) {
-                $failed[$file] = 'cannot write';
+            if ($dryRun) {
+                continue;
+            }
+            try {
+                // Same discipline as a transaction: a crash mid-write must not truncate
+                // somebody's source file.
+                $this->atomicWrite($file, $output);
+            } catch (EditException $failure) {
+                $failed[$file] = $failure->getMessage();
             }
         }
 
         return ['scanned' => $scanned, 'changed' => $changed, 'failed' => $failed];
+    }
+
+    private function atomicWrite(string $path, string $contents): void
+    {
+        $directory = dirname($path);
+        if (!is_writable($directory)) {
+            throw new EditException('Directory is not writable: '.$directory);
+        }
+        $temp = @tempnam($directory, '.php-ast-edit-');
+        if ($temp === false || realpath(dirname($temp)) !== realpath($directory)) {
+            if (is_string($temp) && is_file($temp)) {
+                @unlink($temp);
+            }
+            throw new EditException('Cannot create a temporary file next to '.$path);
+        }
+        try {
+            $mode = fileperms($path);
+            if (@file_put_contents($temp, $contents) === false) {
+                throw new EditException('Cannot write a temporary file for '.$path);
+            }
+            @chmod($temp, $mode !== false ? ($mode & 0777) : (0666 & ~umask()));
+            if (!@rename($temp, $path)) {
+                throw new EditException('Atomic rename failed for '.$path);
+            }
+        } finally {
+            if (is_file($temp)) {
+                @unlink($temp);
+            }
+        }
     }
 
     /**

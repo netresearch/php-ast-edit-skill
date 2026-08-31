@@ -89,6 +89,7 @@ final class Application
 
         $width = $config->width;
         if (isset($options['width'])) {
+            RepositoryConfig::assertWidth($this->integerOption($options, 'width'));
             if (!$normalize) {
                 throw new EditException(
                     '--width belongs to normalize, which records it in '.RepositoryConfig::FILE.'. '
@@ -113,9 +114,29 @@ final class Application
         }
 
         if ($normalize && !$dryRun) {
-            $payload['declared'] = RepositoryConfig::write($root, $width);
-            $payload['next'] = 'Run the project formatter now and commit both in one change of '
-                .'their own — normalisation is not a feature commit.';
+            // The marker describes the whole repository, so only a run that covered the whole
+            // repository may write it. A partial normalise that declared the root would leave
+            // everything beside it printed canonically against a source that never was.
+            $scanned = realpath($paths[0]);
+            if ($scanned !== realpath($root)) {
+                $payload['declared'] = null;
+                $payload['next'] = sprintf(
+                    'Not declared: --path covered %s, and the declaration speaks for the whole '
+                    .'repository at %s. Re-run normalize without --path, or against the root.',
+                    $paths[0],
+                    $root,
+                );
+            } elseif ($result['failed'] !== []) {
+                // A file that could not be parsed or written is not canonical, and a marker
+                // saying otherwise is worse than none.
+                $payload['declared'] = null;
+                $payload['next'] = 'Not declared: '.count($result['failed'])
+                    .' file(s) could not be formatted. Fix those, then run normalize again.';
+            } else {
+                $payload['declared'] = RepositoryConfig::write($root, $width);
+                $payload['next'] = 'Run the project formatter now and commit both in one change '
+                    .'of their own — normalisation is not a feature commit.';
+            }
         }
 
         $this->json($payload);

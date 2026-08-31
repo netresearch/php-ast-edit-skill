@@ -31,7 +31,7 @@ final class CanonicalPrinter extends Standard
     public function __construct(?PhpVersion $phpVersion = null, int $width = self::DEFAULT_WIDTH)
     {
         parent::__construct($phpVersion === null ? [] : ['phpVersion' => $phpVersion]);
-        $this->width = max(20, $width);
+        $this->width = max(RepositoryConfig::MIN_WIDTH, $width);
     }
 
     public function width(): int

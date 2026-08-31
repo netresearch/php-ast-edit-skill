@@ -194,6 +194,43 @@ try {
 }
 removeTree($dir);
 
+// ---- normalize must not declare what it did not do -------------------------------------
+$dir = workspace();
+mkdir($dir.'/sub', 0700, true);
+file_put_contents($dir.'/sub/a.php', "<?php\nclass  Foo{}\n");
+$app = static function (array $argv) use ($dir): array {
+    $out = [];
+    exec(escapeshellarg(PHP_BINARY).' '.escapeshellarg(dirname(__DIR__).'/bin/php-ast-edit')
+        .' '.implode(' ', array_map('escapeshellarg', $argv)).' 2>/dev/null', $out);
+    return json_decode(implode("\n", $out), true) ?? [];
+};
+
+$partial = $app(['normalize', '--path', $dir.'/sub', '--width', '80']);
+// `?? ` treats an explicit null as absent, which is exactly the value under test here.
+check(
+    'a partial normalize does not declare the repository',
+    array_key_exists('declared', $partial) && $partial['declared'] === null,
+    json_encode($partial['declared'] ?? '<missing>'),
+);
+check('and says why', str_contains($partial['next'] ?? '', 'whole'));
+check('no marker was written', !is_file($dir.'/'.RepositoryConfig::FILE));
+
+$whole = $app(['normalize', '--path', $dir, '--width', '80']);
+check('a full normalize declares the repository', is_string($whole['declared'] ?? null));
+removeTree($dir);
+
+// A width the read path would reject must never be written.
+$dir = workspace();
+file_put_contents($dir.'/a.php', "<?php\nclass Foo {}\n");
+try {
+    RepositoryConfig::write($dir, 10);
+    check('a width below the minimum is refused', false, 'accepted');
+} catch (Throwable $throwable) {
+    check('a width below the minimum is refused', str_contains($throwable->getMessage(), 'at least'));
+}
+check('and no marker was left behind', !is_file($dir.'/'.RepositoryConfig::FILE));
+removeTree($dir);
+
 // ---- doctor ------------------------------------------------------------------------------
 $dir = workspace();
 $report = (new Doctor())->examine($dir);
