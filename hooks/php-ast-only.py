@@ -28,26 +28,22 @@ from __future__ import annotations
 
 import json
 import os
-import re
+import shlex
 import sys
 
 FILE_TOOLS = {"Edit", "Write", "MultiEdit", "NotebookEdit"}
 
-# Text mutation of a .php path from the shell. Read-only tools (cat, grep, php -l,
-# git diff) are deliberately absent — this gate is about writes.
-BASH_PATTERNS = [
-    (re.compile(r"\bsed\b[^|;&]*-[a-zA-Z]*i[a-zA-Z]*\b[^|;&]*\.php\b"), "sed -i"),
-    (re.compile(r"\bperl\b[^|;&]*-[a-zA-Z]*i[a-zA-Z]*\b[^|;&]*\.php\b"), "perl -i"),
-    (re.compile(r"\b(?:awk|sed|perl|python3?)\b[^|;&]*>\s*\S+\.php\b"), "stream redirect into a .php file"),
-    (re.compile(r"\b(?:cat|tee|printf|echo)\b[^|;&]*>\s*\S+\.php\b"), "shell redirect into a .php file"),
-    (re.compile(r"\bapply_patch\b[^\n]*\.php\b"), "apply_patch"),
-]
+PHP_SUFFIXES = (".php", ".phtml")
+
+# Programs whose in-place flag rewrites a file in the shell.
+IN_PLACE_PROGRAMS = {"sed", "gsed", "perl"}
+REDIRECTS = {">", ">>"}
 
 FOOTER = (
     "\n\nUse php-ast-edit instead:\n"
     "  php-ast-edit inspect --file <path> --line <n> --column <n>\n"
     "  php-ast-edit apply --input edits.json\n"
-    "A new file is a file entry with \"mode\": \"create\"; a removal is \"mode\": \"delete\".\n"
+    'A new file is a file entry with "mode": "create"; a removal is "mode": "delete".\n'
     "Run `php-ast-edit contexts` for the parseAs and operation catalog.\n"
     "PHP_AST_ONLY_OFF=1 for a deliberate exception."
 )
@@ -79,7 +75,44 @@ def php_paths(tool_input: dict) -> list[str]:
         for edit in edits:
             if isinstance(edit, dict) and isinstance(edit.get("file_path"), str):
                 candidates.append(edit["file_path"])
-    return [p for p in candidates if p.endswith((".php", ".phtml"))]
+    return [p for p in candidates if p.endswith(PHP_SUFFIXES)]
+
+
+def is_in_place_flag(token: str) -> bool:
+    if token == "--in-place":
+        return True
+    return token.startswith("-") and not token.startswith("--") and "i" in token
+
+
+def text_mutation_of_php(command: str) -> str | None:
+    """Name the text mutation this command performs on a PHP file, if any.
+
+    Deliberately token-based rather than one large regular expression: a hook runs before
+    every Bash call, so it must be linear in the length of the command line.
+    """
+    if not any(suffix in command for suffix in PHP_SUFFIXES):
+        return None
+
+    try:
+        tokens = shlex.split(command)
+    except ValueError:
+        tokens = command.split()
+
+    program = None
+    for token in tokens:
+        if token in IN_PLACE_PROGRAMS:
+            program = token
+            continue
+        if token == "apply_patch":
+            return "apply_patch"
+        if program is not None and is_in_place_flag(token):
+            return f"{program} in place"
+        if token in REDIRECTS or token == "tee":
+            return "a shell redirect into a .php file"
+        if token.startswith(">") and token.lstrip(">").endswith(PHP_SUFFIXES):
+            return "a shell redirect into a .php file"
+
+    return None
 
 
 def main() -> int:
@@ -88,7 +121,7 @@ def main() -> int:
 
     try:
         payload = json.load(sys.stdin)
-    except (json.JSONDecodeError, ValueError):
+    except ValueError:  # json.JSONDecodeError is a ValueError
         return 0
 
     tool = payload.get("tool_name", "")
@@ -109,16 +142,14 @@ def main() -> int:
 
     if tool == "Bash":
         command = tool_input.get("command")
-        if not isinstance(command, str):
+        if not isinstance(command, str) or "php-ast-edit" in command:
             return 0
-        if "php-ast-edit" in command:
-            return 0
-        for pattern, label in BASH_PATTERNS:
-            if pattern.search(command):
-                return deny(
-                    f"This command mutates PHP as text ({label}). PHP is written through its "
-                    "AST in this project."
-                )
+        label = text_mutation_of_php(command)
+        if label is not None:
+            return deny(
+                f"This command mutates PHP as text ({label}). PHP is written through its "
+                "AST in this project."
+            )
 
     return 0
 

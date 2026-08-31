@@ -64,7 +64,7 @@ final class NodeLocator
         }
 
         $segments = explode('.', $ref);
-        $pattern = '/^([A-Za-z_][A-Za-z0-9_]*)(?:\[(\d+)\])?$/';
+        $pattern = '/^([A-Za-z_]\w*)(?:\[(\d+)\])?$/';
 
         if (!preg_match($pattern, $segments[0], $first) || $first[1] !== 'stmts' || !isset($first[2])) {
             throw new EditException('target.ref must start with stmts[<index>], got: '.$segments[0]);

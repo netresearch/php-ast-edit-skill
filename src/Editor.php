@@ -314,6 +314,29 @@ final class Editor
     private function applyOperation(NodeLocation $location, array $edit, array &$roots, ContextParser $snippets): void
     {
         $operation = $this->requiredString($edit, 'operation');
+
+        $applied = $this->applyPrimitive($operation, $location, $edit, $roots, $snippets)
+            || $this->applyComment($operation, $location, $edit)
+            || $this->applyShorthand($operation, $location, $edit, $roots, $snippets)
+            || $this->applySemantic($operation, $location, $edit, $snippets);
+
+        if (!$applied) {
+            throw new EditException('Unsupported operation: '.$operation);
+        }
+    }
+
+    /**
+     * The mutation algebra: every construct is reachable through these.
+     *
+     * @return bool true when the operation belonged to this group and was applied.
+     */
+    private function applyPrimitive(
+        string $operation,
+        NodeLocation $location,
+        array $edit,
+        array &$roots,
+        ContextParser $snippets,
+    ): bool {
         $node = $location->node;
 
         switch ($operation) {
@@ -321,54 +344,86 @@ final class Editor
             case 'replace_node':
                 $context = $this->context($edit, $location);
                 $location->replace($snippets->parseOne($context, $this->requiredString($edit, 'php')), $roots);
-                return;
+                return true;
 
             case 'delete_node':
             case 'delete':
                 $location->remove($roots);
-                return;
+                return true;
 
             case 'insert_into':
                 $property = $this->requiredString($edit, 'property');
                 $php = $this->requiredString($edit, 'php');
                 $nodes = !isset($edit['parseAs']) && $property === 'stmts' && $node instanceof Stmt\ClassLike
                     ? $snippets->parseFirst($this->memberContexts($node), $php)
-                    : $snippets->parse($this->contextForProperty($edit, $location, $property), $php);
-                $location->insertInto($property, $nodes, $this->position($edit), $roots);
-                return;
+                    : $snippets->parse($this->contextForProperty($edit, $property), $php);
+                $location->insertInto($property, $nodes, $this->position($edit));
+                return true;
 
             case 'replace_child':
                 $property = $this->requiredString($edit, 'property');
-                $context = $this->contextForProperty($edit, $location, $property);
+                $context = $this->contextForProperty($edit, $property);
                 $location->replaceChild(
                     $property,
                     $this->optionalIndex($edit),
                     $snippets->parseOne($context, $this->requiredString($edit, 'php')),
-                    $roots,
                 );
-                return;
+                return true;
 
             case 'delete_child':
                 $location->removeChild($this->requiredString($edit, 'property'), $this->optionalIndex($edit));
-                return;
+                return true;
 
             case 'move_node':
                 $this->moveNode($location, $edit, $roots);
-                return;
+                return true;
+        }
 
+        return false;
+    }
+
+    /**
+     * Comments and docblocks — the one area regular AST child nodes do not cover.
+     *
+     * @return bool true when the operation belonged to this group and was applied.
+     */
+    private function applyComment(string $operation, NodeLocation $location, array $edit): bool
+    {
+        $node = $location->node;
+
+        switch ($operation) {
             // ---- Comments ---------------------------------------------------------------
             case 'set_doc_comment':
                 $this->setDocComment($node, $this->requiredString($edit, 'value'));
-                return;
+                return true;
 
             case 'remove_doc_comment':
                 $this->setDocComment($node, null);
-                return;
+                return true;
+        }
 
+        return false;
+    }
+
+    /**
+     * Established shorthands over the primitives, kept for compactness and safety.
+     *
+     * @return bool true when the operation belonged to this group and was applied.
+     */
+    private function applyShorthand(
+        string $operation,
+        NodeLocation $location,
+        array $edit,
+        array &$roots,
+        ContextParser $snippets,
+    ): bool {
+        $node = $location->node;
+
+        switch ($operation) {
             // ---- Convenience shorthands over the primitives ------------------------------
             case 'set_name':
                 $this->setName($location, $this->requiredString($edit, 'value'), $roots);
-                return;
+                return true;
 
             case 'set_string':
                 if (!$node instanceof String_) {
@@ -378,21 +433,21 @@ final class Editor
                 $attributes = $node->getAttributes();
                 unset($attributes['rawValue']);
                 $node->setAttributes($attributes);
-                return;
+                return true;
 
             case 'replace_expression':
                 if (!$node instanceof Expr) {
                     throw new EditException('replace_expression requires an Expr target.');
                 }
                 $location->replace($snippets->parseOne('expr', $this->requiredString($edit, 'php')), $roots);
-                return;
+                return true;
 
             case 'replace_statement':
                 if (!$node instanceof Stmt) {
                     throw new EditException('replace_statement requires a Stmt target.');
                 }
                 $location->replace($snippets->parseOne('stmt', $this->requiredString($edit, 'php')), $roots);
-                return;
+                return true;
 
             case 'insert_before':
             case 'insert_after':
@@ -403,7 +458,7 @@ final class Editor
                 } else {
                     $location->insertAfter($nodes, $roots);
                 }
-                return;
+                return true;
 
             case 'replace_argument':
             case 'add_argument':
@@ -412,8 +467,26 @@ final class Editor
                     throw new EditException($operation.' requires an Expr_*Call target.');
                 }
                 $this->editArgument($node, $edit, $snippets, $operation);
-                return;
+                return true;
+        }
 
+        return false;
+    }
+
+    /**
+     * Semantic shorthands that name a language concept rather than an AST slot.
+     *
+     * @return bool true when the operation belonged to this group and was applied.
+     */
+    private function applySemantic(
+        string $operation,
+        NodeLocation $location,
+        array $edit,
+        ContextParser $snippets,
+    ): bool {
+        $node = $location->node;
+
+        switch ($operation) {
             // ---- Semantic convenience ----------------------------------------------------
             case 'add_member':
                 $this->assertType($node, Stmt\ClassLike::class, 'add_member requires a class-like target.');
@@ -421,9 +494,8 @@ final class Editor
                     'stmts',
                     $snippets->parseFirst($this->memberContexts($node), $this->requiredString($edit, 'php')),
                     $this->position($edit, 'end'),
-                    $roots,
                 );
-                return;
+                return true;
 
             case 'add_parameter':
                 if (!$node instanceof Node\FunctionLike) {
@@ -433,40 +505,36 @@ final class Editor
                     'params',
                     $snippets->parse('param', $this->requiredString($edit, 'php')),
                     $this->position($edit, 'end'),
-                    $roots,
                 );
-                return;
+                return true;
 
             case 'add_attribute':
                 $location->insertInto(
                     'attrGroups',
                     $snippets->parse('attribute', $this->requiredString($edit, 'php')),
                     $this->position($edit, 'end'),
-                    $roots,
                 );
-                return;
+                return true;
 
             case 'set_return_type':
                 $location->replaceChild(
                     'returnType',
                     null,
                     $snippets->parseOne('type', $this->requiredString($edit, 'php')),
-                    $roots,
                 );
-                return;
+                return true;
 
             case 'set_type':
                 $location->replaceChild(
                     'type',
                     null,
                     $snippets->parseOne('type', $this->requiredString($edit, 'php')),
-                    $roots,
                 );
-                return;
+                return true;
 
             case 'set_visibility':
                 $this->setVisibility($node, $this->requiredString($edit, 'value'));
-                return;
+                return true;
 
             case 'add_implements':
                 $this->assertType($node, Stmt\Class_::class, 'add_implements requires a Stmt_Class target.');
@@ -474,22 +542,19 @@ final class Editor
                     'implements',
                     [$snippets->parseOne('type', $this->requiredString($edit, 'php'))],
                     $this->position($edit, 'end'),
-                    $roots,
                 );
-                return;
+                return true;
 
             case 'set_extends':
                 $location->replaceChild(
                     'extends',
                     $this->optionalIndex($edit),
                     $snippets->parseOne('type', $this->requiredString($edit, 'php')),
-                    $roots,
                 );
-                return;
-
-            default:
-                throw new EditException('Unsupported operation: '.$operation);
+                return true;
         }
+
+        return false;
     }
 
     private function moveNode(NodeLocation $location, array $edit, array &$roots): void
@@ -509,7 +574,6 @@ final class Editor
             (string) $into['property'],
             [$node],
             $this->position(['position' => $into['position'] ?? 'end'], 'end'),
-            $roots,
         );
     }
 
@@ -575,7 +639,7 @@ final class Editor
         ));
     }
 
-    private function contextForProperty(array $edit, NodeLocation $location, string $property): string
+    private function contextForProperty(array $edit, string $property): string
     {
         if (isset($edit['parseAs'])) {
             return (string) $edit['parseAs'];

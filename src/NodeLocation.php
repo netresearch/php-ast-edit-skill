@@ -102,7 +102,7 @@ final class NodeLocation
      * @param list<Node> $nodes
      * @param int|'start'|'end' $position
      */
-    public function insertInto(string $property, array $nodes, int|string $position, array &$roots): void
+    public function insertInto(string $property, array $nodes, int|string $position): void
     {
         $items = $this->childList($property);
         $index = $this->resolvePosition($position, count($items), $property, true);
@@ -114,7 +114,7 @@ final class NodeLocation
      * Replace a child slot of THIS node: the whole slot when `$index` is null, otherwise one
      * list element.
      */
-    public function replaceChild(string $property, ?int $index, Node $replacement, array &$roots): void
+    public function replaceChild(string $property, ?int $index, Node $replacement): void
     {
         $this->assertProperty($property);
 

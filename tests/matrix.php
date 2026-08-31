@@ -17,15 +17,23 @@ if (!is_file($autoload)) {
     fwrite(STDERR, "SKIP: vendor/autoload.php missing; run composer install to execute the matrix.\n");
     exit(0);
 }
-require $autoload;
+require_once $autoload;
 
 use Netresearch\PhpAstEdit\Editor;
+
+const EMPTY_CLASS = "<?php\nclass Foo\n{\n}\n";
+const EMPTY_FUNCTION = "<?php\nfunction foo()\n{\n}\n";
+const ONE_LINE_CLASS = "<?php\nclass Foo {}\n";
+const CLASS_REF = 'stmts[0]';
+const CLASS_NAME_REF = 'stmts[0].name';
+const FIRST_MEMBER_REF = 'stmts[0].stmts[0]';
 
 /**
  * @var list<array{
  *   name: string,
  *   files?: array<string, string>,
- *   document: callable(array<string, string>): array,
+ *   edits?: list<array<string, mixed>>,
+ *   document?: callable(array<string, string>): array,
  *   contains?: list<array{0: string, 1: string}>,
  *   notContains?: list<array{0: string, 1: string}>,
  *   unchanged?: list<string>,
@@ -38,34 +46,34 @@ $cases = [
     // ---- Empty containers: the operations that were impossible before ------------------
     [
         'name' => 'first method into an empty class',
-        'files' => ['a.php' => "<?php\nclass Foo\n{\n}\n"],
-        'document' => fn (array $p): array => ['files' => [['path' => $p['a.php'], 'edits' => [
-            ['target' => ['ref' => 'stmts[0]'], 'operation' => 'insert_into', 'property' => 'stmts', 'php' => 'public function bar(): void {}'],
-        ]]]],
+        'files' => ['a.php' => EMPTY_CLASS],
+        'edits' => [
+            ['target' => ['ref' => CLASS_REF], 'operation' => 'insert_into', 'property' => 'stmts', 'php' => 'public function bar(): void {}'],
+        ],
         'contains' => [['a.php', 'public function bar(): void']],
     ],
     [
         'name' => 'first statement into an empty function body',
-        'files' => ['a.php' => "<?php\nfunction foo()\n{\n}\n"],
-        'document' => fn (array $p): array => ['files' => [['path' => $p['a.php'], 'edits' => [
-            ['target' => ['ref' => 'stmts[0]'], 'operation' => 'insert_into', 'property' => 'stmts', 'parseAs' => 'stmt', 'php' => 'return 1;'],
-        ]]]],
+        'files' => ['a.php' => EMPTY_FUNCTION],
+        'edits' => [
+            ['target' => ['ref' => CLASS_REF], 'operation' => 'insert_into', 'property' => 'stmts', 'parseAs' => 'stmt', 'php' => 'return 1;'],
+        ],
         'contains' => [['a.php', 'return 1;']],
     ],
     [
         'name' => 'first parameter into an empty parameter list',
-        'files' => ['a.php' => "<?php\nfunction foo()\n{\n}\n"],
-        'document' => fn (array $p): array => ['files' => [['path' => $p['a.php'], 'edits' => [
-            ['target' => ['ref' => 'stmts[0]'], 'operation' => 'add_parameter', 'php' => 'private readonly ?Foo $foo = null'],
-        ]]]],
+        'files' => ['a.php' => EMPTY_FUNCTION],
+        'edits' => [
+            ['target' => ['ref' => CLASS_REF], 'operation' => 'add_parameter', 'php' => 'private readonly ?Foo $foo = null'],
+        ],
         'contains' => [['a.php', 'function foo(private readonly ?Foo $foo = null)']],
     ],
     [
         'name' => 'first item into an empty array',
         'files' => ['a.php' => "<?php\n\$a = [];\n"],
-        'document' => fn (array $p): array => ['files' => [['path' => $p['a.php'], 'edits' => [
+        'edits' => [
             ['target' => ['ref' => 'stmts[0].expr.expr'], 'operation' => 'insert_into', 'property' => 'items', 'php' => "'k' => 1"],
-        ]]]],
+        ],
         'contains' => [['a.php', "'k' => 1"]],
     ],
 
@@ -113,35 +121,35 @@ $cases = [
     [
         'name' => 'interface gains a method signature',
         'files' => ['a.php' => "<?php\ninterface I\n{\n}\n"],
-        'document' => fn (array $p): array => ['files' => [['path' => $p['a.php'], 'edits' => [
-            ['target' => ['ref' => 'stmts[0]'], 'operation' => 'add_member', 'php' => 'public function run(): void;'],
-        ]]]],
+        'edits' => [
+            ['target' => ['ref' => CLASS_REF], 'operation' => 'add_member', 'php' => 'public function run(): void;'],
+        ],
         'contains' => [['a.php', 'public function run(): void;']],
     ],
     [
         'name' => 'trait gains a property',
         'files' => ['a.php' => "<?php\ntrait T\n{\n}\n"],
-        'document' => fn (array $p): array => ['files' => [['path' => $p['a.php'], 'edits' => [
-            ['target' => ['ref' => 'stmts[0]'], 'operation' => 'add_member', 'php' => 'private static array $cache = [];'],
-        ]]]],
+        'edits' => [
+            ['target' => ['ref' => CLASS_REF], 'operation' => 'add_member', 'php' => 'private static array $cache = [];'],
+        ],
         'contains' => [['a.php', 'private static array $cache = [];']],
     ],
     [
         'name' => 'enum gains a case',
         'files' => ['a.php' => "<?php\nenum Status: string\n{\n}\n"],
-        'document' => fn (array $p): array => ['files' => [['path' => $p['a.php'], 'edits' => [
-            ['target' => ['ref' => 'stmts[0]'], 'operation' => 'add_member', 'php' => "case Draft = 'draft';"],
-        ]]]],
+        'edits' => [
+            ['target' => ['ref' => CLASS_REF], 'operation' => 'add_member', 'php' => "case Draft = 'draft';"],
+        ],
         'contains' => [['a.php', "case Draft = 'draft';"]],
     ],
     [
         'name' => 'class gains an implements entry, an attribute and a docblock',
-        'files' => ['a.php' => "<?php\nclass Foo\n{\n}\n"],
-        'document' => fn (array $p): array => ['files' => [['path' => $p['a.php'], 'edits' => [
-            ['target' => ['ref' => 'stmts[0]'], 'operation' => 'add_implements', 'php' => 'Countable'],
-            ['target' => ['ref' => 'stmts[0]'], 'operation' => 'add_attribute', 'php' => '#[Immutable]'],
-            ['target' => ['ref' => 'stmts[0]'], 'operation' => 'set_doc_comment', 'value' => "A value object.\n\n@internal"],
-        ]]]],
+        'files' => ['a.php' => EMPTY_CLASS],
+        'edits' => [
+            ['target' => ['ref' => CLASS_REF], 'operation' => 'add_implements', 'php' => 'Countable'],
+            ['target' => ['ref' => CLASS_REF], 'operation' => 'add_attribute', 'php' => '#[Immutable]'],
+            ['target' => ['ref' => CLASS_REF], 'operation' => 'set_doc_comment', 'value' => "A value object.\n\n@internal"],
+        ],
         'contains' => [
             ['a.php', 'class Foo implements Countable'],
             ['a.php', '#[Immutable]'],
@@ -152,18 +160,18 @@ $cases = [
     [
         'name' => 'class extends is set through replace_child',
         'files' => ['a.php' => "<?php\nclass Foo extends Bar\n{\n}\n"],
-        'document' => fn (array $p): array => ['files' => [['path' => $p['a.php'], 'edits' => [
-            ['target' => ['ref' => 'stmts[0]'], 'operation' => 'set_extends', 'php' => 'Baz'],
-        ]]]],
+        'edits' => [
+            ['target' => ['ref' => CLASS_REF], 'operation' => 'set_extends', 'php' => 'Baz'],
+        ],
         'contains' => [['a.php', 'class Foo extends Baz']],
         'notContains' => [['a.php', 'extends Bar']],
     ],
     [
         'name' => 'trait use is added to a class',
-        'files' => ['a.php' => "<?php\nclass Foo\n{\n}\n"],
-        'document' => fn (array $p): array => ['files' => [['path' => $p['a.php'], 'edits' => [
-            ['target' => ['ref' => 'stmts[0]'], 'operation' => 'add_member', 'php' => 'use LoggerAwareTrait;'],
-        ]]]],
+        'files' => ['a.php' => EMPTY_CLASS],
+        'edits' => [
+            ['target' => ['ref' => CLASS_REF], 'operation' => 'add_member', 'php' => 'use LoggerAwareTrait;'],
+        ],
         'contains' => [['a.php', 'use LoggerAwareTrait;']],
     ],
 
@@ -171,17 +179,17 @@ $cases = [
     [
         'name' => 'use statement is inserted at the file root',
         'files' => ['a.php' => "<?php\nnamespace App;\n\nclass Foo\n{\n}\n"],
-        'document' => fn (array $p): array => ['files' => [['path' => $p['a.php'], 'edits' => [
-            ['target' => ['ref' => 'stmts[0]'], 'operation' => 'insert_into', 'property' => 'stmts', 'parseAs' => 'stmt', 'position' => 'start', 'php' => 'use App\\Support\\Clock;'],
-        ]]]],
+        'edits' => [
+            ['target' => ['ref' => CLASS_REF], 'operation' => 'insert_into', 'property' => 'stmts', 'parseAs' => 'stmt', 'position' => 'start', 'php' => 'use App\\Support\\Clock;'],
+        ],
         'contains' => [['a.php', 'use App\\Support\\Clock;']],
     ],
     [
         'name' => 'a second use item joins an existing group',
         'files' => ['a.php' => "<?php\nuse A\\B;\n"],
-        'document' => fn (array $p): array => ['files' => [['path' => $p['a.php'], 'edits' => [
-            ['target' => ['ref' => 'stmts[0]'], 'operation' => 'insert_into', 'property' => 'uses', 'parseAs' => 'use', 'php' => 'C\\D as E'],
-        ]]]],
+        'edits' => [
+            ['target' => ['ref' => CLASS_REF], 'operation' => 'insert_into', 'property' => 'uses', 'parseAs' => 'use', 'php' => 'C\\D as E'],
+        ],
         'contains' => [['a.php', 'C\\D as E']],
     ],
 
@@ -189,33 +197,33 @@ $cases = [
     [
         'name' => 'union return type replaces a scalar one',
         'files' => ['a.php' => "<?php\nclass Foo\n{\n    public function bar(): string\n    {\n        return '';\n    }\n}\n"],
-        'document' => fn (array $p): array => ['files' => [['path' => $p['a.php'], 'edits' => [
-            ['target' => ['ref' => 'stmts[0].stmts[0]'], 'operation' => 'set_return_type', 'php' => 'string|int'],
-        ]]]],
+        'edits' => [
+            ['target' => ['ref' => FIRST_MEMBER_REF], 'operation' => 'set_return_type', 'php' => 'string|int'],
+        ],
         'contains' => [['a.php', 'public function bar(): string|int']],
     ],
     [
         'name' => 'parameter type becomes an intersection type',
         'files' => ['a.php' => "<?php\nfunction foo(Countable \$c) {}\n"],
-        'document' => fn (array $p): array => ['files' => [['path' => $p['a.php'], 'edits' => [
+        'edits' => [
             ['target' => ['ref' => 'stmts[0].params[0]'], 'operation' => 'set_type', 'php' => 'Countable&Traversable'],
-        ]]]],
+        ],
         'contains' => [['a.php', 'Countable&Traversable $c']],
     ],
     [
         'name' => 'visibility modifier is changed without touching anything else',
         'files' => ['a.php' => "<?php\nclass Foo\n{\n    public function bar(): void\n    {\n    }\n}\n"],
-        'document' => fn (array $p): array => ['files' => [['path' => $p['a.php'], 'edits' => [
-            ['target' => ['ref' => 'stmts[0].stmts[0]'], 'operation' => 'set_visibility', 'value' => 'protected'],
-        ]]]],
+        'edits' => [
+            ['target' => ['ref' => FIRST_MEMBER_REF], 'operation' => 'set_visibility', 'value' => 'protected'],
+        ],
         'contains' => [['a.php', 'protected function bar(): void']],
     ],
     [
         'name' => 'a nullable type is removed from a slot',
         'files' => ['a.php' => "<?php\nfunction foo(): ?int\n{\n    return null;\n}\n"],
-        'document' => fn (array $p): array => ['files' => [['path' => $p['a.php'], 'edits' => [
+        'edits' => [
             ['target' => ['ref' => 'stmts[0].returnType'], 'operation' => 'delete_node'],
-        ]]]],
+        ],
         'notContains' => [['a.php', '?int']],
     ],
 
@@ -223,57 +231,57 @@ $cases = [
     [
         'name' => 'match arm is appended to a match expression',
         'files' => ['a.php' => "<?php\n\$r = match (\$x) {\n    1 => 'one',\n};\n"],
-        'document' => fn (array $p): array => ['files' => [['path' => $p['a.php'], 'edits' => [
+        'edits' => [
             ['target' => ['ref' => 'stmts[0].expr.expr'], 'operation' => 'insert_into', 'property' => 'arms', 'php' => "default => 'other'"],
-        ]]]],
+        ],
         'contains' => [['a.php', "default => 'other'"]],
     ],
     [
         'name' => 'closure use clause gains a by-reference binding',
         'files' => ['a.php' => "<?php\n\$f = function () use (\$a) {\n};\n"],
-        'document' => fn (array $p): array => ['files' => [['path' => $p['a.php'], 'edits' => [
+        'edits' => [
             ['target' => ['ref' => 'stmts[0].expr.expr'], 'operation' => 'insert_into', 'property' => 'uses', 'php' => '&$carry'],
-        ]]]],
+        ],
         'contains' => [['a.php', 'use ($a, &$carry)']],
     ],
     [
         'name' => 'anonymous class gains a member',
         'files' => ['a.php' => "<?php\n\$o = new class {\n};\n"],
-        'document' => fn (array $p): array => ['files' => [['path' => $p['a.php'], 'edits' => [
+        'edits' => [
             ['target' => ['ref' => 'stmts[0].expr.expr.class'], 'operation' => 'add_member', 'php' => 'public int $n = 0;'],
-        ]]]],
+        ],
         'contains' => [['a.php', 'public int $n = 0;']],
     ],
     [
         'name' => 'a named argument is added to a call',
         'files' => ['a.php' => "<?php\nfoo(1);\n"],
-        'document' => fn (array $p): array => ['files' => [['path' => $p['a.php'], 'edits' => [
+        'edits' => [
             ['target' => ['ref' => 'stmts[0].expr'], 'operation' => 'insert_into', 'property' => 'args', 'php' => 'flag: true'],
-        ]]]],
+        ],
         'contains' => [['a.php', 'foo(1, flag: true)']],
     ],
     [
         'name' => 'catch clause is added to a try statement',
         'files' => ['a.php' => "<?php\ntry {\n    foo();\n} catch (RuntimeException \$e) {\n}\n"],
-        'document' => fn (array $p): array => ['files' => [['path' => $p['a.php'], 'edits' => [
-            ['target' => ['ref' => 'stmts[0]'], 'operation' => 'insert_into', 'property' => 'catches', 'php' => 'catch (LogicException $e) { throw $e; }'],
-        ]]]],
+        'edits' => [
+            ['target' => ['ref' => CLASS_REF], 'operation' => 'insert_into', 'property' => 'catches', 'php' => 'catch (LogicException $e) { throw $e; }'],
+        ],
         'contains' => [['a.php', 'catch (LogicException $e)']],
     ],
     [
         'name' => 'replace_node swaps a parameter node',
         'files' => ['a.php' => "<?php\nfunction foo(int \$a) {}\n"],
-        'document' => fn (array $p): array => ['files' => [['path' => $p['a.php'], 'edits' => [
+        'edits' => [
             ['target' => ['ref' => 'stmts[0].params[0]'], 'operation' => 'replace_node', 'php' => 'string ...$rest'],
-        ]]]],
+        ],
         'contains' => [['a.php', 'function foo(string ...$rest)']],
     ],
     [
         'name' => 'move_node relocates a method to another class in the same file',
         'files' => ['a.php' => "<?php\nclass A\n{\n    public function m(): void\n    {\n    }\n}\nclass B\n{\n}\n"],
-        'document' => fn (array $p): array => ['files' => [['path' => $p['a.php'], 'edits' => [
-            ['target' => ['ref' => 'stmts[0].stmts[0]'], 'operation' => 'move_node', 'into' => ['ref' => 'stmts[1]', 'property' => 'stmts', 'position' => 'end']],
-        ]]]],
+        'edits' => [
+            ['target' => ['ref' => FIRST_MEMBER_REF], 'operation' => 'move_node', 'into' => ['ref' => 'stmts[1]', 'property' => 'stmts', 'position' => 'end']],
+        ],
         'contains' => [['a.php', "class B\n{\n    public function m(): void"]],
         'notContains' => [['a.php', "class A\n{\n    public function m"]],
     ],
@@ -282,35 +290,35 @@ $cases = [
     [
         'name' => 'existing docblock is replaced, not duplicated',
         'files' => ['a.php' => "<?php\nclass Foo\n{\n    /** Old text. */\n    public function bar(): void\n    {\n    }\n}\n"],
-        'document' => fn (array $p): array => ['files' => [['path' => $p['a.php'], 'edits' => [
-            ['target' => ['ref' => 'stmts[0].stmts[0]'], 'operation' => 'set_doc_comment', 'value' => 'New text.'],
-        ]]]],
+        'edits' => [
+            ['target' => ['ref' => FIRST_MEMBER_REF], 'operation' => 'set_doc_comment', 'value' => 'New text.'],
+        ],
         'contains' => [['a.php', 'New text.']],
         'notContains' => [['a.php', 'Old text.']],
     ],
     [
         'name' => 'docblock is removed',
         'files' => ['a.php' => "<?php\n/** Doc. */\nfunction foo() {}\n"],
-        'document' => fn (array $p): array => ['files' => [['path' => $p['a.php'], 'edits' => [
-            ['target' => ['ref' => 'stmts[0]'], 'operation' => 'remove_doc_comment'],
-        ]]]],
+        'edits' => [
+            ['target' => ['ref' => CLASS_REF], 'operation' => 'remove_doc_comment'],
+        ],
         'notContains' => [['a.php', 'Doc.']],
     ],
 
     [
         'name' => 'a string literal may contain a PHP open tag',
         'files' => ['a.php' => "<?php\n\$t = '';\n"],
-        'document' => fn (array $p): array => ['files' => [['path' => $p['a.php'], 'edits' => [
+        'edits' => [
             ['target' => ['ref' => 'stmts[0].expr.expr'], 'operation' => 'replace_expression', 'php' => '\'<?xml version="1.0"?' . '>\''],
-        ]]]],
+        ],
         'contains' => [['a.php', '<?xml version="1.0"?' . '>']],
     ],
     [
         'name' => 'a snippet that leaves the PHP context is rejected',
-        'files' => ['a.php' => "<?php\nfunction foo()\n{\n}\n"],
-        'document' => fn (array $p): array => ['files' => [['path' => $p['a.php'], 'edits' => [
-            ['target' => ['ref' => 'stmts[0]'], 'operation' => 'insert_into', 'property' => 'stmts', 'parseAs' => 'stmt', 'php' => '$a = 1; ?' . '> text <?php $b = 2;'],
-        ]]]],
+        'files' => ['a.php' => EMPTY_FUNCTION],
+        'edits' => [
+            ['target' => ['ref' => CLASS_REF], 'operation' => 'insert_into', 'property' => 'stmts', 'parseAs' => 'stmt', 'php' => '$a = 1; ?' . '> text <?php $b = 2;'],
+        ],
         'error' => 'must not leave the PHP context',
         'unchanged' => ['a.php'],
     ],
@@ -318,67 +326,67 @@ $cases = [
     // ---- Failure modes ---------------------------------------------------------------------
     [
         'name' => 'stale sha aborts before any write',
-        'files' => ['a.php' => "<?php\nclass Foo {}\n"],
+        'files' => ['a.php' => ONE_LINE_CLASS],
         'document' => fn (array $p): array => ['files' => [[
             'path' => $p['a.php'],
             'sha256' => str_repeat('a', 64),
-            'edits' => [['target' => ['ref' => 'stmts[0].name'], 'operation' => 'set_name', 'value' => 'Bar']],
+            'edits' => [['target' => ['ref' => CLASS_NAME_REF], 'operation' => 'set_name', 'value' => 'Bar']],
         ]]],
         'error' => 'STALE_SOURCE',
         'unchanged' => ['a.php'],
     ],
     [
         'name' => 'wrong expected kind aborts',
-        'files' => ['a.php' => "<?php\nclass Foo {}\n"],
-        'document' => fn (array $p): array => ['files' => [['path' => $p['a.php'], 'edits' => [
-            ['target' => ['ref' => 'stmts[0].name', 'kind' => 'Stmt_Class'], 'operation' => 'set_name', 'value' => 'Bar'],
-        ]]]],
+        'files' => ['a.php' => ONE_LINE_CLASS],
+        'edits' => [
+            ['target' => ['ref' => CLASS_NAME_REF, 'kind' => 'Stmt_Class'], 'operation' => 'set_name', 'value' => 'Bar'],
+        ],
         'error' => 'resolves to Identifier',
         'unchanged' => ['a.php'],
     ],
     [
         'name' => 'wrong expected name aborts',
-        'files' => ['a.php' => "<?php\nclass Foo {}\n"],
-        'document' => fn (array $p): array => ['files' => [['path' => $p['a.php'], 'edits' => [
-            ['target' => ['ref' => 'stmts[0].name'], 'expect' => ['name' => 'Nope'], 'operation' => 'set_name', 'value' => 'Bar'],
-        ]]]],
+        'files' => ['a.php' => ONE_LINE_CLASS],
+        'edits' => [
+            ['target' => ['ref' => CLASS_NAME_REF], 'expect' => ['name' => 'Nope'], 'operation' => 'set_name', 'value' => 'Bar'],
+        ],
         'error' => 'Expected node name Nope',
         'unchanged' => ['a.php'],
     ],
     [
         'name' => 'detached target aborts the transaction',
         'files' => ['a.php' => "<?php\nfunction foo()\n{\n    \$a = 1;\n    \$b = 2;\n}\n"],
-        'document' => fn (array $p): array => ['files' => [['path' => $p['a.php'], 'edits' => [
-            ['target' => ['ref' => 'stmts[0].stmts[0]'], 'operation' => 'delete_node'],
-            ['target' => ['ref' => 'stmts[0].stmts[0]'], 'operation' => 'replace_statement', 'php' => '$c = 3;'],
-        ]]]],
+        'edits' => [
+            ['target' => ['ref' => FIRST_MEMBER_REF], 'operation' => 'delete_node'],
+            ['target' => ['ref' => FIRST_MEMBER_REF], 'operation' => 'replace_statement', 'php' => '$c = 3;'],
+        ],
         'error' => 'invalidated by an earlier edit',
         'unchanged' => ['a.php'],
     ],
     [
         'name' => 'invalid contextual snippet aborts with the context named',
-        'files' => ['a.php' => "<?php\nclass Foo {}\n"],
-        'document' => fn (array $p): array => ['files' => [['path' => $p['a.php'], 'edits' => [
-            ['target' => ['ref' => 'stmts[0]'], 'operation' => 'add_member', 'php' => 'return 1;'],
-        ]]]],
+        'files' => ['a.php' => ONE_LINE_CLASS],
+        'edits' => [
+            ['target' => ['ref' => CLASS_REF], 'operation' => 'add_member', 'php' => 'return 1;'],
+        ],
         'error' => 'not valid in the "member" context',
         'unchanged' => ['a.php'],
     ],
     [
         'name' => 'unknown parseAs context is reported with the known list',
-        'files' => ['a.php' => "<?php\nclass Foo {}\n"],
-        'document' => fn (array $p): array => ['files' => [['path' => $p['a.php'], 'edits' => [
-            ['target' => ['ref' => 'stmts[0]'], 'operation' => 'insert_into', 'property' => 'stmts', 'parseAs' => 'nonsense', 'php' => 'public int $a = 1;'],
-        ]]]],
+        'files' => ['a.php' => ONE_LINE_CLASS],
+        'edits' => [
+            ['target' => ['ref' => CLASS_REF], 'operation' => 'insert_into', 'property' => 'stmts', 'parseAs' => 'nonsense', 'php' => 'public int $a = 1;'],
+        ],
         'error' => 'Unknown parseAs context',
         'unchanged' => ['a.php'],
     ],
     [
         'name' => 'unknown sub node is reported with the available slots',
-        'files' => ['a.php' => "<?php\nclass Foo {}\n"],
-        'document' => fn (array $p): array => ['files' => [['path' => $p['a.php'], 'edits' => [
-            ['target' => ['ref' => 'stmts[0]'], 'operation' => 'insert_into', 'property' => 'bogus', 'parseAs' => 'member', 'php' => 'public int $a = 1;'],
-        ]]]],
+        'files' => ['a.php' => ONE_LINE_CLASS],
+        'edits' => [
+            ['target' => ['ref' => CLASS_REF], 'operation' => 'insert_into', 'property' => 'bogus', 'parseAs' => 'member', 'php' => 'public int $a = 1;'],
+        ],
         'error' => 'has no sub node "bogus"',
         'unchanged' => ['a.php'],
     ],
@@ -390,9 +398,9 @@ $cases = [
             'c.php' => "<?php\nclass C {}\n",
         ],
         'document' => fn (array $p): array => ['files' => [
-            ['path' => $p['a.php'], 'edits' => [['target' => ['ref' => 'stmts[0].name'], 'operation' => 'set_name', 'value' => 'A1']]],
-            ['path' => $p['b.php'], 'edits' => [['target' => ['ref' => 'stmts[0].name'], 'operation' => 'set_name', 'value' => 'B1']]],
-            ['path' => $p['c.php'], 'edits' => [['target' => ['ref' => 'stmts[0]'], 'operation' => 'add_member', 'php' => 'this is not php']]],
+            ['path' => $p['a.php'], 'edits' => [['target' => ['ref' => CLASS_NAME_REF], 'operation' => 'set_name', 'value' => 'A1']]],
+            ['path' => $p['b.php'], 'edits' => [['target' => ['ref' => CLASS_NAME_REF], 'operation' => 'set_name', 'value' => 'B1']]],
+            ['path' => $p['c.php'], 'edits' => [['target' => ['ref' => CLASS_REF], 'operation' => 'add_member', 'php' => 'this is not php']]],
         ]],
         'error' => 'not valid in the "member" context',
         'unchanged' => ['a.php', 'b.php', 'c.php'],
@@ -401,8 +409,8 @@ $cases = [
         'name' => 'the same path may not appear twice in one transaction',
         'files' => ['a.php' => "<?php\nclass A {}\n"],
         'document' => fn (array $p): array => ['files' => [
-            ['path' => $p['a.php'], 'edits' => [['target' => ['ref' => 'stmts[0].name'], 'operation' => 'set_name', 'value' => 'A1']]],
-            ['path' => $p['a.php'], 'edits' => [['target' => ['ref' => 'stmts[0].name'], 'operation' => 'set_name', 'value' => 'A2']]],
+            ['path' => $p['a.php'], 'edits' => [['target' => ['ref' => CLASS_NAME_REF], 'operation' => 'set_name', 'value' => 'A1']]],
+            ['path' => $p['a.php'], 'edits' => [['target' => ['ref' => CLASS_NAME_REF], 'operation' => 'set_name', 'value' => 'A2']]],
         ]],
         'error' => 'Duplicate path',
         'unchanged' => ['a.php'],
@@ -414,8 +422,8 @@ $cases = [
             'b.php' => "<?php\nclass B {}\n",
         ],
         'document' => fn (array $p): array => ['files' => [
-            ['path' => $p['a.php'], 'edits' => [['target' => ['ref' => 'stmts[0].name'], 'operation' => 'set_name', 'value' => 'A1']]],
-            ['path' => $p['b.php'], 'edits' => [['target' => ['ref' => 'stmts[0].name'], 'operation' => 'set_name', 'value' => 'B1']]],
+            ['path' => $p['a.php'], 'edits' => [['target' => ['ref' => CLASS_NAME_REF], 'operation' => 'set_name', 'value' => 'A1']]],
+            ['path' => $p['b.php'], 'edits' => [['target' => ['ref' => CLASS_NAME_REF], 'operation' => 'set_name', 'value' => 'B1']]],
         ]],
         'contains' => [['a.php', 'class A1'], ['b.php', 'class B1']],
     ],
@@ -423,17 +431,17 @@ $cases = [
     [
         'name' => 'a method whose body contains "case " still goes into an enum as a method',
         'files' => ['a.php' => "<?php\nenum Status: string\n{\n    case Draft = 'draft';\n}\n"],
-        'document' => fn (array $p): array => ['files' => [['path' => $p['a.php'], 'edits' => [
-            ['target' => ['ref' => 'stmts[0]'], 'operation' => 'add_member', 'php' => 'public function label(): string { switch ($this) { case self::Draft: return \'d\'; } return \'\'; }'],
-        ]]]],
+        'edits' => [
+            ['target' => ['ref' => CLASS_REF], 'operation' => 'add_member', 'php' => 'public function label(): string { switch ($this) { case self::Draft: return \'d\'; } return \'\'; }'],
+        ],
         'contains' => [['a.php', 'public function label(): string'], ['a.php', "case Draft = 'draft';"]],
     ],
     [
         'name' => 'move_node refuses to move a node into its own subtree',
         'files' => ['a.php' => "<?php\nclass A\n{\n    public function m(): void\n    {\n    }\n}\n"],
-        'document' => fn (array $p): array => ['files' => [['path' => $p['a.php'], 'edits' => [
-            ['target' => ['ref' => 'stmts[0]'], 'operation' => 'move_node', 'into' => ['ref' => 'stmts[0].stmts[0]', 'property' => 'stmts']],
-        ]]]],
+        'edits' => [
+            ['target' => ['ref' => CLASS_REF], 'operation' => 'move_node', 'into' => ['ref' => 'stmts[0].stmts[0]', 'property' => 'stmts']],
+        ],
         'error' => 'its own subtree',
         'unchanged' => ['a.php'],
     ],
@@ -441,32 +449,32 @@ $cases = [
     // ---- phpVersion handling ------------------------------------------------------------------
     [
         'name' => 'property hooks parse and print under phpVersion 8.4',
-        'files' => ['a.php' => "<?php\nclass Foo\n{\n}\n"],
+        'files' => ['a.php' => EMPTY_CLASS],
         'document' => fn (array $p): array => ['files' => [[
             'path' => $p['a.php'],
             'phpVersion' => '8.4',
-            'edits' => [['target' => ['ref' => 'stmts[0]'], 'operation' => 'add_member', 'php' => 'public int $n { get => 1; }']],
+            'edits' => [['target' => ['ref' => CLASS_REF], 'operation' => 'add_member', 'php' => 'public int $n { get => 1; }']],
         ]]],
         'contains' => [['a.php', 'get =>']],
     ],
     [
         'name' => 'a readonly property is rejected when the file is pinned to PHP 8.0',
-        'files' => ['a.php' => "<?php\nclass Foo\n{\n}\n"],
+        'files' => ['a.php' => EMPTY_CLASS],
         'document' => fn (array $p): array => ['files' => [[
             'path' => $p['a.php'],
             'phpVersion' => '8.0',
-            'edits' => [['target' => ['ref' => 'stmts[0]'], 'operation' => 'add_member', 'php' => 'public readonly int $n;']],
+            'edits' => [['target' => ['ref' => CLASS_REF], 'operation' => 'add_member', 'php' => 'public readonly int $n;']],
         ]]],
         'error' => 'not valid in the "member" context',
         'unchanged' => ['a.php'],
     ],
     [
         'name' => 'the same readonly property is accepted under PHP 8.1',
-        'files' => ['a.php' => "<?php\nclass Foo\n{\n}\n"],
+        'files' => ['a.php' => EMPTY_CLASS],
         'document' => fn (array $p): array => ['files' => [[
             'path' => $p['a.php'],
             'phpVersion' => '8.1',
-            'edits' => [['target' => ['ref' => 'stmts[0]'], 'operation' => 'add_member', 'php' => 'public readonly int $n;']],
+            'edits' => [['target' => ['ref' => CLASS_REF], 'operation' => 'add_member', 'php' => 'public readonly int $n;']],
         ]]],
         'contains' => [['a.php', 'public readonly int $n;']],
     ],
@@ -477,7 +485,7 @@ $passed = 0;
 
 foreach ($cases as $case) {
     $dir = sys_get_temp_dir().'/php-ast-edit-matrix-'.bin2hex(random_bytes(6));
-    mkdir($dir, 0777, true);
+    mkdir($dir, 0700, true);
     $paths = ['dir' => $dir];
     $originals = [];
     foreach ($case['files'] ?? [] as $name => $source) {
@@ -486,9 +494,13 @@ foreach ($cases as $case) {
         $originals[$name] = $source;
     }
 
+    $document = isset($case['document'])
+        ? ($case['document'])($paths)
+        : ['files' => [['path' => $paths['a.php'], 'edits' => $case['edits']]]];
+
     $error = null;
     try {
-        (new Editor())->apply(($case['document'])($paths));
+        (new Editor())->apply($document);
     } catch (Throwable $throwable) {
         $error = $throwable->getMessage();
     }
@@ -551,16 +563,16 @@ foreach ($cases as $case) {
 // write failure that does not depend on the caller running as root.
 if (posix_geteuid() !== 0) {
     $base = sys_get_temp_dir().'/php-ast-edit-rollback-'.bin2hex(random_bytes(6));
-    mkdir($base.'/locked', 0777, true);
+    mkdir($base.'/locked', 0700, true);
     file_put_contents($base.'/first.php', "<?php\nclass First {}\n");
     file_put_contents($base.'/locked/second.php', "<?php\nclass Second {}\n");
-    chmod($base.'/locked', 0555);
+    chmod($base.'/locked', 0500);
 
     $error = null;
     try {
         (new Editor())->apply(['files' => [
-            ['path' => $base.'/first.php', 'edits' => [['target' => ['ref' => 'stmts[0].name'], 'operation' => 'set_name', 'value' => 'FirstChanged']]],
-            ['path' => $base.'/locked/second.php', 'edits' => [['target' => ['ref' => 'stmts[0].name'], 'operation' => 'set_name', 'value' => 'SecondChanged']]],
+            ['path' => $base.'/first.php', 'edits' => [['target' => ['ref' => CLASS_NAME_REF], 'operation' => 'set_name', 'value' => 'FirstChanged']]],
+            ['path' => $base.'/locked/second.php', 'edits' => [['target' => ['ref' => CLASS_NAME_REF], 'operation' => 'set_name', 'value' => 'SecondChanged']]],
         ]]);
     } catch (Throwable $throwable) {
         $error = $throwable->getMessage();
@@ -577,7 +589,7 @@ if (posix_geteuid() !== 0) {
         ++$passed;
     }
 
-    chmod($base.'/locked', 0755);
+    chmod($base.'/locked', 0700);
     @unlink($base.'/locked/second.php');
     @rmdir($base.'/locked');
     @unlink($base.'/first.php');
