@@ -59,6 +59,17 @@ function removeTree(string $directory): void
     }
     @rmdir($directory);
 }
+/**
+ * A transaction document, so a case names its file specs and nothing else. Repeating the
+ * `['files' => [[ … ]]]` scaffolding once per case is duplication in the literal sense and
+ * noise in the reading sense.
+ *
+ * @param array<string, mixed> ...$fileSpecs
+ */
+function tx(array ...$fileSpecs): array
+{
+    return ['files' => array_values($fileSpecs)];
+}
 function src(string $php): array
 {
     return ['a.php' => $php];
@@ -126,50 +137,46 @@ $cases = [
     [
         'name' => 'create_file builds a file from construction syntax and then edits its AST',
         'files' => [],
-        'document' => fn (array $p): array => [
-            'files' => [
-                [
-                    'path' => $p['dir'] . '/Created.php',
-                    'mode' => 'create',
-                    'php' => '<?php declare(strict_types=1); namespace Demo; final class Created {}',
-                    'edits' => [
-                        [
-                            'target' => ['ref' => 'stmts[1].stmts[0]'],
-                            'operation' => 'add_member',
-                            'php' => 'public const VERSION = 1;',
-                        ],
+        'document' => fn (array $p): array => tx(
+            [
+                'path' => $p['dir'] . '/Created.php',
+                'mode' => 'create',
+                'php' => '<?php declare(strict_types=1); namespace Demo; final class Created {}',
+                'edits' => [
+                    [
+                        'target' => ['ref' => 'stmts[1].stmts[0]'],
+                        'operation' => 'add_member',
+                        'php' => 'public const VERSION = 1;',
                     ],
                 ],
             ],
-        ],
+        ),
         'present' => ['Created.php'],
         'contains' => [['Created.php', 'public const VERSION = 1;'], ['Created.php', 'namespace Demo;']],
     ],
     [
         'name' => 'create_file refuses to clobber an existing file',
         'files' => src("<?php\n"),
-        'document' => fn (array $p): array => ['files' => [['path' => $p['a.php'], 'mode' => 'create', 'php' => '<?php class X {}']]],
+        'document' => fn (array $p): array => tx(['path' => $p['a.php'], 'mode' => 'create', 'php' => '<?php class X {}']),
         'error' => 'FILE_EXISTS',
         'unchanged' => ['a.php'],
     ],
     [
         'name' => 'delete_file removes a file under a sha guard',
         'files' => src("<?php\nclass Gone {}\n"),
-        'document' => fn (array $p): array => [
-            'files' => [
-                [
-                    'path' => $p['a.php'],
-                    'mode' => 'delete',
-                    'sha256' => hash('sha256', "<?php\nclass Gone {}\n"),
-                ],
+        'document' => fn (array $p): array => tx(
+            [
+                'path' => $p['a.php'],
+                'mode' => 'delete',
+                'sha256' => hash('sha256', "<?php\nclass Gone {}\n"),
             ],
-        ],
+        ),
         'absent' => ['a.php'],
     ],
     [
         'name' => 'delete_file rejects a stale sha',
         'files' => src("<?php\nclass Gone {}\n"),
-        'document' => fn (array $p): array => ['files' => [['path' => $p['a.php'], 'mode' => 'delete', 'sha256' => str_repeat('0', 64)]]],
+        'document' => fn (array $p): array => tx(['path' => $p['a.php'], 'mode' => 'delete', 'sha256' => str_repeat('0', 64)]),
         'error' => 'STALE_SOURCE',
         'present' => ['a.php'],
     ],
@@ -565,9 +572,7 @@ $cases = [
     [
         'name' => 'create requires the open tag rather than shifting every offset',
         'files' => [],
-        'document' => fn (array $p): array => [
-            'files' => [['path' => $p['dir'] . '/NoTag.php', 'mode' => 'create', 'php' => 'class NoTag {}']],
-        ],
+        'document' => fn (array $p): array => tx(['path' => $p['dir'] . '/NoTag.php', 'mode' => 'create', 'php' => 'class NoTag {}']),
         'error' => 'must start with the <?php open tag',
         'absent' => ['NoTag.php'],
     ],
@@ -581,20 +586,14 @@ $cases = [
     [
         'name' => 'two creates under the same missing directory collide',
         'files' => [],
-        'document' => fn (array $p): array => [
-            'files' => [
-                [
-                    'path' => $p['dir'] . '/deep/sub/A.php',
-                    'mode' => 'create',
-                    'php' => '<?php class A {}',
-                ],
-                [
-                    'path' => $p['dir'] . '/deep/../deep/sub/A.php',
-                    'mode' => 'create',
-                    'php' => '<?php class B {}',
-                ],
+        'document' => fn (array $p): array => tx(
+            ['path' => $p['dir'] . '/deep/sub/A.php', 'mode' => 'create', 'php' => '<?php class A {}'],
+            [
+                'path' => $p['dir'] . '/deep/../deep/sub/A.php',
+                'mode' => 'create',
+                'php' => '<?php class B {}',
             ],
-        ],
+        ),
         'error' => 'are the same file',
         'absent' => ['deep/sub/A.php'],
     ],
@@ -602,21 +601,13 @@ $cases = [
     [
         'name' => 'stale sha aborts before any write',
         'files' => src(ONE_LINE_CLASS),
-        'document' => fn (array $p): array => [
-            'files' => [
-                [
-                    'path' => $p['a.php'],
-                    'sha256' => str_repeat('a', 64),
-                    'edits' => [
-                        [
-                            'target' => ['ref' => CLASS_NAME_REF],
-                            'operation' => 'set_name',
-                            'value' => 'Bar',
-                        ],
-                    ],
-                ],
+        'document' => fn (array $p): array => tx(
+            [
+                'path' => $p['a.php'],
+                'sha256' => str_repeat('a', 64),
+                'edits' => [['target' => ['ref' => CLASS_NAME_REF], 'operation' => 'set_name', 'value' => 'Bar']],
             ],
-        ],
+        ),
         'error' => 'STALE_SOURCE',
         'unchanged' => ['a.php'],
     ],
@@ -705,130 +696,80 @@ $cases = [
             'b.php' => "<?php\nclass B {}\n",
             'c.php' => "<?php\nclass C {}\n",
         ],
-        'document' => fn (array $p): array => [
-            'files' => [
-                [
-                    'path' => $p['a.php'],
-                    'edits' => [
-                        [
-                            'target' => ['ref' => CLASS_NAME_REF],
-                            'operation' => 'set_name',
-                            'value' => 'A1',
-                        ],
-                    ],
-                ],
-                [
-                    'path' => $p['b.php'],
-                    'edits' => [
-                        [
-                            'target' => ['ref' => CLASS_NAME_REF],
-                            'operation' => 'set_name',
-                            'value' => 'B1',
-                        ],
-                    ],
-                ],
-                [
-                    'path' => $p['c.php'],
-                    'edits' => [
-                        [
-                            'target' => ['ref' => CLASS_REF],
-                            'operation' => 'add_member',
-                            'php' => 'this is not php',
-                        ],
+        'document' => fn (array $p): array => tx(
+            [
+                'path' => $p['a.php'],
+                'edits' => [['target' => ['ref' => CLASS_NAME_REF], 'operation' => 'set_name', 'value' => 'A1']],
+            ],
+            [
+                'path' => $p['b.php'],
+                'edits' => [['target' => ['ref' => CLASS_NAME_REF], 'operation' => 'set_name', 'value' => 'B1']],
+            ],
+            [
+                'path' => $p['c.php'],
+                'edits' => [
+                    [
+                        'target' => ['ref' => CLASS_REF],
+                        'operation' => 'add_member',
+                        'php' => 'this is not php',
                     ],
                 ],
             ],
-        ],
+        ),
         'error' => 'not valid in the "member" context',
         'unchanged' => ['a.php', 'b.php', 'c.php'],
     ],
     [
         'name' => 'two spellings of one path are recognised as the same file',
         'files' => src("<?php\nclass A {}\n"),
-        'document' => fn (array $p): array => [
-            'files' => [
-                [
-                    'path' => $p['a.php'],
-                    'edits' => [
-                        [
-                            'target' => ['ref' => CLASS_NAME_REF],
-                            'operation' => 'set_name',
-                            'value' => 'B',
-                        ],
-                    ],
-                ],
-                [
-                    'path' => $p['dir'] . '/./a.php',
-                    'edits' => [
-                        [
-                            'target' => ['ref' => CLASS_REF],
-                            'operation' => 'add_member',
-                            'php' => 'public int $n = 1;',
-                        ],
+        'document' => fn (array $p): array => tx(
+            [
+                'path' => $p['a.php'],
+                'edits' => [['target' => ['ref' => CLASS_NAME_REF], 'operation' => 'set_name', 'value' => 'B']],
+            ],
+            [
+                'path' => $p['dir'] . '/./a.php',
+                'edits' => [
+                    [
+                        'target' => ['ref' => CLASS_REF],
+                        'operation' => 'add_member',
+                        'php' => 'public int $n = 1;',
                     ],
                 ],
             ],
-        ],
+        ),
         'error' => 'are the same file',
         'unchanged' => ['a.php'],
     ],
     [
         'name' => 'the same path may not appear twice in one transaction',
         'files' => src("<?php\nclass A {}\n"),
-        'document' => fn (array $p): array => [
-            'files' => [
-                [
-                    'path' => $p['a.php'],
-                    'edits' => [
-                        [
-                            'target' => ['ref' => CLASS_NAME_REF],
-                            'operation' => 'set_name',
-                            'value' => 'A1',
-                        ],
-                    ],
-                ],
-                [
-                    'path' => $p['a.php'],
-                    'edits' => [
-                        [
-                            'target' => ['ref' => CLASS_NAME_REF],
-                            'operation' => 'set_name',
-                            'value' => 'A2',
-                        ],
-                    ],
-                ],
+        'document' => fn (array $p): array => tx(
+            [
+                'path' => $p['a.php'],
+                'edits' => [['target' => ['ref' => CLASS_NAME_REF], 'operation' => 'set_name', 'value' => 'A1']],
             ],
-        ],
+            [
+                'path' => $p['a.php'],
+                'edits' => [['target' => ['ref' => CLASS_NAME_REF], 'operation' => 'set_name', 'value' => 'A2']],
+            ],
+        ),
         'error' => 'Duplicate path',
         'unchanged' => ['a.php'],
     ],
     [
         'name' => 'a multi-file transaction commits every file together',
         'files' => ['a.php' => "<?php\nclass A {}\n", 'b.php' => "<?php\nclass B {}\n"],
-        'document' => fn (array $p): array => [
-            'files' => [
-                [
-                    'path' => $p['a.php'],
-                    'edits' => [
-                        [
-                            'target' => ['ref' => CLASS_NAME_REF],
-                            'operation' => 'set_name',
-                            'value' => 'A1',
-                        ],
-                    ],
-                ],
-                [
-                    'path' => $p['b.php'],
-                    'edits' => [
-                        [
-                            'target' => ['ref' => CLASS_NAME_REF],
-                            'operation' => 'set_name',
-                            'value' => 'B1',
-                        ],
-                    ],
-                ],
+        'document' => fn (array $p): array => tx(
+            [
+                'path' => $p['a.php'],
+                'edits' => [['target' => ['ref' => CLASS_NAME_REF], 'operation' => 'set_name', 'value' => 'A1']],
             ],
-        ],
+            [
+                'path' => $p['b.php'],
+                'edits' => [['target' => ['ref' => CLASS_NAME_REF], 'operation' => 'set_name', 'value' => 'B1']],
+            ],
+        ),
         'contains' => [['a.php', 'class A1'], ['b.php', 'class B1']],
     ],
     [
@@ -859,21 +800,13 @@ $cases = [
     [
         'name' => 'an unparseable phpVersion is refused by name',
         'files' => src(ONE_LINE_CLASS),
-        'document' => fn (array $p): array => [
-            'files' => [
-                [
-                    'path' => $p['a.php'],
-                    'phpVersion' => 'nope',
-                    'edits' => [
-                        [
-                            'target' => ['ref' => CLASS_NAME_REF],
-                            'operation' => 'set_name',
-                            'value' => 'Bar',
-                        ],
-                    ],
-                ],
+        'document' => fn (array $p): array => tx(
+            [
+                'path' => $p['a.php'],
+                'phpVersion' => 'nope',
+                'edits' => [['target' => ['ref' => CLASS_NAME_REF], 'operation' => 'set_name', 'value' => 'Bar']],
             ],
-        ],
+        ),
         'error' => 'is not a PHP version',
         'unchanged' => ['a.php'],
     ],
@@ -894,62 +827,56 @@ $cases = [
     [
         'name' => 'property hooks parse and print under phpVersion 8.4',
         'files' => src(EMPTY_CLASS),
-        'document' => fn (array $p): array => [
-            'files' => [
-                [
-                    'path' => $p['a.php'],
-                    'phpVersion' => '8.4',
-                    'edits' => [
-                        [
-                            'target' => ['ref' => CLASS_REF],
-                            'operation' => 'add_member',
-                            'php' => 'public int $n { get => 1; }',
-                        ],
+        'document' => fn (array $p): array => tx(
+            [
+                'path' => $p['a.php'],
+                'phpVersion' => '8.4',
+                'edits' => [
+                    [
+                        'target' => ['ref' => CLASS_REF],
+                        'operation' => 'add_member',
+                        'php' => 'public int $n { get => 1; }',
                     ],
                 ],
             ],
-        ],
+        ),
         'contains' => inA('get =>'),
     ],
     [
         'name' => 'a readonly property is rejected when the file is pinned to PHP 8.0',
         'files' => src(EMPTY_CLASS),
-        'document' => fn (array $p): array => [
-            'files' => [
-                [
-                    'path' => $p['a.php'],
-                    'phpVersion' => '8.0',
-                    'edits' => [
-                        [
-                            'target' => ['ref' => CLASS_REF],
-                            'operation' => 'add_member',
-                            'php' => 'public readonly int $n;',
-                        ],
+        'document' => fn (array $p): array => tx(
+            [
+                'path' => $p['a.php'],
+                'phpVersion' => '8.0',
+                'edits' => [
+                    [
+                        'target' => ['ref' => CLASS_REF],
+                        'operation' => 'add_member',
+                        'php' => 'public readonly int $n;',
                     ],
                 ],
             ],
-        ],
+        ),
         'error' => 'not valid in the "member" context',
         'unchanged' => ['a.php'],
     ],
     [
         'name' => 'the same readonly property is accepted under PHP 8.1',
         'files' => src(EMPTY_CLASS),
-        'document' => fn (array $p): array => [
-            'files' => [
-                [
-                    'path' => $p['a.php'],
-                    'phpVersion' => '8.1',
-                    'edits' => [
-                        [
-                            'target' => ['ref' => CLASS_REF],
-                            'operation' => 'add_member',
-                            'php' => 'public readonly int $n;',
-                        ],
+        'document' => fn (array $p): array => tx(
+            [
+                'path' => $p['a.php'],
+                'phpVersion' => '8.1',
+                'edits' => [
+                    [
+                        'target' => ['ref' => CLASS_REF],
+                        'operation' => 'add_member',
+                        'php' => 'public readonly int $n;',
                     ],
                 ],
             ],
-        ],
+        ),
         'contains' => inA('public readonly int $n;'),
     ],
 ];
