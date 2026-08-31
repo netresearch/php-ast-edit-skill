@@ -124,6 +124,12 @@ final class NodeLocator
         return false;
     }
 
+    /** Is $needle the same node as $haystack, or somewhere inside it? */
+    public function contains(Node $haystack, Node $needle): bool
+    {
+        return $this->containsIdentity($haystack, $needle);
+    }
+
     private function containsIdentity(Node $node, Node $needle): bool
     {
         if ($node === $needle) {

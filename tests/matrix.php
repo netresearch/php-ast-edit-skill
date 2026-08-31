@@ -402,6 +402,24 @@ $cases = [
         'contains' => [['a.php', 'class A1'], ['b.php', 'class B1']],
     ],
 
+    [
+        'name' => 'a method whose body contains "case " still goes into an enum as a method',
+        'files' => ['a.php' => "<?php\nenum Status: string\n{\n    case Draft = 'draft';\n}\n"],
+        'document' => fn (array $p): array => ['files' => [['path' => $p['a.php'], 'edits' => [
+            ['target' => ['ref' => 'stmts[0]'], 'operation' => 'add_member', 'php' => 'public function label(): string { switch ($this) { case self::Draft: return \'d\'; } return \'\'; }'],
+        ]]]],
+        'contains' => [['a.php', 'public function label(): string'], ['a.php', "case Draft = 'draft';"]],
+    ],
+    [
+        'name' => 'move_node refuses to move a node into its own subtree',
+        'files' => ['a.php' => "<?php\nclass A\n{\n    public function m(): void\n    {\n    }\n}\n"],
+        'document' => fn (array $p): array => ['files' => [['path' => $p['a.php'], 'edits' => [
+            ['target' => ['ref' => 'stmts[0]'], 'operation' => 'move_node', 'into' => ['ref' => 'stmts[0].stmts[0]', 'property' => 'stmts']],
+        ]]]],
+        'error' => 'its own subtree',
+        'unchanged' => ['a.php'],
+    ],
+
     // ---- phpVersion handling ------------------------------------------------------------------
     [
         'name' => 'property hooks parse and print under phpVersion 8.4',

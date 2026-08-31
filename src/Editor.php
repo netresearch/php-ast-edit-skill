@@ -330,13 +330,11 @@ final class Editor
 
             case 'insert_into':
                 $property = $this->requiredString($edit, 'property');
-                $context = $this->contextForProperty($edit, $location, $property);
-                $location->insertInto(
-                    $property,
-                    $snippets->parse($context, $this->requiredString($edit, 'php')),
-                    $this->position($edit),
-                    $roots,
-                );
+                $php = $this->requiredString($edit, 'php');
+                $nodes = !isset($edit['parseAs']) && $property === 'stmts' && $node instanceof Stmt\ClassLike
+                    ? $snippets->parseFirst($this->memberContexts($node), $php)
+                    : $snippets->parse($this->contextForProperty($edit, $location, $property), $php);
+                $location->insertInto($property, $nodes, $this->position($edit), $roots);
                 return;
 
             case 'replace_child':
@@ -419,12 +417,12 @@ final class Editor
             // ---- Semantic convenience ----------------------------------------------------
             case 'add_member':
                 $this->assertType($node, Stmt\ClassLike::class, 'add_member requires a class-like target.');
-                $location->insertInto('stmts', $snippets->parse(
-                    $node instanceof Stmt\Enum_ && str_contains($this->requiredString($edit, 'php'), 'case ')
-                        ? 'enum_case'
-                        : 'member',
-                    $this->requiredString($edit, 'php'),
-                ), $this->position($edit, 'end'), $roots);
+                $location->insertInto(
+                    'stmts',
+                    $snippets->parseFirst($this->memberContexts($node), $this->requiredString($edit, 'php')),
+                    $this->position($edit, 'end'),
+                    $roots,
+                );
                 return;
 
             case 'add_parameter':
@@ -502,8 +500,8 @@ final class Editor
         }
         $node = $location->node;
         $targetLocation = $this->locator->resolveRef($roots, (string) $into['ref']);
-        if ($targetLocation->node === $node) {
-            throw new EditException('move_node cannot move a node into itself.');
+        if ($this->locator->contains($node, $targetLocation->node)) {
+            throw new EditException('move_node cannot move a node into itself or into its own subtree.');
         }
 
         $location->remove($roots);
@@ -589,10 +587,19 @@ final class Editor
                 $property,
             ));
         }
-        if ($context === 'member' && $location->node instanceof Stmt\Enum_) {
-            return str_contains((string) ($edit['php'] ?? ''), 'case ') ? 'enum_case' : 'member';
-        }
         return $context;
+    }
+
+    /**
+     * A class-like body accepts different members depending on the host construct, and an
+     * enum body accepts methods and constants as well as cases. Rather than guessing from
+     * the snippet text, offer the plausible hosts in order and let the parser decide.
+     *
+     * @return non-empty-list<string>
+     */
+    private function memberContexts(Node $node): array
+    {
+        return $node instanceof Stmt\Enum_ ? ['enum_case', 'member'] : ['member', 'enum_case'];
     }
 
     /** Property name → synthetic parse context. */

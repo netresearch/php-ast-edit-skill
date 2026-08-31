@@ -179,6 +179,25 @@ final class ContextParser
         return $nodes;
     }
 
+    /**
+     * Parse a snippet in the first context that accepts it.
+     *
+     * @param non-empty-list<string> $contexts
+     * @return list<Node>
+     */
+    public function parseFirst(array $contexts, string $code): array
+    {
+        $last = null;
+        foreach ($contexts as $context) {
+            try {
+                return $this->parse($context, $code);
+            } catch (EditException $exception) {
+                $last ??= $exception;
+            }
+        }
+        throw $last ?? new EditException('No parse context was offered.');
+    }
+
     /** Parse a snippet that must produce exactly one node. */
     public function parseOne(string $context, string $code): Node
     {
