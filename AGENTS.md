@@ -16,6 +16,10 @@ PHP CLI plus Agent Skill for AST-native PHP source mutations.
 ├── src/
 │   ├── Application.php                # CLI dispatch (inspect, apply, validate, contexts, help)
 │   ├── Editor.php                      # Transaction engine, primitives and convenience ops
+│   ├── CanonicalPrinter.php            # Width-aware canonical printing
+│   ├── RepositoryConfig.php            # .php-ast-edit.json — the canonical declaration
+│   ├── Formatter.php                   # format / normalize over a tree
+│   ├── Doctor.php                      # Is the repository set up for the contract?
 │   ├── FileTransaction.php             # One file's state through the transaction phases
 │   ├── NodeLocator.php                 # Position → AST ancestry; ref → node
 │   ├── NodeLocation.php                # Container mutation: replace, delete, insert_into
@@ -33,6 +37,7 @@ PHP CLI plus Agent Skill for AST-native PHP source mutations.
 │   ├── matrix.php                      # Table-driven grammar and failure-mode matrix
 │   ├── cli.sh                          # CLI surface: arguments, output fields, exit codes
 │   ├── catalog.php                     # Dispatcher, `contexts` output and docs must agree
+│   ├── formatting.php                  # Printer width, printer choice, fallback, doctor
 │   ├── corpus.php                      # Round trip over php-parser's own source
 │   ├── hook.py                         # Enforcement gate behaviour table
 │   └── fixtures/sample.php             # Fixture for the round-trip
@@ -53,10 +58,14 @@ PHP CLI plus Agent Skill for AST-native PHP source mutations.
 - `vendor/bin/php-ast-edit apply --input edits.json` — apply an edit transaction
 - `vendor/bin/php-ast-edit validate --file <path>` — parse check
 - `vendor/bin/php-ast-edit contexts` — parseAs contexts, operations and file modes
+- `vendor/bin/php-ast-edit doctor` — is this repository set up for canonical formatting?
+- `vendor/bin/php-ast-edit normalize --width 80` — canonical print plus the declaration
+- `vendor/bin/php-ast-edit format` — canonical print only
 - `php tests/matrix.php` — grammar and operation coverage matrix on its own
 - `bash tests/cli.sh` — CLI arguments, output fields and exit codes
 - `php tests/catalog.php` — operation and context catalog parity across code, CLI and docs
 - `php tests/corpus.php` — print-and-reparse fidelity over 270 real files
+- `php tests/formatting.php` — printer width, printer choice, the fallback, doctor
 - `python3 tests/hook.py` — what the enforcement gate denies and allows
 
 ## Rules
@@ -84,6 +93,7 @@ The repository's default `GITHUB_TOKEN` is read-only, so every caller job declar
 
 - [SKILL.md](skills/php-structured-edit/SKILL.md) — agent runtime instructions and workflow
 - [operations.md](skills/php-structured-edit/references/operations.md) — edit schema, targets, guards, parseAs contexts, operation catalog
+- [formatting-contract.md](skills/php-structured-edit/references/formatting-contract.md) — the precondition, the tools that can and cannot canonicalise, the fallback
 - [enforcement.md](skills/php-structured-edit/references/enforcement.md) — wiring the PreToolUse gate
 - [README.md](README.md) — installation, usage, transaction safety
 - [CHANGELOG.md](CHANGELOG.md) — released versions

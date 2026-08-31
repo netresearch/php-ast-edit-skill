@@ -2,7 +2,7 @@
 
 declare (strict_types=1);
 $root = dirname(__DIR__);
-$paths = [$root . '/src', $root . '/bin/php-ast-edit', $root . '/scripts/build-phar.php', $root . '/tests/run.php', $root . '/scripts/check.php', $root . '/tests/matrix.php', $root . '/tests/catalog.php', $root . '/tests/corpus.php'];
+$paths = [$root . '/src', $root . '/bin/php-ast-edit', $root . '/scripts/build-phar.php', $root . '/tests/run.php', $root . '/scripts/check.php', $root . '/tests/matrix.php', $root . '/tests/catalog.php', $root . '/tests/corpus.php', $root . '/tests/formatting.php'];
 $files = [];
 $missing = [];
 foreach ($paths as $path) {

@@ -21,6 +21,9 @@ final class Application
                 'apply' => $this->apply($options),
                 'validate' => $this->validate($options),
                 'contexts' => $this->contexts(),
+                'format' => $this->format($options, false),
+                'normalize' => $this->format($options, true),
+                'doctor' => $this->doctor($options),
                 'help', '--help', '-h' => $this->help(),
                 default => throw new EditException('Unknown command: '.$command),
             };
@@ -78,6 +81,54 @@ final class Application
         return 0;
     }
 
+    private function format(array $options, bool $normalize): int
+    {
+        $paths = isset($options['path']) ? [(string) $options['path']] : ['.'];
+        $root = RepositoryConfig::rootFor($paths[0]);
+        $config = RepositoryConfig::discover($root);
+
+        $width = $config->width;
+        if (isset($options['width'])) {
+            if (!$normalize) {
+                throw new EditException(
+                    '--width belongs to normalize, which records it in '.RepositoryConfig::FILE.'. '
+                    .'Formatting at a different width than the repository was normalised with moves '
+                    .'the fixed point and reflows every file.',
+                );
+            }
+            $width = $this->integerOption($options, 'width');
+        }
+
+        $dryRun = isset($options['dry-run']);
+        $result = new Formatter($options['php-version'] ?? null)->format($paths, $width, $dryRun);
+
+        $payload = [
+            'scanned' => $result['scanned'],
+            'changed' => array_values($result['changed']),
+            'printWidth' => $width,
+            'dryRun' => $dryRun,
+        ];
+        if ($result['failed'] !== []) {
+            $payload['failed'] = $result['failed'];
+        }
+
+        if ($normalize && !$dryRun) {
+            $payload['declared'] = RepositoryConfig::write($root, $width);
+            $payload['next'] = 'Run the project formatter now and commit both in one change of '
+                .'their own — normalisation is not a feature commit.';
+        }
+
+        $this->json($payload);
+        return $result['failed'] === [] ? 0 : 1;
+    }
+
+    private function doctor(array $options): int
+    {
+        $report = new Doctor()->examine((string) ($options['path'] ?? '.'));
+        $this->json($report);
+        return $report['status'] === 'ready' ? 0 : 1;
+    }
+
     private function contexts(): int
     {
         $parser = (new ParserFactory())->createForHostVersion();
@@ -114,6 +165,9 @@ Usage:
   php-ast-edit validate --file FILE [--php-version 8.4]
   php-ast-edit contexts
   php-ast-edit apply [--input FILE|-] [--dry-run]
+  php-ast-edit format [--path DIR|FILE] [--dry-run] [--php-version 8.4]
+  php-ast-edit normalize [--path DIR] [--width 80] [--dry-run]
+  php-ast-edit doctor [--path DIR]
 
 Coordinates:
   offset   zero-based byte offset in the original source
@@ -150,8 +204,15 @@ Convenience:
 
 Run `php-ast-edit contexts` for the full parseAs and operation catalog.
 
+Formatting contract:
+  The output is canonical — one rendering per AST — so an edit to a repository that
+  already sits on that fixed point changes only what the edit touches. Reaching it is a
+  one-time `normalize` plus a run of the project's own formatter, committed on its own.
+  Without the resulting .php-ast-edit.json, apply falls back to format-preserving
+  printing and says so. `doctor` reports whether the repository is set up for it.
+
 PHP snippets are syntax, not formatting. Compact one-line snippets are preferred;
-the AST is pretty-printed canonically after the transaction.
+the printer decides the layout.
 TEXT;
         echo "\n";
         return 0;

@@ -8,6 +8,22 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Added
 
+- **`CanonicalPrinter`** — canonical printing that a human can read. nikic's `Standard` printer puts every comma-separated list on one line however long, which on a real TYPO3 extension produced a 1745-character line where the authors' longest was 294. No PHP formatter fixes that afterwards: none of php-cs-fixer's 303 fixers has a concept of line width, and PHP_CodeSniffer's `Generic.Files.LineLength` only reports, so `phpcbf` cannot wrap. Line breaking is the printer's job or nobody's. Two hooks — `pMaybeMultiline` and `pParams` — break call arguments, array items, attribute arguments and parameter lists at a column budget; at 80 the same extension printed at max 318 characters against the authors' 294.
+- **The formatting contract, declared rather than inferred.** `php-ast-edit normalize` prints a tree canonically and writes `.php-ast-edit.json`; `apply` reads it. Whether a file may be rewritten canonically cannot be measured from the file, because the fixed point belongs to the printer and the project's formatter together and the formatter runs last: on a correctly normalised extension, re-printing differed from disk in 48 of 63 files, all of it the formatter's own doing.
+- **Format-preserving printing as an announced fallback.** Without the declaration `apply` prints format-preserving and returns a `NOT_CANONICAL` warning naming the setup. Per-file override with `"printer": "canonical" | "format-preserving"`. Every result reports the printer used and `changedLines` as measured after printing — `printFormatPreserving()` silently falls back to full printing for a subtree it cannot map, so the number is taken, not assumed.
+- **`doctor`** reports whether a repository can hold the contract: formatter configuration, the canonical declaration, and whether any workflow runs the formatter. Each answer names the artefact it read.
+- **`format`** prints canonically; `--dry-run` lists what would change. Deliberately no `--check`: on the intended state it would be red, because the formatter has been over the files since. The gate is the chain `php-ast-edit format && <project formatter> && git diff --exit-code`, documented as such.
+- `references/formatting-contract.md` — the precondition, the one-time setup, the decay without a CI gate, and a measured table of which PHP tools can canonicalise line breaking (php-cs-fixer, Pint, ECS and PHP_CodeSniffer cannot; `@prettier/plugin-php` and this printer can).
+- `tests/formatting.php` — 33 checks: width behaviour and idempotence at three budgets, printer selection from the declaration, the explicit override, and the format-preserving footprint for six operation classes rather than for renames alone.
+
+### Changed
+
+- `apply` mutates a clone of the parsed tree and keeps the pristine tree and its tokens, which format-preserving printing needs to map a node back to the source.
+- `tests/corpus.php` round-trips through `CanonicalPrinter`, so the printer that `apply` uses is the one whose fidelity is proven.
+- `printWidth` lives in `.php-ast-edit.json` only. `format --width` is refused: formatting at a width the repository was not normalised with moves the fixed point and reflows everything.
+
+### Added
+
 - **AST mutation primitives.** `replace_node`, `delete_node`, `insert_into`, `replace_child`, `delete_child` and `move_node` form a complete CRUD algebra over the AST. `insert_into` addresses a container by node, property and position, so it needs no existing sibling — adding the first method to an empty class, the first statement to an empty function body or the first parameter to an empty signature is now expressible.
 - **Contextual snippet parsing.** A snippet is parsed inside a synthetic host construct, so the grammar comes from `nikic/php-parser` instead of being modelled a second time here: `expr`, `stmt`, `member`, `enum_case`, `param`, `arg`, `type`, `array_item`, `match_arm`, `attribute`, `closure_use`, `catch`, `const`, `use`, `property_item`, `static_var`, `file`. `parseAs` is inferred where unambiguous.
 - **Structural node references.** `inspect` returns a `ref` (`stmts[1].stmts[0].params[0]`) and the node's `slots` alongside the byte coordinates; `target` accepts `ref` as an alternative to `offset` or `line`/`column`. A ref is only valid together with the snapshot it came from.

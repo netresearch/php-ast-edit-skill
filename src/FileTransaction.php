@@ -5,6 +5,7 @@ namespace Netresearch\PhpAstEdit;
 
 use PhpParser\Node\Stmt;
 use PhpParser\Parser;
+use PhpParser\Token;
 
 /**
  * One file inside an apply transaction. Instances carry every intermediate state so that
@@ -20,9 +21,20 @@ final class FileTransaction
 
     public bool $changed = false;
 
+    /** Which printer produced {@see $output}. */
+    public string $printer = 'canonical';
+
+    /** Set when the repository has not declared itself canonically formatted. */
+    public ?string $warning = null;
+
+    /** Lines the write actually changes, measured after printing. */
+    public ?int $changedLines = null;
+
     /**
      * @param 'edit'|'create'|'delete' $mode
-     * @param list<Stmt> $roots
+     * @param list<Stmt> $roots the tree the edits mutate
+     * @param list<Stmt>|null $original the pristine tree, kept for format-preserving printing
+     * @param list<Token>|null $tokens the pristine token stream, likewise
      */
     public function __construct(
         public readonly string $path,
@@ -32,6 +44,8 @@ final class FileTransaction
         public readonly ?Parser $parser,
         public readonly ?string $phpVersion,
         public readonly bool $existed,
+        public readonly ?array $original = null,
+        public readonly ?array $tokens = null,
     ) {
     }
 

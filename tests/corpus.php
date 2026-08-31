@@ -24,7 +24,7 @@ use PhpParser\Node;
 use PhpParser\NodeTraverser;
 use PhpParser\NodeVisitorAbstract;
 use PhpParser\ParserFactory;
-use PhpParser\PrettyPrinter\Standard;
+use Netresearch\PhpAstEdit\CanonicalPrinter;
 $corpus = $root . '/vendor/nikic/php-parser/lib';
 if (!is_dir($corpus)) {
     fwrite(STDERR, "SKIP: corpus directory missing.\n");
@@ -42,7 +42,7 @@ if ($files === []) {
     exit(0);
 }
 $parser = (new ParserFactory())->createForHostVersion();
-$printer = new Standard();
+$printer = new CanonicalPrinter();
 $traverser = new NodeTraverser();
 $traverser->addVisitor(new class extends NodeVisitorAbstract
 {
@@ -59,8 +59,9 @@ $work = sys_get_temp_dir() . '/php-ast-edit-corpus-' . bin2hex(random_bytes(6));
 mkdir($work, 0700, true);
 $scratch = $work . '/f.php';
 foreach ($files as $source) {
-    // Print from the AST as the Editor does — attributes intact, so comments and literal
-    // kinds survive — and strip only for the comparison.
+    // Print from the AST as the Editor does — the canonical printer, attributes intact so
+    // comments and literal kinds survive — and strip only for the comparison. The printer
+    // changes whitespace and nothing else; that is the claim under test.
     $original = $parser->parse((string) file_get_contents($source));
     $printed = $printer->prettyPrintFile($original);
     $before = $traverser->traverse($original);
