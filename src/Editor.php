@@ -4,16 +4,29 @@ declare(strict_types=1);
 namespace Netresearch\PhpAstEdit;
 
 use Netresearch\PhpAstEdit\Exception\EditException;
+use PhpParser\Comment\Doc;
 use PhpParser\Node;
 use PhpParser\Node\Arg;
+use PhpParser\Node\ArrayItem;
+use PhpParser\Node\Attribute;
+use PhpParser\Node\AttributeGroup;
+use PhpParser\Node\ClosureUse;
+use PhpParser\Node\ComplexType;
+use PhpParser\Node\Const_;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Expr\CallLike;
 use PhpParser\Node\Expr\Variable;
 use PhpParser\Node\Identifier;
+use PhpParser\Node\MatchArm;
 use PhpParser\Node\Name;
+use PhpParser\Node\Param;
+use PhpParser\Node\PropertyItem;
 use PhpParser\Node\Scalar\String_;
+use PhpParser\Node\StaticVar;
 use PhpParser\Node\Stmt;
+use PhpParser\Node\UseItem;
 use PhpParser\Node\VarLikeIdentifier;
+use PhpParser\Modifiers;
 use PhpParser\Parser;
 use PhpParser\ParserFactory;
 use PhpParser\PhpVersion;
@@ -30,7 +43,7 @@ final class Editor
 
     public function inspect(string $path, array $target, ?string $phpVersion = null): array
     {
-        [$source, $parser, $roots] = $this->parseFile($path, $phpVersion);
+        [$source, , $roots] = $this->parseFile($path, $phpVersion);
         $offset = $this->targetOffset($source, $target);
         $locations = $this->locator->ancestry($roots, $offset);
 
@@ -53,6 +66,13 @@ final class Editor
         ];
     }
 
+    /**
+     * Apply a transaction across one or more files.
+     *
+     * Every file is read, guarded, resolved, mutated, printed and re-parsed before the first
+     * byte is written. A failure in any phase leaves the working tree untouched; a failure
+     * during the write phase rolls the already written files back.
+     */
     public function apply(array $document, bool $forceDryRun = false): array
     {
         $files = $document['files'] ?? null;
@@ -60,34 +80,104 @@ final class Editor
             throw new EditException('apply input requires a non-empty files array.');
         }
 
-        $results = [];
-        foreach ($files as $fileSpec) {
-            if (!is_array($fileSpec)) {
+        $dryRun = $forceDryRun || (bool) ($document['dryRun'] ?? false);
+
+        // Phase 1 — read, guard and resolve every target against its pristine snapshot.
+        $transactions = [];
+        $seen = [];
+        foreach ($files as $spec) {
+            if (!is_array($spec)) {
                 throw new EditException('Each files entry must be an object.');
             }
-            $results[] = $this->applyFile($fileSpec, $forceDryRun || (bool) ($document['dryRun'] ?? false));
+            $transaction = $this->prepare($spec);
+            if (isset($seen[$transaction->path])) {
+                throw new EditException('Duplicate path in one transaction: '.$transaction->path);
+            }
+            $seen[$transaction->path] = true;
+            $transactions[] = $transaction;
         }
 
-        return ['files' => $results];
+        // Phase 2 — mutate in memory.
+        foreach ($transactions as $transaction) {
+            $this->mutate($transaction);
+        }
+
+        // Phase 3 — print and re-parse; nothing invalid reaches the working tree.
+        foreach ($transactions as $transaction) {
+            $this->render($transaction);
+        }
+
+        // Phase 4 — commit, with best-effort rollback.
+        if (!$dryRun) {
+            $this->commit($transactions);
+        }
+
+        return ['files' => array_map(
+            fn (FileTransaction $transaction): array => $this->report($transaction, $dryRun),
+            $transactions,
+        )];
     }
 
-    private function applyFile(array $spec, bool $dryRun): array
+    private function prepare(array $spec): FileTransaction
     {
         $path = $this->requiredString($spec, 'path');
+        $mode = (string) ($spec['mode'] ?? 'edit');
+        if (!in_array($mode, ['edit', 'create', 'delete'], true)) {
+            throw new EditException('mode must be edit, create or delete.');
+        }
         $phpVersion = isset($spec['phpVersion']) ? (string) $spec['phpVersion'] : null;
-        [$source, $parser, $roots] = $this->parseFile($path, $phpVersion);
-        $beforeHash = hash('sha256', $source);
 
-        if (isset($spec['sha256']) && !hash_equals((string) $spec['sha256'], $beforeHash)) {
-            throw new EditException(sprintf('STALE_SOURCE: %s no longer matches expected sha256.', $path));
+        if ($mode === 'delete') {
+            if (!is_file($path)) {
+                throw new EditException('Cannot delete missing file: '.$path);
+            }
+            $source = $this->readFile($path);
+            $this->assertSha($spec, $path, hash('sha256', $source));
+            return new FileTransaction($path, 'delete', $source, [], null, $phpVersion, true);
         }
 
+        if ($mode === 'create') {
+            $existed = is_file($path);
+            if ($existed && ($spec['expectAbsent'] ?? true) !== false) {
+                throw new EditException(sprintf(
+                    'FILE_EXISTS: %s already exists. Pass "expectAbsent": false to overwrite deliberately.',
+                    $path,
+                ));
+            }
+            $parser = $this->parser($phpVersion);
+            $roots = (new ContextParser($parser))->file($this->requiredString($spec, 'php'));
+            $transaction = new FileTransaction(
+                $path,
+                'create',
+                $existed ? $this->readFile($path) : null,
+                $roots,
+                $parser,
+                $phpVersion,
+                $existed,
+            );
+            // Targets inside a freshly constructed file resolve against the construction syntax.
+            $this->resolveTargets($transaction, $spec, $this->requiredString($spec, 'php'));
+            return $transaction;
+        }
+
+        [$source, $parser, $roots] = $this->parseFile($path, $phpVersion);
+        $this->assertSha($spec, $path, hash('sha256', $source));
+        $transaction = new FileTransaction($path, 'edit', $source, $roots, $parser, $phpVersion, true);
         $edits = $spec['edits'] ?? null;
         if (!is_array($edits) || $edits === []) {
             throw new EditException(sprintf('%s requires a non-empty edits array.', $path));
         }
+        $this->resolveTargets($transaction, $spec, $source);
+        return $transaction;
+    }
 
-        $resolved = [];
+    private function resolveTargets(FileTransaction $transaction, array $spec, string $source): void
+    {
+        $edits = $spec['edits'] ?? [];
+        if (!is_array($edits)) {
+            throw new EditException(sprintf('%s: edits must be an array.', $transaction->path));
+        }
+
         foreach ($edits as $index => $edit) {
             if (!is_array($edit)) {
                 throw new EditException(sprintf('Edit %d must be an object.', $index));
@@ -96,62 +186,188 @@ final class Editor
             if (!is_array($target)) {
                 throw new EditException(sprintf('Edit %d requires a target object.', $index));
             }
-            $offset = $this->targetOffset($source, $target);
-            $kind = isset($target['kind']) ? (string) $target['kind'] : null;
-            $location = $this->locator->locate($roots, $offset, $kind);
+
+            if (isset($target['ref'])) {
+                $location = $this->locator->resolveRef($transaction->roots, (string) $target['ref']);
+                if (isset($target['kind'])) {
+                    $kind = (string) $target['kind'];
+                    if ($location->node->getType() !== $kind && $location->node::class !== $kind) {
+                        throw new EditException(sprintf(
+                            'target.ref resolves to %s, expected %s.',
+                            $location->node->getType(),
+                            $kind,
+                        ));
+                    }
+                }
+            } else {
+                $offset = $this->targetOffset($source, $target);
+                $kind = isset($target['kind']) ? (string) $target['kind'] : null;
+                $location = $this->locator->locate($transaction->roots, $offset, $kind);
+            }
+
             $this->assertExpectations($location->node, $edit['expect'] ?? []);
-            $resolved[] = ['edit' => $edit, 'location' => $location, 'index' => $index];
+            $transaction->resolved[] = ['edit' => $edit, 'location' => $location, 'index' => (int) $index];
         }
+    }
 
-        $snippetParser = new SnippetParser($parser);
+    private function mutate(FileTransaction $transaction): void
+    {
+        if ($transaction->mode === 'delete') {
+            return;
+        }
+        $snippets = new ContextParser($transaction->parser ?? $this->parser($transaction->phpVersion));
 
-        foreach ($resolved as $entry) {
-            if (!$this->locator->isAttached($roots, $entry['location']->node)) {
+        foreach ($transaction->resolved as $entry) {
+            if (!$this->locator->isAttached($transaction->roots, $entry['location']->node)) {
                 throw new EditException(sprintf(
-                    'Edit %d was invalidated by an earlier edit in the same transaction.',
+                    '%s: edit %d was invalidated by an earlier edit in the same transaction.',
+                    $transaction->path,
                     $entry['index'],
                 ));
             }
-            $this->applyOperation($entry['location'], $entry['edit'], $roots, $snippetParser);
+            $this->applyOperation($entry['location'], $entry['edit'], $transaction->roots, $snippets);
+        }
+    }
+
+    private function render(FileTransaction $transaction): void
+    {
+        if ($transaction->mode === 'delete') {
+            $transaction->changed = true;
+            return;
         }
 
         $printerOptions = [];
-        if ($phpVersion !== null) {
-            $printerOptions['phpVersion'] = PhpVersion::fromString($phpVersion);
+        if ($transaction->phpVersion !== null) {
+            $printerOptions['phpVersion'] = PhpVersion::fromString($transaction->phpVersion);
         }
         $printer = new Standard($printerOptions);
-        $output = rtrim($printer->prettyPrintFile($roots), "\r\n")."\n";
+        $output = rtrim($printer->prettyPrintFile($transaction->roots), "\r\n")."\n";
 
-        $validationParser = $this->parser($phpVersion);
-        $validationParser->parse($output);
+        $this->parser($transaction->phpVersion)->parse($output);
 
-        $afterHash = hash('sha256', $output);
-        $changed = $source !== $output;
+        $transaction->output = $output;
+        $transaction->changed = $transaction->source !== $output;
+    }
 
-        if (!$dryRun && $changed) {
-            $this->atomicWrite($path, $output);
+    /** @param list<FileTransaction> $transactions */
+    private function commit(array $transactions): void
+    {
+        /** @var list<array{path: string, previous: ?string}> $done */
+        $done = [];
+        try {
+            foreach ($transactions as $transaction) {
+                if (!$transaction->changed) {
+                    continue;
+                }
+                if ($transaction->mode === 'delete') {
+                    $done[] = ['path' => $transaction->path, 'previous' => $transaction->source];
+                    if (!@unlink($transaction->path)) {
+                        throw new EditException('Cannot delete '.$transaction->path);
+                    }
+                    continue;
+                }
+                $done[] = ['path' => $transaction->path, 'previous' => $transaction->existed ? $transaction->source : null];
+                $this->atomicWrite($transaction->path, (string) $transaction->output);
+            }
+        } catch (\Throwable $failure) {
+            $restoreErrors = [];
+            foreach (array_reverse($done) as $entry) {
+                try {
+                    if ($entry['previous'] === null) {
+                        if (is_file($entry['path'])) {
+                            @unlink($entry['path']);
+                        }
+                        continue;
+                    }
+                    $this->atomicWrite($entry['path'], $entry['previous']);
+                } catch (\Throwable $restoreFailure) {
+                    $restoreErrors[] = $entry['path'].': '.$restoreFailure->getMessage();
+                }
+            }
+            $message = 'COMMIT_FAILED: '.$failure->getMessage();
+            if ($restoreErrors !== []) {
+                $message .= ' Rollback incomplete for '.implode('; ', $restoreErrors);
+            } else {
+                $message .= ' All files were rolled back.';
+            }
+            throw new EditException($message);
         }
+    }
 
+    private function report(FileTransaction $transaction, bool $dryRun): array
+    {
         $result = [
-            'path' => $path,
-            'beforeSha256' => $beforeHash,
-            'afterSha256' => $afterHash,
-            'changed' => $changed,
-            'editsApplied' => count($resolved),
+            'path' => $transaction->path,
+            'mode' => $transaction->mode,
+            'beforeSha256' => $transaction->beforeSha(),
+            'afterSha256' => $transaction->output === null ? null : hash('sha256', $transaction->output),
+            'changed' => $transaction->changed,
+            'editsApplied' => count($transaction->resolved),
             'dryRun' => $dryRun,
         ];
-        if ($dryRun) {
-            $result['code'] = $output;
+        if ($dryRun && $transaction->output !== null) {
+            $result['code'] = $transaction->output;
         }
         return $result;
     }
 
-    private function applyOperation(NodeLocation $location, array $edit, array &$roots, SnippetParser $snippets): void
+    private function applyOperation(NodeLocation $location, array $edit, array &$roots, ContextParser $snippets): void
     {
         $operation = $this->requiredString($edit, 'operation');
         $node = $location->node;
 
         switch ($operation) {
+            // ---- Primitives -------------------------------------------------------------
+            case 'replace_node':
+                $context = $this->context($edit, $location);
+                $location->replace($snippets->parseOne($context, $this->requiredString($edit, 'php')), $roots);
+                return;
+
+            case 'delete_node':
+            case 'delete':
+                $location->remove($roots);
+                return;
+
+            case 'insert_into':
+                $property = $this->requiredString($edit, 'property');
+                $context = $this->contextForProperty($edit, $location, $property);
+                $location->insertInto(
+                    $property,
+                    $snippets->parse($context, $this->requiredString($edit, 'php')),
+                    $this->position($edit),
+                    $roots,
+                );
+                return;
+
+            case 'replace_child':
+                $property = $this->requiredString($edit, 'property');
+                $context = $this->contextForProperty($edit, $location, $property);
+                $location->replaceChild(
+                    $property,
+                    $this->optionalIndex($edit),
+                    $snippets->parseOne($context, $this->requiredString($edit, 'php')),
+                    $roots,
+                );
+                return;
+
+            case 'delete_child':
+                $location->removeChild($this->requiredString($edit, 'property'), $this->optionalIndex($edit));
+                return;
+
+            case 'move_node':
+                $this->moveNode($location, $edit, $roots);
+                return;
+
+            // ---- Comments ---------------------------------------------------------------
+            case 'set_doc_comment':
+                $this->setDocComment($node, $this->requiredString($edit, 'value'));
+                return;
+
+            case 'remove_doc_comment':
+                $this->setDocComment($node, null);
+                return;
+
+            // ---- Convenience shorthands over the primitives ------------------------------
             case 'set_name':
                 $this->setName($location, $this->requiredString($edit, 'value'), $roots);
                 return;
@@ -170,32 +386,25 @@ final class Editor
                 if (!$node instanceof Expr) {
                     throw new EditException('replace_expression requires an Expr target.');
                 }
-                $location->replace($snippets->expression($this->requiredString($edit, 'php')), $roots);
+                $location->replace($snippets->parseOne('expr', $this->requiredString($edit, 'php')), $roots);
                 return;
 
             case 'replace_statement':
                 if (!$node instanceof Stmt) {
                     throw new EditException('replace_statement requires a Stmt target.');
                 }
-                $location->replace($snippets->statement($this->requiredString($edit, 'php')), $roots);
+                $location->replace($snippets->parseOne('stmt', $this->requiredString($edit, 'php')), $roots);
                 return;
 
             case 'insert_before':
-                if (!$node instanceof Stmt) {
-                    throw new EditException('insert_before requires a Stmt target.');
-                }
-                $location->insertBefore($snippets->statements($this->requiredString($edit, 'php')), $roots);
-                return;
-
             case 'insert_after':
-                if (!$node instanceof Stmt) {
-                    throw new EditException('insert_after requires a Stmt target.');
+                $context = $this->context($edit, $location, 'stmt');
+                $nodes = $snippets->parse($context, $this->requiredString($edit, 'php'));
+                if ($operation === 'insert_before') {
+                    $location->insertBefore($nodes, $roots);
+                } else {
+                    $location->insertAfter($nodes, $roots);
                 }
-                $location->insertAfter($snippets->statements($this->requiredString($edit, 'php')), $roots);
-                return;
-
-            case 'delete':
-                $location->remove($roots);
                 return;
 
             case 'replace_argument':
@@ -207,8 +416,269 @@ final class Editor
                 $this->editArgument($node, $edit, $snippets, $operation);
                 return;
 
+            // ---- Semantic convenience ----------------------------------------------------
+            case 'add_member':
+                $this->assertType($node, Stmt\ClassLike::class, 'add_member requires a class-like target.');
+                $location->insertInto('stmts', $snippets->parse(
+                    $node instanceof Stmt\Enum_ && str_contains($this->requiredString($edit, 'php'), 'case ')
+                        ? 'enum_case'
+                        : 'member',
+                    $this->requiredString($edit, 'php'),
+                ), $this->position($edit, 'end'), $roots);
+                return;
+
+            case 'add_parameter':
+                if (!$node instanceof Node\FunctionLike) {
+                    throw new EditException('add_parameter requires a function-like target.');
+                }
+                $location->insertInto(
+                    'params',
+                    $snippets->parse('param', $this->requiredString($edit, 'php')),
+                    $this->position($edit, 'end'),
+                    $roots,
+                );
+                return;
+
+            case 'add_attribute':
+                $location->insertInto(
+                    'attrGroups',
+                    $snippets->parse('attribute', $this->requiredString($edit, 'php')),
+                    $this->position($edit, 'end'),
+                    $roots,
+                );
+                return;
+
+            case 'set_return_type':
+                $location->replaceChild(
+                    'returnType',
+                    null,
+                    $snippets->parseOne('type', $this->requiredString($edit, 'php')),
+                    $roots,
+                );
+                return;
+
+            case 'set_type':
+                $location->replaceChild(
+                    'type',
+                    null,
+                    $snippets->parseOne('type', $this->requiredString($edit, 'php')),
+                    $roots,
+                );
+                return;
+
+            case 'set_visibility':
+                $this->setVisibility($node, $this->requiredString($edit, 'value'));
+                return;
+
+            case 'add_implements':
+                $this->assertType($node, Stmt\Class_::class, 'add_implements requires a Stmt_Class target.');
+                $location->insertInto(
+                    'implements',
+                    [$snippets->parseOne('type', $this->requiredString($edit, 'php'))],
+                    $this->position($edit, 'end'),
+                    $roots,
+                );
+                return;
+
+            case 'set_extends':
+                $location->replaceChild(
+                    'extends',
+                    $this->optionalIndex($edit),
+                    $snippets->parseOne('type', $this->requiredString($edit, 'php')),
+                    $roots,
+                );
+                return;
+
             default:
                 throw new EditException('Unsupported operation: '.$operation);
+        }
+    }
+
+    private function moveNode(NodeLocation $location, array $edit, array &$roots): void
+    {
+        $into = $edit['into'] ?? null;
+        if (!is_array($into) || !isset($into['ref']) || !isset($into['property'])) {
+            throw new EditException('move_node requires into.ref and into.property.');
+        }
+        $node = $location->node;
+        $targetLocation = $this->locator->resolveRef($roots, (string) $into['ref']);
+        if ($targetLocation->node === $node) {
+            throw new EditException('move_node cannot move a node into itself.');
+        }
+
+        $location->remove($roots);
+        $targetLocation->insertInto(
+            (string) $into['property'],
+            [$node],
+            $this->position(['position' => $into['position'] ?? 'end'], 'end'),
+            $roots,
+        );
+    }
+
+    private function setDocComment(Node $node, ?string $text): void
+    {
+        $attributes = $node->getAttributes();
+        if ($text === null) {
+            unset($attributes['comments']);
+            $node->setAttributes($attributes);
+            return;
+        }
+
+        $text = trim($text);
+        if (!str_starts_with($text, '/**')) {
+            $lines = preg_split('/\R/', $text) ?: [];
+            $text = "/**\n".implode("\n", array_map(
+                static fn (string $line): string => rtrim(' * '.$line),
+                $lines,
+            ))."\n */";
+        }
+
+        $comments = array_values(array_filter(
+            $node->getComments(),
+            static fn (\PhpParser\Comment $comment): bool => !$comment instanceof Doc,
+        ));
+        $comments[] = new Doc($text);
+        $attributes['comments'] = $comments;
+        $node->setAttributes($attributes);
+    }
+
+    private function setVisibility(Node $node, string $visibility): void
+    {
+        $map = [
+            'public' => Modifiers::PUBLIC,
+            'protected' => Modifiers::PROTECTED,
+            'private' => Modifiers::PRIVATE,
+        ];
+        if (!isset($map[$visibility])) {
+            throw new EditException('set_visibility requires public, protected or private.');
+        }
+        if (!property_exists($node, 'flags')) {
+            throw new EditException('set_visibility target has no modifier flags.');
+        }
+        $node->flags = ($node->flags & ~Modifiers::VISIBILITY_MASK) | $map[$visibility];
+    }
+
+    /** Determine the parse context for a snippet, honouring an explicit parseAs. */
+    private function context(array $edit, NodeLocation $location, ?string $fallback = null): string
+    {
+        if (isset($edit['parseAs'])) {
+            return (string) $edit['parseAs'];
+        }
+        $inferred = $this->inferContext($location);
+        if ($inferred !== null) {
+            return $inferred;
+        }
+        if ($fallback !== null) {
+            return $fallback;
+        }
+        throw new EditException(sprintf(
+            'Cannot infer a parse context for %s; pass "parseAs" explicitly.',
+            $location->node->getType(),
+        ));
+    }
+
+    private function contextForProperty(array $edit, NodeLocation $location, string $property): string
+    {
+        if (isset($edit['parseAs'])) {
+            return (string) $edit['parseAs'];
+        }
+        $context = self::PROPERTY_CONTEXTS[$property] ?? null;
+        if ($context === null) {
+            throw new EditException(sprintf(
+                'Cannot infer a parse context for property "%s"; pass "parseAs" explicitly.',
+                $property,
+            ));
+        }
+        if ($context === 'member' && $location->node instanceof Stmt\Enum_) {
+            return str_contains((string) ($edit['php'] ?? ''), 'case ') ? 'enum_case' : 'member';
+        }
+        return $context;
+    }
+
+    /** Property name → synthetic parse context. */
+    private const PROPERTY_CONTEXTS = [
+        'stmts' => 'member',
+        'params' => 'param',
+        'args' => 'arg',
+        'items' => 'array_item',
+        'arms' => 'match_arm',
+        'attrGroups' => 'attribute',
+        'uses' => 'closure_use',
+        'catches' => 'catch',
+        'consts' => 'const',
+        'props' => 'property_item',
+        'vars' => 'static_var',
+        'type' => 'type',
+        'returnType' => 'type',
+        'implements' => 'type',
+        'extends' => 'type',
+        'default' => 'expr',
+        'expr' => 'expr',
+        'cond' => 'expr',
+        'value' => 'expr',
+        'var' => 'expr',
+    ];
+
+    private function inferContext(NodeLocation $location): ?string
+    {
+        $node = $location->node;
+
+        return match (true) {
+            $node instanceof Param => 'param',
+            $node instanceof Arg => 'arg',
+            $node instanceof ArrayItem => 'array_item',
+            $node instanceof MatchArm => 'match_arm',
+            $node instanceof AttributeGroup => 'attribute',
+            $node instanceof Attribute => 'attribute',
+            $node instanceof ClosureUse => 'closure_use',
+            $node instanceof Const_ => 'const',
+            $node instanceof UseItem => 'use',
+            $node instanceof PropertyItem => 'property_item',
+            $node instanceof StaticVar => 'static_var',
+            $node instanceof Stmt\Catch_ => 'catch',
+            $node instanceof ComplexType => 'type',
+            ($node instanceof Identifier || $node instanceof Name)
+                && in_array($location->property, ['type', 'returnType', 'implements', 'extends'], true) => 'type',
+            $node instanceof Expr => 'expr',
+            $node instanceof Stmt\ClassMethod,
+            $node instanceof Stmt\Property,
+            $node instanceof Stmt\ClassConst,
+            $node instanceof Stmt\TraitUse => 'member',
+            $node instanceof Stmt\EnumCase => 'enum_case',
+            $node instanceof Stmt => 'stmt',
+            default => null,
+        };
+    }
+
+    /** @return int|'start'|'end' */
+    private function position(array $edit, string $default = 'end'): int|string
+    {
+        $position = $edit['position'] ?? $default;
+        if (is_int($position) || in_array($position, ['start', 'end'], true)) {
+            return $position;
+        }
+        if (is_string($position) && filter_var($position, FILTER_VALIDATE_INT) !== false) {
+            return (int) $position;
+        }
+        throw new EditException('position must be an integer, "start" or "end".');
+    }
+
+    private function optionalIndex(array $edit): ?int
+    {
+        if (!array_key_exists('index', $edit) || $edit['index'] === null) {
+            return null;
+        }
+        $index = $edit['index'];
+        if (!is_int($index) || $index < 0) {
+            throw new EditException('index must be a non-negative integer.');
+        }
+        return $index;
+    }
+
+    private function assertType(Node $node, string $class, string $message): void
+    {
+        if (!$node instanceof $class) {
+            throw new EditException($message.' Got '.$node->getType().'.');
         }
     }
 
@@ -258,7 +728,7 @@ final class Editor
         throw new EditException('set_name cannot replace a dynamic name expression.');
     }
 
-    private function editArgument(CallLike $call, array $edit, SnippetParser $snippets, string $operation): void
+    private function editArgument(CallLike $call, array $edit, ContextParser $snippets, string $operation): void
     {
         if ($call->isFirstClassCallable()) {
             throw new EditException($operation.' is not valid for first-class callable syntax.');
@@ -282,17 +752,18 @@ final class Editor
             return;
         }
 
-        $expr = $snippets->expression($this->requiredString($edit, 'php'));
+        $php = $this->requiredString($edit, 'php');
         if ($operation === 'replace_argument') {
             if (!array_key_exists($index, $args) || !$args[$index] instanceof Arg) {
                 throw new EditException('Argument index out of range.');
             }
-            $args[$index]->value = $expr;
+            $args[$index]->value = $snippets->parseOne('expr', $php);
         } else {
             if ($index > count($args)) {
                 throw new EditException('Argument insertion index out of range.');
             }
-            array_splice($args, $index, 0, [new Arg($expr)]);
+            $node = $snippets->parseOne(isset($edit['parseAs']) ? (string) $edit['parseAs'] : 'expr', $php);
+            array_splice($args, $index, 0, [$node instanceof Arg ? $node : new Arg($node)]);
         }
         $call->args = $args;
     }
@@ -362,6 +833,10 @@ final class Editor
         return array_filter([
             'type' => $node->getType(),
             'class' => $node::class,
+            'ref' => $location->path,
+            'property' => $location->property,
+            'index' => $location->index,
+            'slots' => $node->getSubNodeNames(),
             'start' => $start,
             'end' => $end,
             'startLine' => $node->getStartLine(),
@@ -378,16 +853,29 @@ final class Editor
         if (!is_file($path)) {
             throw new EditException('File not found: '.$path);
         }
-        $source = file_get_contents($path);
-        if ($source === false) {
-            throw new EditException('Cannot read file: '.$path);
-        }
+        $source = $this->readFile($path);
         $parser = $this->parser($phpVersion);
         $roots = $parser->parse($source);
         if ($roots === null) {
             $roots = [];
         }
         return [$source, $parser, $roots];
+    }
+
+    private function readFile(string $path): string
+    {
+        $source = file_get_contents($path);
+        if ($source === false) {
+            throw new EditException('Cannot read file: '.$path);
+        }
+        return $source;
+    }
+
+    private function assertSha(array $spec, string $path, string $actual): void
+    {
+        if (isset($spec['sha256']) && !hash_equals((string) $spec['sha256'], $actual)) {
+            throw new EditException(sprintf('STALE_SOURCE: %s no longer matches expected sha256.', $path));
+        }
     }
 
     private function parser(?string $phpVersion): Parser
@@ -412,7 +900,7 @@ final class Editor
         $line = $target['line'] ?? null;
         $column = $target['column'] ?? null;
         if (!is_int($line) || $line < 1 || !is_int($column) || $column < 1) {
-            throw new EditException('Target requires offset or 1-based integer line and column.');
+            throw new EditException('Target requires ref, offset, or 1-based integer line and column.');
         }
 
         $currentLine = 1;
@@ -441,19 +929,29 @@ final class Editor
     private function atomicWrite(string $path, string $contents): void
     {
         $directory = dirname($path);
-        $temp = tempnam($directory, '.php-ast-edit-');
-        if ($temp === false) {
+        if (!is_dir($directory) && !@mkdir($directory, 0777, true) && !is_dir($directory)) {
+            throw new EditException('Cannot create directory '.$directory);
+        }
+        if (!is_writable($directory)) {
+            throw new EditException('Directory is not writable: '.$directory);
+        }
+        $existed = is_file($path);
+        $temp = @tempnam($directory, '.php-ast-edit-');
+        if ($temp === false || realpath(dirname($temp)) !== realpath($directory)) {
+            // tempnam() silently falls back to the system temp directory, which would turn
+            // the rename below into a cross-device move and lose atomicity.
+            if (is_string($temp) && is_file($temp)) {
+                @unlink($temp);
+            }
             throw new EditException('Cannot create temporary file next to '.$path);
         }
         try {
-            $mode = fileperms($path);
-            if (file_put_contents($temp, $contents) === false) {
+            $mode = $existed ? fileperms($path) : false;
+            if (@file_put_contents($temp, $contents) === false) {
                 throw new EditException('Cannot write temporary file for '.$path);
             }
-            if ($mode !== false) {
-                chmod($temp, $mode & 0777);
-            }
-            if (!rename($temp, $path)) {
+            @chmod($temp, $mode !== false ? ($mode & 0777) : (0666 & ~umask()));
+            if (!@rename($temp, $path)) {
                 throw new EditException('Atomic rename failed for '.$path);
             }
         } finally {

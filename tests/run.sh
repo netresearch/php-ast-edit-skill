@@ -15,6 +15,10 @@ echo "::group::tests/run.php (inspect/apply round-trip)"
 php tests/run.php || fail=1
 echo "::endgroup::"
 
+echo "::group::tests/matrix.php (grammar and operation coverage matrix)"
+php tests/matrix.php || fail=1
+echo "::endgroup::"
+
 echo "::group::skills/php-structured-edit/scripts/php-ast-edit (wrapper resolves an executable)"
 if [ -f vendor/autoload.php ]; then
   skills/php-structured-edit/scripts/php-ast-edit validate --file tests/fixtures/sample.php || fail=1
