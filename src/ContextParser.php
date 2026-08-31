@@ -23,7 +23,7 @@ final class ContextParser
      * Synthetic hosts. `%s` receives the snippet; `extract` names the path that carries
      * the produced nodes inside the parsed host.
      *
-     * @var array<string, array{template: string, extract: callable(array<Stmt>): list<Node>}>
+     * @var array<string, array{host: class-string<Stmt>, template: string, extract: callable(array<Stmt>): list<Node>}>
      */
     private array $contexts;
 

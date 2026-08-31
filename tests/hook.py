@@ -62,13 +62,16 @@ CASES: list[tuple[str, dict, bool]] = [
         {"command": "php-ast-edit apply --input e.json && sed -i s/a/b/ c.php"},
         True,
     ),
-    # Reads and moves are none of the gate's business
+    # Deleting a PHP file is part of the contract too: mode "delete" guards it with a hash.
+    # Reads are none of the gate's business
     ("Bash", {"command": "grep -n foo a.php"}, False),
     ("Bash", {"command": "php -l a.php"}, False),
     ("Bash", {"command": "git diff a.php"}, False),
     ("Bash", {"command": "vim a.php"}, False),
     ("Bash", {"command": "cp a.php b.php"}, False),
-    ("Bash", {"command": "rm a.php"}, False),
+    ("Bash", {"command": "rm a.php"}, True),
+    ("Bash", {"command": "rm -rf build"}, False),
+    ("Bash", {"command": "git rm a.php"}, True),
     # Known blind spot, asserted so a future change to it is a deliberate one: the PHP path
     # and the mutation live in different simple commands, which needs dataflow to connect.
     ("Bash", {"command": "for f in *.php; do sed -i s/a/b/ $f; done"}, False),

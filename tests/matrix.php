@@ -50,6 +50,19 @@ const USE_ITEM = 'C\\D as E';
  * …]]` in every row repeats the same token sequence dozens of times — duplication in the
  * literal sense and noise in the reading sense.
  */
+/** Depth-first removal: a case may create directories several levels deep. */
+function removeTree(string $directory): void
+{
+    foreach (glob($directory.'/*') ?: [] as $entry) {
+        if (is_dir($entry)) {
+            removeTree($entry);
+            continue;
+        }
+        @unlink($entry);
+    }
+    @rmdir($directory);
+}
+
 function src(string $php): array
 {
     return ['a.php' => $php];
@@ -716,18 +729,7 @@ foreach ($cases as $case) {
         $failures[] = $case['name'].":\n  - ".implode("\n  - ", $problems);
     }
 
-    foreach (glob($dir.'/*', GLOB_MARK) ?: [] as $entry) {
-        if (str_ends_with($entry, DIRECTORY_SEPARATOR)) {
-            foreach (glob($entry.'*') ?: [] as $nested) {
-                @unlink($nested);
-                @rmdir($nested);
-            }
-            @rmdir($entry);
-            continue;
-        }
-        @unlink($entry);
-    }
-    @rmdir($dir);
+    removeTree($dir);
 }
 
 // The write phase itself must roll back. An unwritable directory is the cheapest real

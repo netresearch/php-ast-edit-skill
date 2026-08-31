@@ -39,6 +39,10 @@ PHP_SUFFIXES = (".php", ".phtml")
 # Programs whose in-place flag rewrites a file in the shell.
 IN_PLACE_PROGRAMS = {"sed", "gsed", "perl"}
 
+# Removing a PHP file is part of the same contract: `mode: delete` guards it with the file's
+# hash, so a file that changed under you is not deleted blindly.
+DELETE_PROGRAMS = {"rm", "unlink", "shred"}
+
 # Shell operators that end one simple command and begin the next.
 SEPARATORS = {";", "&&", "||", "|", "&", "|&"}
 
@@ -153,6 +157,10 @@ def mutates_php(tokens: list[str]) -> str | None:
 
         if name in IN_PLACE_PROGRAMS:
             program = name
+        elif name in DELETE_PROGRAMS and any(
+            is_php_path(t) for t in tokens[index + 1 :]
+        ):
+            return f"{name} of a .php file"
         elif name == "apply_patch":
             return "apply_patch"
         elif name == "tee" and any(is_php_path(t) for t in tokens[index + 1 :]):

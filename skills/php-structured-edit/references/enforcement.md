@@ -9,7 +9,7 @@
 | Tool | Condition |
 | --- | --- |
 | `Edit`, `Write`, `MultiEdit`, `NotebookEdit` | the target path ends in `.php` or `.phtml` |
-| `Bash` | `sed -i` / `perl -i` on a `.php` path, a shell or script redirect into a `.php` file, `apply_patch` on a `.php` path |
+| `Bash` | `sed -i` / `perl -i` on a `.php` path, a shell redirect or `tee` into a `.php` file, `apply_patch` on a `.php` path, `rm` of a `.php` path |
 
 Read-only shell work is untouched: `cat`, `grep`, `php -l`, `git diff` and friends never match. A command that already contains `php-ast-edit` is allowed through.
 
