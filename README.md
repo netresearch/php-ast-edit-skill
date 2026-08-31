@@ -189,6 +189,7 @@ The public API exposes stable agent-oriented operations rather than raw PHP-Pars
 - All targets resolve against the original source before mutation. A structural `ref` is only valid together with the snapshot it came from.
 - Before each edit the target node must still be attached to the current AST; invalidated follow-up edits fail.
 - **The transaction spans every file in the document.** All files are read, guarded, resolved, mutated, printed and reparsed before the first byte is written — a failure in file three no longer leaves files one and two changed. A failure during the write phase rolls the already written files back.
+- Immediately before the first write, every file is re-compared against the snapshot it was resolved from; one that changed, appeared or disappeared in the meantime fails with `CONCURRENT_CHANGE` and nothing is written.
 - The reparse before the write is the universal net: any mutation that would produce invalid PHP fails the whole transaction.
 - Writes use a same-directory temporary file plus atomic rename.
 
