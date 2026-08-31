@@ -27,7 +27,7 @@ else
 fi
 echo "::endgroup::"
 
-echo "::group::tests/php-floor.php (dereferenced `new` needs parentheses below PHP 8.4)"
+echo '::group::tests/php-floor.php (dereferenced `new` needs parentheses below PHP 8.4)'
 php tests/php-floor.php || fail=1
 echo "::endgroup::"
 
