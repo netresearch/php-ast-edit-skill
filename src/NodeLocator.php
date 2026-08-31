@@ -11,10 +11,7 @@ final class NodeLocator
     /** @param list<Node\Stmt> $roots */
     public function locate(array $roots, int $offset, ?string $kind = null): NodeLocation
     {
-        $matches = [];
-        foreach ($roots as $index => $node) {
-            $this->walk($node, null, null, null, $index, 0, $offset, $matches);
-        }
+        $matches = $this->ancestry($roots, $offset);
 
         if ($kind !== null) {
             $matches = array_values(array_filter(
@@ -32,12 +29,6 @@ final class NodeLocator
             ));
         }
 
-        usort($matches, static function (NodeLocation $a, NodeLocation $b): int {
-            $aSize = $a->end() - $a->start();
-            $bSize = $b->end() - $b->start();
-            return $aSize <=> $bSize ?: $b->depth <=> $a->depth;
-        });
-
         return $matches[0];
     }
 
@@ -46,7 +37,7 @@ final class NodeLocator
     {
         $matches = [];
         foreach ($roots as $index => $node) {
-            $this->walk($node, null, null, null, $index, 0, $offset, $matches);
+            $this->walk($node, null, null, null, $index, 0, 'stmts['.$index.']', $offset, $matches);
         }
 
         usort($matches, static function (NodeLocation $a, NodeLocation $b): int {
@@ -58,6 +49,70 @@ final class NodeLocator
         return $matches;
     }
 
+    /**
+     * Resolve a structural AST reference such as `stmts[1].stmts[3].params[0]` or
+     * `stmts[0].returnType`. A reference is only valid together with the source snapshot it
+     * was produced from.
+     *
+     * @param list<Node\Stmt> $roots
+     */
+    public function resolveRef(array $roots, string $ref): NodeLocation
+    {
+        $ref = trim($ref);
+        if ($ref === '') {
+            throw new EditException('target.ref must not be empty.');
+        }
+
+        $segments = explode('.', $ref);
+        $pattern = '/^([A-Za-z_]\w*)(?:\[(\d+)\])?$/';
+
+        if (!preg_match($pattern, $segments[0], $first) || $first[1] !== 'stmts' || !isset($first[2])) {
+            throw new EditException('target.ref must start with stmts[<index>], got: '.$segments[0]);
+        }
+
+        $rootIndex = (int) $first[2];
+        if (!array_key_exists($rootIndex, $roots)) {
+            throw new EditException(sprintf('target.ref root index %d does not exist.', $rootIndex));
+        }
+
+        $location = new NodeLocation($roots[$rootIndex], null, null, null, $rootIndex, 0, 'stmts['.$rootIndex.']');
+        $path = $location->path;
+
+        foreach (array_slice($segments, 1) as $depth => $segment) {
+            if (!preg_match($pattern, $segment, $parts)) {
+                throw new EditException('Malformed target.ref segment: '.$segment);
+            }
+            $property = $parts[1];
+            $node = $location->node;
+            if (!in_array($property, $node->getSubNodeNames(), true)) {
+                throw new EditException(sprintf(
+                    'target.ref "%s": %s has no sub node "%s".',
+                    $ref,
+                    $node->getType(),
+                    $property,
+                ));
+            }
+            $value = $node->{$property};
+            $path .= '.'.$segment;
+
+            if (isset($parts[2])) {
+                $index = (int) $parts[2];
+                if (!is_array($value) || !array_key_exists($index, $value) || !$value[$index] instanceof Node) {
+                    throw new EditException(sprintf('target.ref "%s" does not resolve to a node.', $ref));
+                }
+                $location = new NodeLocation($value[$index], $node, $property, $index, null, $depth + 1, $path);
+                continue;
+            }
+
+            if (!$value instanceof Node) {
+                throw new EditException(sprintf('target.ref "%s" does not resolve to a node.', $ref));
+            }
+            $location = new NodeLocation($value, $node, $property, null, null, $depth + 1, $path);
+        }
+
+        return $location;
+    }
+
     /** @param list<Node\Stmt> $roots */
     public function isAttached(array $roots, Node $needle): bool
     {
@@ -67,6 +122,12 @@ final class NodeLocator
             }
         }
         return false;
+    }
+
+    /** Is $needle the same node as $haystack, or somewhere inside it? */
+    public function contains(Node $haystack, Node $needle): bool
+    {
+        return $this->containsIdentity($haystack, $needle);
     }
 
     private function containsIdentity(Node $node, Node $needle): bool
@@ -98,6 +159,7 @@ final class NodeLocator
         ?int $index,
         ?int $rootIndex,
         int $depth,
+        string $path,
         int $offset,
         array &$matches,
     ): void {
@@ -108,12 +170,12 @@ final class NodeLocator
             return;
         }
 
-        $matches[] = new NodeLocation($node, $parent, $property, $index, $rootIndex, $depth);
+        $matches[] = new NodeLocation($node, $parent, $property, $index, $rootIndex, $depth, $path);
 
         foreach ($node->getSubNodeNames() as $subNodeName) {
             $value = $node->{$subNodeName};
             if ($value instanceof Node) {
-                $this->walk($value, $node, $subNodeName, null, null, $depth + 1, $offset, $matches);
+                $this->walk($value, $node, $subNodeName, null, null, $depth + 1, $path.'.'.$subNodeName, $offset, $matches);
                 continue;
             }
             if (!is_array($value)) {
@@ -121,7 +183,17 @@ final class NodeLocator
             }
             foreach ($value as $childIndex => $child) {
                 if ($child instanceof Node) {
-                    $this->walk($child, $node, $subNodeName, $childIndex, null, $depth + 1, $offset, $matches);
+                    $this->walk(
+                        $child,
+                        $node,
+                        $subNodeName,
+                        $childIndex,
+                        null,
+                        $depth + 1,
+                        $path.'.'.$subNodeName.'['.$childIndex.']',
+                        $offset,
+                        $matches,
+                    );
                 }
             }
         }
