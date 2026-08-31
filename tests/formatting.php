@@ -231,6 +231,29 @@ try {
 check('and no marker was left behind', !is_file($dir.'/'.RepositoryConfig::FILE));
 removeTree($dir);
 
+// ---- writing through a symlink must not replace the link -------------------------------
+// rename() over a symlink swaps the link for a regular file: the topology changes and the
+// file everybody else reads stays untouched. Both writers went through it.
+$dir = workspace();
+mkdir($dir.'/real', 0700, true);
+file_put_contents($dir.'/real/a.php', "<?php\nclass  Foo{}\n");
+symlink('real/a.php', $dir.'/link.php');
+
+(new Formatter())->format([$dir.'/link.php'], 80, false);
+check('format keeps the symlink a symlink', is_link($dir.'/link.php'));
+check('format writes through to the target', str_contains((string) file_get_contents($dir.'/real/a.php'), 'class Foo'));
+
+RepositoryConfig::write($dir, 80);
+(new Editor())->apply(['files' => [[
+    'path' => $dir.'/link.php',
+    'printer' => 'canonical',
+    'edits' => [['target' => ['ref' => 'stmts[0].name'], 'operation' => 'set_name', 'value' => 'Renamed']],
+]]]);
+check('apply keeps the symlink a symlink', is_link($dir.'/link.php'));
+check('apply writes through to the target', str_contains((string) file_get_contents($dir.'/real/a.php'), 'class Renamed'));
+removeTree($dir.'/real');
+removeTree($dir);
+
 // ---- doctor ------------------------------------------------------------------------------
 $dir = workspace();
 $report = (new Doctor())->examine($dir);

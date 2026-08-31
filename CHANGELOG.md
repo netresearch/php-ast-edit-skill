@@ -39,6 +39,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Fixed
 
+- **Writing through a symlink replaced the link with a regular file.** `rename()` over a symlink swaps the link itself, so the repository's link topology changed and the file everyone else reads stayed untouched — the edit went nowhere visible. Both writers had it, and the one in the transaction engine has been shipped since 0.1.0. `AtomicWriter` now resolves the link chain first and is the single implementation both use, so the temp-file, permission and cross-device rules live in one place.
 - `normalize` declared a repository canonical even when it had only been pointed at a subdirectory, or when files had failed to format. Both now refuse the declaration and say which. A marker that speaks for code it never covered is worse than none.
 - `printWidth` was validated on read but not on write, so `normalize --width 10` persisted a value every later command then rejected. One method decides the minimum for both paths.
 - `Formatter` wrote with a plain `file_put_contents`; it now uses the same temporary-file-and-rename the transaction engine does, so a crash mid-write cannot truncate a source file.

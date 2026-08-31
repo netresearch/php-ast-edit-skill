@@ -19,6 +19,7 @@ PHP CLI plus Agent Skill for AST-native PHP source mutations.
 │   ├── CanonicalPrinter.php            # Width-aware canonical printing
 │   ├── RepositoryConfig.php            # .php-ast-edit.json — the canonical declaration
 │   ├── Formatter.php                   # format / normalize over a tree
+│   ├── AtomicWriter.php                # temp file + rename, symlink-aware
 │   ├── Doctor.php                      # Is the repository set up for the contract?
 │   ├── FileTransaction.php             # One file's state through the transaction phases
 │   ├── NodeLocator.php                 # Position → AST ancestry; ref → node

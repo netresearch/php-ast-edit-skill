@@ -1354,37 +1354,7 @@ final class Editor
 
     private function atomicWrite(string $path, string $contents): void
     {
-        $directory = dirname($path);
-        if (!is_dir($directory) && !@mkdir($directory, 0777, true) && !is_dir($directory)) {
-            throw new EditException('Cannot create directory '.$directory);
-        }
-        if (!is_writable($directory)) {
-            throw new EditException('Directory is not writable: '.$directory);
-        }
-        $existed = is_file($path);
-        $temp = @tempnam($directory, '.php-ast-edit-');
-        if ($temp === false || realpath(dirname($temp)) !== realpath($directory)) {
-            // tempnam() silently falls back to the system temp directory, which would turn
-            // the rename below into a cross-device move and lose atomicity.
-            if (is_string($temp) && is_file($temp)) {
-                @unlink($temp);
-            }
-            throw new EditException('Cannot create temporary file next to '.$path);
-        }
-        try {
-            $mode = $existed ? fileperms($path) : false;
-            if (@file_put_contents($temp, $contents) === false) {
-                throw new EditException('Cannot write temporary file for '.$path);
-            }
-            @chmod($temp, $mode !== false ? ($mode & 0777) : (0666 & ~umask()));
-            if (!@rename($temp, $path)) {
-                throw new EditException('Atomic rename failed for '.$path);
-            }
-        } finally {
-            if (is_file($temp)) {
-                @unlink($temp);
-            }
-        }
+        (new AtomicWriter())->write($path, $contents);
     }
 
     private function requiredString(array $data, string $key): string
