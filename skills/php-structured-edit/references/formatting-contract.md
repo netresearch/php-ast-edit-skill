@@ -37,22 +37,25 @@ line the print removed according to what followed it:
 
 | the blank line preceded | share | the rule that restores it |
 | --- | --- | --- |
-| a member or declaration | 23% | `class_attributes_separation` |
-| an assignment | 23% | **none** |
-| a call or expression | 13% | **none** |
-| a comment | 8% | **none** |
-| the file head (namespace, use, declare) | 7% | `blank_line_after_opening_tag`, namespace spacing |
-| a docblock | 7% | `blank_line_before_statement: [phpdoc]` |
-| `return` / `throw` | 5% | `blank_line_before_statement` |
-| a scope block (`if`, `foreach`, …) | 3% | `blank_line_before_statement` |
+| a call or expression | 24.7% | **none** |
+| an assignment | 23.2% | **none** |
+| a member or declaration | 22.9% | `class_attributes_separation` |
+| a comment | 8.4% | **none** |
+| the file head (namespace, use, declare) | 7.0% | `blank_line_after_opening_tag`, namespace spacing |
+| a docblock | 6.6% | `blank_line_before_statement: [phpdoc]` |
+| `return` / `throw` | 4.5% | `blank_line_before_statement` |
+| a scope block (`if`, `foreach`, …) | 2.7% | `blank_line_before_statement` |
+| a closing brace | 0.1% | — |
 
-**44% is restorable by rule, 45% is not.** The unrestorable share is the author's own
-paragraphing between ordinary statements, and no formatter can reconstruct intent. That is
-the honest price of canonical formatting, and the reason it is a decision a project makes
-rather than an improvement a tool applies.
+**43.6% is restorable by rule, 56.4% is not** — 1954 of 4483 blank lines against 2529. The
+unrestorable share is the author's own paragraphing between ordinary statements, and no
+formatter reconstructs intent. That is the honest price of canonical formatting, and the
+reason it is a decision a project makes rather than an improvement a tool applies.
 
-Worth noting against intuition: scope blocks account for 3%, not the bulk. The large
-restorable share sits before declarations.
+Two things worth noting against intuition. Scope blocks account for 2.7%, not the bulk — the
+large restorable share sits before declarations. And the majority is not restorable at all,
+which is the opposite of what a first, coarser classification of the same data suggested;
+that one silently dropped a ninth of the sample into an unlisted remainder.
 
 ### What no tool can do at all
 

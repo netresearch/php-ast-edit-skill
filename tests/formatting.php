@@ -385,6 +385,32 @@ check(
 check('and the reason names .editorconfig', str_contains($report['next'] ?? '', 'max_line_length'));
 check('the marker was not written', !is_file($dir . '/' . RepositoryConfig::FILE));
 removeTree($dir);
+// A width the project declares but nothing can use is refused where it is read, before any
+// file is rewritten — not after the formatter has already been through them.
+$dir = workspace();
+file_put_contents($dir . '/.editorconfig', "root = true\n\n[*]\nmax_line_length = 10\n");
+file_put_contents($dir . '/a.php', "<?php\nclass  Foo{}\n");
+$before = (string) file_get_contents($dir . '/a.php');
+
+try {
+    RepositoryConfig::widthFor($dir . '/a.php');
+    check('a declared width below the minimum is refused', false, 'accepted');
+} catch (Throwable $throwable) {
+    check(
+        'a declared width below the minimum is refused',
+        str_contains($throwable->getMessage(), 'at least'),
+    );
+}
+check('and nothing was rewritten', file_get_contents($dir . '/a.php') === $before);
+removeTree($dir);
+// The declaration outranks what the last normalisation recorded, so `apply` and `format`
+// cannot end up printing the same file at two different widths.
+$dir = workspace();
+file_put_contents($dir . '/.editorconfig', "root = true\n\n[*]\nmax_line_length = 120\n");
+RepositoryConfig::write($dir, 40);
+$width = RepositoryConfig::widthFor($dir . '/a.php');
+check('the declaration outranks the recorded width', $width['width'] === 120 && $width['recorded'] === 40);
+removeTree($dir);
 // ---- exclusions: a fixture is input data, not source ------------------------------------
 $dir = workspace();
 mkdir($dir . '/fixtures', 0700, true);

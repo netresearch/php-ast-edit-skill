@@ -377,7 +377,12 @@ final class Editor
 
     private function widthFor(FileTransaction $transaction): int
     {
-        return RepositoryConfig::discover($transaction->path)->width;
+        $declared = RepositoryConfig::widthFor($transaction->path);
+
+        // The declaration wins over the recorded value. If a project raises max_line_length
+        // and this kept using what the last normalisation ran at, `apply` and `format` would
+        // print the same file at two different widths and fight each other forever.
+        return $declared['width'] ?? $declared['recorded'] ?? CanonicalPrinter::DEFAULT_WIDTH;
     }
 
     /**

@@ -120,6 +120,26 @@ final class Application
             $exclude = array_values(array_filter(array_map('trim', explode(',', (string) $options['exclude']))));
         }
         $dryRun = isset($options['dry-run']);
+
+        // Refuse before the formatter writes anything. Rewriting the files at a width nobody
+        // declared and only then refusing the marker would leave the repository half
+        // normalised, which is worse than not starting.
+        if ($normalize && !$dryRun && $declared['width'] === null) {
+            $this->json(
+                [
+                    'scanned' => 0,
+                    'changed' => [],
+                    'printWidth' => null,
+                    'widthSource' => null,
+                    'exclude' => $exclude,
+                    'dryRun' => $dryRun,
+                    'declared' => null,
+                    'next' => 'Not declared and nothing written: no max_line_length in .editorconfig. ' . 'Add it under [*] or [*.php] — line width is a project rule — then run ' . 'normalize again.',
+                ],
+            );
+
+            return 1;
+        }
         $result = (new Formatter($options['php-version'] ?? null))->format($paths, $width, $dryRun, $exclude, $root);
         $payload = [
             'scanned' => $result['scanned'],
@@ -152,11 +172,6 @@ final class Application
                 // saying otherwise is worse than none.
                 $payload['declared'] = null;
                 $payload['next'] = 'Not declared: ' . count($result['failed']) . ' file(s) could not be formatted. Fix those, then run normalize again.';
-            } elseif ($declared['width'] === null) {
-                // Declaring a repository canonical without a declared width would pin it to a
-                // number this tool picked, which is the decision that belongs to the project.
-                $payload['declared'] = null;
-                $payload['next'] = 'Not declared: no max_line_length in .editorconfig. Add it under ' . '[*] or [*.php] — the width is a project rule — then run normalize again.';
             } else {
                 $payload['declared'] = RepositoryConfig::write($root, $width, $exclude);
                 $payload['next'] = 'Run the project formatter now and commit both in one change ' . 'of their own — normalisation is not a feature commit.';

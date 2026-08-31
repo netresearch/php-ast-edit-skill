@@ -40,9 +40,9 @@ final class Doctor
      * @var array<string, string>
      */
     private const RESTORING_RULES = [
-        'class_attributes_separation' => 'blank lines between members (~23% of what a canonical print removes)',
-        'blank_line_before_statement' => 'blank lines before docblocks, return, throw and scope blocks (~14%)',
-        'blank_line_after_opening_tag' => 'the blank line after the open tag (part of ~7% around the file head)',
+        'class_attributes_separation' => 'blank lines between members (23% of what a canonical print removes)',
+        'blank_line_before_statement' => 'blank lines before docblocks, return, throw and scope blocks (14%)',
+        'blank_line_after_opening_tag' => 'the blank line after the open tag (part of the 7% around the file head)',
         'declare_parentheses' => 'the space the printer puts inside declare()',
     ];
 

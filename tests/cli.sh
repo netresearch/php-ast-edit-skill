@@ -70,7 +70,12 @@ expect "doctor reports a bare workspace as warn" "warn" \
 # The width is the project's declaration, so the workspace has to make it before normalize
 # will declare anything — the same thing the tool asks of a real repository.
 printf '{}\n' > "$WORK/composer.json"
+# Refusing to normalise is a non-zero exit, which `set -e` would otherwise take as fatal.
+set +e
 $BIN normalize --path "$WORK" > "$WORK/nodecl.json"
+nodecl_code=$?
+set -e
+expect "refusing to normalise exits non-zero" "1" "$nodecl_code"
 # `?? ` reads an explicit null as absent, which is exactly the value under test.
 expect "normalize refuses without a declared width" "null" \
   "$(php -r '$d = json_decode(file_get_contents($argv[1]), true); echo array_key_exists("declared", $d) && $d["declared"] === null ? "null" : "set";' "$WORK/nodecl.json")"

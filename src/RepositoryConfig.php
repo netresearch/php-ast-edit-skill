@@ -144,6 +144,12 @@ final class RepositoryConfig
         $declared = EditorConfig::discover($start);
         $recorded = self::discover($start)->width;
 
+        // Validate here, where the value is read, rather than at write() — by then the
+        // formatter has already rewritten the files at a width that was never usable.
+        if ($declared->maxLineLength !== null) {
+            self::assertWidth($declared->maxLineLength, ($declared->path ?? '.editorconfig') . ': ');
+        }
+
         return [
             'width' => $declared->maxLineLength,
             'source' => $declared->maxLineLength === null ? null : $declared->path,

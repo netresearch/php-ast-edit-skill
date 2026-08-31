@@ -16,7 +16,6 @@ return (new PhpCsFixer\Config())->setRiskyAllowed(true)->setFinder($finder)->set
         // These four put back what canonical printing removes. `doctor` names them, because
         // without them a normalisation loses layout that a rule could have restored.
         'declare_parentheses' => true,
-        'blank_line_after_opening_tag' => true,
         'class_attributes_separation' => ['elements' => ['method' => 'one', 'property' => 'one', 'const' => 'one']],
         'blank_line_before_statement' => [
             'statements' => [
@@ -35,6 +34,7 @@ return (new PhpCsFixer\Config())->setRiskyAllowed(true)->setFinder($finder)->set
                 'phpdoc',
             ],
         ],
+        // The licence header sits directly after the tag here, so no blank line between them.
         'blank_line_after_opening_tag' => false,
         'single_line_empty_body' => true,
         'no_unused_imports' => true,
