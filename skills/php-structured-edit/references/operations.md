@@ -125,6 +125,10 @@ Shorthands over the primitives. They are ergonomics, not the coverage boundary.
 - `set_doc_comment` — set the docblock. `value` is plain text or a complete `/** … */` block; an existing docblock is replaced, not duplicated.
 - `remove_doc_comment` — drop the docblock.
 
+## Limits
+
+A snippet is PHP *inside* the PHP context. An open tag in a string literal is fine (`'<?xml version="1.0"?>'` is an ordinary expression); a snippet that actually leaves the PHP context — a stray closing tag followed by literal output — is rejected, because the resulting `Stmt_InlineHTML` is almost never what the caller meant. Write such output as an explicit `echo`.
+
 ## Snippet style
 
 Prefer one-line snippets:

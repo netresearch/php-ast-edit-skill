@@ -7,6 +7,7 @@ use Netresearch\PhpAstEdit\Exception\EditException;
 use PhpParser\Error as ParserError;
 use PhpParser\Node;
 use PhpParser\Node\Stmt;
+use PhpParser\NodeFinder;
 use PhpParser\Parser;
 
 /**
@@ -146,9 +147,6 @@ final class ContextParser
         if ($code === '') {
             throw new EditException('Snippet must not be empty.');
         }
-        if (str_contains($code, '<?')) {
-            throw new EditException('Contextual snippets must not contain PHP open tags.');
-        }
         if ($context === 'expr') {
             $code = rtrim($code, "; \t\n\r\0\x0B");
         }
@@ -168,6 +166,13 @@ final class ContextParser
 
         if ($stmts === null || $stmts === []) {
             throw new EditException(sprintf('Snippet produced no AST nodes in the "%s" context.', $context));
+        }
+
+        // A snippet that closes the PHP context would smuggle literal output into the tree.
+        // Checking for the resulting InlineHTML node rather than for an open-tag substring
+        // keeps an open tag inside a string literal perfectly legal.
+        if ((new NodeFinder())->findFirstInstanceOf($stmts, Stmt\InlineHTML::class) !== null) {
+            throw new EditException('Snippet must not leave the PHP context.');
         }
 
         $nodes = ($spec['extract'])($stmts);

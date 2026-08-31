@@ -1,14 +1,8 @@
 <?php
-declare(strict_types=1);
 
+declare (strict_types=1);
 $root = dirname(__DIR__);
-$paths = [
-    $root.'/src',
-    $root.'/bin/php-ast-edit',
-    $root.'/scripts/build-phar.php',
-    $root.'/tests/run.php',
-];
-
+$paths = [$root . '/src', $root . '/bin/php-ast-edit', $root . '/scripts/build-phar.php', $root . '/tests/run.php', $root . '/scripts/check.php', $root . '/tests/matrix.php'];
 $files = [];
 foreach ($paths as $path) {
     if (is_dir($path)) {
@@ -22,20 +16,17 @@ foreach ($paths as $path) {
         $files[] = $path;
     }
 }
-
 $failed = false;
 foreach ($files as $file) {
-    $command = escapeshellarg(PHP_BINARY).' -l '.escapeshellarg($file).' 2>&1';
+    $command = escapeshellarg(PHP_BINARY) . ' -l ' . escapeshellarg($file) . ' 2>&1';
     exec($command, $output, $status);
     if ($status !== 0) {
         $failed = true;
-        fwrite(STDERR, implode("\n", $output)."\n");
+        fwrite(STDERR, implode("\n", $output) . "\n");
     }
     $output = [];
 }
-
 if ($failed) {
     exit(1);
 }
-
-echo 'PHP syntax OK ('.count($files)." files)\n";
+echo 'PHP syntax OK (' . count($files) . " files)\n";

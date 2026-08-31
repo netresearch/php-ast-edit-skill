@@ -43,7 +43,7 @@ PHP CLI plus Agent Skill for AST-native PHP source mutations.
 
 - `composer install` — install `nikic/php-parser`; required for every parsing command
 - `bash tests/run.sh` — syntax gate plus inspect/apply round-trip
-- `php scripts/check.php` — `php -l` over `src/`, `bin/`, `scripts/`, `tests/`
+- `php scripts/check.php` — `php -l` over `src/` and the named entrypoints in `bin/`, `scripts/` and `tests/`
 - `php -d phar.readonly=0 scripts/build-phar.php` — build `dist/php-ast-edit.phar`
 - `vendor/bin/php-ast-edit inspect --file <path> --line <n> --column <n>` — AST ancestry at a position
 - `vendor/bin/php-ast-edit apply --input edits.json` — apply an edit transaction

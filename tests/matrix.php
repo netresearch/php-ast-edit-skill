@@ -297,6 +297,24 @@ $cases = [
         'notContains' => [['a.php', 'Doc.']],
     ],
 
+    [
+        'name' => 'a string literal may contain a PHP open tag',
+        'files' => ['a.php' => "<?php\n\$t = '';\n"],
+        'document' => fn (array $p): array => ['files' => [['path' => $p['a.php'], 'edits' => [
+            ['target' => ['ref' => 'stmts[0].expr.expr'], 'operation' => 'replace_expression', 'php' => '\'<?xml version="1.0"?' . '>\''],
+        ]]]],
+        'contains' => [['a.php', '<?xml version="1.0"?' . '>']],
+    ],
+    [
+        'name' => 'a snippet that leaves the PHP context is rejected',
+        'files' => ['a.php' => "<?php\nfunction foo()\n{\n}\n"],
+        'document' => fn (array $p): array => ['files' => [['path' => $p['a.php'], 'edits' => [
+            ['target' => ['ref' => 'stmts[0]'], 'operation' => 'insert_into', 'property' => 'stmts', 'parseAs' => 'stmt', 'php' => '$a = 1; ?' . '> text <?php $b = 2;'],
+        ]]]],
+        'error' => 'must not leave the PHP context',
+        'unchanged' => ['a.php'],
+    ],
+
     // ---- Failure modes ---------------------------------------------------------------------
     [
         'name' => 'stale sha aborts before any write',

@@ -31,6 +31,9 @@ echo "::group::scripts/build-phar.php (PHAR builds and answers)"
 if [ -f vendor/autoload.php ]; then
   php -d phar.readonly=0 scripts/build-phar.php
   php dist/php-ast-edit.phar validate --file tests/fixtures/sample.php || fail=1
+  # `validate` never touches ContextParser or FileTransaction; `contexts` does, so this is
+  # what proves the whole engine is inside the archive.
+  php dist/php-ast-edit.phar contexts > /dev/null || fail=1
 else
   echo "SKIP: vendor/autoload.php missing; PHAR build needs the parser."
 fi
