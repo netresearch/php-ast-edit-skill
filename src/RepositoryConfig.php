@@ -69,6 +69,7 @@ final class RepositoryConfig
         if (!is_array($exclude)) {
             throw new EditException($path . ': exclude must be an array of paths.');
         }
+        self::assertExclusions($exclude, $path . ': ');
         return new self(
             (bool) ($data['canonical'] ?? false),
             $width,
@@ -121,9 +122,33 @@ final class RepositoryConfig
         }
     }
     /** @param list<string> $exclude */
+    /**
+     * An exclusion must name something.
+     *
+     * An empty string resolves to the repository root, which excludes every file — and the
+     * formatting gate would then pass without having looked at anything. A check that fires
+     * for nobody is worse than no check.
+     *
+     * @param array<mixed> $exclude
+     */
+    public static function assertExclusions(array $exclude, string $prefix = ''): void
+    {
+        foreach ($exclude as $entry) {
+            if (!is_string($entry) || trim($entry) === '' || trim($entry, './') === '') {
+                throw new EditException(
+                    sprintf(
+                        '%sexclude entries must be non-empty repository-relative paths; %s excludes everything.',
+                        $prefix,
+                        var_export($entry, true),
+                    ),
+                );
+            }
+        }
+    }
     public static function write(string $directory, int $width, array $exclude = []): string
     {
         self::assertWidth($width);
+        self::assertExclusions($exclude);
         $path = rtrim($directory, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . self::FILE;
         $payload = json_encode(
             array_filter(

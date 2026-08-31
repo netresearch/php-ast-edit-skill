@@ -31,9 +31,6 @@
   "bin": [
     "bin/php-ast-edit"
   ],
-  "require-dev": {
-    "friendsofphp/php-cs-fixer": "^3.95"
-  },
   "scripts": {
     "cgl": [
       "@php bin/php-ast-edit format --path .",

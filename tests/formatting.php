@@ -336,6 +336,26 @@ check(
 RepositoryConfig::write($dir, 80, ['fixtures']);
 check('the exclusions are recorded', RepositoryConfig::discover($dir)->exclude === ['fixtures']);
 removeTree($dir);
+// An exclusion that names nothing excludes everything, and the formatting gate would then
+// pass without having looked at a single file.
+foreach ([[''], ['   '], ['.'], ['./']] as $blank) {
+    try {
+        RepositoryConfig::assertExclusions($blank);
+        check('a blank exclusion is refused: ' . json_encode($blank), false, 'accepted');
+    } catch (Throwable $throwable) {
+        check(
+            'a blank exclusion is refused: ' . json_encode($blank),
+            str_contains($throwable->getMessage(), 'excludes everything'),
+        );
+    }
+}
+check(
+    'a real path is still accepted',
+    (static function (): bool {
+        RepositoryConfig::assertExclusions(['tests/fixtures']);
+        return true;
+    })(),
+);
 // ---- doctor ------------------------------------------------------------------------------
 $dir = workspace();
 $report = (new Doctor())->examine($dir);
