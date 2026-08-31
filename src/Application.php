@@ -1,5 +1,6 @@
 <?php
-declare(strict_types=1);
+
+declare (strict_types=1);
 
 namespace Netresearch\PhpAstEdit;
 
@@ -15,7 +16,6 @@ final class Application
         try {
             $command = $argv[1] ?? 'help';
             $options = $this->options(array_slice($argv, 2));
-
             return match ($command) {
                 'inspect' => $this->inspect($options),
                 'apply' => $this->apply($options),
@@ -25,25 +25,28 @@ final class Application
                 'normalize' => $this->format($options, true),
                 'doctor' => $this->doctor($options),
                 'help', '--help', '-h' => $this->help(),
-                default => throw new EditException('Unknown command: '.$command),
+                default => throw new EditException('Unknown command: ' . $command),
             };
         } catch (EditException|ParserError|JsonException $exception) {
-            fwrite(STDERR, json_encode([
-                'ok' => false,
-                'error' => $exception->getMessage(),
-                'class' => $exception::class,
-            ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)."\n");
+            fwrite(
+                STDERR,
+                json_encode(
+                    ['ok' => false, 'error' => $exception->getMessage(), 'class' => $exception::class],
+                    JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE,
+                ) . "\n",
+            );
             return 2;
         } catch (\Throwable $exception) {
-            fwrite(STDERR, json_encode([
-                'ok' => false,
-                'error' => $exception->getMessage(),
-                'class' => $exception::class,
-            ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)."\n");
+            fwrite(
+                STDERR,
+                json_encode(
+                    ['ok' => false, 'error' => $exception->getMessage(), 'class' => $exception::class],
+                    JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE,
+                ) . "\n",
+            );
             return 3;
         }
     }
-
     private function inspect(array $options): int
     {
         $file = $this->requiredOption($options, 'file');
@@ -53,7 +56,6 @@ final class Application
         $this->json($result);
         return 0;
     }
-
     private function validate(array $options): int
     {
         $file = $this->requiredOption($options, 'file');
@@ -61,7 +63,6 @@ final class Application
         $this->json($editor->validate($file, $options['php-version'] ?? null));
         return 0;
     }
-
     private function apply(array $options): int
     {
         $input = $options['input'] ?? '-';
@@ -80,39 +81,42 @@ final class Application
         $this->json($editor->apply($document, isset($options['dry-run'])));
         return 0;
     }
-
     private function format(array $options, bool $normalize): int
     {
         $paths = isset($options['path']) ? [(string) $options['path']] : ['.'];
         $root = RepositoryConfig::rootFor($paths[0]);
         $config = RepositoryConfig::discover($root);
-
         $width = $config->width;
         if (isset($options['width'])) {
             RepositoryConfig::assertWidth($this->integerOption($options, 'width'));
             if (!$normalize) {
                 throw new EditException(
-                    '--width belongs to normalize, which records it in '.RepositoryConfig::FILE.'. '
-                    .'Formatting at a different width than the repository was normalised with moves '
-                    .'the fixed point and reflows every file.',
+                    '--width belongs to normalize, which records it in ' . RepositoryConfig::FILE . '. ' . 'Formatting at a different width than the repository was normalised with moves ' . 'the fixed point and reflows every file.',
                 );
             }
             $width = $this->integerOption($options, 'width');
         }
-
+        $exclude = $config->exclude;
+        if (isset($options['exclude'])) {
+            if (!$normalize) {
+                throw new EditException(
+                    '--exclude belongs to normalize, which records it in ' . RepositoryConfig::FILE . '. ' . 'Formatting a different set than the repository was normalised with leaves the ' . 'excluded files off the fixed point without anything saying so.',
+                );
+            }
+            $exclude = array_values(array_filter(array_map('trim', explode(',', (string) $options['exclude']))));
+        }
         $dryRun = isset($options['dry-run']);
-        $result = (new Formatter($options['php-version'] ?? null))->format($paths, $width, $dryRun);
-
+        $result = (new Formatter($options['php-version'] ?? null))->format($paths, $width, $dryRun, $exclude, $root);
         $payload = [
             'scanned' => $result['scanned'],
             'changed' => array_values($result['changed']),
             'printWidth' => $width,
+            'exclude' => $exclude,
             'dryRun' => $dryRun,
         ];
         if ($result['failed'] !== []) {
             $payload['failed'] = $result['failed'];
         }
-
         if ($normalize && !$dryRun) {
             // The marker describes the whole repository, so only a run that covered the whole
             // repository may write it. A partial normalise that declared the root would leave
@@ -121,8 +125,7 @@ final class Application
             if ($scanned !== realpath($root)) {
                 $payload['declared'] = null;
                 $payload['next'] = sprintf(
-                    'Not declared: --path covered %s, and the declaration speaks for the whole '
-                    .'repository at %s. Re-run normalize without --path, or against the root.',
+                    'Not declared: --path covered %s, and the declaration speaks for the whole ' . 'repository at %s. Re-run normalize without --path, or against the root.',
                     $paths[0],
                     $root,
                 );
@@ -130,115 +133,129 @@ final class Application
                 // A file that could not be parsed or written is not canonical, and a marker
                 // saying otherwise is worse than none.
                 $payload['declared'] = null;
-                $payload['next'] = 'Not declared: '.count($result['failed'])
-                    .' file(s) could not be formatted. Fix those, then run normalize again.';
+                $payload['next'] = 'Not declared: ' . count($result['failed']) . ' file(s) could not be formatted. Fix those, then run normalize again.';
             } else {
-                $payload['declared'] = RepositoryConfig::write($root, $width);
-                $payload['next'] = 'Run the project formatter now and commit both in one change '
-                    .'of their own — normalisation is not a feature commit.';
+                $payload['declared'] = RepositoryConfig::write($root, $width, $exclude);
+                $payload['next'] = 'Run the project formatter now and commit both in one change ' . 'of their own — normalisation is not a feature commit.';
             }
         }
-
         $this->json($payload);
         return $result['failed'] === [] ? 0 : 1;
     }
-
     private function doctor(array $options): int
     {
         $report = (new Doctor())->examine((string) ($options['path'] ?? '.'));
         $this->json($report);
         return $report['status'] === 'ready' ? 0 : 1;
     }
-
     private function contexts(): int
     {
         $parser = (new ParserFactory())->createForHostVersion();
-        $this->json([
-            'parseAs' => array_merge((new ContextParser($parser))->contexts(), ['stmts', 'file']),
-            'operations' => [
-                'primitives' => ['replace_node', 'delete_node', 'insert_into', 'replace_child', 'delete_child', 'move_node'],
-                'comments' => ['set_doc_comment', 'remove_doc_comment'],
-                'convenience' => [
-                    'set_name', 'set_string', 'replace_expression', 'replace_statement',
-                    'insert_before', 'insert_after', 'delete',
-                    'replace_argument', 'add_argument', 'remove_argument',
-                    'add_member', 'add_parameter', 'add_attribute',
-                    'set_return_type', 'set_type', 'set_visibility',
-                    'add_implements', 'set_extends',
+        $this->json(
+            [
+                'parseAs' => array_merge((new ContextParser($parser))->contexts(), ['stmts', 'file']),
+                'operations' => [
+                    'primitives' => [
+                        'replace_node',
+                        'delete_node',
+                        'insert_into',
+                        'replace_child',
+                        'delete_child',
+                        'move_node',
+                    ],
+                    'comments' => ['set_doc_comment', 'remove_doc_comment'],
+                    'convenience' => [
+                        'set_name',
+                        'set_string',
+                        'replace_expression',
+                        'replace_statement',
+                        'insert_before',
+                        'insert_after',
+                        'delete',
+                        'replace_argument',
+                        'add_argument',
+                        'remove_argument',
+                        'add_member',
+                        'add_parameter',
+                        'add_attribute',
+                        'set_return_type',
+                        'set_type',
+                        'set_visibility',
+                        'add_implements',
+                        'set_extends',
+                    ],
                 ],
+                'fileModes' => ['edit', 'create', 'delete'],
             ],
-            'fileModes' => ['edit', 'create', 'delete'],
-        ]);
+        );
         return 0;
     }
-
     private function help(): int
     {
         echo <<<'TEXT'
-php-ast-edit - AST-native PHP writer for coding agents
-
-Every creation, modification, replacement, deletion and movement of PHP syntax goes
-through this tool. PHP text is accepted as construction input only: it is parsed,
-mutated as an AST, and written back exclusively from that AST.
-
-Usage:
-  php-ast-edit inspect --file FILE (--offset N | --line N --column N) [--kind TYPE] [--php-version 8.4]
-  php-ast-edit validate --file FILE [--php-version 8.4]
-  php-ast-edit contexts
-  php-ast-edit apply [--input FILE|-] [--dry-run]
-  php-ast-edit format [--path DIR|FILE] [--dry-run] [--php-version 8.4]
-  php-ast-edit normalize [--path DIR] [--width 80] [--dry-run]
-  php-ast-edit doctor [--path DIR]
-
-Coordinates:
-  offset   zero-based byte offset in the original source
-  line     one-based line
-  column   one-based byte column
-  ref      structural AST path from inspect, e.g. stmts[1].stmts[0].params[0]
-
-Apply JSON:
-  {
-    "files": [{
-      "path": "src/Foo.php",
-      "mode": "edit",            // edit (default) | create | delete
-      "sha256": "hash from inspect",
-      "phpVersion": "8.4",
-      "edits": [{
-        "target": {"ref": "stmts[0].stmts[0].name"},
-        "expect": {"name": "oldMethod"},
-        "operation": "set_name",
-        "value": "newMethod"
-      }]
-    }]
-  }
-
-Primitives:
-  replace_node, delete_node, insert_into, replace_child, delete_child, move_node
-
-Convenience:
-  set_name, set_string, replace_expression, replace_statement,
-  insert_before, insert_after, delete,
-  replace_argument, add_argument, remove_argument,
-  add_member, add_parameter, add_attribute,
-  set_return_type, set_type, set_visibility, add_implements, set_extends,
-  set_doc_comment, remove_doc_comment
-
-Run `php-ast-edit contexts` for the full parseAs and operation catalog.
-
-Formatting contract:
-  The output is canonical — one rendering per AST — so an edit to a repository that
-  already sits on that fixed point changes only what the edit touches. Reaching it is a
-  one-time `normalize` plus a run of the project's own formatter, committed on its own.
-  Without the resulting .php-ast-edit.json, apply falls back to format-preserving
-  printing and says so. `doctor` reports whether the repository is set up for it.
-
-PHP snippets are syntax, not formatting. Compact one-line snippets are preferred;
-the printer decides the layout.
-TEXT;
+        php-ast-edit - AST-native PHP writer for coding agents
+        
+        Every creation, modification, replacement, deletion and movement of PHP syntax goes
+        through this tool. PHP text is accepted as construction input only: it is parsed,
+        mutated as an AST, and written back exclusively from that AST.
+        
+        Usage:
+          php-ast-edit inspect --file FILE (--offset N | --line N --column N) [--kind TYPE] [--php-version 8.4]
+          php-ast-edit validate --file FILE [--php-version 8.4]
+          php-ast-edit contexts
+          php-ast-edit apply [--input FILE|-] [--dry-run]
+          php-ast-edit format [--path DIR|FILE] [--dry-run] [--php-version 8.4]
+          php-ast-edit normalize [--path DIR] [--width 80] [--exclude a,b] [--dry-run]
+          php-ast-edit doctor [--path DIR]
+        
+        Coordinates:
+          offset   zero-based byte offset in the original source
+          line     one-based line
+          column   one-based byte column
+          ref      structural AST path from inspect, e.g. stmts[1].stmts[0].params[0]
+        
+        Apply JSON:
+          {
+            "files": [{
+              "path": "src/Foo.php",
+              "mode": "edit",            // edit (default) | create | delete
+              "sha256": "hash from inspect",
+              "phpVersion": "8.4",
+              "edits": [{
+                "target": {"ref": "stmts[0].stmts[0].name"},
+                "expect": {"name": "oldMethod"},
+                "operation": "set_name",
+                "value": "newMethod"
+              }]
+            }]
+          }
+        
+        Primitives:
+          replace_node, delete_node, insert_into, replace_child, delete_child, move_node
+        
+        Convenience:
+          set_name, set_string, replace_expression, replace_statement,
+          insert_before, insert_after, delete,
+          replace_argument, add_argument, remove_argument,
+          add_member, add_parameter, add_attribute,
+          set_return_type, set_type, set_visibility, add_implements, set_extends,
+          set_doc_comment, remove_doc_comment
+        
+        Run `php-ast-edit contexts` for the full parseAs and operation catalog.
+        
+        Formatting contract:
+          The output is canonical — one rendering per AST — so an edit to a repository that
+          already sits on that fixed point changes only what the edit touches. Reaching it is a
+          one-time `normalize` plus a run of the project's own formatter, committed on its own.
+          Without the resulting .php-ast-edit.json, apply falls back to format-preserving
+          printing and says so. `doctor` reports whether the repository is set up for it.
+        
+        PHP snippets are syntax, not formatting. Compact one-line snippets are preferred;
+        the printer decides the layout.
+        TEXT;
         echo "\n";
         return 0;
     }
-
     private function targetFromOptions(array $options): array
     {
         $target = [];
@@ -253,14 +270,13 @@ TEXT;
         }
         return $target;
     }
-
     private function options(array $args): array
     {
         $options = [];
         for ($i = 0, $count = count($args); $i < $count; ++$i) {
             $arg = $args[$i];
             if (!str_starts_with($arg, '--')) {
-                throw new EditException('Unexpected argument: '.$arg);
+                throw new EditException('Unexpected argument: ' . $arg);
             }
             $arg = substr($arg, 2);
             if (str_contains($arg, '=')) {
@@ -273,38 +289,34 @@ TEXT;
                 continue;
             }
             if ($i + 1 >= $count || str_starts_with($args[$i + 1], '--')) {
-                throw new EditException('--'.$arg.' requires a value.');
+                throw new EditException('--' . $arg . ' requires a value.');
             }
             $options[$arg] = $args[++$i];
         }
         return $options;
     }
-
     private function integerOption(array $options, string $key): int
     {
         if (!isset($options[$key]) || filter_var($options[$key], FILTER_VALIDATE_INT) === false) {
-            throw new EditException('--'.$key.' requires an integer.');
+            throw new EditException('--' . $key . ' requires an integer.');
         }
         return (int) $options[$key];
     }
-
     private function requiredOption(array $options, string $key): string
     {
         $value = $options[$key] ?? null;
         if (!is_string($value) || $value === '') {
-            throw new EditException('--'.$key.' is required.');
+            throw new EditException('--' . $key . ' is required.');
         }
         return $value;
     }
-
     private function json(array $data): void
     {
         // A source file need not be UTF-8. Substituting keeps `inspect` usable on a latin-1
         // file instead of failing the whole command over one byte in an excerpt.
         echo json_encode(
             $data,
-            JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE
-                | JSON_INVALID_UTF8_SUBSTITUTE | JSON_THROW_ON_ERROR,
-        )."\n";
+            JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE | JSON_THROW_ON_ERROR,
+        ) . "\n";
     }
 }

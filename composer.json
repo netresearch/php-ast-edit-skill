@@ -31,7 +31,20 @@
   "bin": [
     "bin/php-ast-edit"
   ],
+  "scripts": {
+    "cgl": [
+      "@php bin/php-ast-edit format --path .",
+      "php-cs-fixer fix"
+    ],
+    "cgl:check": [
+      "@cgl",
+      "git diff --exit-code"
+    ]
+  },
   "extra": {
     "ai-agent-skill": "skills/php-structured-edit/SKILL.md"
+  },
+  "require-dev": {
+    "friendsofphp/php-cs-fixer": "^3.95"
   }
 }

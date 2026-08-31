@@ -54,6 +54,7 @@ PHP CLI plus Agent Skill for AST-native PHP source mutations.
 
 - `composer install` — install `nikic/php-parser`; required for every parsing command
 - `bash tests/run.sh` — syntax gate plus inspect/apply round-trip
+- `composer cgl` — canonical print plus the project's formatting rules; run before committing PHP
 - `php scripts/check.php` — `php -l` over `src/` and the named entrypoints in `bin/`, `scripts/` and `tests/`
 - `php -d phar.readonly=0 scripts/build-phar.php` — build `dist/php-ast-edit.phar`
 - `vendor/bin/php-ast-edit inspect --file <path> --line <n> --column <n>` — AST ancestry at a position
@@ -77,6 +78,7 @@ PHP CLI plus Agent Skill for AST-native PHP source mutations.
 2. **`plugin.json` at the repo root is the source of truth.** After changing it, regenerate the Claude manifest — never hand-edit `.claude-plugin/plugin.json`.
 3. **`composer.json` `name` must equal the GitHub repository name** (`netresearch/php-ast-edit-skill`); the skill validator fails otherwise.
 4. **No `composer.lock`** — this is a library plus skill package, not an application.
+4b. **This repository is on the canonical fixed point.** `.php-ast-edit.json` declares it, `.php-cs-fixer.php` carries the token-level rules, and `.github/workflows/formatting.yml` gates it. Before committing PHP: `composer cgl` — that is `php-ast-edit format` followed by `php-cs-fixer fix`. Neither half is a check on its own; the clean tree is. `tests/fixtures/` is excluded on purpose: a fixture exists to be code the printer has not seen.
 5. **Version lives in `plugin.json`** and is mirrored into `.claude-plugin/plugin.json`; both must agree before a tag.
 6. **Bump the version only in a PR, tag only after that PR merges.**
 7. **Every `references/*.md` stays reachable from `SKILL.md`** — orphaned reference files fail the audit.
@@ -88,6 +90,7 @@ PHP CLI plus Agent Skill for AST-native PHP source mutations.
 | --- | --- |
 | `validate.yml`, `release.yml`, `pr-quality.yml`, `harness-verify.yml`, `eval-validate.yml`, `tests.yml` | `netresearch/skill-repo-skill` reusables |
 | `auto-merge-deps.yml` | `netresearch/.github` reusable |
+| `formatting.yml` | repo-local — the two-step canonical gate |
 | `php-tests.yml` | repo-local — the reusable runs one PHP version; this carries the 8.2/8.3/8.4/8.5 matrix |
 
 The repository's default `GITHUB_TOKEN` is read-only, so every caller job declares its own `permissions:` block matching what the reusable requires. A caller without one fails at startup with no logs.
