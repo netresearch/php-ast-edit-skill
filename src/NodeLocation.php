@@ -212,8 +212,12 @@ final class NodeLocation
     }
 
     /** @param int|'start'|'end' $position */
-    private function resolvePosition(int|string $position, int $count, string $property, bool $allowEnd): int
-    {
+    private function resolvePosition(
+        int|string $position,
+        int $count,
+        string $property,
+        bool $allowEnd,
+    ): int {
         if ($position === 'start') {
             return 0;
         }

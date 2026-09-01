@@ -6,6 +6,7 @@ namespace Netresearch\PhpAstEdit;
 
 use PhpParser\Node;
 use PhpParser\Node\Expr;
+use PhpParser\Node\Stmt;
 use PhpParser\PhpVersion;
 use PhpParser\PrettyPrinter\Standard;
 
@@ -53,6 +54,45 @@ final class CanonicalPrinter extends Standard
     public function width(): int
     {
         return $this->width;
+    }
+
+    /**
+     * The five nodes that put a parameter list behind a prefix.
+     *
+     * `pParams()` measures the list alone, exactly as `pMaybeMultiline()` did
+     * before, so a signature whose parameters fit while
+     * `private function verifyUsernameFirst(` in front of them does not came
+     * out on one long line — 35 of 241 over-long lines in a 119-file corpus.
+     */
+    protected function pStmt_ClassMethod(Stmt\ClassMethod $node): string
+    {
+        return $this->widthAware(fn (): string => parent::pStmt_ClassMethod($node), $node->params);
+    }
+
+    protected function pStmt_Function(Stmt\Function_ $node): string
+    {
+        return $this->widthAware(fn (): string => parent::pStmt_Function($node), $node->params);
+    }
+
+    protected function pPropertyHook(Node\PropertyHook $node): string
+    {
+        return $this->widthAware(fn (): string => parent::pPropertyHook($node), $node->params);
+    }
+
+    protected function pExpr_Closure(Expr\Closure $node): string
+    {
+        return $this->widthAware(fn (): string => parent::pExpr_Closure($node), $node->params);
+    }
+
+    protected function pExpr_ArrowFunction(
+        Expr\ArrowFunction $node,
+        int $precedence,
+        int $lhsPrecedence,
+    ): string {
+        return $this->widthAware(
+            fn (): string => parent::pExpr_ArrowFunction($node, $precedence, $lhsPrecedence),
+            $node->params,
+        );
     }
 
     /**
@@ -139,7 +179,13 @@ final class CanonicalPrinter extends Standard
                 return $result;
             }
 
-            if (str_contains($result, "\n") || $this->indentLevel + strlen($result) <= $this->width) {
+            // The line the list opens on, not the whole rendering: a
+            // declaration always carries its body's line breaks, and measuring
+            // those would call every signature "already broken". Attribute
+            // groups are skipped on the way — `pStmt_ClassMethod()` puts them
+            // on their own lines in front, and a short `#[Attr]` would
+            // otherwise stand in for the signature behind it.
+            if ($this->indentLevel + strlen($this->signatureLine($result)) <= $this->width) {
                 return $result;
             }
             $this->breakAtDepth = $this->listDepth;
@@ -152,6 +198,20 @@ final class CanonicalPrinter extends Standard
         } finally {
             --$this->listDepth;
         }
+    }
+
+    /**
+     * The first line of `$rendering` that is not an attribute group.
+     */
+    private function signatureLine(string $rendering): string
+    {
+        foreach (explode("\n", $rendering) as $line) {
+            if (!str_starts_with(ltrim($line), '#[')) {
+                return $line;
+            }
+        }
+
+        return $rendering;
     }
 
     /** @param (Node|null)[] $nodes */

@@ -54,7 +54,9 @@ final class Editor
             $locations = array_values(
                 array_filter(
                     $locations,
-                    static fn (NodeLocation $location): bool => $location->node->getType() === $kind || $location->node::class === $kind,
+                    static fn (
+                        NodeLocation $location,
+                    ): bool => $location->node->getType() === $kind || $location->node::class === $kind,
                 ),
             );
         }
@@ -603,8 +605,12 @@ final class Editor
         return $result;
     }
 
-    private function applyOperation(NodeLocation $location, array $edit, array &$roots, ContextParser $snippets): void
-    {
+    private function applyOperation(
+        NodeLocation $location,
+        array $edit,
+        array &$roots,
+        ContextParser $snippets,
+    ): void {
         $operation = $this->requiredString($edit, 'operation');
         $applied = $this->applyPrimitive($operation, $location, $edit, $roots, $snippets) || $this->applyComment($operation, $location, $edit) || $this->applyShorthand($operation, $location, $edit, $roots, $snippets) || $this->applySemantic($operation, $location, $edit, $snippets);
 
@@ -618,8 +624,13 @@ final class Editor
      *
      * @return bool true when the operation belonged to this group and was applied.
      */
-    private function applyPrimitive(string $operation, NodeLocation $location, array $edit, array &$roots, ContextParser $snippets): bool
-    {
+    private function applyPrimitive(
+        string $operation,
+        NodeLocation $location,
+        array $edit,
+        array &$roots,
+        ContextParser $snippets,
+    ): bool {
         $node = $location->node;
 
         switch ($operation) {
@@ -706,8 +717,13 @@ final class Editor
      *
      * @return bool true when the operation belonged to this group and was applied.
      */
-    private function applyShorthand(string $operation, NodeLocation $location, array $edit, array &$roots, ContextParser $snippets): bool
-    {
+    private function applyShorthand(
+        string $operation,
+        NodeLocation $location,
+        array $edit,
+        array &$roots,
+        ContextParser $snippets,
+    ): bool {
         $node = $location->node;
 
         switch ($operation) {
@@ -777,8 +793,12 @@ final class Editor
      *
      * @return bool true when the operation belonged to this group and was applied.
      */
-    private function applySemantic(string $operation, NodeLocation $location, array $edit, ContextParser $snippets): bool
-    {
+    private function applySemantic(
+        string $operation,
+        NodeLocation $location,
+        array $edit,
+        ContextParser $snippets,
+    ): bool {
         $node = $location->node;
 
         switch ($operation) {
@@ -975,8 +995,11 @@ final class Editor
      *
      * @return non-empty-list<string>
      */
-    private function contextsForProperty(array $edit, NodeLocation $location, string $property): array
-    {
+    private function contextsForProperty(
+        array $edit,
+        NodeLocation $location,
+        string $property,
+    ): array {
         if (isset($edit['parseAs'])) {
             return [(string) $edit['parseAs']];
         }
@@ -1164,8 +1187,12 @@ final class Editor
         throw new EditException('set_name cannot replace a dynamic name expression.');
     }
 
-    private function editArgument(CallLike $call, array $edit, ContextParser $snippets, string $operation): void
-    {
+    private function editArgument(
+        CallLike $call,
+        array $edit,
+        ContextParser $snippets,
+        string $operation,
+    ): void {
         if ($call->isFirstClassCallable()) {
             throw new EditException($operation . ' is not valid for first-class callable syntax.');
         }
