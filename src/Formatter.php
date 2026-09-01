@@ -30,8 +30,13 @@ final class Formatter
      * @param list<string> $exclude repository-relative paths to leave alone
      * @return array{scanned: int, changed: list<string>, failed: array<string, string>}
      */
-    public function format(array $paths, ?int $width, bool $dryRun, array $exclude = [], string $root = ''): array
-    {
+    public function format(
+        array $paths,
+        ?int $width,
+        bool $dryRun,
+        array $exclude = [],
+        string $root = '',
+    ): array {
         $version = $this->phpVersion === null ? null : PhpVersion::fromString($this->phpVersion);
         $parser = $version === null ? (new ParserFactory())->createForHostVersion() : (new ParserFactory())->createForVersion($version);
         $printer = new CanonicalPrinter($version, $width ?? CanonicalPrinter::DEFAULT_WIDTH);

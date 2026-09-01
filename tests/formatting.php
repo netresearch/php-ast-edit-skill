@@ -573,6 +573,20 @@ $empty = (new CanonicalPrinter(PhpVersion::fromString('8.2'), 40))->prettyPrintF
     ) ?? [],
 );
 check('an empty argument list is never broken', !str_contains($empty, "(\n"), $empty);
+// A signature: the parameter list fits, the line that carries it does not. The
+// rendering of a declaration always contains its body's line breaks, so this
+// only works because the width is compared against the first line rather than
+// the whole thing.
+$signature = (new CanonicalPrinter(PhpVersion::fromString('8.2'), 80))->prettyPrintFile(
+    $parser->parse(
+        "<?php\nclass C {\n    private function verifyUsernameFirst(string \$username, string \$assertion, string \$challenge): int { return 1; }\n}\n",
+    ) ?? [],
+);
+check(
+    'a parameter list is broken when the signature exceeds the width',
+    str_contains($signature, "verifyUsernameFirst(\n"),
+    $signature,
+);
 // Attribute arguments. nikic prints those with `pCommaSeparated()`, which has
 // no width at all, so a long `#[AsCommand(...)]` stayed on one line however far
 // it ran.

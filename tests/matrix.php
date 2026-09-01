@@ -154,7 +154,9 @@ $cases = [
     [
         'name' => 'create_file refuses to clobber an existing file',
         'files' => src("<?php\n"),
-        'document' => fn (array $p): array => tx(['path' => $p['a.php'], 'mode' => 'create', 'php' => '<?php class X {}']),
+        'document' => fn (
+            array $p,
+        ): array => tx(['path' => $p['a.php'], 'mode' => 'create', 'php' => '<?php class X {}']),
         'error' => 'FILE_EXISTS',
         'unchanged' => ['a.php'],
     ],
@@ -173,7 +175,9 @@ $cases = [
     [
         'name' => 'delete_file rejects a stale sha',
         'files' => src("<?php\nclass Gone {}\n"),
-        'document' => fn (array $p): array => tx(['path' => $p['a.php'], 'mode' => 'delete', 'sha256' => str_repeat('0', 64)]),
+        'document' => fn (
+            array $p,
+        ): array => tx(['path' => $p['a.php'], 'mode' => 'delete', 'sha256' => str_repeat('0', 64)]),
         'error' => 'STALE_SOURCE',
         'present' => ['a.php'],
     ],
@@ -451,7 +455,9 @@ $cases = [
     [
         'name' => 'create requires the open tag rather than shifting every offset',
         'files' => [],
-        'document' => fn (array $p): array => tx(['path' => $p['dir'] . '/NoTag.php', 'mode' => 'create', 'php' => 'class NoTag {}']),
+        'document' => fn (
+            array $p,
+        ): array => tx(['path' => $p['dir'] . '/NoTag.php', 'mode' => 'create', 'php' => 'class NoTag {}']),
         'error' => 'must start with the <?php open tag',
         'absent' => ['NoTag.php'],
     ],

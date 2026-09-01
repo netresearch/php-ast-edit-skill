@@ -18,7 +18,9 @@ final class NodeLocator
             $matches = array_values(
                 array_filter(
                     $matches,
-                    static fn (NodeLocation $location): bool => $location->node->getType() === $kind || $location->node::class === $kind,
+                    static fn (
+                        NodeLocation $location,
+                    ): bool => $location->node->getType() === $kind || $location->node::class === $kind,
                 ),
             );
         }

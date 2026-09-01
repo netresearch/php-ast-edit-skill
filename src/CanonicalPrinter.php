@@ -6,6 +6,7 @@ namespace Netresearch\PhpAstEdit;
 
 use PhpParser\Node;
 use PhpParser\Node\Expr;
+use PhpParser\Node\Stmt;
 use PhpParser\PhpVersion;
 use PhpParser\PrettyPrinter\Standard;
 
@@ -53,6 +54,40 @@ final class CanonicalPrinter extends Standard
     public function width(): int
     {
         return $this->width;
+    }
+
+    /**
+     * The five nodes that put a parameter list behind a prefix.
+     *
+     * `pParams()` measures the list alone, exactly as `pMaybeMultiline()` did
+     * before, so a signature whose parameters fit while
+     * `private function verifyUsernameFirst(` in front of them does not came
+     * out on one long line — 35 of 241 over-long lines in a 119-file corpus.
+     */
+    protected function pStmt_ClassMethod(Stmt\ClassMethod $node): string
+    {
+        return $this->widthAware(fn (): string => parent::pStmt_ClassMethod($node), $node->params);
+    }
+
+    protected function pStmt_Function(Stmt\Function_ $node): string
+    {
+        return $this->widthAware(fn (): string => parent::pStmt_Function($node), $node->params);
+    }
+
+    protected function pExpr_Closure(Expr\Closure $node): string
+    {
+        return $this->widthAware(fn (): string => parent::pExpr_Closure($node), $node->params);
+    }
+
+    protected function pExpr_ArrowFunction(
+        Expr\ArrowFunction $node,
+        int $precedence,
+        int $lhsPrecedence,
+    ): string {
+        return $this->widthAware(
+            fn (): string => parent::pExpr_ArrowFunction($node, $precedence, $lhsPrecedence),
+            $node->params,
+        );
     }
 
     /**
@@ -138,8 +173,12 @@ final class CanonicalPrinter extends Standard
             if ($list === null || $list === [] || $this->breakAtDepth !== null) {
                 return $result;
             }
+            // The first line, not the whole rendering: a declaration always
+            // carries its body's line breaks, and measuring those would call
+            // every signature "already broken" and never look at its width.
+            $firstLine = strstr($result, "\n", true);
 
-            if (str_contains($result, "\n") || $this->indentLevel + strlen($result) <= $this->width) {
+            if ($this->indentLevel + strlen($firstLine === false ? $result : $firstLine) <= $this->width) {
                 return $result;
             }
             $this->breakAtDepth = $this->listDepth;
