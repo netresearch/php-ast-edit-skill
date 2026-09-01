@@ -74,6 +74,11 @@ final class CanonicalPrinter extends Standard
         return $this->widthAware(fn (): string => parent::pStmt_Function($node), $node->params);
     }
 
+    protected function pPropertyHook(Node\PropertyHook $node): string
+    {
+        return $this->widthAware(fn (): string => parent::pPropertyHook($node), $node->params);
+    }
+
     protected function pExpr_Closure(Expr\Closure $node): string
     {
         return $this->widthAware(fn (): string => parent::pExpr_Closure($node), $node->params);
@@ -173,12 +178,14 @@ final class CanonicalPrinter extends Standard
             if ($list === null || $list === [] || $this->breakAtDepth !== null) {
                 return $result;
             }
-            // The first line, not the whole rendering: a declaration always
-            // carries its body's line breaks, and measuring those would call
-            // every signature "already broken" and never look at its width.
-            $firstLine = strstr($result, "\n", true);
 
-            if ($this->indentLevel + strlen($firstLine === false ? $result : $firstLine) <= $this->width) {
+            // The line the list opens on, not the whole rendering: a
+            // declaration always carries its body's line breaks, and measuring
+            // those would call every signature "already broken". Attribute
+            // groups are skipped on the way — `pStmt_ClassMethod()` puts them
+            // on their own lines in front, and a short `#[Attr]` would
+            // otherwise stand in for the signature behind it.
+            if ($this->indentLevel + strlen($this->signatureLine($result)) <= $this->width) {
                 return $result;
             }
             $this->breakAtDepth = $this->listDepth;
@@ -191,6 +198,20 @@ final class CanonicalPrinter extends Standard
         } finally {
             --$this->listDepth;
         }
+    }
+
+    /**
+     * The first line of `$rendering` that is not an attribute group.
+     */
+    private function signatureLine(string $rendering): string
+    {
+        foreach (explode("\n", $rendering) as $line) {
+            if (!str_starts_with(ltrim($line), '#[')) {
+                return $line;
+            }
+        }
+
+        return $rendering;
     }
 
     /** @param (Node|null)[] $nodes */

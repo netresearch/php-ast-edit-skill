@@ -587,6 +587,26 @@ check(
     str_contains($signature, "verifyUsernameFirst(\n"),
     $signature,
 );
+// Attributes stand on their own lines in front of a declaration. Measuring the
+// first line of the rendering would measure `#[Attr]` and let the signature
+// behind it run past the budget.
+$attributed = (new CanonicalPrinter(PhpVersion::fromString('8.4'), 80))->prettyPrintFile(
+    $parser->parse(
+        "<?php\nclass C {\n    #[Attr]\n    private function verifyUsernameFirst(string \$username, string \$assertion, string \$c): int { return 1; }\n}\n",
+    ) ?? [],
+);
+check(
+    'an attribute in front does not stand in for the signature',
+    str_contains($attributed, "verifyUsernameFirst(\n"),
+    $attributed,
+);
+// Property hooks carry a parameter list too, through a printer of their own.
+$hook = (new CanonicalPrinter(PhpVersion::fromString('8.4'), 40))->prettyPrintFile(
+    $parser->parse(
+        "<?php\nclass C {\n    public int \$value { set(int \$aRatherLongParameterName) { \$this->value = \$aRatherLongParameterName; } }\n}\n",
+    ) ?? [],
+);
+check('a property hook is measured like any other signature', str_contains($hook, "set(\n"), $hook);
 // Attribute arguments. nikic prints those with `pCommaSeparated()`, which has
 // no width at all, so a long `#[AsCommand(...)]` stayed on one line however far
 // it ran.
