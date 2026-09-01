@@ -559,9 +559,20 @@ $chained = $printer->prettyPrintFile(
 );
 check(
     'the outer list of a chain is the one that breaks',
-    str_contains($chained, '$q->firstMethodName($aaa)->secondMethodName(') && !str_contains($chained, "firstMethodName(\n"),
+    // Both halves are needed: the negative one alone is satisfied by a chain
+    // that is not broken at all, whatever the receiver does.
+    str_contains($chained, "secondMethodName(\n") && !str_contains($chained, "firstMethodName(\n"),
     $chained,
 );
+// Two empty argument lists are `===` to each other, so keying the re-print on
+// the list itself broke the receiver's — `$q->one(` on one line, `)->two();` on
+// the next. There is nothing to break in an empty list at all.
+$empty = (new CanonicalPrinter(PhpVersion::fromString('8.2'), 40))->prettyPrintFile(
+    $parser->parse(
+        "<?php\nclass C { public function f() { \$q->veryLongMethodNameOne()->veryLongMethodNameTwo(); } }\n",
+    ) ?? [],
+);
+check('an empty argument list is never broken', !str_contains($empty, "(\n"), $empty);
 // Attribute arguments. nikic prints those with `pCommaSeparated()`, which has
 // no width at all, so a long `#[AsCommand(...)]` stayed on one line however far
 // it ran.

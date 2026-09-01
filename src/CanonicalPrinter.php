@@ -32,16 +32,17 @@ final class CanonicalPrinter extends Standard
     private readonly int $width;
 
     /**
-     * The list a re-print is breaking, or null outside one.
+     * How deep into the nodes that carry a list this print currently is.
      *
-     * Identity, not a flag: `pExpr_MethodCall()` renders its receiver before
-     * its own argument list, so on `$q->a($x)->b($y)` a flag set for the outer
-     * list is consumed by the inner one — the short list breaks and the long
-     * line stays. See `widthAware()`.
-     *
-     * @var (Node|null)[]|null
+     * Not the list itself: PHP compares arrays by value, so two empty argument
+     * lists are `===` and a chain of no-argument calls broke the receiver's
+     * list instead of its own — `$q->one(` on one line and `)->two();` on the
+     * next. The depth is unique to the node being re-printed.
      */
-    private ?array $breakTarget = null;
+    private int $listDepth = 0;
+
+    /** The depth whose list a re-print is breaking, or null outside one. */
+    private ?int $breakAtDepth = null;
 
     public function __construct(?PhpVersion $phpVersion = null, int $width = self::DEFAULT_WIDTH)
     {
@@ -127,23 +128,29 @@ final class CanonicalPrinter extends Standard
      */
     private function widthAware(callable $print, ?array $list): string
     {
-        $result = $print();
-
-        // Already broken, or short enough. A re-print in progress is left to
-        // finish: the target it set belongs to the list it is breaking.
-        if ($list === null || $this->breakTarget !== null || str_contains($result, "\n")) {
-            return $result;
-        }
-
-        if ($this->indentLevel + strlen($result) <= $this->width) {
-            return $result;
-        }
-        $this->breakTarget = $list;
+        ++$this->listDepth;
 
         try {
-            return $print();
+            $result = $print();
+
+            // Nothing to break, already broken, or short enough. A re-print in
+            // progress is left to finish: the depth it set is its own.
+            if ($list === null || $list === [] || $this->breakAtDepth !== null) {
+                return $result;
+            }
+
+            if (str_contains($result, "\n") || $this->indentLevel + strlen($result) <= $this->width) {
+                return $result;
+            }
+            $this->breakAtDepth = $this->listDepth;
+
+            try {
+                return $print();
+            } finally {
+                $this->breakAtDepth = null;
+            }
         } finally {
-            $this->breakTarget = null;
+            --$this->listDepth;
         }
     }
 
@@ -210,10 +217,10 @@ final class CanonicalPrinter extends Standard
      */
     private function fitsOnOneLine(array $nodes): ?string
     {
-        if ($this->breakTarget !== null && $nodes === $this->breakTarget) {
+        if ($this->breakAtDepth === $this->listDepth) {
             // This is the list the re-print is for. Cleared straight away, so
             // the lists nested inside it are judged on their own merits.
-            $this->breakTarget = null;
+            $this->breakAtDepth = null;
 
             return null;
         }
