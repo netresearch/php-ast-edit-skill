@@ -63,7 +63,10 @@ final class Editor
             'file' => $path,
             'sha256' => hash('sha256', $source),
             'offset' => $offset,
-            'nodes' => array_map(fn (NodeLocation $location): array => $this->describe($location, $source), $locations),
+            'nodes' => array_map(
+                fn (NodeLocation $location): array => $this->describe($location, $source),
+                $locations,
+            ),
         ];
     }
 
@@ -200,7 +203,17 @@ final class Editor
         // the source when the original object is still intact.
         $tokens = $parser->getTokens();
         $mutable = (new NodeTraverser(new CloningVisitor()))->traverse($roots);
-        $transaction = new FileTransaction($path, 'edit', $source, $mutable, $parser, $phpVersion, true, $roots, $tokens);
+        $transaction = new FileTransaction(
+            $path,
+            'edit',
+            $source,
+            $mutable,
+            $parser,
+            $phpVersion,
+            true,
+            $roots,
+            $tokens,
+        );
         $edits = $spec['edits'] ?? null;
 
         if (!is_array($edits) || $edits === []) {
@@ -319,7 +332,12 @@ final class Editor
                     ),
                 );
             }
-            $this->applyOperation($entry['location'], $entry['edit'], $transaction->roots, $snippets);
+            $this->applyOperation(
+                $entry['location'],
+                $entry['edit'],
+                $transaction->roots,
+                $snippets,
+            );
         }
     }
 
@@ -368,7 +386,11 @@ final class Editor
         $printer = new CanonicalPrinter($version, $this->widthFor($transaction));
 
         if ($transaction->printer === 'format-preserving' && $transaction->original !== null && $transaction->tokens !== null) {
-            return $printer->printFormatPreserving($transaction->roots, $transaction->original, $transaction->tokens);
+            return $printer->printFormatPreserving(
+                $transaction->roots,
+                $transaction->original,
+                $transaction->tokens,
+            );
         }
         $transaction->printer = 'canonical';
 
@@ -543,7 +565,10 @@ final class Editor
             );
         }
 
-        if (!hash_equals(hash('sha256', $this->readFile($transaction->path)), (string) $transaction->beforeSha())) {
+        if (!hash_equals(
+            hash('sha256', $this->readFile($transaction->path)),
+            (string) $transaction->beforeSha(),
+        )) {
             throw new EditException(
                 sprintf(
                     'CONCURRENT_CHANGE: %s changed while the transaction was being prepared; nothing was written.',
@@ -601,7 +626,10 @@ final class Editor
             // ---- Primitives -------------------------------------------------------------
             case 'replace_node':
                 $context = $this->context($edit, $location);
-                $location->replace($snippets->parseOne($context, $this->requiredString($edit, 'php')), $roots);
+                $location->replace(
+                    $snippets->parseOne($context, $this->requiredString($edit, 'php')),
+                    $roots,
+                );
 
                 return true;
             case 'delete_node':
@@ -634,7 +662,10 @@ final class Editor
 
                 return true;
             case 'delete_child':
-                $location->removeChild($this->requiredString($edit, 'property'), $this->optionalIndex($edit));
+                $location->removeChild(
+                    $this->requiredString($edit, 'property'),
+                    $this->optionalIndex($edit),
+                );
 
                 return true;
             case 'move_node':
@@ -699,14 +730,20 @@ final class Editor
                 if (!$node instanceof Expr) {
                     throw new EditException('replace_expression requires an Expr target.');
                 }
-                $location->replace($snippets->parseOne('expr', $this->requiredString($edit, 'php')), $roots);
+                $location->replace(
+                    $snippets->parseOne('expr', $this->requiredString($edit, 'php')),
+                    $roots,
+                );
 
                 return true;
             case 'replace_statement':
                 if (!$node instanceof Stmt) {
                     throw new EditException('replace_statement requires a Stmt target.');
                 }
-                $location->replace($snippets->parseOne('stmt', $this->requiredString($edit, 'php')), $roots);
+                $location->replace(
+                    $snippets->parseOne('stmt', $this->requiredString($edit, 'php')),
+                    $roots,
+                );
 
                 return true;
             case 'insert_before':
@@ -747,10 +784,17 @@ final class Editor
         switch ($operation) {
             // ---- Semantic convenience ----------------------------------------------------
             case 'add_member':
-                $this->assertType($node, Stmt\ClassLike::class, 'add_member requires a class-like target.');
+                $this->assertType(
+                    $node,
+                    Stmt\ClassLike::class,
+                    'add_member requires a class-like target.',
+                );
                 $location->insertInto(
                     'stmts',
-                    $snippets->parseFirst($this->memberContexts($node), $this->requiredString($edit, 'php')),
+                    $snippets->parseFirst(
+                        $this->memberContexts($node),
+                        $this->requiredString($edit, 'php'),
+                    ),
                     $this->position($edit, 'end'),
                 );
 
@@ -775,11 +819,19 @@ final class Editor
 
                 return true;
             case 'set_return_type':
-                $location->replaceChild('returnType', null, $snippets->parseOne('type', $this->requiredString($edit, 'php')));
+                $location->replaceChild(
+                    'returnType',
+                    null,
+                    $snippets->parseOne('type', $this->requiredString($edit, 'php')),
+                );
 
                 return true;
             case 'set_type':
-                $location->replaceChild('type', null, $snippets->parseOne('type', $this->requiredString($edit, 'php')));
+                $location->replaceChild(
+                    'type',
+                    null,
+                    $snippets->parseOne('type', $this->requiredString($edit, 'php')),
+                );
 
                 return true;
             case 'set_visibility':
@@ -787,7 +839,11 @@ final class Editor
 
                 return true;
             case 'add_implements':
-                $this->assertType($node, Stmt\Class_::class, 'add_implements requires a Stmt_Class target.');
+                $this->assertType(
+                    $node,
+                    Stmt\Class_::class,
+                    'add_implements requires a Stmt_Class target.',
+                );
                 $location->insertInto(
                     'implements',
                     [$snippets->parseOne('type', $this->requiredString($edit, 'php'))],
@@ -855,7 +911,10 @@ final class Editor
 
         if (!str_starts_with($text, '/**')) {
             $lines = preg_split('/\R/', $text) ?: [];
-            $text = "/**\n" . implode("\n", array_map(static fn (string $line): string => rtrim(' * ' . $line), $lines)) . "\n */";
+            $text = "/**\n" . implode(
+                "\n",
+                array_map(static fn (string $line): string => rtrim(' * ' . $line), $lines),
+            ) . "\n */";
         }
         $others[] = new Doc($text);
         $attributes['comments'] = $others;
@@ -1158,14 +1217,18 @@ final class Editor
         }
 
         if (isset($expect['type']) && $node->getType() !== (string) $expect['type']) {
-            throw new EditException(sprintf('Expected node type %s, got %s.', $expect['type'], $node->getType()));
+            throw new EditException(
+                sprintf('Expected node type %s, got %s.', $expect['type'], $node->getType()),
+            );
         }
 
         if (array_key_exists('name', $expect)) {
             $actual = $this->nodeName($node);
 
             if ($actual !== (string) $expect['name']) {
-                throw new EditException(sprintf('Expected node name %s, got %s.', $expect['name'], $actual ?? '<none>'));
+                throw new EditException(
+                    sprintf('Expected node name %s, got %s.', $expect['name'], $actual ?? '<none>'),
+                );
             }
         }
 
@@ -1173,7 +1236,13 @@ final class Editor
             $actual = $this->nodeValue($node);
 
             if ($actual !== (string) $expect['value']) {
-                throw new EditException(sprintf('Expected node value %s, got %s.', $expect['value'], $actual ?? '<none>'));
+                throw new EditException(
+                    sprintf(
+                        'Expected node value %s, got %s.',
+                        $expect['value'],
+                        $actual ?? '<none>',
+                    ),
+                );
             }
         }
     }

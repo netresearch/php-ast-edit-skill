@@ -192,7 +192,10 @@ try {
     );
     $changed = file_get_contents($tmp);
     check(str_contains($changed, '$started = true;'), 'list insertion failed');
-    check(str_contains($changed, 'return strtoupper($customer->name);'), 'later list target became stale');
+    check(
+        str_contains($changed, 'return strtoupper($customer->name);'),
+        'later list target became stale',
+    );
     echo "OK\n";
 } finally {
     @unlink($tmp);

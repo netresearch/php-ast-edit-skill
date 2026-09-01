@@ -47,7 +47,9 @@ foreach ($paths as $path) {
         continue;
     }
 
-    foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator($path, FilesystemIterator::SKIP_DOTS)) as $entry) {
+    foreach (new RecursiveIteratorIterator(
+        new RecursiveDirectoryIterator($path, FilesystemIterator::SKIP_DOTS),
+    ) as $entry) {
         if ($entry->isFile() && $entry->getExtension() === 'php') {
             $files[] = $entry->getPathname();
         }

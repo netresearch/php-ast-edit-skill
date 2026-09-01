@@ -133,7 +133,12 @@ final class NodeLocation
 
         if ($index === null) {
             if ($this->isList($property)) {
-                throw new EditException(sprintf('Property "%s" holds a list; replace_child requires an index.', $property));
+                throw new EditException(
+                    sprintf(
+                        'Property "%s" holds a list; replace_child requires an index.',
+                        $property,
+                    ),
+                );
             }
             $this->node->{$property} = $replacement;
 
@@ -156,7 +161,10 @@ final class NodeLocation
         if ($index === null) {
             if ($this->isList($property)) {
                 throw new EditException(
-                    sprintf('Property "%s" holds a list; deleting from it requires an index.', $property),
+                    sprintf(
+                        'Property "%s" holds a list; deleting from it requires an index.',
+                        $property,
+                    ),
                 );
             }
             $this->assertNullable($property);
@@ -221,7 +229,12 @@ final class NodeLocation
 
         if ($position < 0 || $position > $max) {
             throw new EditException(
-                sprintf('position %d is out of range for "%s" (%d entries).', $position, $property, $count),
+                sprintf(
+                    'position %d is out of range for "%s" (%d entries).',
+                    $position,
+                    $property,
+                    $count,
+                ),
             );
         }
 

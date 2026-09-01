@@ -8,7 +8,9 @@ declare (strict_types=1);
  * nothing here contradicts the printer. Everything below is the token-level half of the
  * fixed point: what the printer has no opinion about.
  */
-$finder = PhpCsFixer\Finder::create()->in(__DIR__)->exclude(['vendor', 'dist', 'node_modules'])->notPath('tests/fixtures');
+$finder = PhpCsFixer\Finder::create()->in(__DIR__)->exclude(['vendor', 'dist', 'node_modules'])->notPath(
+    'tests/fixtures'
+);
 return (new PhpCsFixer\Config())->setRiskyAllowed(true)->setFinder($finder)->setRules(
     [
         '@PSR12' => true,

@@ -31,10 +31,16 @@ final class CanonicalPrinter extends Standard
     private readonly int $width;
 
     /**
-     * Set for the length of one re-print, and consumed by the first list that
-     * asks whether it fits. See `widthAware()`.
+     * The list a re-print is breaking, or null outside one.
+     *
+     * Identity, not a flag: `pExpr_MethodCall()` renders its receiver before
+     * its own argument list, so on `$q->a($x)->b($y)` a flag set for the outer
+     * list is consumed by the inner one — the short list breaks and the long
+     * line stays. See `widthAware()`.
+     *
+     * @var (Node|null)[]|null
      */
-    private bool $forceNextBreak = false;
+    private ?array $breakTarget = null;
 
     public function __construct(?PhpVersion $phpVersion = null, int $width = self::DEFAULT_WIDTH)
     {
@@ -49,37 +55,37 @@ final class CanonicalPrinter extends Standard
 
     protected function pExpr_FuncCall(Expr\FuncCall $node): string
     {
-        return $this->widthAware(fn (): string => parent::pExpr_FuncCall($node));
+        return $this->widthAware(fn (): string => parent::pExpr_FuncCall($node), $node->args);
     }
 
     protected function pExpr_MethodCall(Expr\MethodCall $node): string
     {
-        return $this->widthAware(fn (): string => parent::pExpr_MethodCall($node));
+        return $this->widthAware(fn (): string => parent::pExpr_MethodCall($node), $node->args);
     }
 
     protected function pExpr_NullsafeMethodCall(Expr\NullsafeMethodCall $node): string
     {
-        return $this->widthAware(fn (): string => parent::pExpr_NullsafeMethodCall($node));
+        return $this->widthAware(fn (): string => parent::pExpr_NullsafeMethodCall($node), $node->args);
     }
 
     protected function pExpr_StaticCall(Expr\StaticCall $node): string
     {
-        return $this->widthAware(fn (): string => parent::pExpr_StaticCall($node));
+        return $this->widthAware(fn (): string => parent::pExpr_StaticCall($node), $node->args);
     }
 
     protected function pExpr_New(Expr\New_ $node): string
     {
-        return $this->widthAware(fn (): string => parent::pExpr_New($node));
+        return $this->widthAware(fn (): string => parent::pExpr_New($node), $node->args);
     }
 
     protected function pExpr_Array(Expr\Array_ $node): string
     {
-        return $this->widthAware(fn (): string => parent::pExpr_Array($node));
+        return $this->widthAware(fn (): string => parent::pExpr_Array($node), $node->items);
     }
 
     protected function pExpr_List(Expr\List_ $node): string
     {
-        return $this->widthAware(fn (): string => parent::pExpr_List($node));
+        return $this->widthAware(fn (): string => parent::pExpr_List($node), $node->items);
     }
 
     /**
@@ -99,27 +105,27 @@ final class CanonicalPrinter extends Standard
      * IR this printer deliberately does not build.
      *
      * @param callable(): string $print
+     * @param (Node|null)[]|null  $list  the node's own list — the one to break
      */
-    private function widthAware(callable $print): string
+    private function widthAware(callable $print, ?array $list): string
     {
         $result = $print();
 
         // Already broken, or short enough. A re-print in progress is left to
-        // finish: the flag it set belongs to the list it is breaking.
-        if ($this->forceNextBreak || str_contains($result, "\n")) {
+        // finish: the target it set belongs to the list it is breaking.
+        if ($list === null || $this->breakTarget !== null || str_contains($result, "\n")) {
             return $result;
         }
 
         if ($this->indentLevel + strlen($result) <= $this->width) {
             return $result;
         }
-
-        $this->forceNextBreak = true;
+        $this->breakTarget = $list;
 
         try {
             return $print();
         } finally {
-            $this->forceNextBreak = false;
+            $this->breakTarget = null;
         }
     }
 
@@ -141,7 +147,10 @@ final class CanonicalPrinter extends Standard
         // A parameter carrying an attribute is only expressible inline from PHP 8.0 on; the
         // parent class breaks in that case regardless of width, and so must this one.
         if (!$this->phpVersion->supportsAttributes() && $this->anyParamHasAttributes($params)) {
-            return $this->pCommaSeparatedMultiline($params, $this->phpVersion->supportsTrailingCommaInParamList()) . $this->nl;
+            return $this->pCommaSeparatedMultiline(
+                $params,
+                $this->phpVersion->supportsTrailingCommaInParamList(),
+            ) . $this->nl;
         }
         $single = $this->fitsOnOneLine($params);
 
@@ -149,7 +158,10 @@ final class CanonicalPrinter extends Standard
             return $single;
         }
 
-        return $this->pCommaSeparatedMultiline($params, $this->phpVersion->supportsTrailingCommaInParamList()) . $this->nl;
+        return $this->pCommaSeparatedMultiline(
+            $params,
+            $this->phpVersion->supportsTrailingCommaInParamList(),
+        ) . $this->nl;
     }
 
     /**
@@ -180,10 +192,10 @@ final class CanonicalPrinter extends Standard
      */
     private function fitsOnOneLine(array $nodes): ?string
     {
-        if ($this->forceNextBreak) {
-            // Consumed by the outermost list of the re-print, so that the lists
-            // nested inside it are judged on their own merits again.
-            $this->forceNextBreak = false;
+        if ($this->breakTarget !== null && $nodes === $this->breakTarget) {
+            // This is the list the re-print is for. Cleared straight away, so
+            // the lists nested inside it are judged on their own merits.
+            $this->breakTarget = null;
 
             return null;
         }

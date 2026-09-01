@@ -12,7 +12,10 @@ $root = dirname(__DIR__);
 $autoload = $root . '/vendor/autoload.php';
 
 if (!is_file($autoload)) {
-    fwrite(STDERR, "SKIP: vendor/autoload.php missing; run composer install to check the catalog.\n");
+    fwrite(
+        STDERR,
+        "SKIP: vendor/autoload.php missing; run composer install to check the catalog.\n",
+    );
     exit(0);
 }
 require_once $autoload;
@@ -40,7 +43,9 @@ foreach (['applyPrimitive', 'applyComment', 'applyShorthand', 'applySemantic'] a
 }
 sort($dispatchers);
 $catalog = json_decode(
-    (string) shell_exec(escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg($root . '/bin/php-ast-edit') . ' contexts'),
+    (string) shell_exec(
+        escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg($root . '/bin/php-ast-edit') . ' contexts',
+    ),
     true,
 );
 
@@ -68,7 +73,10 @@ sort($advertisedContexts);
 if ($known !== $advertisedContexts) {
     $problems[] = 'parseAs catalog drifted: ' . implode(
         ',',
-        array_merge(array_diff($known, $advertisedContexts), array_diff($advertisedContexts, $known)),
+        array_merge(
+            array_diff($known, $advertisedContexts),
+            array_diff($advertisedContexts, $known),
+        ),
     );
 }
 

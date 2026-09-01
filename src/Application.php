@@ -32,7 +32,11 @@ final class Application
             fwrite(
                 STDERR,
                 json_encode(
-                    ['ok' => false, 'error' => $exception->getMessage(), 'class' => $exception::class],
+                    [
+                        'ok' => false,
+                        'error' => $exception->getMessage(),
+                        'class' => $exception::class,
+                    ],
                     JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE,
                 ) . "\n",
             );
@@ -42,7 +46,11 @@ final class Application
             fwrite(
                 STDERR,
                 json_encode(
-                    ['ok' => false, 'error' => $exception->getMessage(), 'class' => $exception::class],
+                    [
+                        'ok' => false,
+                        'error' => $exception->getMessage(),
+                        'class' => $exception::class,
+                    ],
                     JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE,
                 ) . "\n",
             );
@@ -117,7 +125,9 @@ final class Application
                     '--exclude belongs to normalize, which records it in ' . RepositoryConfig::FILE . '. ' . 'Formatting a different set than the repository was normalised with leaves the ' . 'excluded files off the fixed point without anything saying so.',
                 );
             }
-            $exclude = array_values(array_filter(array_map('trim', explode(',', (string) $options['exclude']))));
+            $exclude = array_values(
+                array_filter(array_map('trim', explode(',', (string) $options['exclude']))),
+            );
         }
         $dryRun = isset($options['dry-run']);
 
@@ -140,7 +150,13 @@ final class Application
 
             return 1;
         }
-        $result = (new Formatter($options['php-version'] ?? null))->format($paths, $width, $dryRun, $exclude, $root);
+        $result = (new Formatter($options['php-version'] ?? null))->format(
+            $paths,
+            $width,
+            $dryRun,
+            $exclude,
+            $root,
+        );
         $payload = [
             'scanned' => $result['scanned'],
             'changed' => array_values($result['changed']),
