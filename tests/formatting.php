@@ -562,6 +562,19 @@ check(
     str_contains($chained, '$q->firstMethodName($aaa)->secondMethodName(') && !str_contains($chained, "firstMethodName(\n"),
     $chained,
 );
+// Attribute arguments. nikic prints those with `pCommaSeparated()`, which has
+// no width at all, so a long `#[AsCommand(...)]` stayed on one line however far
+// it ran.
+$attributed = $printer->prettyPrintFile(
+    $parser->parse(
+        "<?php\n#[AsCommand(name: 'a:command', description: 'A description long enough to push the attribute past the budget.')]\nfinal class R {}\n",
+    ) ?? [],
+);
+check(
+    'attribute arguments are broken like call arguments',
+    str_contains($attributed, "#[AsCommand(\n"),
+    $attributed,
+);
 // Printing is still a fixed point: the broken form prints back to itself.
 $again = $printer->prettyPrintFile($parser->parse($wide) ?? []);
 check('and the broken form prints back to itself', $again === $wide, $again);

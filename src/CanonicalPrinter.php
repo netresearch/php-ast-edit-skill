@@ -19,8 +19,9 @@ use PhpParser\PrettyPrinter\Standard;
  * LineLengthSniff only reports (it calls addError, never addFixableError). Line breaking is
  * therefore the printer's job or nobody's.
  *
- * Two hooks carry it: pMaybeMultiline covers call arguments, array items and attribute
- * arguments; pParams covers parameter lists. With both at a budget of 80 the same extension
+ * Three hooks carry it: pMaybeMultiline covers call arguments and array items, pParams
+ * covers parameter lists, and pAttribute routes attribute arguments through the first —
+ * nikic prints those with pCommaSeparated, which has no width at all. With both at a budget of 80 the same extension
  * printed at max 318 characters against the authors' 294 — the remainder are string
  * concatenations, which no list hook can break and which the authors did not break either.
  */
@@ -51,6 +52,23 @@ final class CanonicalPrinter extends Standard
     public function width(): int
     {
         return $this->width;
+    }
+
+    /**
+     * Attribute arguments, which nikic prints with `pCommaSeparated()` — no width
+     * involved, so `#[AsCommand(name: …, description: …)]` came out on one line
+     * whatever its length. Routed through the same hook as a call's arguments.
+     */
+    protected function pAttribute(Node\Attribute $node): string
+    {
+        if ($node->args === []) {
+            return $this->p($node->name);
+        }
+
+        return $this->widthAware(
+            fn (): string => $this->p($node->name) . '(' . $this->pMaybeMultiline($node->args) . ')',
+            $node->args,
+        );
     }
 
     protected function pExpr_FuncCall(Expr\FuncCall $node): string
