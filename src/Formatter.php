@@ -111,7 +111,9 @@ final class Formatter
             if (!is_dir($path)) {
                 throw new EditException('No such file or directory: ' . $path);
             }
-            $iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($path, \FilesystemIterator::SKIP_DOTS));
+            $iterator = new \RecursiveIteratorIterator(
+                new \RecursiveDirectoryIterator($path, \FilesystemIterator::SKIP_DOTS),
+            );
 
             foreach ($iterator as $entry) {
                 if (!$entry->isFile() || $entry->getExtension() !== 'php') {

@@ -15,7 +15,10 @@ $root = dirname(__DIR__);
 $autoload = $root . '/vendor/autoload.php';
 
 if (!is_file($autoload)) {
-    fwrite(STDERR, "SKIP: vendor/autoload.php missing; run composer install to execute the matrix.\n");
+    fwrite(
+        STDERR,
+        "SKIP: vendor/autoload.php missing; run composer install to execute the matrix.\n",
+    );
     exit(0);
 }
 require_once $autoload;
@@ -242,7 +245,13 @@ $cases = [
     [
         'name' => 'a second use item joins an existing group',
         'files' => src("<?php\nuse A\\B;\n"),
-        'edits' => [at(CLASS_REF, 'insert_into', ['property' => 'uses', 'parseAs' => 'use', 'php' => USE_ITEM])],
+        'edits' => [
+            at(
+                CLASS_REF,
+                'insert_into',
+                ['property' => 'uses', 'parseAs' => 'use', 'php' => USE_ITEM],
+            ),
+        ],
         'contains' => inA(USE_ITEM),
     ],
     // ---- Signatures, types, modifiers ----------------------------------------------------
@@ -360,7 +369,13 @@ $cases = [
     [
         'name' => 'a string literal may contain a PHP open tag',
         'files' => src("<?php\n\$t = '';\n"),
-        'edits' => [at('stmts[0].expr.expr', 'replace_expression', ['php' => '\'<?xml version="1.0"?' . '>\''])],
+        'edits' => [
+            at(
+                'stmts[0].expr.expr',
+                'replace_expression',
+                ['php' => '\'<?xml version="1.0"?' . '>\''],
+            ),
+        ],
         'contains' => inA('<?xml version="1.0"?' . '>'),
     ],
     [
@@ -451,7 +466,11 @@ $cases = [
         'name' => 'two creates under the same missing directory collide',
         'files' => [],
         'document' => fn (array $p): array => tx(
-            ['path' => $p['dir'] . '/deep/sub/A.php', 'mode' => 'create', 'php' => '<?php class A {}'],
+            [
+                'path' => $p['dir'] . '/deep/sub/A.php',
+                'mode' => 'create',
+                'php' => '<?php class A {}',
+            ],
             [
                 'path' => $p['dir'] . '/deep/../deep/sub/A.php',
                 'mode' => 'create',

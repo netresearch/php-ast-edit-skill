@@ -84,7 +84,10 @@ final class ContextParser
                 'host' => Stmt\Expression::class,
                 'template' => '<?php [%s];',
                 'extract' => static fn (array $stmts): array => array_values(
-                    array_filter($stmts[0]->expr->items, static fn (mixed $item): bool => $item instanceof Node),
+                    array_filter(
+                        $stmts[0]->expr->items,
+                        static fn (mixed $item): bool => $item instanceof Node,
+                    ),
                 ),
             ],
             'match_arm' => [
@@ -176,12 +179,18 @@ final class ContextParser
             $stmts = $this->parser->parse($source);
         } catch (ParserError $error) {
             throw new EditException(
-                sprintf('Snippet is not valid in the "%s" context: %s', $context, $error->getRawMessage()),
+                sprintf(
+                    'Snippet is not valid in the "%s" context: %s',
+                    $context,
+                    $error->getRawMessage(),
+                ),
             );
         }
 
         if ($stmts === null || $stmts === []) {
-            throw new EditException(sprintf('Snippet produced no AST nodes in the "%s" context.', $context));
+            throw new EditException(
+                sprintf('Snippet produced no AST nodes in the "%s" context.', $context),
+            );
         }
         // A snippet can close the host construct and open its own — `} echo 1; class Y {` in
         // the member context — and the host then holds something the extractor never expected.
@@ -220,7 +229,9 @@ final class ContextParser
         $nodes = array_values(array_filter($nodes, static fn (mixed $node): bool => $node instanceof Node));
 
         if ($nodes === []) {
-            throw new EditException(sprintf('Snippet produced no AST nodes in the "%s" context.', $context));
+            throw new EditException(
+                sprintf('Snippet produced no AST nodes in the "%s" context.', $context),
+            );
         }
 
         return $nodes;
@@ -257,7 +268,9 @@ final class ContextParser
         $nodes = $this->parseFirst($contexts, $code);
 
         if (count($nodes) !== 1) {
-            throw new EditException(sprintf('Snippet must produce exactly one node, got %d.', count($nodes)));
+            throw new EditException(
+                sprintf('Snippet must produce exactly one node, got %d.', count($nodes)),
+            );
         }
 
         return $nodes[0];
@@ -269,7 +282,13 @@ final class ContextParser
         $nodes = $this->parse($context, $code);
 
         if (count($nodes) !== 1) {
-            throw new EditException(sprintf('Snippet must produce exactly one %s node, got %d.', $context, count($nodes)));
+            throw new EditException(
+                sprintf(
+                    'Snippet must produce exactly one %s node, got %d.',
+                    $context,
+                    count($nodes),
+                ),
+            );
         }
 
         return $nodes[0];

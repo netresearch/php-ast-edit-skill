@@ -19,7 +19,9 @@ $missing = [];
 
 foreach ($paths as $path) {
     if (is_dir($path)) {
-        $iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($path, FilesystemIterator::SKIP_DOTS));
+        $iterator = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($path, FilesystemIterator::SKIP_DOTS),
+        );
 
         foreach ($iterator as $file) {
             if ($file->isFile() && $file->getExtension() === 'php') {

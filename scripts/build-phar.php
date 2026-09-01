@@ -26,7 +26,9 @@ $phar->setSignatureAlgorithm(Phar::SHA256);
 
 foreach (['bin', 'src', 'vendor'] as $directory) {
     $base = $root . '/' . $directory;
-    $iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($base, FilesystemIterator::SKIP_DOTS));
+    $iterator = new RecursiveIteratorIterator(
+        new RecursiveDirectoryIterator($base, FilesystemIterator::SKIP_DOTS),
+    );
 
     foreach ($iterator as $file) {
         if (!$file->isFile()) {

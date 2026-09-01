@@ -25,7 +25,11 @@ final class NodeLocator
 
         if ($matches === []) {
             throw new EditException(
-                sprintf('No%s AST node covers byte offset %d.', $kind === null ? '' : ' ' . $kind, $offset),
+                sprintf(
+                    'No%s AST node covers byte offset %d.',
+                    $kind === null ? '' : ' ' . $kind,
+                    $offset,
+                ),
             );
         }
 
@@ -38,7 +42,17 @@ final class NodeLocator
         $matches = [];
 
         foreach ($roots as $index => $node) {
-            $this->walk($node, null, null, null, $index, 0, 'stmts[' . $index . ']', $offset, $matches);
+            $this->walk(
+                $node,
+                null,
+                null,
+                null,
+                $index,
+                0,
+                'stmts[' . $index . ']',
+                $offset,
+                $matches,
+            );
         }
         usort(
             $matches,
@@ -78,7 +92,15 @@ final class NodeLocator
         if (!array_key_exists($rootIndex, $roots)) {
             throw new EditException(sprintf('target.ref root index %d does not exist.', $rootIndex));
         }
-        $location = new NodeLocation($roots[$rootIndex], null, null, null, $rootIndex, 0, 'stmts[' . $rootIndex . ']');
+        $location = new NodeLocation(
+            $roots[$rootIndex],
+            null,
+            null,
+            null,
+            $rootIndex,
+            0,
+            'stmts[' . $rootIndex . ']',
+        );
         $path = $location->path;
 
         foreach (array_slice($segments, 1) as $depth => $segment) {
@@ -90,7 +112,12 @@ final class NodeLocator
 
             if (!in_array($property, $node->getSubNodeNames(), true)) {
                 throw new EditException(
-                    sprintf('target.ref "%s": %s has no sub node "%s".', $ref, $node->getType(), $property),
+                    sprintf(
+                        'target.ref "%s": %s has no sub node "%s".',
+                        $ref,
+                        $node->getType(),
+                        $property,
+                    ),
                 );
             }
             $value = $node->{$property};

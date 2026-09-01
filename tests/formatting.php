@@ -21,6 +21,7 @@ use Netresearch\PhpAstEdit\EditorConfig;
 use Netresearch\PhpAstEdit\Formatter;
 use Netresearch\PhpAstEdit\RepositoryConfig;
 use PhpParser\ParserFactory;
+use PhpParser\PhpVersion;
 
 $problems = [];
 $passed = 0;
@@ -64,7 +65,11 @@ check('a list over budget is broken', substr_count($narrow, "\n") > 4, trim($nar
 check('breaking puts one argument per line', str_contains($narrow, "'aaaaaaaaaaaaaaaaaaaa',\n"));
 $params = "<?php\nfunction f(string \$aaaaaaaaaaaaaaaaaaaa, string \$bbbbbbbbbbbbbbbbbbbb, string \$cccccccccccccccccccc) {}\n";
 $narrowParams = (new CanonicalPrinter(null, 40))->prettyPrintFile($parser->parse($params));
-check('a parameter list over budget is broken', substr_count($narrowParams, "\n") > 4, trim($narrowParams));
+check(
+    'a parameter list over budget is broken',
+    substr_count($narrowParams, "\n") > 4,
+    trim($narrowParams),
+);
 
 // The width must actually be the lever, and printing must be a fixed point of itself.
 foreach ([40, 80, 200] as $width) {
@@ -108,7 +113,11 @@ check(
 );
 RepositoryConfig::write($dir, 80);
 $result = $editor->apply($document($dir . '/a.php'), true)['files'][0];
-check('a declared repository prints canonically', $result['printer'] === 'canonical', $result['printer']);
+check(
+    'a declared repository prints canonically',
+    $result['printer'] === 'canonical',
+    $result['printer'],
+);
 check('and carries no warning', !isset($result['warning']), $result['warning'] ?? '');
 // A repository declared canonical before the width moved into .editorconfig still prints —
 // by the width its normalisation recorded — and is told what to add.
@@ -164,7 +173,10 @@ try {
     );
     check('an unknown printer is refused', false, 'accepted');
 } catch (Throwable $throwable) {
-    check('an unknown printer is refused', str_contains($throwable->getMessage(), 'printer must be'));
+    check(
+        'an unknown printer is refused',
+        str_contains($throwable->getMessage(), 'printer must be'),
+    );
 }
 removeTree($dir);
 // ---- Format-preserving must hold for every operation class, not just renames ------------
@@ -173,7 +185,11 @@ removeTree($dir);
 $cases = [
     'set_name' => [
         "<?php\nclass Foo\n{\n    public function bar()\n    {\n        return 1;\n    }\n}\n",
-        ['target' => ['ref' => 'stmts[0].stmts[0].name'], 'operation' => 'set_name', 'value' => 'baz'],
+        [
+            'target' => ['ref' => 'stmts[0].stmts[0].name'],
+            'operation' => 'set_name',
+            'value' => 'baz',
+        ],
         2,
     ],
     'set_string' => [
@@ -251,7 +267,10 @@ $path = RepositoryConfig::write($dir, 100);
 $config = RepositoryConfig::discover($dir . '/a.php');
 check('the declaration is found from a file', $config->canonical && $config->width === 100);
 check('the marker names its own path', $config->path === $path);
-check('the root is where composer.json is', RepositoryConfig::rootFor($dir . '/a.php') === realpath($dir));
+check(
+    'the root is where composer.json is',
+    RepositoryConfig::rootFor($dir . '/a.php') === realpath($dir),
+);
 // A broken declaration must be named, not ignored.
 file_put_contents($dir . '/' . RepositoryConfig::FILE, "{ not json\n");
 
@@ -259,7 +278,10 @@ try {
     RepositoryConfig::discover($dir);
     check('invalid declaration JSON is refused', false, 'accepted');
 } catch (Throwable $throwable) {
-    check('invalid declaration JSON is refused', str_contains($throwable->getMessage(), 'not valid JSON'));
+    check(
+        'invalid declaration JSON is refused',
+        str_contains($throwable->getMessage(), 'not valid JSON'),
+    );
 }
 removeTree($dir);
 // ---- normalize must not declare what it did not do -------------------------------------
@@ -295,7 +317,10 @@ try {
     RepositoryConfig::write($dir, 10);
     check('a width below the minimum is refused', false, 'accepted');
 } catch (Throwable $throwable) {
-    check('a width below the minimum is refused', str_contains($throwable->getMessage(), 'at least'));
+    check(
+        'a width below the minimum is refused',
+        str_contains($throwable->getMessage(), 'at least'),
+    );
 }
 check('and no marker was left behind', !is_file($dir . '/' . RepositoryConfig::FILE));
 removeTree($dir);
@@ -344,7 +369,10 @@ file_put_contents(
     $dir . '/.editorconfig',
     "root = true\n\n[*]\nmax_line_length = 80\n\n[*.php]\nmax_line_length = 120\n",
 );
-check('a php-specific section outranks the catch-all', EditorConfig::discover($dir)->maxLineLength === 120);
+check(
+    'a php-specific section outranks the catch-all',
+    EditorConfig::discover($dir)->maxLineLength === 120,
+);
 file_put_contents(
     $dir . '/.editorconfig',
     "root = true\n\n[*.php]\nmax_line_length = 120\n\n[*]\nmax_line_length = 80\n",
@@ -355,11 +383,17 @@ check('"off" is not a width', EditorConfig::discover($dir)->maxLineLength === nu
 file_put_contents($dir . '/.editorconfig', "root = true\n\n[*.md]\nmax_line_length = 80\n");
 check('a section for other files is ignored', EditorConfig::discover($dir)->maxLineLength === null);
 file_put_contents($dir . '/.editorconfig', "root = true\n\n[*]\nindent_size = 4\n");
-check('a config without the key declares nothing', EditorConfig::discover($dir)->maxLineLength === null);
+check(
+    'a config without the key declares nothing',
+    EditorConfig::discover($dir)->maxLineLength === null,
+);
 // The nearest file wins, and root = true stops the walk.
 mkdir($dir . '/nested', 0700, true);
 file_put_contents($dir . '/nested/.editorconfig', "[*]\nmax_line_length = 60\n");
-check('the nearest declaration wins', EditorConfig::discover($dir . '/nested')->maxLineLength === 60);
+check(
+    'the nearest declaration wins',
+    EditorConfig::discover($dir . '/nested')->maxLineLength === 60,
+);
 file_put_contents($dir . '/.editorconfig', "root = true\n\n[*]\nmax_line_length = 80\n");
 unlink($dir . '/nested/.editorconfig');
 check(
@@ -409,7 +443,10 @@ $dir = workspace();
 file_put_contents($dir . '/.editorconfig', "root = true\n\n[*]\nmax_line_length = 120\n");
 RepositoryConfig::write($dir, 40);
 $width = RepositoryConfig::widthFor($dir . '/a.php');
-check('the declaration outranks the recorded width', $width['width'] === 120 && $width['recorded'] === 40);
+check(
+    'the declaration outranks the recorded width',
+    $width['width'] === 120 && $width['recorded'] === 40,
+);
 removeTree($dir);
 // ---- exclusions: a fixture is input data, not source ------------------------------------
 $dir = workspace();
@@ -419,7 +456,10 @@ file_put_contents($dir . '/fixtures/keep.php', "<?php\nclass  Untouched{}\n");
 $fixture = (string) file_get_contents($dir . '/fixtures/keep.php');
 $run = (new Formatter())->format([$dir], 80, false, ['fixtures'], $dir);
 check('an excluded path is left alone', file_get_contents($dir . '/fixtures/keep.php') === $fixture);
-check('everything else is still formatted', file_get_contents($dir . '/a.php') !== "<?php\nclass  Foo{}\n");
+check(
+    'everything else is still formatted',
+    file_get_contents($dir . '/a.php') !== "<?php\nclass  Foo{}\n",
+);
 check(
     'and the excluded file is not reported as changed',
     !in_array($dir . '/fixtures/keep.php', $run['changed'], true),
@@ -482,8 +522,73 @@ check(
     $report['status'] === 'ready',
     implode(' | ', $report['findings']),
 );
-check('and the formatter is identified', ($report['formatters'][0]['tool'] ?? '') === 'php-cs-fixer');
+check(
+    'and the formatter is identified',
+    ($report['formatters'][0]['tool'] ?? '') === 'php-cs-fixer',
+);
 removeTree($dir);
+// The whole call is measured, not just its argument list. `pMaybeMultiline()`
+// is handed the arguments alone, so a call whose arguments fit while the call
+// does not used to come out on one long line — 203 of the 477 over-long lines
+// in a 119-file corpus were exactly that.
+$printer = new CanonicalPrinter(PhpVersion::fromString('8.2'), 60);
+$parser = (new ParserFactory())->createForVersion(PhpVersion::fromString('8.2'));
+// The argument list alone is 16 characters and fits a 60-column budget twice
+// over; the call around it does not. What sits in front of the *expression* —
+// the `return ` — is a level further up still and is not measured, so the case
+// is built on the call alone.
+$source = "<?php\nclass C { public function f(\$aaa, \$bbb, \$ccc) { new AnExtremelyLongClassNameForThisTest(\$aaa, \$bbb, \$ccc); } }\n";
+$wide = $printer->prettyPrintFile($parser->parse($source) ?? []);
+$longest = 0;
+
+foreach (explode("\n", $wide) as $line) {
+    $longest = max($longest, strlen($line));
+}
+check(
+    'a call is broken when the call, not just its arguments, exceeds the width',
+    $longest <= 60,
+    'longest line is ' . $longest . ":\n" . $wide,
+);
+// A chain: the receiver is rendered before the call's own argument list, so a
+// re-print keyed on a flag rather than on the list breaks the wrong one — the
+// short inner list, leaving the long line long.
+$chained = $printer->prettyPrintFile(
+    $parser->parse(
+        "<?php\nclass C { public function f(\$aaa, \$bbb) { \$q->firstMethodName(\$aaa)->secondMethodName(\$bbb, \$aaa); } }\n",
+    ) ?? [],
+);
+check(
+    'the outer list of a chain is the one that breaks',
+    // Both halves are needed: the negative one alone is satisfied by a chain
+    // that is not broken at all, whatever the receiver does.
+    str_contains($chained, "secondMethodName(\n") && !str_contains($chained, "firstMethodName(\n"),
+    $chained,
+);
+// Two empty argument lists are `===` to each other, so keying the re-print on
+// the list itself broke the receiver's — `$q->one(` on one line, `)->two();` on
+// the next. There is nothing to break in an empty list at all.
+$empty = (new CanonicalPrinter(PhpVersion::fromString('8.2'), 40))->prettyPrintFile(
+    $parser->parse(
+        "<?php\nclass C { public function f() { \$q->veryLongMethodNameOne()->veryLongMethodNameTwo(); } }\n",
+    ) ?? [],
+);
+check('an empty argument list is never broken', !str_contains($empty, "(\n"), $empty);
+// Attribute arguments. nikic prints those with `pCommaSeparated()`, which has
+// no width at all, so a long `#[AsCommand(...)]` stayed on one line however far
+// it ran.
+$attributed = $printer->prettyPrintFile(
+    $parser->parse(
+        "<?php\n#[AsCommand(name: 'a:command', description: 'A description long enough to push the attribute past the budget.')]\nfinal class R {}\n",
+    ) ?? [],
+);
+check(
+    'attribute arguments are broken like call arguments',
+    str_contains($attributed, "#[AsCommand(\n"),
+    $attributed,
+);
+// Printing is still a fixed point: the broken form prints back to itself.
+$again = $printer->prettyPrintFile($parser->parse($wide) ?? []);
+check('and the broken form prints back to itself', $again === $wide, $again);
 
 if ($problems !== []) {
     fwrite(
