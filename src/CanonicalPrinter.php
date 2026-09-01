@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Netresearch\PhpAstEdit;
 
 use PhpParser\Node;
+use PhpParser\Node\Expr;
 use PhpParser\PhpVersion;
 use PhpParser\PrettyPrinter\Standard;
 
@@ -29,6 +30,12 @@ final class CanonicalPrinter extends Standard
 
     private readonly int $width;
 
+    /**
+     * Set for the length of one re-print, and consumed by the first list that
+     * asks whether it fits. See `widthAware()`.
+     */
+    private bool $forceNextBreak = false;
+
     public function __construct(?PhpVersion $phpVersion = null, int $width = self::DEFAULT_WIDTH)
     {
         parent::__construct($phpVersion === null ? [] : ['phpVersion' => $phpVersion]);
@@ -38,6 +45,82 @@ final class CanonicalPrinter extends Standard
     public function width(): int
     {
         return $this->width;
+    }
+
+    protected function pExpr_FuncCall(Expr\FuncCall $node): string
+    {
+        return $this->widthAware(fn (): string => parent::pExpr_FuncCall($node));
+    }
+
+    protected function pExpr_MethodCall(Expr\MethodCall $node): string
+    {
+        return $this->widthAware(fn (): string => parent::pExpr_MethodCall($node));
+    }
+
+    protected function pExpr_NullsafeMethodCall(Expr\NullsafeMethodCall $node): string
+    {
+        return $this->widthAware(fn (): string => parent::pExpr_NullsafeMethodCall($node));
+    }
+
+    protected function pExpr_StaticCall(Expr\StaticCall $node): string
+    {
+        return $this->widthAware(fn (): string => parent::pExpr_StaticCall($node));
+    }
+
+    protected function pExpr_New(Expr\New_ $node): string
+    {
+        return $this->widthAware(fn (): string => parent::pExpr_New($node));
+    }
+
+    protected function pExpr_Array(Expr\Array_ $node): string
+    {
+        return $this->widthAware(fn (): string => parent::pExpr_Array($node));
+    }
+
+    protected function pExpr_List(Expr\List_ $node): string
+    {
+        return $this->widthAware(fn (): string => parent::pExpr_List($node));
+    }
+
+    /**
+     * Prints the node, and prints it again with its list broken when the result
+     * does not fit.
+     *
+     * `fitsOnOneLine()` measures the list alone, because that is all it is given.
+     * What stands in front of it on the line — `$this->logger->warning(`,
+     * `new JsonResponse(` — is known here, one level up, where the whole
+     * expression has been rendered. Measuring it turns the largest class of
+     * over-long output into broken lists: on a 119-file corpus, 203 of the 477
+     * lines over 120 columns were calls whose argument list fit the budget
+     * while the call did not.
+     *
+     * Still an approximation: what stands before the *expression* — `return `,
+     * `$x = ` — is a level further up again, and reaching it needs the document
+     * IR this printer deliberately does not build.
+     *
+     * @param callable(): string $print
+     */
+    private function widthAware(callable $print): string
+    {
+        $result = $print();
+
+        // Already broken, or short enough. A re-print in progress is left to
+        // finish: the flag it set belongs to the list it is breaking.
+        if ($this->forceNextBreak || str_contains($result, "\n")) {
+            return $result;
+        }
+
+        if ($this->indentLevel + strlen($result) <= $this->width) {
+            return $result;
+        }
+
+        $this->forceNextBreak = true;
+
+        try {
+            return $print();
+        } finally {
+            $this->forceNextBreak = false;
+        }
     }
 
     /** @param (Node|null)[] $nodes */
@@ -88,17 +171,23 @@ final class CanonicalPrinter extends Standard
     /**
      * The single-line rendering, or null when the list has to be broken.
      *
-     * The budget is compared against the indentation plus the list itself. It deliberately
-     * ignores what precedes the list on the line — `$this->logger->warning(` and the like —
-     * because the printer does not know it at this point. The approximation errs towards
-     * breaking too little, which the measured result (318 against 294 characters) says is
-     * close enough; a faithful answer needs a document IR of the kind Prettier builds, which
-     * is a different project.
+     * The budget is compared against the indentation plus the list itself, because the list
+     * is all this method is given. What precedes it on the line is measured one level up, in
+     * `widthAware()`, which re-prints the node with its list broken when the whole expression
+     * does not fit.
      *
      * @param (Node|null)[] $nodes
      */
     private function fitsOnOneLine(array $nodes): ?string
     {
+        if ($this->forceNextBreak) {
+            // Consumed by the outermost list of the re-print, so that the lists
+            // nested inside it are judged on their own merits again.
+            $this->forceNextBreak = false;
+
+            return null;
+        }
+
         if ($this->hasNodeWithComments($nodes)) {
             return null;
         }

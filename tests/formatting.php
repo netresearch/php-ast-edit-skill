@@ -15,6 +15,7 @@ if (!is_file($autoload)) {
 }
 require_once $autoload;
 use Netresearch\PhpAstEdit\CanonicalPrinter;
+use PhpParser\PhpVersion;
 use Netresearch\PhpAstEdit\Doctor;
 use Netresearch\PhpAstEdit\Editor;
 use Netresearch\PhpAstEdit\EditorConfig;
@@ -484,6 +485,37 @@ check(
 );
 check('and the formatter is identified', ($report['formatters'][0]['tool'] ?? '') === 'php-cs-fixer');
 removeTree($dir);
+
+// The whole call is measured, not just its argument list. `pMaybeMultiline()`
+// is handed the arguments alone, so a call whose arguments fit while the call
+// does not used to come out on one long line — 203 of the 477 over-long lines
+// in a 119-file corpus were exactly that.
+$printer = new CanonicalPrinter(PhpVersion::fromString('8.2'), 60);
+$parser  = (new ParserFactory())->createForVersion(PhpVersion::fromString('8.2'));
+
+// The argument list alone is 16 characters and fits a 60-column budget twice
+// over; the call around it does not. What sits in front of the *expression* —
+// the `return ` — is a level further up still and is not measured, so the case
+// is built on the call alone.
+$source = "<?php\nclass C { public function f(\$aaa, \$bbb, \$ccc) { new AnExtremelyLongClassNameForThisTest(\$aaa, \$bbb, \$ccc); } }\n";
+$wide   = $printer->prettyPrintFile($parser->parse($source) ?? []);
+
+$longest = 0;
+
+foreach (explode("\n", $wide) as $line) {
+    $longest = max($longest, strlen($line));
+}
+
+check(
+    'a call is broken when the call, not just its arguments, exceeds the width',
+    $longest <= 60,
+    'longest line is ' . $longest . ":\n" . $wide,
+);
+
+// Printing is still a fixed point: the broken form prints back to itself.
+$again = $printer->prettyPrintFile($parser->parse($wide) ?? []);
+
+check('and the broken form prints back to itself', $again === $wide, $again);
 
 if ($problems !== []) {
     fwrite(
