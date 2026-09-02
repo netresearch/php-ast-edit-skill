@@ -6,12 +6,22 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-09-02
+
+### Fixed
+
+- **The printer measures the line, not only the list on it.** `pMaybeMultiline()` and `pParams()` are handed a comma-separated list and compare the budget against that alone, so a call or a signature came out on one long line whenever its list fitted the budget and the whole line did not — `return new JsonResponse(` and `private function verifyUsernameFirst(` were never counted. Measured on a 119-file extension re-printed at 120 columns: 203 of 477 over-long lines were calls, 35 were signatures. Every node that puts a list behind a prefix now prints, measures, and prints again with that list broken — 598 over-long lines before, 246 after.
+- Attribute arguments had no width at all: nikic prints them with `pCommaSeparated()`, so `#[AsCommand(name: …, description: …)]` stayed on one line however far it ran.
+- A declaration's rendering carries its body's line breaks, and attribute groups sit on their own lines in front of the signature. The measurement takes the line the list opens on rather than the first line of the rendering, which would be `#[Attr]`.
+- The re-print is keyed on the depth of the node being printed. Keyed on a flag, the receiver of a chain consumed it and the short inner list broke while the long line stayed; keyed on the list itself, two empty argument lists compared equal — PHP compares arrays by value — and `$q->one()->two()` split an empty list across two lines.
+- `pPropertyHook()` is the fifth printer that puts a parameter list behind a prefix and was not covered.
+
 ### Changed
 
 - **Line width is the project's declaration, not this tool's.** It is read from `.editorconfig` — `max_line_length` under `[*]` or a section naming `php` — and `normalize --width` is gone. A repository that declares no width cannot be normalised: the printer would be breaking lines by a number nobody chose, which is exactly the decision that belongs to the project. `printWidth` in `.php-ast-edit.json` stays as the record of what the last normalisation ran at, so a repository declared canonical before this change keeps printing at that width and is told what to add.
 - **`doctor` checks that the rules exist, not only that a formatter does.** Canonical printing removes blank lines, and part of that is restorable by rule. Measured on a 121-file TYPO3 extension whose formatting was clean beforehand: 22.9% of the removed blank lines preceded a member (`class_attributes_separation`), 7.0% the file head, 6.6% a docblock, 4.5% a `return` or `throw`, 2.7% a scope block (`blank_line_before_statement`) — **43.6% restorable, 56.4% not**, the remainder being the author's paragraphing before plain calls, assignments and comments, which no rule reconstructs. `doctor` names the rules a project is missing and what each recovers, and states the share that no rule reaches.
 - Against intuition, scope blocks are 2.7% of it rather than the bulk; the large restorable share sits before declarations. And the majority is not restorable — the opposite of what a first, coarser classification of the same data suggested, which had dropped a ninth of the sample into an unlisted remainder.
-- No php-cs-fixer rule breaks a method chain that is already on one line, and the printer does not either — that would be a rule this tool brought with it. `formatting-contract.md` records it as the reason a project may not be able to hold its declared width.
+- No php-cs-fixer rule breaks a method chain that is already on one line, and the printer does not either — that would be a rule this tool brought with it. `formatting-contract.md` records it as the reason a project may not be able to hold its declared width. Since then `netresearch/typo3-ci-workflows` v1.12.0 ships one as a custom fixer, registered but not enabled, so a project can adopt it as its own rule.
 - This repository declares `max_line_length = 100` and carries the four restoring rules its own `doctor` asked for.
 
 ## [0.2.0] - 2026-08-31
@@ -92,6 +102,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - `php-structured-edit` Agent Skill with the operation reference and a wrapper resolving the repository binary, `vendor/bin`, a local PHAR, or `PATH`.
 - PHAR build via `scripts/build-phar.php`.
 
-[Unreleased]: https://github.com/netresearch/php-ast-edit-skill/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/netresearch/php-ast-edit-skill/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/netresearch/php-ast-edit-skill/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/netresearch/php-ast-edit-skill/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/netresearch/php-ast-edit-skill/releases/tag/v0.1.0
