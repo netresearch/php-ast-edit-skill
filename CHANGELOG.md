@@ -6,6 +6,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-09-04
+
 ### Fixed
 
 - **The printer keeps the paragraph breaks between statements.** A blank line an author put between two ordinary statements was the largest single share of what a canonical print removed — measured at ~45% — and no formatter rule puts it back: the break carries the author's paragraphing and nothing derives it, which `doctor` reported as unrecoverable. It is not, because the parser hands the printer the line each node starts and ends on. `pStmts()` now emits one blank line wherever the source had at least one, and drops the rest. Measured on `netresearch/t3x-nr-passkeys-be`: printing the whole tree and running the project's formatter left 17 removed blank lines across 10 files before this change and **nothing** after it, so a repository that declares itself canonical now actually sits on that fixed point and can gate it.
@@ -111,7 +113,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - `php-structured-edit` Agent Skill with the operation reference and a wrapper resolving the repository binary, `vendor/bin`, a local PHAR, or `PATH`.
 - PHAR build via `scripts/build-phar.php`.
 
-[Unreleased]: https://github.com/netresearch/php-ast-edit-skill/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/netresearch/php-ast-edit-skill/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/netresearch/php-ast-edit-skill/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/netresearch/php-ast-edit-skill/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/netresearch/php-ast-edit-skill/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/netresearch/php-ast-edit-skill/releases/tag/v0.1.0
