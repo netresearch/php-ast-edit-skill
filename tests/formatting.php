@@ -204,6 +204,62 @@ check(
 );
 removeTree($editDir);
 
+// A path the project excluded is not this tool's to re-print. `format` and `normalize`
+// honour the list; `apply` did not, so an edit to an excluded file was printed canonically
+// anyway — and once the project formatter runs as part of the write, that reaches a file
+// the project took out of its reach on purpose.
+$excludedDir = workspace();
+RepositoryConfig::write($excludedDir, 120, ['keep-away.php']);
+$untouchable = $excludedDir . '/keep-away.php';
+file_put_contents(
+    $untouchable,
+    <<<'PHP'
+    <?php
+    
+    // The blank line below is what a canonical print removes.
+    
+    $config = ['state' => 'beta'];
+    PHP . "\n",
+);
+$excludedResult = (new Editor())->apply(
+    [
+        'files' => [
+            [
+                'path' => $untouchable,
+                'edits' => [
+                    [
+                        'target' => ['ref' => 'stmts[0].expr.expr.items[0].value'],
+                        'operation' => 'set_string',
+                        'value' => 'stable',
+                    ],
+                ],
+            ],
+        ],
+    ],
+    true,
+)['files'][0];
+check(
+    'an excluded file is not printed canonically',
+    $excludedResult['printer'] === 'format-preserving',
+    (string) $excludedResult['printer'],
+);
+check(
+    'and the exclusion is named',
+    str_contains((string) ($excludedResult['warning'] ?? ''), 'EXCLUDED'),
+    (string) ($excludedResult['warning'] ?? ''),
+);
+check(
+    'and only the edited line changes',
+    $excludedResult['changedLines'] === 2,
+    (string) $excludedResult['changedLines'],
+);
+check(
+    'so the blank line the project kept survives',
+    str_contains((string) $excludedResult['code'], "removes.\n\n\$config"),
+    (string) $excludedResult['code'],
+);
+removeTree($excludedDir);
+
 // ---- The declaration decides the printer -----------------------------------------------
 $dir = workspace();
 file_put_contents(

@@ -215,4 +215,41 @@ final class RepositoryConfig
 
         return $path;
     }
+
+    /**
+     * Whether the project put this file out of the tool's reach.
+     *
+     * `format` and `normalize` read the list when they collect files; an edit reaches a file
+     * by name and never collects, so it used to print an excluded file canonically anyway.
+     * The exclusion exists because the pair of printer and formatter must not run there —
+     * a TYPO3 `ext_emconf.php` cannot carry the `declare(strict_types=1)` the formatter adds,
+     * and TER stops parsing it — so it has to hold for every entry point, not only the ones
+     * that walk a directory.
+     */
+    public function excludes(string $file): bool
+    {
+        if ($this->exclude === [] || $this->path === null) {
+            return false;
+        }
+        $target = realpath($file);
+
+        if ($target === false) {
+            return false;
+        }
+        $root = \dirname($this->path);
+
+        foreach ($this->exclude as $entry) {
+            $candidate = realpath($root . DIRECTORY_SEPARATOR . ltrim($entry, '/'));
+
+            if ($candidate === false) {
+                continue;
+            }
+
+            if ($target === $candidate || str_starts_with($target, $candidate . DIRECTORY_SEPARATOR)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
 }

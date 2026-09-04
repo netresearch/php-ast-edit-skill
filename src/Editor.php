@@ -247,6 +247,20 @@ final class Editor
         $config = RepositoryConfig::discover($transaction->path);
         $declared = RepositoryConfig::widthFor($transaction->path);
 
+        if ($config->excludes($transaction->path)) {
+            // The project took this path out of the tool's reach. Canonical printing is half of a
+            // pair whose other half is the project formatter, and the exclusion exists so that
+            // neither runs here; printing canonically anyway would hand the formatter a file the
+            // project never meant it to see.
+            $transaction->printer = 'format-preserving';
+            $transaction->warning = sprintf(
+                'EXCLUDED: %s lists this path under `exclude`, so the edit was printed format-preserving and the project formatter was not run. Remove the entry if the file is meant to be canonical.',
+                RepositoryConfig::FILE,
+            );
+
+            return;
+        }
+
         if ($config->canonical && $declared['width'] === null) {
             // Declared canonical, but the project states no width anywhere the printer may
             // read. Print by the width the normalisation recorded rather than reflowing the
