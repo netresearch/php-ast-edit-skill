@@ -31,6 +31,8 @@ final class NodeLocation
 
     public function replace(Node $replacement, array &$roots): void
     {
+        $this->carryPosition($replacement, $this->node);
+
         if ($this->rootIndex !== null) {
             $index = $this->findIdentityIndex($roots);
             $roots[$index] = $replacement;
@@ -117,6 +119,8 @@ final class NodeLocation
      */
     public function insertInto(string $property, array $nodes, int|string $position): void
     {
+        $this->clearPosition($nodes);
+
         $items = $this->childList($property);
         $index = $this->resolvePosition($position, count($items), $property, true);
         array_splice($items, $index, 0, $nodes);
@@ -140,6 +144,8 @@ final class NodeLocation
                     ),
                 );
             }
+            $this->carryPosition($replacement, $this->node->{$property});
+
             $this->node->{$property} = $replacement;
 
             return;
@@ -149,6 +155,8 @@ final class NodeLocation
         if (!array_key_exists($index, $items)) {
             throw new EditException(sprintf('Index %d is out of range for "%s".', $index, $property));
         }
+        $this->carryPosition($replacement, $items[$index]);
+
         $items[$index] = $replacement;
         $this->node->{$property} = $items;
     }
@@ -294,6 +302,8 @@ final class NodeLocation
     /** @param list<Node> $nodes */
     private function insert(array $nodes, array &$roots, int $delta): void
     {
+        $this->clearPosition($nodes);
+
         if ($this->rootIndex !== null) {
             $index = $this->findIdentityIndex($roots);
             array_splice($roots, $index + $delta, 0, $nodes);
@@ -321,5 +331,47 @@ final class NodeLocation
         }
 
         throw new EditException('AST target is no longer attached; an earlier edit invalidated it.');
+    }
+
+    /**
+     * Give a replacement the position its predecessor held.
+     *
+     * A node parsed from a snippet starts at line 1, which the printer would read as a large
+     * gap to whatever follows and answer with a blank line nobody wrote. The replacement
+     * occupies the replaced node's place, so it inherits its lines. Nodes that are inserted
+     * rather than substituted have no predecessor and keep none: they abut their neighbours.
+     *
+     * A slot addressed by name may hold null or a plain value rather than a node; there is
+     * then no position to inherit and the replacement keeps its own.
+     */
+    private function carryPosition(Node $replacement, mixed $replaced): void
+    {
+        if (!$replaced instanceof Node) {
+            return;
+        }
+        $attributes = $replacement->getAttributes();
+        $attributes['startLine'] = $replaced->getStartLine();
+        $attributes['endLine'] = $replaced->getEndLine();
+        $replacement->setAttributes($attributes);
+    }
+
+    /**
+     * Take the source position off nodes that are being inserted rather than substituted.
+     *
+     * They were parsed from a snippet and carry its lines — 1, 2, 3 — which the printer would
+     * read as real positions and answer with paragraph breaks nobody wrote: an insertion at
+     * the head of a body left a blank line between itself and the statement it was put in
+     * front of. Only the outermost node loses its position; the statements inside a snippet
+     * keep theirs relative to each other, so paragraphing written into the snippet survives.
+     *
+     * @param list<Node> $nodes
+     */
+    private function clearPosition(array $nodes): void
+    {
+        foreach ($nodes as $node) {
+            $attributes = $node->getAttributes();
+            unset($attributes['startLine'], $attributes['endLine']);
+            $node->setAttributes($attributes);
+        }
     }
 }

@@ -78,6 +78,132 @@ foreach ([40, 80, 200] as $width) {
     $twice = $printer->prettyPrintFile($parser->parse($once));
     check("printing is idempotent at width {$width}", $once === $twice);
 }
+// ---- Paragraph breaks survive the print ------------------------------------------------
+// A blank line an author put between two ordinary statements is the largest share of what a
+// canonical print removes, and no formatter rule puts it back — Doctor names that share
+// unrecoverable. The parser knows the gap from the line attributes, so the printer keeps it.
+$paragraphs = <<<'PHP'
+<?php
+
+function f()
+{
+    $a = 1;
+    $b = 2;
+
+    $c = 3;
+
+
+    $d = 4;
+}
+PHP;
+$kept = (new CanonicalPrinter(null, 120))->prettyPrintFile($parser->parse($paragraphs));
+check(
+    'a paragraph break between statements survives',
+    str_contains($kept, "\$b = 2;\n\n    \$c = 3;"),
+    $kept,
+);
+check(
+    'statements the author kept together stay together',
+    str_contains($kept, "\$a = 1;\n    \$b = 2;"),
+    $kept,
+);
+check('several blank lines collapse to one', !str_contains($kept, "\n\n\n    \$d"), $kept);
+check(
+    'preserving paragraphs is still idempotent',
+    (new CanonicalPrinter(null, 120))->prettyPrintFile($parser->parse($kept)) === $kept,
+    $kept,
+);
+$commented = <<<'PHP'
+<?php
+
+function f()
+{
+    $a = 1;
+
+    // why
+    $b = 2;
+}
+PHP;
+$keptComment = (new CanonicalPrinter(null, 120))->prettyPrintFile($parser->parse($commented));
+check(
+    'the gap is measured to the comment, not the statement',
+    str_contains($keptComment, "\$a = 1;\n\n    // why\n    \$b = 2;"),
+    $keptComment,
+);
+check(
+    'no blank line carries indentation',
+    preg_match('/\n[ \t]+\n/', $keptComment) === 0,
+    $keptComment,
+);
+
+// A node an edit brings in is parsed from a snippet and starts at line 1. Read as a source
+// position, that is a gap, and the printer answers it with a blank line nobody typed.
+$editDir = workspace();
+$editPath = $editDir . '/r.php';
+RepositoryConfig::write($editDir, 120);
+$paragraphed = <<<'PHP'
+<?php
+
+function f()
+{
+    $a = 1;
+    $b = 2;
+
+    $c = 3;
+}
+PHP . "\n";
+$firstStatement = ['ref' => 'stmts[0].stmts[0]'];
+$applyOne = static function (array $edit) use ($editPath): array {
+    return (new Editor())->apply(['files' => [['path' => $editPath, 'edits' => [$edit]]]], true)['files'][0];
+};
+// A replacement inherits the position of the node it replaces.
+file_put_contents($editPath, $paragraphed);
+$replaced = $applyOne(['target' => $firstStatement, 'operation' => 'replace_statement', 'php' => '$a = 99;']);
+check(
+    'replacing a statement inserts no blank line',
+    $replaced['changedLines'] === 2,
+    (string) $replaced['changedLines'],
+);
+check(
+    'and leaves the paragraph break where it was',
+    str_contains((string) $replaced['code'], "\$b = 2;\n\n    \$c = 3;"),
+    (string) $replaced['code'],
+);
+// An insertion has no predecessor to inherit from, so it must carry no position at all.
+file_put_contents($editPath, $paragraphed);
+$inserted = $applyOne(['target' => $firstStatement, 'operation' => 'insert_before', 'php' => '$z = 0;']);
+check(
+    'inserting before the first statement adds one line, not two',
+    $inserted['changedLines'] === 1,
+    (string) $inserted['changedLines'],
+);
+check(
+    'the insertion abuts the statement it precedes',
+    str_contains((string) $inserted['code'], "\$z = 0;\n    \$a = 1;"),
+    (string) $inserted['code'],
+);
+file_put_contents($editPath, $paragraphed);
+$into = $applyOne(
+    [
+        'target' => ['ref' => 'stmts[0]'],
+        'operation' => 'insert_into',
+        'property' => 'stmts',
+        'position' => 'start',
+        'php' => '$z = 0;',
+    ],
+);
+check(
+    'insert_into at the start adds one line too',
+    $into['changedLines'] === 1,
+    (string) $into['changedLines'],
+);
+check(
+    'and the paragraph further down is untouched',
+    str_contains((string) $into['code'], "\$b = 2;\n\n    \$c = 3;"),
+    (string) $into['code'],
+);
+removeTree($editDir);
+
 // ---- The declaration decides the printer -----------------------------------------------
 $dir = workspace();
 file_put_contents(
@@ -213,11 +339,7 @@ $cases = [
     ],
     'set_doc_comment' => [
         "<?php\nclass Foo\n{\n    public function bar()\n    {\n        return 1;\n    }\n}\n",
-        [
-            'target' => ['ref' => 'stmts[0].stmts[0]'],
-            'operation' => 'set_doc_comment',
-            'value' => 'Docs.',
-        ],
+        ['target' => $firstStatement, 'operation' => 'set_doc_comment', 'value' => 'Docs.'],
         3,
     ],
     'replace_expression' => [

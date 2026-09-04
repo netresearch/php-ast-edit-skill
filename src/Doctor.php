@@ -47,11 +47,15 @@ final class Doctor
     ];
 
     /**
-     * What no rule restores: a blank line the author put between two ordinary statements.
-     * Measured at ~45% of the removed blank lines — the largest single share, and the reason
-     * canonical formatting is a decision rather than an improvement.
+     * What no rule restores.
+     *
+     * Until the printer kept them, a blank line an author put between two ordinary statements
+     * was lost: measured at ~45% of the removed blank lines, the largest single share, and the
+     * reason canonical formatting used to be a trade rather than an improvement. The printer
+     * now carries the gap over from the line attributes the parser supplies, so nothing in
+     * this class is unrecoverable any more. The field stays because callers read it.
      */
-    private const UNRECOVERABLE_SHARE = '~45% — blank lines between plain assignments and calls, ' . 'which carry the author\'s paragraphing and no rule can reconstruct';
+    private const UNRECOVERABLE_SHARE = 'none — the printer keeps the paragraph breaks between statements, which used to be ~45% of what a canonical print removed';
 
     public function examine(string $root): array
     {
