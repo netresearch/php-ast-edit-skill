@@ -362,8 +362,11 @@ final class NodeLocator
             $matches[] = new NodeLocation($node, $parent, $property, $index, $rootIndex, $depth, $path);
         }
 
-        if ($node instanceof Stmt\ClassLike && $node->name !== null) {
-            $inside = $node->name->toString();
+        if ($node instanceof Stmt\ClassLike) {
+            // An anonymous class has no name to be the owner of anything, and it is not part of
+            // the class it sits inside: leaving `$inside` alone would let `method:Outer::run`
+            // resolve a method declared in an anonymous class within Outer, and edit that.
+            $inside = $node->name === null ? null : $node->name->toString();
         }
 
         foreach ($node->getSubNodeNames() as $subNodeName) {

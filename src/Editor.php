@@ -1781,6 +1781,13 @@ final class Editor
         if (!preg_match('/^[A-Za-z_\x80-\xff][A-Za-z0-9_\x80-\xff]*$/', $to)) {
             throw new EditException('rename_variable: "' . $to . '" is not a variable name.');
         }
+
+        if ($from === 'this' || $to === 'this') {
+            // `$this` is the receiver, not a local. Renaming it away would leave every
+            // `$this->…` in the scope pointing at a variable that holds nothing; renaming
+            // something else to it would silently take the receiver's place.
+            throw new EditException('rename_variable will not rename $this.');
+        }
         $renamed = 0;
         $this->renameInScope($scope, $from, $to, $renamed);
 
@@ -1799,6 +1806,14 @@ final class Editor
      * A `Variable`'s name is a string only when it was written literally; for `$$name` it is
      * an expression and there is nothing to rename. A `Param`'s name is a `Variable`, so it
      * is reached by the same branch.
+     *
+     * Descent stops where the name means something else. A nested named function, method or
+     * class body is a scope of its own: `$nonce` in there is not the `$nonce` being renamed,
+     * and moving it changes code the caller did not ask about. A closure is the interesting
+     * case — it sees nothing of its surroundings unless it says so, so it is entered only
+     * when it captures the name in `use`, and then the capture and the body move together.
+     * An arrow function captures by value on its own, so it is entered unless a parameter of
+     * its own shadows the name.
      */
     private function renameInScope(Node $node, string $from, string $to, int &$renamed): void
     {
@@ -1811,7 +1826,9 @@ final class Editor
             $value = $node->{$subNodeName};
 
             if ($value instanceof Node) {
-                $this->renameInScope($value, $from, $to, $renamed);
+                if (!$this->bindsItsOwn($value, $from)) {
+                    $this->renameInScope($value, $from, $to, $renamed);
+                }
 
                 continue;
             }
@@ -1821,10 +1838,57 @@ final class Editor
             }
 
             foreach ($value as $child) {
-                if ($child instanceof Node) {
+                if ($child instanceof Node && !$this->bindsItsOwn($child, $from)) {
                     $this->renameInScope($child, $from, $to, $renamed);
                 }
             }
         }
+    }
+
+    /**
+     * Whether `$name` inside this node is a different variable from the one outside it.
+     *
+     * The question a rename has to answer before it descends. PHP's scoping makes it a short
+     * list: a function, a method and a class body share nothing with their surroundings; a
+     * closure shares only what it names in `use`; an arrow function shares everything, until
+     * a parameter of its own takes the name back.
+     */
+    private function bindsItsOwn(Node $node, string $name): bool
+    {
+        if ($node instanceof Stmt\Function_ || $node instanceof Stmt\ClassMethod || $node instanceof Stmt\ClassLike) {
+            return true;
+        }
+
+        if ($node instanceof Expr\Closure) {
+            foreach ($node->uses as $use) {
+                if ((string) $use->var->name === $name) {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        if ($node instanceof Expr\ArrowFunction) {
+            return $this->hasParameterNamed($node->params, $name);
+        }
+
+        return false;
+    }
+
+    /**
+     * Whether one of these parameters takes the name for itself.
+     *
+     * @param list<Node\Param> $params
+     */
+    private function hasParameterNamed(array $params, string $name): bool
+    {
+        foreach ($params as $param) {
+            if ($param->var instanceof Expr\Variable && is_string($param->var->name) && $param->var->name === $name) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
