@@ -35,6 +35,8 @@ final class RepositoryConfig
         public readonly int $width,
         public readonly ?string $path,
         public readonly array $exclude = [],
+        /** @var list<string>|null */
+        public readonly ?array $formatter = null,
     ) {}
 
     /** Walk up from a file or directory until the marker turns up. */
@@ -87,12 +89,22 @@ final class RepositoryConfig
             throw new EditException($path . ': exclude must be an array of paths.');
         }
         self::assertExclusions($exclude, $path . ': ');
+        $formatter = $data['formatter'] ?? null;
+
+        if ($formatter !== null) {
+            if (!is_array($formatter)) {
+                throw new EditException($path . ": formatter must be an array of command arguments.");
+            }
+            self::assertFormatter($formatter, $path . ": ");
+            $formatter = array_values(array_map(strval(...), $formatter));
+        }
 
         return new self(
             (bool) ($data['canonical'] ?? false),
             $width,
             $path,
             array_values(array_map(strval(...), $exclude)),
+            $formatter,
         );
     }
 
@@ -251,5 +263,47 @@ final class RepositoryConfig
         }
 
         return false;
+    }
+
+    /** The element of a declared formatter that stands for the files an edit wrote. */
+    public const FILES_PLACEHOLDER = '{files}';
+
+    /**
+     * The formatter the project declares, as an argv list with one `{files}` placeholder.
+     *
+     * A list rather than a command line: nothing goes through a shell, so a path with a space
+     * in it cannot become two arguments and nothing in the declaration can be made to run a
+     * second command. The placeholder is a whole element, expanded to the files an edit wrote
+     * — running the formatter over the entire tree would put unrelated files into the diff of
+     * whatever change happened to be made.
+     *
+     * @param array<mixed> $formatter
+     */
+    public static function assertFormatter(array $formatter, string $prefix = ''): void
+    {
+        if ($formatter === []) {
+            throw new EditException($prefix . 'formatter must not be empty.');
+        }
+        $placeholders = 0;
+
+        foreach ($formatter as $argument) {
+            if (!is_string($argument) || $argument === '') {
+                throw new EditException($prefix . 'formatter entries must be non-empty strings.');
+            }
+
+            if ($argument === self::FILES_PLACEHOLDER) {
+                ++$placeholders;
+            }
+        }
+
+        if ($placeholders !== 1) {
+            throw new EditException(
+                sprintf(
+                    '%sformatter must carry the %s placeholder exactly once, so the files an edit wrote can be named.',
+                    $prefix,
+                    self::FILES_PLACEHOLDER,
+                ),
+            );
+        }
     }
 }

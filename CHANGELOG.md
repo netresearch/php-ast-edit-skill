@@ -6,6 +6,15 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Added
+
+- **`apply` finishes the file.** The fixed point belongs to the printer and the project's formatter together, so a write that stopped after printing left a shape nobody wants: adding one 9-line method to a canonical TYPO3 extension reported 34 changed lines, the remainder trailing commas and `declare` spacing that only the formatter restores — and the agent had to know that, and run a second command. A repository can now declare its formatter in `.php-ast-edit.json` and `apply` runs it on the files it wrote: `"formatter": ["php", ".Build/bin/php-cs-fixer", "fix", "--config=Build/.php-cs-fixer.php", "--path-mode=intersection", "{files}"]`. The same edit now reports 10 changed lines, and the diff is the 8 lines it added. The report carries `"formatter": "ran"` and `changedLines` describes the file that survives.
+- The declaration is an argv list, never a command line: nothing goes through a shell, so a path with a space in it stays one argument and the declaration cannot chain a second command. `{files}` is a whole element and expands to the files the edit wrote — running the formatter over the tree would put unrelated files into the diff of whatever change happened to be made. A non-zero exit rolls the whole write back and reports what the formatter said.
+
+### Fixed
+
+- **`apply` honours the project's `exclude` list.** `format` and `normalize` read it when they collect files; an edit reaches a file by name and never collects, so an excluded file was printed canonically anyway. The exclusion is not a scanning convenience: a TYPO3 `ext_emconf.php` cannot carry the `declare(strict_types=1)` a formatter adds, because TER stops parsing it, so the project takes the file out of the reach of both tools. Setting `state` in that file reported 3 changed lines and dropped a blank line; it now reports 2 — the line the edit asked for — prints format-preserving, and says `EXCLUDED` with the reason.
+
 ## [0.4.0] - 2026-09-04
 
 ### Fixed

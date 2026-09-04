@@ -260,6 +260,68 @@ check(
 );
 removeTree($excludedDir);
 
+// The fixed point belongs to the printer and the project's formatter together, so an edit
+// that stops after printing leaves a file in a shape nobody wants: on a canonical TYPO3
+// extension, adding one 9-line method reported 34 changed lines, the remainder trailing
+// commas and `declare` spacing that only the formatter puts back. The project declares its
+// formatter and `apply` runs it, on the files it wrote and no others.
+$formatterDir = workspace();
+file_put_contents(
+    $formatterDir . '/fmt.php',
+    <<<'PHP'
+    <?php
+    // A stand-in for the project's formatter: it restores the trailing comma a canonical
+    // print drops, on exactly the files it is handed.
+    foreach (array_slice($argv, 1) as $file) {
+        $text = str_replace("'stable']", "'stable',]", (string) file_get_contents($file));
+        file_put_contents($file, $text . "// the formatter was here\n");
+    }
+    PHP . "\n",
+);
+file_put_contents(
+    $formatterDir . '/' . RepositoryConfig::FILE,
+    json_encode(
+        ['canonical' => true, 'printWidth' => 120, 'formatter' => ['php', 'fmt.php', '{files}']],
+        JSON_PRETTY_PRINT,
+    ) . "\n",
+);
+$formatted = $formatterDir . '/f.php';
+file_put_contents($formatted, "<?php\n\n\$config = ['state' => 'beta'];\n");
+$formatterResult = (new Editor())->apply(
+    [
+        'files' => [
+            [
+                'path' => $formatted,
+                'edits' => [
+                    [
+                        'target' => ['ref' => 'stmts[0].expr.expr.items[0].value'],
+                        'operation' => 'set_string',
+                        'value' => 'stable',
+                    ],
+                ],
+            ],
+        ],
+    ],
+)['files'][0];
+check(
+    'the declared formatter runs on what apply wrote',
+    str_contains((string) file_get_contents($formatted), "'stable',]"),
+    (string) file_get_contents($formatted),
+);
+check(
+    'and the report says it ran',
+    ($formatterResult['formatter'] ?? null) === 'ran',
+    (string) ($formatterResult['formatter'] ?? 'absent'),
+);
+check(
+    // Two for the line the edit rewrote, one for the line the formatter appended: without
+    // the formatter run this would be two, so the number describes the file that survives.
+    'changedLines counts the file the formatter left behind',
+    $formatterResult['changedLines'] === 3,
+    (string) $formatterResult['changedLines'],
+);
+removeTree($formatterDir);
+
 // ---- The declaration decides the printer -----------------------------------------------
 $dir = workspace();
 file_put_contents(

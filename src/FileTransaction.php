@@ -53,4 +53,10 @@ final class FileTransaction
     {
         return $this->source === null ? null : hash('sha256', $this->source);
     }
+
+    /**
+     * What the project's declared formatter did, or null where none is declared or the file
+     * was printed format-preserving and is therefore not the formatter's to touch.
+     */
+    public ?string $formatter = null;
 }

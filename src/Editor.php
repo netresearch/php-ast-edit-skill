@@ -526,6 +526,7 @@ final class Editor
                 ];
                 $this->atomicWrite($transaction->path, (string) $transaction->output);
             }
+            $this->runFormatter($transactions);
         } catch (\Throwable $failure) {
             $restoreErrors = [];
 
@@ -607,6 +608,10 @@ final class Editor
             'editsApplied' => count($transaction->resolved),
             'dryRun' => $dryRun,
         ];
+
+        if ($transaction->formatter !== null) {
+            $result['formatter'] = $transaction->formatter;
+        }
 
         if ($transaction->warning !== null) {
             $result['warning'] = $transaction->warning;
@@ -1560,5 +1565,106 @@ final class Editor
         }
 
         return $value;
+    }
+
+    /**
+     * Run the formatter the project declared, on the files this write produced.
+     *
+     * The fixed point belongs to the printer and the formatter together, so a write that
+     * stops after printing leaves a shape nobody wants: adding one 9-line method to a
+     * canonical TYPO3 extension reported 34 changed lines, the remainder trailing commas and
+     * `declare` spacing that only the formatter restores. Running it here makes the write one
+     * step for whoever calls this, and makes `changedLines` describe the file that survives.
+     *
+     * Only the files this write produced, never the tree: formatting everything would put
+     * unrelated files into the diff of whatever change happened to be made. Files printed
+     * format-preserving are left out too — the project either excluded them or has not
+     * declared itself canonical, and in both cases the formatter is not ours to run.
+     *
+     * @param list<FileTransaction> $transactions
+     */
+    private function runFormatter(array $transactions): void
+    {
+        /** @var array<string, array{formatter: list<string>, transactions: list<FileTransaction>}> $groups */
+        $groups = [];
+
+        foreach ($transactions as $transaction) {
+            if (!$transaction->changed || $transaction->mode === 'delete' || $transaction->printer !== 'canonical') {
+                continue;
+            }
+            $config = RepositoryConfig::discover($transaction->path);
+
+            if ($config->formatter === null || $config->path === null) {
+                continue;
+            }
+            $root = \dirname($config->path);
+            $groups[$root] ??= ['formatter' => $config->formatter, 'transactions' => []];
+            $groups[$root]['transactions'][] = $transaction;
+        }
+
+        foreach ($groups as $root => $group) {
+            $command = [];
+
+            foreach ($group['formatter'] as $argument) {
+                if ($argument !== RepositoryConfig::FILES_PLACEHOLDER) {
+                    $command[] = $argument;
+
+                    continue;
+                }
+
+                foreach ($group['transactions'] as $transaction) {
+                    $command[] = $transaction->path;
+                }
+            }
+            $this->executeFormatter($command, $root);
+
+            foreach ($group['transactions'] as $transaction) {
+                $after = file_get_contents($transaction->path);
+
+                if ($after === false) {
+                    throw new EditException(
+                        'Cannot re-read ' . $transaction->path . ' after the declared formatter ran.',
+                    );
+                }
+                $transaction->output = $after;
+                $transaction->changedLines = $transaction->source === null ? substr_count($after, "\n") : $this->countChangedLines($transaction->source, $after);
+                $transaction->formatter = 'ran';
+            }
+        }
+    }
+
+    /**
+     * Run one declared formatter command, from the repository root.
+     *
+     * No shell: the declaration is an argv list, so a path carrying a space stays one
+     * argument and nothing in it can chain a second command. A non-zero exit is a failure of
+     * the write — the caller rolls the files back and reports what the formatter said.
+     *
+     * @param list<string> $command
+     */
+    private function executeFormatter(array $command, string $root): void
+    {
+        $descriptors = [1 => ['pipe', 'w'], 2 => ['pipe', 'w']];
+        $process = proc_open($command, $descriptors, $pipes, $root);
+
+        if (!is_resource($process)) {
+            throw new EditException('Cannot run the declared formatter: ' . implode(' ', $command));
+        }
+        $stdout = (string) stream_get_contents($pipes[1]);
+        $stderr = (string) stream_get_contents($pipes[2]);
+        fclose($pipes[1]);
+        fclose($pipes[2]);
+        $status = proc_close($process);
+
+        if ($status !== 0) {
+            throw new EditException(
+                sprintf(
+                    'The declared formatter exited %d: %s%s',
+                    $status,
+                    implode(' ', $command),
+                    trim($stderr . "\n" . $stdout) === '' ? '' : "\n" . trim($stderr . "\n" . $stdout),
+                ),
+            );
+        }
     }
 }
