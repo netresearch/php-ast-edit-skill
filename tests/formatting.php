@@ -18,6 +18,7 @@ use Netresearch\PhpAstEdit\CanonicalPrinter;
 use Netresearch\PhpAstEdit\Doctor;
 use Netresearch\PhpAstEdit\Editor;
 use Netresearch\PhpAstEdit\EditorConfig;
+use Netresearch\PhpAstEdit\Exception\EditException;
 use Netresearch\PhpAstEdit\Formatter;
 use Netresearch\PhpAstEdit\RepositoryConfig;
 use PhpParser\ParserFactory;
@@ -321,6 +322,95 @@ check(
     (string) $formatterResult['changedLines'],
 );
 removeTree($formatterDir);
+
+// The guarantees the formatter run must not weaken, each measured rather than assumed.
+$hardDir = workspace();
+file_put_contents(
+    $hardDir . '/' . RepositoryConfig::FILE,
+    json_encode(
+        [
+            'canonical' => true,
+            'printWidth' => 120,
+            'exclude' => ['Generated'],
+            'formatter' => ['php', 'break.php', '{files}'],
+        ],
+        JSON_PRETTY_PRINT,
+    ) . "\n",
+);
+// A formatter that exits zero having written something that is no longer PHP, and that
+// says a great deal on stderr on the way — enough to fill a pipe nobody is draining.
+file_put_contents(
+    $hardDir . '/break.php',
+    <<<'PHP'
+    <?php
+    fwrite(STDERR, str_repeat("the formatter is talkative\n", 4096));
+    foreach (array_slice($argv, 1) as $file) {
+        file_put_contents($file, "<?php this is not php(((\n");
+    }
+    PHP . "\n",
+);
+$hardPath = $hardDir . '/h.php';
+file_put_contents($hardPath, "<?php\n\n\$config = ['state' => 'beta'];\n");
+$before = (string) file_get_contents($hardPath);
+
+try {
+    (new Editor())->apply(
+        [
+            'files' => [
+                [
+                    'path' => $hardPath,
+                    'edits' => [
+                        [
+                            'target' => ['ref' => 'stmts[0].expr.expr.items[0].value'],
+                            'operation' => 'set_string',
+                            'value' => 'stable',
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    );
+    check('a formatter that writes non-PHP is refused', false, 'accepted');
+} catch (EditException $failure) {
+    check(
+        'a formatter that writes non-PHP is refused',
+        str_contains($failure->getMessage(), 'unparseable'),
+        $failure->getMessage(),
+    );
+}
+check(
+    'and the write is rolled back',
+    (string) file_get_contents($hardPath) === $before,
+    (string) file_get_contents($hardPath),
+);
+// The exclusion has to hold for a file that does not exist yet, or `create` walks around it.
+mkdir($hardDir . '/Generated');
+$created = $hardDir . '/Generated/New.php';
+$createdResult = (new Editor())->apply(
+    ['files' => [['path' => $created, 'mode' => 'create', 'php' => "<?php\n\nclass New_ {}\n"]]],
+    true,
+)['files'][0];
+check(
+    // A new file has nothing to preserve, so it is necessarily printed canonically; what
+    // the exclusion has to stop is the formatter, which would add the very
+    // `declare(strict_types=1)` the excluded file exists to keep out.
+    'the formatter does not reach a file created inside an excluded directory',
+    !isset($createdResult['formatter']),
+    (string) ($createdResult['formatter'] ?? 'absent'),
+);
+removeTree($hardDir . '/Generated');
+removeTree($hardDir);
+
+try {
+    RepositoryConfig::assertFormatter(['fix' => 'php-cs-fixer', 'files' => '{files}']);
+    check('a formatter given as an object is refused', false, 'accepted');
+} catch (EditException $failure) {
+    check(
+        'a formatter given as an object is refused',
+        str_contains($failure->getMessage(), 'list of arguments'),
+        $failure->getMessage(),
+    );
+}
 
 // ---- The declaration decides the printer -----------------------------------------------
 $dir = workspace();

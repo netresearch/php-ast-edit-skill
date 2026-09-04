@@ -237,15 +237,19 @@ final class RepositoryConfig
      * a TYPO3 `ext_emconf.php` cannot carry the `declare(strict_types=1)` the formatter adds,
      * and TER stops parsing it — so it has to hold for every entry point, not only the ones
      * that walk a directory.
+     *
+     * A file being created does not exist yet, so its own path cannot be resolved. Resolving
+     * the deepest ancestor that does exist keeps the guarantee for `mode: create`: a new file
+     * inside an excluded directory is excluded before it is ever written.
      */
     public function excludes(string $file): bool
     {
         if ($this->exclude === [] || $this->path === null) {
             return false;
         }
-        $target = realpath($file);
+        $target = self::resolveThroughAncestors($file);
 
-        if ($target === false) {
+        if ($target === null) {
             return false;
         }
         $root = \dirname($this->path);
@@ -284,6 +288,12 @@ final class RepositoryConfig
         if ($formatter === []) {
             throw new EditException($prefix . 'formatter must not be empty.');
         }
+
+        if (!array_is_list($formatter)) {
+            throw new EditException(
+                $prefix . 'formatter must be a list of arguments; a JSON object gives them names nothing reads.',
+            );
+        }
         $placeholders = 0;
 
         foreach ($formatter as $argument) {
@@ -304,6 +314,39 @@ final class RepositoryConfig
                     self::FILES_PLACEHOLDER,
                 ),
             );
+        }
+    }
+
+    /**
+     * An absolute path for `$file`, resolved as far as the filesystem allows.
+     *
+     * `realpath()` answers false for anything that does not exist yet, which is every file a
+     * `create` is about. Walking up to the deepest existing ancestor and re-attaching the
+     * rest gives a path that can be compared with a resolved exclusion.
+     */
+    private static function resolveThroughAncestors(string $file): ?string
+    {
+        $resolved = realpath($file);
+
+        if ($resolved !== false) {
+            return $resolved;
+        }
+        $tail = [];
+        $current = $file;
+
+        while (true) {
+            $parent = \dirname($current);
+
+            if ($parent === $current) {
+                return null;
+            }
+            array_unshift($tail, basename($current));
+            $resolved = realpath($parent);
+
+            if ($resolved !== false) {
+                return $resolved . DIRECTORY_SEPARATOR . implode(DIRECTORY_SEPARATOR, $tail);
+            }
+            $current = $parent;
         }
     }
 }

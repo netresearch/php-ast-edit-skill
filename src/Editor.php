@@ -1597,6 +1597,12 @@ final class Editor
             if ($config->formatter === null || $config->path === null) {
                 continue;
             }
+
+            if ($config->excludes($transaction->path)) {
+                // A file being created cannot be printed format-preserving — there is nothing to
+                // preserve — so the printer is no proxy for the exclusion here. Ask the declaration.
+                continue;
+            }
             $root = \dirname($config->path);
             $groups[$root] ??= ['formatter' => $config->formatter, 'transactions' => []];
             $groups[$root]['transactions'][] = $transaction;
@@ -1613,22 +1619,16 @@ final class Editor
                 }
 
                 foreach ($group['transactions'] as $transaction) {
-                    $command[] = $transaction->path;
+                    // Absolute, because the command runs from the repository root while the
+                    // caller may have named the file from anywhere: a relative path would
+                    // reach a different file there, or none.
+                    $command[] = realpath($transaction->path) ?: $transaction->path;
                 }
             }
             $this->executeFormatter($command, $root);
 
             foreach ($group['transactions'] as $transaction) {
-                $after = file_get_contents($transaction->path);
-
-                if ($after === false) {
-                    throw new EditException(
-                        'Cannot re-read ' . $transaction->path . ' after the declared formatter ran.',
-                    );
-                }
-                $transaction->output = $after;
-                $transaction->changedLines = $transaction->source === null ? substr_count($after, "\n") : $this->countChangedLines($transaction->source, $after);
-                $transaction->formatter = 'ran';
+                $this->adoptFormatterResult($transaction);
             }
         }
     }
@@ -1640,31 +1640,83 @@ final class Editor
      * argument and nothing in it can chain a second command. A non-zero exit is a failure of
      * the write — the caller rolls the files back and reports what the formatter said.
      *
+     * Both streams go to files rather than pipes. Reading one pipe to EOF before the other
+     * deadlocks as soon as the formatter fills the pipe it is not being read from, and
+     * php-cs-fixer is talkative on stderr — that would hang the write with the tree already
+     * modified and no rollback.
+     *
      * @param list<string> $command
      */
     private function executeFormatter(array $command, string $root): void
     {
-        $descriptors = [1 => ['pipe', 'w'], 2 => ['pipe', 'w']];
-        $process = proc_open($command, $descriptors, $pipes, $root);
+        $out = tempnam(sys_get_temp_dir(), 'php-ast-edit-fmt-');
+        $err = tempnam(sys_get_temp_dir(), 'php-ast-edit-fmt-');
 
-        if (!is_resource($process)) {
-            throw new EditException('Cannot run the declared formatter: ' . implode(' ', $command));
+        if ($out === false || $err === false) {
+            throw new EditException('Cannot create a temporary file for the formatter output.');
         }
-        $stdout = (string) stream_get_contents($pipes[1]);
-        $stderr = (string) stream_get_contents($pipes[2]);
-        fclose($pipes[1]);
-        fclose($pipes[2]);
-        $status = proc_close($process);
 
-        if ($status !== 0) {
+        try {
+            $descriptors = [1 => ['file', $out, 'w'], 2 => ['file', $err, 'w']];
+            $pipes = [];
+            $process = proc_open($command, $descriptors, $pipes, $root);
+
+            if (!is_resource($process)) {
+                throw new EditException('Cannot run the declared formatter: ' . implode(' ', $command));
+            }
+            $status = proc_close($process);
+
+            if ($status === 0) {
+                return;
+            }
+            $said = trim((string) file_get_contents($err) . "\n" . (string) file_get_contents($out));
+
             throw new EditException(
                 sprintf(
                     'The declared formatter exited %d: %s%s',
                     $status,
                     implode(' ', $command),
-                    trim($stderr . "\n" . $stdout) === '' ? '' : "\n" . trim($stderr . "\n" . $stdout),
+                    $said === '' ? '' : "\n" . $said,
+                ),
+            );
+        } finally {
+            @unlink($out);
+            @unlink($err);
+        }
+    }
+
+    /**
+     * Take over what the formatter left on disk, once it is known to still be PHP.
+     *
+     * Phase 3 guarantees that nothing invalid reaches the working tree, and a formatter that
+     * exits zero after writing something unparseable would walk straight through it. Parsing
+     * the result keeps the guarantee, and re-deriving `changed` keeps a formatter that puts
+     * the original bytes back from being reported as a change with no lines in it.
+     */
+    private function adoptFormatterResult(FileTransaction $transaction): void
+    {
+        $after = file_get_contents($transaction->path);
+
+        if ($after === false) {
+            throw new EditException(
+                'Cannot re-read ' . $transaction->path . ' after the declared formatter ran.',
+            );
+        }
+
+        try {
+            $this->parser($transaction->phpVersion)->parse($after);
+        } catch (\Throwable $failure) {
+            throw new EditException(
+                sprintf(
+                    'The declared formatter left %s unparseable: %s',
+                    $transaction->path,
+                    $failure->getMessage(),
                 ),
             );
         }
+        $transaction->output = $after;
+        $transaction->changed = $transaction->source !== $after;
+        $transaction->changedLines = $transaction->source === null ? substr_count($after, "\n") : $this->countChangedLines($transaction->source, $after);
+        $transaction->formatter = 'ran';
     }
 }
