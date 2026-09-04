@@ -296,4 +296,51 @@ final class CanonicalPrinter extends Standard
 
         return $this->indentLevel + strlen($single) <= $this->width ? $single : null;
     }
+
+    /**
+     * Statements, with the paragraph breaks the author put between them.
+     * A blank line between two ordinary statements is the largest single share of what a
+     * canonical print removes, and no formatter rule puts it back: `Doctor` names that share
+     * unrecoverable, because the break carries the author's paragraphing and nothing derives
+     * it. The parser does hand it over — every node knows the line it starts and ends on — so
+     * the printer keeps one blank line wherever the source had at least one, and drops the
+     * rest. Nodes an edit created carry no line, and abut their neighbours.
+     *
+     * @param Node[] $nodes
+     */
+    protected function pStmts(array $nodes, bool $indent = true): string
+    {
+        if ($indent) {
+            $this->indent();
+        }
+        $result = '';
+        $previousEnd = 0;
+
+        foreach ($nodes as $node) {
+            $comments = $node->getComments();
+            // A docblock belongs to the statement behind it, so the gap is measured to the
+            // comment. Measuring to the statement would put the blank line between them.
+            $startLine = $comments === [] ? $node->getStartLine() : $comments[0]->getStartLine();
+
+            if ($previousEnd > 0 && $startLine > $previousEnd + 1) {
+                $result .= "\n";
+            }
+            $previousEnd = $node->getEndLine();
+
+            if ($comments !== []) {
+                $result .= $this->nl . $this->pComments($comments);
+
+                if ($node instanceof Stmt\Nop) {
+                    continue;
+                }
+            }
+            $result .= $this->nl . $this->p($node);
+        }
+
+        if ($indent) {
+            $this->outdent();
+        }
+
+        return $result;
+    }
 }

@@ -6,6 +6,15 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Fixed
+
+- **The printer keeps the paragraph breaks between statements.** A blank line an author put between two ordinary statements was the largest single share of what a canonical print removed — measured at ~45% — and no formatter rule puts it back: the break carries the author's paragraphing and nothing derives it, which `doctor` reported as unrecoverable. It is not, because the parser hands the printer the line each node starts and ends on. `pStmts()` now emits one blank line wherever the source had at least one, and drops the rest. Measured on `netresearch/t3x-nr-passkeys-be`: printing the whole tree and running the project's formatter left 17 removed blank lines across 10 files before this change and **nothing** after it, so a repository that declares itself canonical now actually sits on that fixed point and can gate it.
+- **A replacement inherits the position of the node it replaces.** A node parsed from a snippet starts at line 1, which the printer read as a large gap and answered with a blank line nobody typed — `replace_statement` on a one-line statement shipped a three-line diff. `NodeLocation::replace()` and `replaceChild()` carry `startLine`/`endLine` across. Nodes that are inserted rather than substituted have no predecessor, keep none, and abut their neighbours.
+
+### Changed
+
+- `doctor` no longer reports a share that no rule reaches: with the paragraph breaks preserved there is none. The `unrecoverable` field stays, because callers read it, and says so.
+
 ## [0.3.0] - 2026-09-02
 
 ### Fixed
