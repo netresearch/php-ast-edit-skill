@@ -119,6 +119,8 @@ final class NodeLocation
      */
     public function insertInto(string $property, array $nodes, int|string $position): void
     {
+        $this->clearPosition($nodes);
+
         $items = $this->childList($property);
         $index = $this->resolvePosition($position, count($items), $property, true);
         array_splice($items, $index, 0, $nodes);
@@ -300,6 +302,8 @@ final class NodeLocation
     /** @param list<Node> $nodes */
     private function insert(array $nodes, array &$roots, int $delta): void
     {
+        $this->clearPosition($nodes);
+
         if ($this->rootIndex !== null) {
             $index = $this->findIdentityIndex($roots);
             array_splice($roots, $index + $delta, 0, $nodes);
@@ -349,5 +353,25 @@ final class NodeLocation
         $attributes['startLine'] = $replaced->getStartLine();
         $attributes['endLine'] = $replaced->getEndLine();
         $replacement->setAttributes($attributes);
+    }
+
+    /**
+     * Take the source position off nodes that are being inserted rather than substituted.
+     *
+     * They were parsed from a snippet and carry its lines — 1, 2, 3 — which the printer would
+     * read as real positions and answer with paragraph breaks nobody wrote: an insertion at
+     * the head of a body left a blank line between itself and the statement it was put in
+     * front of. Only the outermost node loses its position; the statements inside a snippet
+     * keep theirs relative to each other, so paragraphing written into the snippet survives.
+     *
+     * @param list<Node> $nodes
+     */
+    private function clearPosition(array $nodes): void
+    {
+        foreach ($nodes as $node) {
+            $attributes = $node->getAttributes();
+            unset($attributes['startLine'], $attributes['endLine']);
+            $node->setAttributes($attributes);
+        }
     }
 }

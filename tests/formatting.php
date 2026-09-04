@@ -136,41 +136,34 @@ check(
     $keptComment,
 );
 
-// A replacement is parsed from a snippet and starts at line 1. Without the position of the
-// node it replaces, the printer reads that as a gap and writes a blank line nobody typed.
-$replaceDir = workspace();
-RepositoryConfig::write($replaceDir, 120);
-file_put_contents(
-    $replaceDir . '/r.php',
-    <<<'PHP'
-    <?php
-    
-    function f()
-    {
-        $a = 1;
-        $b = 2;
-    
-        $c = 3;
-    }
-    PHP . "\n",
-);
-$replaced = (new Editor())->apply(
+// A node an edit brings in is parsed from a snippet and starts at line 1. Read as a source
+// position, that is a gap, and the printer answers it with a blank line nobody typed.
+$editDir = workspace();
+$editPath = $editDir . '/r.php';
+RepositoryConfig::write($editDir, 120);
+$paragraphed = <<<'PHP'
+<?php
+
+function f()
+{
+    $a = 1;
+    $b = 2;
+
+    $c = 3;
+}
+PHP . "\n";
+$applyOne = static function (array $edit) use ($editPath): array {
+    return (new Editor())->apply(['files' => [['path' => $editPath, 'edits' => [$edit]]]], true)['files'][0];
+};
+// A replacement inherits the position of the node it replaces.
+file_put_contents($editPath, $paragraphed);
+$replaced = $applyOne(
     [
-        'files' => [
-            [
-                'path' => $replaceDir . '/r.php',
-                'edits' => [
-                    [
-                        'target' => ['ref' => 'stmts[0].stmts[0]'],
-                        'operation' => 'replace_statement',
-                        'php' => '$a = 99;',
-                    ],
-                ],
-            ],
-        ],
+        'target' => ['ref' => 'stmts[0].stmts[0]'],
+        'operation' => 'replace_statement',
+        'php' => '$a = 99;',
     ],
-    true,
-)['files'][0];
+);
 check(
     'replacing a statement inserts no blank line',
     $replaced['changedLines'] === 2,
@@ -178,10 +171,45 @@ check(
 );
 check(
     'and leaves the paragraph break where it was',
-    str_contains((string) file_get_contents($replaceDir . '/r.php'), "\$b = 2;\n\n    \$c = 3;"),
-    (string) file_get_contents($replaceDir . '/r.php'),
+    str_contains((string) $replaced['code'], "\$b = 2;\n\n    \$c = 3;"),
+    (string) $replaced['code'],
 );
-removeTree($replaceDir);
+// An insertion has no predecessor to inherit from, so it must carry no position at all.
+file_put_contents($editPath, $paragraphed);
+$inserted = $applyOne(
+    ['target' => ['ref' => 'stmts[0].stmts[0]'], 'operation' => 'insert_before', 'php' => '$z = 0;'],
+);
+check(
+    'inserting before the first statement adds one line, not two',
+    $inserted['changedLines'] === 1,
+    (string) $inserted['changedLines'],
+);
+check(
+    'the insertion abuts the statement it precedes',
+    str_contains((string) $inserted['code'], "\$z = 0;\n    \$a = 1;"),
+    (string) $inserted['code'],
+);
+file_put_contents($editPath, $paragraphed);
+$into = $applyOne(
+    [
+        'target' => ['ref' => 'stmts[0]'],
+        'operation' => 'insert_into',
+        'property' => 'stmts',
+        'position' => 'start',
+        'php' => '$z = 0;',
+    ],
+);
+check(
+    'insert_into at the start adds one line too',
+    $into['changedLines'] === 1,
+    (string) $into['changedLines'],
+);
+check(
+    'and the paragraph further down is untouched',
+    str_contains((string) $into['code'], "\$b = 2;\n\n    \$c = 3;"),
+    (string) $into['code'],
+);
+removeTree($editDir);
 
 // ---- The declaration decides the printer -----------------------------------------------
 $dir = workspace();
