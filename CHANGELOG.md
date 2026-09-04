@@ -6,6 +6,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-09-05
+
 ### Added
 
 - **A target can be named by what it is.** `"target": {"select": "method:Foo::bar"}` — also `class:`, `interface:`, `trait:`, `enum:`, `function:`, `property:Foo::$bar` and `const:Foo::BAR`. A `ref` is exact and survives nothing: it has to be read out of an `inspect`, and finding the coordinate to inspect at costs its own round trips — measured against an agent working without the tool, locating a method by line and column took two to four calls before any edit was written. The owner may be left out where the file holds one class; an ambiguous selector is refused with the paths it matched, never resolved to the first hit.
@@ -125,7 +127,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - `php-structured-edit` Agent Skill with the operation reference and a wrapper resolving the repository binary, `vendor/bin`, a local PHAR, or `PATH`.
 - PHAR build via `scripts/build-phar.php`.
 
-[Unreleased]: https://github.com/netresearch/php-ast-edit-skill/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/netresearch/php-ast-edit-skill/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/netresearch/php-ast-edit-skill/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/netresearch/php-ast-edit-skill/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/netresearch/php-ast-edit-skill/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/netresearch/php-ast-edit-skill/compare/v0.1.0...v0.2.0
