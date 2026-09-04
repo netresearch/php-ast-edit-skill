@@ -247,6 +247,20 @@ final class Editor
         $config = RepositoryConfig::discover($transaction->path);
         $declared = RepositoryConfig::widthFor($transaction->path);
 
+        if ($config->excludes($transaction->path)) {
+            // The project took this path out of the tool's reach. Canonical printing is half of a
+            // pair whose other half is the project formatter, and the exclusion exists so that
+            // neither runs here; printing canonically anyway would hand the formatter a file the
+            // project never meant it to see.
+            $transaction->printer = 'format-preserving';
+            $transaction->warning = sprintf(
+                'EXCLUDED: %s lists this path under `exclude`, so the edit was printed format-preserving and the project formatter was not run. Remove the entry if the file is meant to be canonical.',
+                RepositoryConfig::FILE,
+            );
+
+            return;
+        }
+
         if ($config->canonical && $declared['width'] === null) {
             // Declared canonical, but the project states no width anywhere the printer may
             // read. Print by the width the normalisation recorded rather than reflowing the
@@ -512,6 +526,7 @@ final class Editor
                 ];
                 $this->atomicWrite($transaction->path, (string) $transaction->output);
             }
+            $this->runFormatter($transactions);
         } catch (\Throwable $failure) {
             $restoreErrors = [];
 
@@ -593,6 +608,10 @@ final class Editor
             'editsApplied' => count($transaction->resolved),
             'dryRun' => $dryRun,
         ];
+
+        if ($transaction->formatter !== null) {
+            $result['formatter'] = $transaction->formatter;
+        }
 
         if ($transaction->warning !== null) {
             $result['warning'] = $transaction->warning;
@@ -1546,5 +1565,158 @@ final class Editor
         }
 
         return $value;
+    }
+
+    /**
+     * Run the formatter the project declared, on the files this write produced.
+     *
+     * The fixed point belongs to the printer and the formatter together, so a write that
+     * stops after printing leaves a shape nobody wants: adding one 9-line method to a
+     * canonical TYPO3 extension reported 34 changed lines, the remainder trailing commas and
+     * `declare` spacing that only the formatter restores. Running it here makes the write one
+     * step for whoever calls this, and makes `changedLines` describe the file that survives.
+     *
+     * Only the files this write produced, never the tree: formatting everything would put
+     * unrelated files into the diff of whatever change happened to be made. Files printed
+     * format-preserving are left out too — the project either excluded them or has not
+     * declared itself canonical, and in both cases the formatter is not ours to run.
+     *
+     * @param list<FileTransaction> $transactions
+     */
+    private function runFormatter(array $transactions): void
+    {
+        /** @var array<string, array{formatter: list<string>, transactions: list<FileTransaction>}> $groups */
+        $groups = [];
+
+        foreach ($transactions as $transaction) {
+            if (!$transaction->changed || $transaction->mode === 'delete' || $transaction->printer !== 'canonical') {
+                continue;
+            }
+            $config = RepositoryConfig::discover($transaction->path);
+
+            if ($config->formatter === null || $config->path === null) {
+                continue;
+            }
+
+            if ($config->excludes($transaction->path)) {
+                // A file being created cannot be printed format-preserving — there is nothing to
+                // preserve — so the printer is no proxy for the exclusion here. Ask the declaration.
+                continue;
+            }
+            $root = \dirname($config->path);
+            $groups[$root] ??= ['formatter' => $config->formatter, 'transactions' => []];
+            $groups[$root]['transactions'][] = $transaction;
+        }
+
+        foreach ($groups as $root => $group) {
+            $command = [];
+
+            foreach ($group['formatter'] as $argument) {
+                if ($argument !== RepositoryConfig::FILES_PLACEHOLDER) {
+                    $command[] = $argument;
+
+                    continue;
+                }
+
+                foreach ($group['transactions'] as $transaction) {
+                    // Absolute, because the command runs from the repository root while the
+                    // caller may have named the file from anywhere: a relative path would
+                    // reach a different file there, or none.
+                    $command[] = realpath($transaction->path) ?: $transaction->path;
+                }
+            }
+            $this->executeFormatter($command, $root);
+
+            foreach ($group['transactions'] as $transaction) {
+                $this->adoptFormatterResult($transaction);
+            }
+        }
+    }
+
+    /**
+     * Run one declared formatter command, from the repository root.
+     *
+     * No shell: the declaration is an argv list, so a path carrying a space stays one
+     * argument and nothing in it can chain a second command. A non-zero exit is a failure of
+     * the write — the caller rolls the files back and reports what the formatter said.
+     *
+     * Both streams go to files rather than pipes. Reading one pipe to EOF before the other
+     * deadlocks as soon as the formatter fills the pipe it is not being read from, and
+     * php-cs-fixer is talkative on stderr — that would hang the write with the tree already
+     * modified and no rollback.
+     *
+     * @param list<string> $command
+     */
+    private function executeFormatter(array $command, string $root): void
+    {
+        $out = tempnam(sys_get_temp_dir(), 'php-ast-edit-fmt-');
+        $err = tempnam(sys_get_temp_dir(), 'php-ast-edit-fmt-');
+
+        if ($out === false || $err === false) {
+            throw new EditException('Cannot create a temporary file for the formatter output.');
+        }
+
+        try {
+            $descriptors = [1 => ['file', $out, 'w'], 2 => ['file', $err, 'w']];
+            $pipes = [];
+            $process = proc_open($command, $descriptors, $pipes, $root);
+
+            if (!is_resource($process)) {
+                throw new EditException('Cannot run the declared formatter: ' . implode(' ', $command));
+            }
+            $status = proc_close($process);
+
+            if ($status === 0) {
+                return;
+            }
+            $said = trim((string) file_get_contents($err) . "\n" . (string) file_get_contents($out));
+
+            throw new EditException(
+                sprintf(
+                    'The declared formatter exited %d: %s%s',
+                    $status,
+                    implode(' ', $command),
+                    $said === '' ? '' : "\n" . $said,
+                ),
+            );
+        } finally {
+            @unlink($out);
+            @unlink($err);
+        }
+    }
+
+    /**
+     * Take over what the formatter left on disk, once it is known to still be PHP.
+     *
+     * Phase 3 guarantees that nothing invalid reaches the working tree, and a formatter that
+     * exits zero after writing something unparseable would walk straight through it. Parsing
+     * the result keeps the guarantee, and re-deriving `changed` keeps a formatter that puts
+     * the original bytes back from being reported as a change with no lines in it.
+     */
+    private function adoptFormatterResult(FileTransaction $transaction): void
+    {
+        $after = file_get_contents($transaction->path);
+
+        if ($after === false) {
+            throw new EditException(
+                'Cannot re-read ' . $transaction->path . ' after the declared formatter ran.',
+            );
+        }
+
+        try {
+            $this->parser($transaction->phpVersion)->parse($after);
+        } catch (\Throwable $failure) {
+            throw new EditException(
+                sprintf(
+                    'The declared formatter left %s unparseable: %s',
+                    $transaction->path,
+                    $failure->getMessage(),
+                ),
+            );
+        }
+        $transaction->output = $after;
+        $transaction->changed = $transaction->source !== $after;
+        $transaction->changedLines = $transaction->source === null ? substr_count($after, "\n") : $this->countChangedLines($transaction->source, $after);
+        $transaction->formatter = 'ran';
     }
 }

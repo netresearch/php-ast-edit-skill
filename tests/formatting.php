@@ -18,6 +18,7 @@ use Netresearch\PhpAstEdit\CanonicalPrinter;
 use Netresearch\PhpAstEdit\Doctor;
 use Netresearch\PhpAstEdit\Editor;
 use Netresearch\PhpAstEdit\EditorConfig;
+use Netresearch\PhpAstEdit\Exception\EditException;
 use Netresearch\PhpAstEdit\Formatter;
 use Netresearch\PhpAstEdit\RepositoryConfig;
 use PhpParser\ParserFactory;
@@ -203,6 +204,213 @@ check(
     (string) $into['code'],
 );
 removeTree($editDir);
+
+// A path the project excluded is not this tool's to re-print. `format` and `normalize`
+// honour the list; `apply` did not, so an edit to an excluded file was printed canonically
+// anyway — and once the project formatter runs as part of the write, that reaches a file
+// the project took out of its reach on purpose.
+$excludedDir = workspace();
+RepositoryConfig::write($excludedDir, 120, ['keep-away.php']);
+$untouchable = $excludedDir . '/keep-away.php';
+file_put_contents(
+    $untouchable,
+    <<<'PHP'
+    <?php
+    
+    // The blank line below is what a canonical print removes.
+    
+    $config = ['state' => 'beta'];
+    PHP . "\n",
+);
+$excludedResult = (new Editor())->apply(
+    [
+        'files' => [
+            [
+                'path' => $untouchable,
+                'edits' => [
+                    [
+                        'target' => ['ref' => 'stmts[0].expr.expr.items[0].value'],
+                        'operation' => 'set_string',
+                        'value' => 'stable',
+                    ],
+                ],
+            ],
+        ],
+    ],
+    true,
+)['files'][0];
+check(
+    'an excluded file is not printed canonically',
+    $excludedResult['printer'] === 'format-preserving',
+    (string) $excludedResult['printer'],
+);
+check(
+    'and the exclusion is named',
+    str_contains((string) ($excludedResult['warning'] ?? ''), 'EXCLUDED'),
+    (string) ($excludedResult['warning'] ?? ''),
+);
+check(
+    'and only the edited line changes',
+    $excludedResult['changedLines'] === 2,
+    (string) $excludedResult['changedLines'],
+);
+check(
+    'so the blank line the project kept survives',
+    str_contains((string) $excludedResult['code'], "removes.\n\n\$config"),
+    (string) $excludedResult['code'],
+);
+removeTree($excludedDir);
+
+// The fixed point belongs to the printer and the project's formatter together, so an edit
+// that stops after printing leaves a file in a shape nobody wants: on a canonical TYPO3
+// extension, adding one 9-line method reported 34 changed lines, the remainder trailing
+// commas and `declare` spacing that only the formatter puts back. The project declares its
+// formatter and `apply` runs it, on the files it wrote and no others.
+$formatterDir = workspace();
+file_put_contents(
+    $formatterDir . '/fmt.php',
+    <<<'PHP'
+    <?php
+    // A stand-in for the project's formatter: it restores the trailing comma a canonical
+    // print drops, on exactly the files it is handed.
+    foreach (array_slice($argv, 1) as $file) {
+        $text = str_replace("'stable']", "'stable',]", (string) file_get_contents($file));
+        file_put_contents($file, $text . "// the formatter was here\n");
+    }
+    PHP . "\n",
+);
+file_put_contents(
+    $formatterDir . '/' . RepositoryConfig::FILE,
+    json_encode(
+        ['canonical' => true, 'printWidth' => 120, 'formatter' => ['php', 'fmt.php', '{files}']],
+        JSON_PRETTY_PRINT,
+    ) . "\n",
+);
+$formatted = $formatterDir . '/f.php';
+file_put_contents($formatted, "<?php\n\n\$config = ['state' => 'beta'];\n");
+$formatterResult = (new Editor())->apply(
+    [
+        'files' => [
+            [
+                'path' => $formatted,
+                'edits' => [
+                    [
+                        'target' => ['ref' => 'stmts[0].expr.expr.items[0].value'],
+                        'operation' => 'set_string',
+                        'value' => 'stable',
+                    ],
+                ],
+            ],
+        ],
+    ],
+)['files'][0];
+check(
+    'the declared formatter runs on what apply wrote',
+    str_contains((string) file_get_contents($formatted), "'stable',]"),
+    (string) file_get_contents($formatted),
+);
+check(
+    'and the report says it ran',
+    ($formatterResult['formatter'] ?? null) === 'ran',
+    (string) ($formatterResult['formatter'] ?? 'absent'),
+);
+check(
+    // Two for the line the edit rewrote, one for the line the formatter appended: without
+    // the formatter run this would be two, so the number describes the file that survives.
+    'changedLines counts the file the formatter left behind',
+    $formatterResult['changedLines'] === 3,
+    (string) $formatterResult['changedLines'],
+);
+removeTree($formatterDir);
+
+// The guarantees the formatter run must not weaken, each measured rather than assumed.
+$hardDir = workspace();
+file_put_contents(
+    $hardDir . '/' . RepositoryConfig::FILE,
+    json_encode(
+        [
+            'canonical' => true,
+            'printWidth' => 120,
+            'exclude' => ['Generated'],
+            'formatter' => ['php', 'break.php', '{files}'],
+        ],
+        JSON_PRETTY_PRINT,
+    ) . "\n",
+);
+// A formatter that exits zero having written something that is no longer PHP, and that
+// says a great deal on stderr on the way — enough to fill a pipe nobody is draining.
+file_put_contents(
+    $hardDir . '/break.php',
+    <<<'PHP'
+    <?php
+    fwrite(STDERR, str_repeat("the formatter is talkative\n", 4096));
+    foreach (array_slice($argv, 1) as $file) {
+        file_put_contents($file, "<?php this is not php(((\n");
+    }
+    PHP . "\n",
+);
+$hardPath = $hardDir . '/h.php';
+file_put_contents($hardPath, "<?php\n\n\$config = ['state' => 'beta'];\n");
+$before = (string) file_get_contents($hardPath);
+
+try {
+    (new Editor())->apply(
+        [
+            'files' => [
+                [
+                    'path' => $hardPath,
+                    'edits' => [
+                        [
+                            'target' => ['ref' => 'stmts[0].expr.expr.items[0].value'],
+                            'operation' => 'set_string',
+                            'value' => 'stable',
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    );
+    check('a formatter that writes non-PHP is refused', false, 'accepted');
+} catch (EditException $failure) {
+    check(
+        'a formatter that writes non-PHP is refused',
+        str_contains($failure->getMessage(), 'unparseable'),
+        $failure->getMessage(),
+    );
+}
+check(
+    'and the write is rolled back',
+    (string) file_get_contents($hardPath) === $before,
+    (string) file_get_contents($hardPath),
+);
+// The exclusion has to hold for a file that does not exist yet, or `create` walks around it.
+mkdir($hardDir . '/Generated');
+$created = $hardDir . '/Generated/New.php';
+$createdResult = (new Editor())->apply(
+    ['files' => [['path' => $created, 'mode' => 'create', 'php' => "<?php\n\nclass New_ {}\n"]]],
+    true,
+)['files'][0];
+check(
+    // A new file has nothing to preserve, so it is necessarily printed canonically; what
+    // the exclusion has to stop is the formatter, which would add the very
+    // `declare(strict_types=1)` the excluded file exists to keep out.
+    'the formatter does not reach a file created inside an excluded directory',
+    !isset($createdResult['formatter']),
+    (string) ($createdResult['formatter'] ?? 'absent'),
+);
+removeTree($hardDir . '/Generated');
+removeTree($hardDir);
+
+try {
+    RepositoryConfig::assertFormatter(['fix' => 'php-cs-fixer', 'files' => '{files}']);
+    check('a formatter given as an object is refused', false, 'accepted');
+} catch (EditException $failure) {
+    check(
+        'a formatter given as an object is refused',
+        str_contains($failure->getMessage(), 'list of arguments'),
+        $failure->getMessage(),
+    );
+}
 
 // ---- The declaration decides the printer -----------------------------------------------
 $dir = workspace();

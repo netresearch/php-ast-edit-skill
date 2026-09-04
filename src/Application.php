@@ -309,6 +309,19 @@ final class Application
           one-time `normalize` plus a run of the project's own formatter, committed on its own.
           Without the resulting .php-ast-edit.json, apply falls back to format-preserving
           printing and says so. `doctor` reports whether the repository is set up for it.
+          A path listed under `exclude` is left to the project entirely: printed
+          format-preserving, and the formatter is not run there.
+        
+          Declare the formatter and apply finishes the file itself:
+        
+            {"canonical": true, "printWidth": 120,
+             "formatter": ["php", ".Build/bin/php-cs-fixer", "fix",
+                           "--config=Build/.php-cs-fixer.php",
+                           "--path-mode=intersection", "{files}"]}
+        
+          An argv list, not a command line — nothing goes through a shell. `{files}` is one
+          element and expands to the files the edit wrote, never the tree. A non-zero exit
+          rolls the write back and reports what the formatter said.
         
         PHP snippets are syntax, not formatting. Compact one-line snippets are preferred;
         the printer decides the layout.

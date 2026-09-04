@@ -47,7 +47,12 @@ for the printer to agree with, so every edit is a style decision nobody made.
    `inspect`. Refs and coordinates are resolved against that snapshot.
 5. Write compact, syntactically valid snippets. Spend no tokens on formatting; the
    printer canonicalizes the output.
-6. Close the transaction with the whole chain, not just the formatter:
+6. Where the repository declares a `formatter` in `.php-ast-edit.json`, `apply` runs it on
+   the files it wrote and the write is finished — the report says `"formatter": "ran"` and
+   `changedLines` describes the file that survives. Adding one 9-line method to a canonical
+   TYPO3 extension goes from 34 changed lines to 10 that way.
+
+   Where it does not, close the transaction yourself, with the whole chain:
 
    ```bash
    scripts/php-ast-edit format && <the project's formatter> && git diff --exit-code
