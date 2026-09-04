@@ -412,6 +412,118 @@ try {
     );
 }
 
+// A target named by what it is, and a rename that is one edit rather than one per
+// occurrence. Between them they remove the `inspect --line --column` hunt that cost two to
+// four calls before any edit was written.
+$selectDir = workspace();
+RepositoryConfig::write($selectDir, 120);
+$selectPath = $selectDir . '/s.php';
+file_put_contents(
+    $selectPath,
+    <<<'PHP'
+    <?php
+    
+    class Vault
+    {
+        private array $nonceCache = [];
+    
+        public function store(string $nonce): string
+        {
+            $key = $this->nonceKey($nonce);
+            $this->nonceCache[$key] = $nonce;
+    
+            return 'nonce_' . $nonce;
+        }
+    
+        private function nonceKey(string $nonce): string
+        {
+            return \hash('sha256', $nonce);
+        }
+    }
+    PHP . "\n",
+);
+$renamed = (new Editor())->apply(
+    [
+        'files' => [
+            [
+                'path' => $selectPath,
+                'edits' => [
+                    [
+                        'target' => ['select' => 'method:Vault::store'],
+                        'operation' => 'rename_variable',
+                        'from' => 'nonce',
+                        'to' => 'nonceValue',
+                    ],
+                ],
+            ],
+        ],
+    ],
+    true,
+)['files'][0];
+$after = (string) $renamed['code'];
+check(
+    'a method is reachable by name',
+    $renamed['editsApplied'] === 1,
+    (string) $renamed['editsApplied'],
+);
+check('every occurrence of the variable moves', substr_count($after, '$nonceValue') === 4, $after);
+check('the property it resembles is untouched', substr_count($after, 'nonceCache') === 2, $after);
+check('so is the method', substr_count($after, 'nonceKey') === 2, $after);
+check('so is the string literal', str_contains($after, "'nonce_'"), $after);
+check(
+    'a scope the rename was not asked for keeps its own',
+    substr_count($after, 'string $nonce)') === 1,
+    $after,
+);
+
+try {
+    (new Editor())->apply(
+        [
+            'files' => [
+                [
+                    'path' => $selectPath,
+                    'edits' => [
+                        [
+                            'target' => ['select' => 'method:nonceKey', 'kind' => 'Stmt_Property'],
+                            'operation' => 'rename_variable',
+                            'from' => 'nonce',
+                            'to' => 'x',
+                        ],
+                    ],
+                ],
+            ],
+        ],
+        true,
+    );
+    check('a selector held to the wrong kind is refused', false, 'accepted');
+} catch (EditException $failure) {
+    check(
+        'a selector held to the wrong kind is refused',
+        str_contains($failure->getMessage(), 'expected Stmt_Property'),
+        $failure->getMessage(),
+    );
+}
+
+try {
+    $locator = new Netresearch\PhpAstEdit\NodeLocator();
+    $parsed = (new ParserFactory())->createForHostVersion()->parse(
+        "<?php\nclass A { public function f() {} }\nclass B { public function f() {} }\n",
+    ) ?? [];
+    $locator->resolveSelect($parsed, 'method:f');
+    check('an ambiguous selector is refused', false, 'accepted');
+} catch (EditException $failure) {
+    check(
+        'an ambiguous selector is refused',
+        str_contains($failure->getMessage(), 'matched 2 nodes'),
+        $failure->getMessage(),
+    );
+    check(
+        'and naming the owner settles it',
+        $locator->resolveSelect($parsed, 'method:B::f')->path !== '',
+    );
+}
+removeTree($selectDir);
+
 // ---- The declaration decides the printer -----------------------------------------------
 $dir = workspace();
 file_put_contents(
