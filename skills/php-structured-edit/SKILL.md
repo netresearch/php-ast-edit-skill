@@ -39,15 +39,25 @@ for the printer to agree with, so every edit is a style decision nobody made.
 ## Workflow
 
 1. Locate the code with the normal search tools.
-2. `php-ast-edit inspect` at a byte offset or line/column inside the target syntax.
-3. Take the narrowest useful node from the returned ancestry. Each entry carries a
-   `ref` (`stmts[1].stmts[0].params[0]`) and its `slots` — the sub node names you can
-   insert into or replace.
-4. Send every edit for one transaction in a single `apply`. Include the `sha256` from
-   `inspect`. Refs and coordinates are resolved against that snapshot.
-5. Write compact, syntactically valid snippets. Spend no tokens on formatting; the
+2. Name the target by what it is, and skip the lookup: `"target": {"select":
+   "method:Foo::bar"}` — also `class:`, `interface:`, `trait:`, `enum:`, `function:`,
+   `property:Foo::$bar`, `const:Foo::BAR`. The owner may be left out where the file holds
+   one class; an ambiguous selector is refused with the paths it matched, never resolved
+   to the first hit.
+3. Where no name fits — an expression, one statement inside a body — `php-ast-edit
+   inspect` at a byte offset or line/column, and take the narrowest useful node from the
+   returned ancestry. Each entry carries a `ref` (`stmts[1].stmts[0].params[0]`) and its
+   `slots`, the sub node names you can insert into or replace.
+4. Send every edit for one transaction in a single `apply`. Where an `inspect` was needed,
+   pass its `sha256`: refs and coordinates are resolved against that snapshot, and the
+   write is refused if the file moved underneath.
+5. Renaming a variable is one edit, not one per occurrence: `rename_variable` on the
+   method, function or closure it lives in, with `from` and `to`. It moves `Expr_Variable`
+   and `Param` nodes only, so a property, a method name and a string literal that share the
+   word are untouched by construction.
+6. Write compact, syntactically valid snippets. Spend no tokens on formatting; the
    printer canonicalizes the output.
-6. Where the repository declares a `formatter` in `.php-ast-edit.json`, `apply` runs it on
+7. Where the repository declares a `formatter` in `.php-ast-edit.json`, `apply` runs it on
    the files it wrote and the write is finished — the report says `"formatter": "ran"` and
    `changedLines` describes the file that survives. Adding one 9-line method to a canonical
    TYPO3 extension goes from 34 changed lines to 10 that way.

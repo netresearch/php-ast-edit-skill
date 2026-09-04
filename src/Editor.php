@@ -305,26 +305,21 @@ final class Editor
                 throw new EditException(sprintf('Edit %d requires a target object.', $index));
             }
 
-            if (isset($target['ref'])) {
-                $location = $this->locator->resolveRef($transaction->roots, (string) $target['ref']);
-
-                if (isset($target['kind'])) {
-                    $kind = (string) $target['kind'];
-
-                    if ($location->node->getType() !== $kind && $location->node::class !== $kind) {
-                        throw new EditException(
-                            sprintf(
-                                'target.ref resolves to %s, expected %s.',
-                                $location->node->getType(),
-                                $kind,
-                            ),
-                        );
-                    }
+            if (isset($target['select'])) {
+                if (isset($target['ref'])) {
+                    throw new EditException('An edit names its target by ref or by select, not both.');
                 }
+                $location = $this->locator->resolveSelect($transaction->roots, (string) $target['select']);
+                $this->assertKind($location, $target['kind'] ?? null);
+            } elseif (isset($target['ref'])) {
+                $location = $this->locator->resolveRef($transaction->roots, (string) $target['ref']);
+                $this->assertKind($location, $target['kind'] ?? null);
             } else {
-                $offset = $this->targetOffset($source, $target);
-                $kind = isset($target['kind']) ? (string) $target['kind'] : null;
-                $location = $this->locator->locate($transaction->roots, $offset, $kind);
+                $location = $this->locator->locate(
+                    $transaction->roots,
+                    $this->targetOffset($source, $target),
+                    isset($target['kind']) ? (string) $target['kind'] : null,
+                );
             }
             $this->assertExpectations($location->node, $edit['expect'] ?? []);
             $transaction->resolved[] = ['edit' => $edit, 'location' => $location, 'index' => (int) $index];
@@ -744,6 +739,23 @@ final class Editor
         ContextParser $snippets,
     ): bool {
         $node = $location->node;
+
+        if ($operation === 'rename_variable') {
+            // Not a case in the switch below: the snippet parser has no context for one, so a
+            // `case` cannot be written through this tool. Handled here until it does.
+            if (!$node instanceof Stmt\ClassMethod && !$node instanceof Stmt\Function_ && !$node instanceof Expr\Closure && !$node instanceof Expr\ArrowFunction) {
+                throw new EditException(
+                    'rename_variable targets the scope the variable lives in: a method, function, closure or arrow function.',
+                );
+            }
+            $this->renameVariable(
+                $node,
+                $this->requiredString($edit, 'from'),
+                $this->requiredString($edit, 'to'),
+            );
+
+            return true;
+        }
 
         switch ($operation) {
             // ---- Convenience shorthands over the primitives ------------------------------
@@ -1718,5 +1730,165 @@ final class Editor
         $transaction->changed = $transaction->source !== $after;
         $transaction->changedLines = $transaction->source === null ? substr_count($after, "\n") : $this->countChangedLines($transaction->source, $after);
         $transaction->formatter = 'ran';
+    }
+
+    /**
+     * Hold a named target to the type the caller expected.
+     *
+     * A `ref` or a `select` says where to look; `kind` says what should be there. The offset
+     * form has no need of this — it passes the kind to the locator, which uses it to pick the
+     * node out of the ancestry rather than to check one afterwards.
+     */
+    private function assertKind(NodeLocation $location, mixed $kind): void
+    {
+        if ($kind === null) {
+            return;
+        }
+        $expected = (string) $kind;
+
+        if ($location->node->getType() !== $expected && $location->node::class !== $expected) {
+            throw new EditException(
+                sprintf(
+                    'The target resolves to %s, expected %s.',
+                    $location->node->getType(),
+                    $expected,
+                ),
+            );
+        }
+    }
+
+    /**
+     * Rename one variable everywhere inside a function, method, closure or arrow function.
+     *
+     * A variable is not a place, it is every occurrence of a name inside one scope, and
+     * addressing those one at a time is what makes a rename expensive and unsafe: a file
+     * holding `$nonce` eleven times also holds `$this->nonceCache`, `getNonceCacheKey()`,
+     * `'nonce_'` and `'noncePrefix'`, and a textual pass reaches all of them. This walks the
+     * scope and renames `Expr_Variable` and `Param` nodes whose name matches exactly, so a
+     * property fetch, a method name and a string literal are untouched by construction.
+     *
+     * Nested closures are part of the scope: a `use ($nonce)` binds the same name and is
+     * renamed with it. A `$$name` is left alone — its name is an expression, not a name.
+     */
+    private function renameVariable(Node $scope, string $from, string $to): int
+    {
+        if ($from === '' || $to === '') {
+            throw new EditException('rename_variable needs a non-empty from and to.');
+        }
+        $from = ltrim($from, '$');
+        $to = ltrim($to, '$');
+
+        if (!preg_match('/^[A-Za-z_\x80-\xff][A-Za-z0-9_\x80-\xff]*$/', $to)) {
+            throw new EditException('rename_variable: "' . $to . '" is not a variable name.');
+        }
+
+        if ($from === 'this' || $to === 'this') {
+            // `$this` is the receiver, not a local. Renaming it away would leave every
+            // `$this->…` in the scope pointing at a variable that holds nothing; renaming
+            // something else to it would silently take the receiver's place.
+            throw new EditException('rename_variable will not rename $this.');
+        }
+        $renamed = 0;
+        $this->renameInScope($scope, $from, $to, $renamed);
+
+        if ($renamed === 0) {
+            throw new EditException(
+                sprintf('rename_variable: $%s does not occur in %s.', $from, $scope->getType()),
+            );
+        }
+
+        return $renamed;
+    }
+
+    /**
+     * The recursive half of `renameVariable()`.
+     *
+     * A `Variable`'s name is a string only when it was written literally; for `$$name` it is
+     * an expression and there is nothing to rename. A `Param`'s name is a `Variable`, so it
+     * is reached by the same branch.
+     *
+     * Descent stops where the name means something else. A nested named function, method or
+     * class body is a scope of its own: `$nonce` in there is not the `$nonce` being renamed,
+     * and moving it changes code the caller did not ask about. A closure is the interesting
+     * case — it sees nothing of its surroundings unless it says so, so it is entered only
+     * when it captures the name in `use`, and then the capture and the body move together.
+     * An arrow function captures by value on its own, so it is entered unless a parameter of
+     * its own shadows the name.
+     */
+    private function renameInScope(Node $node, string $from, string $to, int &$renamed): void
+    {
+        if ($node instanceof Expr\Variable && is_string($node->name) && $node->name === $from) {
+            $node->name = $to;
+            ++$renamed;
+        }
+
+        foreach ($node->getSubNodeNames() as $subNodeName) {
+            $value = $node->{$subNodeName};
+
+            if ($value instanceof Node) {
+                if (!$this->bindsItsOwn($value, $from)) {
+                    $this->renameInScope($value, $from, $to, $renamed);
+                }
+
+                continue;
+            }
+
+            if (!is_array($value)) {
+                continue;
+            }
+
+            foreach ($value as $child) {
+                if ($child instanceof Node && !$this->bindsItsOwn($child, $from)) {
+                    $this->renameInScope($child, $from, $to, $renamed);
+                }
+            }
+        }
+    }
+
+    /**
+     * Whether `$name` inside this node is a different variable from the one outside it.
+     *
+     * The question a rename has to answer before it descends. PHP's scoping makes it a short
+     * list: a function, a method and a class body share nothing with their surroundings; a
+     * closure shares only what it names in `use`; an arrow function shares everything, until
+     * a parameter of its own takes the name back.
+     */
+    private function bindsItsOwn(Node $node, string $name): bool
+    {
+        if ($node instanceof Stmt\Function_ || $node instanceof Stmt\ClassMethod || $node instanceof Stmt\ClassLike) {
+            return true;
+        }
+
+        if ($node instanceof Expr\Closure) {
+            foreach ($node->uses as $use) {
+                if ((string) $use->var->name === $name) {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        if ($node instanceof Expr\ArrowFunction) {
+            return $this->hasParameterNamed($node->params, $name);
+        }
+
+        return false;
+    }
+
+    /**
+     * Whether one of these parameters takes the name for itself.
+     *
+     * @param list<Node\Param> $params
+     */
+    private function hasParameterNamed(array $params, string $name): bool
+    {
+        foreach ($params as $param) {
+            if ($param->var instanceof Expr\Variable && is_string($param->var->name) && $param->var->name === $name) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

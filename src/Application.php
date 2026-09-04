@@ -241,6 +241,7 @@ final class Application
                         'set_visibility',
                         'add_implements',
                         'set_extends',
+                        'rename_variable',
                     ],
                 ],
                 'fileModes' => ['edit', 'create', 'delete'],
@@ -273,6 +274,11 @@ final class Application
           line     one-based line
           column   one-based byte column
           ref      structural AST path from inspect, e.g. stmts[1].stmts[0].params[0]
+          select   what the node is, rather than where: class:Foo, interface:Foo,
+                   trait:Foo, enum:Foo, function:foo, method:Foo::bar,
+                   property:Foo::$bar, const:Foo::BAR. The owner may be left out
+                   where the file holds one class; an ambiguous selector is refused
+                   with the paths it matched. Needs no inspect first.
         
         Apply JSON:
           {
@@ -282,7 +288,7 @@ final class Application
               "sha256": "hash from inspect",
               "phpVersion": "8.4",
               "edits": [{
-                "target": {"ref": "stmts[0].stmts[0].name"},
+                "target": {"select": "method:Foo::oldMethod"},
                 "expect": {"name": "oldMethod"},
                 "operation": "set_name",
                 "value": "newMethod"
@@ -299,7 +305,7 @@ final class Application
           replace_argument, add_argument, remove_argument,
           add_member, add_parameter, add_attribute,
           set_return_type, set_type, set_visibility, add_implements, set_extends,
-          set_doc_comment, remove_doc_comment
+          set_doc_comment, remove_doc_comment, rename_variable
         
         Run `php-ast-edit contexts` for the full parseAs and operation catalog.
         

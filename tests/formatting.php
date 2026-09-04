@@ -412,6 +412,253 @@ try {
     );
 }
 
+// A target named by what it is, and a rename that is one edit rather than one per
+// occurrence. Between them they remove the `inspect --line --column` hunt that cost two to
+// four calls before any edit was written.
+$selectDir = workspace();
+RepositoryConfig::write($selectDir, 120);
+$selectPath = $selectDir . '/s.php';
+file_put_contents(
+    $selectPath,
+    <<<'PHP'
+    <?php
+    
+    class Vault
+    {
+        private array $nonceCache = [];
+    
+        public function store(string $nonce): string
+        {
+            $key = $this->nonceKey($nonce);
+            $this->nonceCache[$key] = $nonce;
+    
+            return 'nonce_' . $nonce;
+        }
+    
+        private function nonceKey(string $nonce): string
+        {
+            return \hash('sha256', $nonce);
+        }
+    }
+    PHP . "\n",
+);
+$renamed = (new Editor())->apply(
+    [
+        'files' => [
+            [
+                'path' => $selectPath,
+                'edits' => [
+                    [
+                        'target' => ['select' => 'method:Vault::store'],
+                        'operation' => 'rename_variable',
+                        'from' => 'nonce',
+                        'to' => 'nonceValue',
+                    ],
+                ],
+            ],
+        ],
+    ],
+    true,
+)['files'][0];
+$after = (string) $renamed['code'];
+check(
+    'a method is reachable by name',
+    $renamed['editsApplied'] === 1,
+    (string) $renamed['editsApplied'],
+);
+check('every occurrence of the variable moves', substr_count($after, '$nonceValue') === 4, $after);
+check('the property it resembles is untouched', substr_count($after, 'nonceCache') === 2, $after);
+check('so is the method', substr_count($after, 'nonceKey') === 2, $after);
+check('so is the string literal', str_contains($after, "'nonce_'"), $after);
+check(
+    'a scope the rename was not asked for keeps its own',
+    substr_count($after, 'string $nonce)') === 1,
+    $after,
+);
+
+try {
+    (new Editor())->apply(
+        [
+            'files' => [
+                [
+                    'path' => $selectPath,
+                    'edits' => [
+                        [
+                            'target' => ['select' => 'method:nonceKey', 'kind' => 'Stmt_Property'],
+                            'operation' => 'rename_variable',
+                            'from' => 'nonce',
+                            'to' => 'x',
+                        ],
+                    ],
+                ],
+            ],
+        ],
+        true,
+    );
+    check('a selector held to the wrong kind is refused', false, 'accepted');
+} catch (EditException $failure) {
+    check(
+        'a selector held to the wrong kind is refused',
+        str_contains($failure->getMessage(), 'expected Stmt_Property'),
+        $failure->getMessage(),
+    );
+}
+
+try {
+    $locator = new Netresearch\PhpAstEdit\NodeLocator();
+    $parsed = (new ParserFactory())->createForHostVersion()->parse(
+        "<?php\nclass A { public function f() {} }\nclass B { public function f() {} }\n",
+    ) ?? [];
+    $locator->resolveSelect($parsed, 'method:f');
+    check('an ambiguous selector is refused', false, 'accepted');
+} catch (EditException $failure) {
+    check(
+        'an ambiguous selector is refused',
+        str_contains($failure->getMessage(), 'matched 2 nodes'),
+        $failure->getMessage(),
+    );
+    check(
+        'and naming the owner settles it',
+        $locator->resolveSelect($parsed, 'method:B::f')->path !== '',
+    );
+}
+removeTree($selectDir);
+
+// Scope, which is what makes a rename by name safe rather than lucky.
+$scopeDir = workspace();
+RepositoryConfig::write($scopeDir, 200);
+$scopePath = $scopeDir . '/scope.php';
+file_put_contents(
+    $scopePath,
+    <<<'PHP'
+    <?php
+    
+    class Outer
+    {
+        public function run(string $item): string
+        {
+            $shadow = static function (string $item): string {
+                return $item;
+            };
+            $capture = function () use ($item): string {
+                return $item;
+            };
+            $arrow = fn (): string => $item;
+            $ownArrow = fn (string $item): string => $item;
+            $anon = new class {
+                public function run(string $item): string
+                {
+                    return $item;
+                }
+            };
+    
+            return $this->tag() . $item . $shadow('x') . $capture() . $arrow() . $ownArrow('y') . $anon->run('z');
+        }
+    
+        private function tag(): string
+        {
+            return 'x';
+        }
+    }
+    PHP . "\n",
+);
+$scoped = (new Editor())->apply(
+    [
+        'files' => [
+            [
+                'path' => $scopePath,
+                'edits' => [
+                    [
+                        'target' => ['select' => 'method:Outer::run'],
+                        'operation' => 'rename_variable',
+                        'from' => 'item',
+                        'to' => 'value',
+                    ],
+                ],
+            ],
+        ],
+    ],
+    true,
+)['files'][0];
+$scopedCode = (string) $scoped['code'];
+check(
+    'a closure that captures the name moves with it',
+    str_contains($scopedCode, 'use ($value)'),
+    $scopedCode,
+);
+check(
+    'a closure with its own parameter of that name keeps it',
+    str_contains($scopedCode, 'static function (string $item)'),
+    $scopedCode,
+);
+check(
+    'an arrow function captures, so it moves',
+    str_contains($scopedCode, 'fn(): string => $value'),
+    $scopedCode,
+);
+check(
+    'an arrow function that shadows the name keeps it',
+    str_contains($scopedCode, 'fn(string $item): string => $item'),
+    $scopedCode,
+);
+check(
+    'a method of an anonymous class is a scope of its own',
+    substr_count($scopedCode, 'public function run(string $item)') === 1,
+    $scopedCode,
+);
+// The same anonymous class must not answer a selector naming the class around it.
+$selected = (new Editor())->apply(
+    [
+        'files' => [
+            [
+                'path' => $scopePath,
+                'edits' => [
+                    [
+                        'target' => ['select' => 'method:Outer::run'],
+                        'operation' => 'set_name',
+                        'value' => 'execute',
+                    ],
+                ],
+            ],
+        ],
+    ],
+    true,
+)['files'][0];
+check(
+    'and it does not answer a selector naming the class around it',
+    $selected['editsApplied'] === 1,
+    (string) $selected['editsApplied'],
+);
+
+try {
+    (new Editor())->apply(
+        [
+            'files' => [
+                [
+                    'path' => $scopePath,
+                    'edits' => [
+                        [
+                            'target' => ['select' => 'method:Outer::run'],
+                            'operation' => 'rename_variable',
+                            'from' => 'this',
+                            'to' => 'self',
+                        ],
+                    ],
+                ],
+            ],
+        ],
+        true,
+    );
+    check('renaming $this is refused', false, 'accepted');
+} catch (EditException $failure) {
+    check(
+        'renaming $this is refused',
+        str_contains($failure->getMessage(), 'will not rename $this'),
+        $failure->getMessage(),
+    );
+}
+removeTree($scopeDir);
+
 // ---- The declaration decides the printer -----------------------------------------------
 $dir = workspace();
 file_put_contents(

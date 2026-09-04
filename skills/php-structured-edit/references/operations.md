@@ -126,6 +126,8 @@ Shorthands over the primitives. They are ergonomics, not the coverage boundary.
 - `add_implements` / `set_extends` — class hierarchy. Require `php`.
 - `set_doc_comment` — set the docblock. `value` is plain text or a complete `/** … */` block; an existing docblock is replaced, not duplicated.
 - `remove_doc_comment` — drop the docblock. Line and block comments on the same node are left alone.
+- `rename_variable` — rename one variable throughout a scope. Targets the method, function, closure or arrow function the variable lives in, and takes `from` and `to` (with or without the `$`). Renames `Expr_Variable` and `Param` nodes whose name matches exactly, so a property fetch, a method name and a string literal are untouched by construction: in a file holding `$nonce` eleven times beside `$this->nonceCache`, `getNonceCacheKey()`, `'nonce_'` and `'noncePrefix'`, only the eleven move. A `$$name` is left alone — its name is an expression, not a name. One edit, not one per occurrence.
+  Scope is respected rather than approximated: a nested named function, method or class body is a scope of its own and is not entered; a closure is entered only when it captures the name in `use`, and then the capture and the body move together; an arrow function captures by value on its own, so it is entered unless a parameter of its own shadows the name. `$this` is refused as either endpoint.
 
 ## Limits
 

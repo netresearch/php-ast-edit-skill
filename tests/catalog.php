@@ -40,6 +40,10 @@ foreach (['applyPrimitive', 'applyComment', 'applyShorthand', 'applySemantic'] a
     $body = substr($editor, $start, ($end === false ? strlen($editor) : $end) - $start);
     preg_match_all("/^\\s+case '([a-z0-9_]+)':/m", $body, $matches);
     $dispatchers = array_merge($dispatchers, $matches[1]);
+    // An operation whose snippet needs a context the parser does not have cannot be written
+    // as a `case` through this tool, so a handler may also take the form of an early guard.
+    preg_match_all("/\\\$operation === '([a-z0-9_]+)'/", $body, $guards);
+    $dispatchers = array_merge($dispatchers, $guards[1]);
 }
 sort($dispatchers);
 $catalog = json_decode(
