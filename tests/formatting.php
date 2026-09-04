@@ -152,18 +152,13 @@ function f()
     $c = 3;
 }
 PHP . "\n";
+$firstStatement = ['ref' => 'stmts[0].stmts[0]'];
 $applyOne = static function (array $edit) use ($editPath): array {
     return (new Editor())->apply(['files' => [['path' => $editPath, 'edits' => [$edit]]]], true)['files'][0];
 };
 // A replacement inherits the position of the node it replaces.
 file_put_contents($editPath, $paragraphed);
-$replaced = $applyOne(
-    [
-        'target' => ['ref' => 'stmts[0].stmts[0]'],
-        'operation' => 'replace_statement',
-        'php' => '$a = 99;',
-    ],
-);
+$replaced = $applyOne(['target' => $firstStatement, 'operation' => 'replace_statement', 'php' => '$a = 99;']);
 check(
     'replacing a statement inserts no blank line',
     $replaced['changedLines'] === 2,
@@ -176,9 +171,7 @@ check(
 );
 // An insertion has no predecessor to inherit from, so it must carry no position at all.
 file_put_contents($editPath, $paragraphed);
-$inserted = $applyOne(
-    ['target' => ['ref' => 'stmts[0].stmts[0]'], 'operation' => 'insert_before', 'php' => '$z = 0;'],
-);
+$inserted = $applyOne(['target' => $firstStatement, 'operation' => 'insert_before', 'php' => '$z = 0;']);
 check(
     'inserting before the first statement adds one line, not two',
     $inserted['changedLines'] === 1,
@@ -346,11 +339,7 @@ $cases = [
     ],
     'set_doc_comment' => [
         "<?php\nclass Foo\n{\n    public function bar()\n    {\n        return 1;\n    }\n}\n",
-        [
-            'target' => ['ref' => 'stmts[0].stmts[0]'],
-            'operation' => 'set_doc_comment',
-            'value' => 'Docs.',
-        ],
+        ['target' => $firstStatement, 'operation' => 'set_doc_comment', 'value' => 'Docs.'],
         3,
     ],
     'replace_expression' => [
