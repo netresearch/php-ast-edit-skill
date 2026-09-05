@@ -1104,6 +1104,31 @@ check(
     str_contains(implode(' ', $report['findings']), 'No formatter declared'),
     implode(' | ', $report['findings']),
 );
+check(
+    // Derived from what this repository actually carries. A canned command naming some
+    // other project's paths is advice the reader has to correct before it works.
+    'and the command it is given names this project\'s own formatter',
+    str_contains(
+        implode(' ', $report['findings']),
+        '"vendor/bin/php-cs-fixer","fix","--config=.php-cs-fixer.php"',
+    ),
+    implode(' | ', $report['findings']),
+);
+// A TYPO3 extension moves composer's bin-dir and keeps its configuration under Build/.
+$typo3 = workspace();
+file_put_contents($typo3 . '/composer.json', '{"config":{"bin-dir":".Build/bin"}}');
+mkdir($typo3 . '/Build');
+file_put_contents($typo3 . '/Build/.php-cs-fixer.php', "<?php\nreturn [];\n");
+RepositoryConfig::write($typo3, 120);
+check(
+    'and it follows the project to another bin-dir and config path',
+    str_contains(
+        implode(' ', (new Doctor())->examine($typo3)['findings']),
+        '".Build/bin/php-cs-fixer","fix","--config=Build/.php-cs-fixer.php"',
+    ),
+    implode(' | ', (new Doctor())->examine($typo3)['findings']),
+);
+removeTree($typo3);
 // Declaring it is the last thing the contract asks for.
 file_put_contents(
     $dir . '/' . RepositoryConfig::FILE,
