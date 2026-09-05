@@ -97,6 +97,10 @@ final class Doctor
             $findings[] = 'No workflow appears to run the formatter. Canonical formatting decays ' . 'the first time somebody edits by hand: the formatter accepts both the collapsed ' . 'and the expanded shape, so nothing reports the drift and the next AST edit ' . 'reflows it. Gate it: `php-ast-edit format && <project formatter> && ' . 'git diff --exit-code`.';
         }
 
+        if ($config->canonical && $config->formatter === null) {
+            $findings[] = 'No formatter declared in ' . RepositoryConfig::FILE . '. The fixed point belongs to the printer and the project formatter together, so an edit that stops after printing leaves a file in neither shape: on a canonical TYPO3 extension, adding one 9-line method reported 34 changed lines rather than 10. Declare the command and `apply` runs it on the files it wrote: "formatter": ["php", ".Build/bin/php-cs-fixer", "fix", "--config=Build/.php-cs-fixer.php", "--path-mode=intersection", "{files}"]. Name the paths mode: php-cs-fixer defaults to override, which ignores the config Finder as soon as paths are given, so this project\'s own exclusions would stop applying.';
+        }
+
         return [
             'root' => $root,
             'status' => $findings === [] ? 'ready' : 'warn',
@@ -109,6 +113,7 @@ final class Doctor
             'printWidth' => $config->width,
             'declaredIn' => $config->path,
             'formatterInCi' => $inCi,
+            'declaredFormatter' => $config->formatter,
             'editorconfig' => $editorconfig,
             'findings' => $findings,
         ];

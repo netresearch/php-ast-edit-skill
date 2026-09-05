@@ -3,5 +3,12 @@
     "printWidth": 100,
     "exclude": [
         "tests/fixtures"
+    ],
+    "formatter": [
+        "php",
+        "vendor/bin/php-cs-fixer",
+        "fix",
+        "--path-mode=intersection",
+        "{files}"
     ]
 }

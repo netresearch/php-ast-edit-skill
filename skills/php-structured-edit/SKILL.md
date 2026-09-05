@@ -26,7 +26,7 @@ this printer writes — otherwise a one-line change reflows the file. Run `docto
 scripts/php-ast-edit doctor
 ```
 
-`ready` means edits print canonically and cost only the lines they touch. `warn` names what
+`ready` means an edit prints canonically, runs the project's formatter itself and costs only the lines it touches. A repository that declares no `formatter` is reported `warn`: the fixed point belongs to the printer and the formatter together, so a write that stops after printing leaves a file in neither shape. `warn` names what
 is missing. Do not paper over it: **say what is missing and what it costs**, and offer the
 one-time setup — `normalize`, then the project's formatter, committed on its own. Until
 then `apply` falls back to format-preserving printing and returns a `NOT_CANONICAL`

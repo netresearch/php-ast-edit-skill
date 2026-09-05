@@ -8,6 +8,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Added
 
+- **`doctor` reports the declared formatter, and says so when there is none.** A repository normalised before 0.5.0 has every other part of the contract and still leaves an edit halfway: the fixed point belongs to the printer and the project formatter together, so `apply` without a declaration stops after printing. That case is now `warn` rather than `ready`, with the command to add and a note that `--path-mode=intersection` is not decoration — php-cs-fixer defaults to `override`, which ignores the config's own Finder as soon as paths are named, so the project's exclusions would stop applying exactly when a tool starts naming files. `declaredFormatter` carries the declaration in the report.
+- This repository declares its own, and its `doctor` says `ready`. Adding a method to `src/Doctor.php` is one call: 6 changed lines, formatter run included.
+
 - **A `switch` arm can be written through the tool.** `parseAs: "switch_case"` parses `case 1: …;` and `default: …;`. It was missing, and the gap was found by hitting it: `rename_variable` shipped in 0.5.0 as a guard ahead of the dispatcher rather than a `case` in it, because a `case` could not be written at all — the one thing this tool exists to make unnecessary. It is a `case` now, written through the new context, and the special-case detection `tests/catalog.php` had grown to recognise the workaround is gone with it.
 
 ## [0.5.0] - 2026-09-05

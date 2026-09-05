@@ -1095,9 +1095,37 @@ file_put_contents($dir . '/.github/workflows/ci.yml', "run: php-cs-fixer fix --d
 RepositoryConfig::write($dir, 80);
 $report = (new Doctor())->examine($dir);
 check(
+    'a canonical repository that declares no formatter is not ready',
+    $report['status'] === 'warn',
+    implode(' | ', $report['findings']),
+);
+check(
+    'and it is told that an edit would stop halfway',
+    str_contains(implode(' ', $report['findings']), 'No formatter declared'),
+    implode(' | ', $report['findings']),
+);
+// Declaring it is the last thing the contract asks for.
+file_put_contents(
+    $dir . '/' . RepositoryConfig::FILE,
+    json_encode(
+        [
+            'canonical' => true,
+            'printWidth' => 80,
+            'formatter' => ['php', 'vendor/bin/php-cs-fixer', 'fix', '--path-mode=intersection', '{files}'],
+        ],
+        JSON_PRETTY_PRINT,
+    ) . "\n",
+);
+$report = (new Doctor())->examine($dir);
+check(
     'a repository meeting the contract is ready',
     $report['status'] === 'ready',
     implode(' | ', $report['findings']),
+);
+check(
+    'and the declared formatter is reported back',
+    ($report['declaredFormatter'][1] ?? '') === 'vendor/bin/php-cs-fixer',
+    json_encode($report['declaredFormatter'] ?? null),
 );
 check(
     'and the formatter is identified',
