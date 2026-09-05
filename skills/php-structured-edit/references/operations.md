@@ -87,6 +87,7 @@ A snippet is parsed inside a synthetic host construct, so the grammar always com
 | `attribute` | `<snippet> class X {}` | `AttributeGroup` |
 | `closure_use` | `function () use (<snippet>) {};` | `ClosureUse` |
 | `catch` | `try {} <snippet>` | `Stmt_Catch` |
+| `switch_case` | `switch (…) { <snippet> }` | `Stmt_Case` |
 | `const` | `const <snippet>;` | `Const` |
 | `use` | `use <snippet>;` | `UseItem` |
 | `property_item` | `class X { public $<snippet>; }` | `PropertyItem` |

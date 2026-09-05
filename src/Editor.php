@@ -740,25 +740,21 @@ final class Editor
     ): bool {
         $node = $location->node;
 
-        if ($operation === 'rename_variable') {
-            // Not a case in the switch below: the snippet parser has no context for one, so a
-            // `case` cannot be written through this tool. Handled here until it does.
-            if (!$node instanceof Stmt\ClassMethod && !$node instanceof Stmt\Function_ && !$node instanceof Expr\Closure && !$node instanceof Expr\ArrowFunction) {
-                throw new EditException(
-                    'rename_variable targets the scope the variable lives in: a method, function, closure or arrow function.',
-                );
-            }
-            $this->renameVariable(
-                $node,
-                $this->requiredString($edit, 'from'),
-                $this->requiredString($edit, 'to'),
-            );
-
-            return true;
-        }
-
         switch ($operation) {
-            // ---- Convenience shorthands over the primitives ------------------------------
+            case 'rename_variable':
+                if (!$node instanceof Stmt\ClassMethod && !$node instanceof Stmt\Function_ && !$node instanceof Expr\Closure && !$node instanceof Expr\ArrowFunction) {
+                    throw new EditException(
+                        'rename_variable targets the scope the variable lives in: a method, function, closure or arrow function.',
+                    );
+                }
+                $this->renameVariable(
+                    $node,
+                    $this->requiredString($edit, 'from'),
+                    $this->requiredString($edit, 'to'),
+                );
+
+                return true;
+                // ---- Convenience shorthands over the primitives ------------------------------
             case 'set_name':
                 $this->setName($location, $this->requiredString($edit, 'value'), $roots);
 

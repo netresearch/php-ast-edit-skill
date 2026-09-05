@@ -110,6 +110,11 @@ final class ContextParser
                 'template' => '<?php try {} %s',
                 'extract' => static fn (array $stmts): array => $stmts[0]->catches,
             ],
+            'switch_case' => [
+                'host' => Stmt\Switch_::class,
+                'template' => '<?php switch (__AST_CONTEXT) { %s }',
+                'extract' => static fn (array $stmts): array => $stmts[0]->cases,
+            ],
             'const' => [
                 'host' => Stmt\Const_::class,
                 'template' => '<?php const %s;',

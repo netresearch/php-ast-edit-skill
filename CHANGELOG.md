@@ -6,6 +6,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Added
+
+- **A `switch` arm can be written through the tool.** `parseAs: "switch_case"` parses `case 1: …;` and `default: …;`. It was missing, and the gap was found by hitting it: `rename_variable` shipped in 0.5.0 as a guard ahead of the dispatcher rather than a `case` in it, because a `case` could not be written at all — the one thing this tool exists to make unnecessary. It is a `case` now, written through the new context, and the special-case detection `tests/catalog.php` had grown to recognise the workaround is gone with it.
+
 ## [0.5.0] - 2026-09-05
 
 ### Added
