@@ -1,6 +1,6 @@
 {
   "name": "php-structured-edit",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "AST-native PHP source mutations for coding agents: typed edits through nikic/php-parser with hash guards and canonical printing.",
   "author": {
     "name": "Netresearch DTT GmbH",

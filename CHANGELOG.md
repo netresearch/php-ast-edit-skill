@@ -6,6 +6,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-09-05
+
 ### Added
 
 - **`doctor` reports the declared formatter, and says so when there is none.** A repository normalised before 0.5.0 has every other part of the contract and still leaves an edit halfway: the fixed point belongs to the printer and the project formatter together, so `apply` without a declaration stops after printing. That case is now `warn` rather than `ready`, with the command to add and a note that `--path-mode=intersection` is not decoration — php-cs-fixer defaults to `override`, which ignores the config's own Finder as soon as paths are named, so the project's exclusions would stop applying exactly when a tool starts naming files. `declaredFormatter` carries the declaration in the report. The command it suggests is derived from what the repository actually carries — the formatter `doctor` detected, its configuration path, and composer's own `bin-dir`, which a TYPO3 extension commonly moves to `.Build/bin` — rather than named from one project's layout.
@@ -134,7 +136,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - `php-structured-edit` Agent Skill with the operation reference and a wrapper resolving the repository binary, `vendor/bin`, a local PHAR, or `PATH`.
 - PHAR build via `scripts/build-phar.php`.
 
-[Unreleased]: https://github.com/netresearch/php-ast-edit-skill/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/netresearch/php-ast-edit-skill/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/netresearch/php-ast-edit-skill/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/netresearch/php-ast-edit-skill/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/netresearch/php-ast-edit-skill/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/netresearch/php-ast-edit-skill/compare/v0.2.0...v0.3.0
