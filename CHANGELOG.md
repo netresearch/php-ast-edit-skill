@@ -6,6 +6,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Fixed
+
+- **`parseAs: "stmts"` accepts more than one statement.** It was mapped straight onto `stmt` and then met the single-statement check, so the context could not do the one thing its name promises — and `operations.md` had been documenting "one or more `Stmt`" for it all along. Found by hitting it: inserting a guard, an assignment and the `if` that reads it, took two edits, and the second shifted the index the first had just moved, so they landed in the wrong order and had to be repaired. `stmts` is now `stmt` with the arity relaxed, and the `stmt` error names it.
+
 ## [0.6.0] - 2026-09-05
 
 ### Added

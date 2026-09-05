@@ -151,7 +151,13 @@ final class ContextParser
      */
     public function parse(string $context, string $code): array
     {
-        if ($context === 'stmts') {
+        // `stmts` is `stmt` with the arity relaxed: same host, same template, but a snippet
+        // may carry several statements. Without it, inserting a guard — an assignment and
+        // the `if` that reads it — took two edits, and the second shifted the index the
+        // first had just moved, so they landed in the wrong order.
+        $many = $context === 'stmts';
+
+        if ($many) {
             $context = 'stmt';
         }
 
@@ -221,14 +227,20 @@ final class ContextParser
             throw new EditException('Snippet must not leave the PHP context.');
         }
 
-        if (count($stmts) !== 1) {
+        if (!$many && count($stmts) !== 1) {
             throw new EditException(
                 sprintf(
-                    'Snippet does not fit the "%s" context: it produced %d top-level statements.',
+                    'Snippet does not fit the "%s" context: it produced %d top-level statements. Use "stmts" to insert several at once.',
                     $context,
                     count($stmts),
                 ),
             );
+        }
+
+        if ($many) {
+            // Every statement is its own node here; the single-statement extractor would
+            // hand back only the first.
+            return $stmts;
         }
         $nodes = $spec['extract']($stmts);
         $nodes = array_values(array_filter($nodes, static fn (mixed $node): bool => $node instanceof Node));
