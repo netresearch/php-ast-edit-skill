@@ -285,7 +285,9 @@ $cases = [
                 ['parseAs' => 'stmts', 'php' => "\$a = 1;\n\$b = 2;"],
             ),
         ],
-        'contains' => inA("\$a = 1;"),
+        // Both statements, in the order they were written: asserting only the first would
+        // pass with the second dropped, or with the two the wrong way round.
+        'contains' => inA("    \$a = 1;\n    \$b = 2;\n    return 1;"),
     ],
     [
         'name' => 'and the stmt context still refuses more than one, saying which to use',

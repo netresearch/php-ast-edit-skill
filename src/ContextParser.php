@@ -155,17 +155,17 @@ final class ContextParser
         // may carry several statements. Without it, inserting a guard — an assignment and
         // the `if` that reads it — took two edits, and the second shifted the index the
         // first had just moved, so they landed in the wrong order.
+        // The name the caller used stays in `$context` and therefore in every message:
+        // being told a snippet is invalid in the "stmt" context, having asked for "stmts",
+        // sends the reader looking at the wrong contract. Only the lookup is mapped.
         $many = $context === 'stmts';
-
-        if ($many) {
-            $context = 'stmt';
-        }
+        $lookup = $many ? 'stmt' : $context;
 
         if ($context === 'file') {
             return $this->file($code);
         }
 
-        if (!isset($this->contexts[$context])) {
+        if (!isset($this->contexts[$lookup])) {
             throw new EditException(
                 sprintf(
                     'Unknown parseAs context "%s". Known contexts: %s.',
@@ -183,7 +183,7 @@ final class ContextParser
         if ($context === 'expr') {
             $code = rtrim($code, "; \t\n\r\x00\v");
         }
-        $spec = $this->contexts[$context];
+        $spec = $this->contexts[$lookup];
         $source = sprintf($spec['template'], $code);
 
         try {
