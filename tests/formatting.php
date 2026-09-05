@@ -1095,9 +1095,86 @@ file_put_contents($dir . '/.github/workflows/ci.yml', "run: php-cs-fixer fix --d
 RepositoryConfig::write($dir, 80);
 $report = (new Doctor())->examine($dir);
 check(
+    'a canonical repository that declares no formatter is not ready',
+    $report['status'] === 'warn',
+    implode(' | ', $report['findings']),
+);
+check(
+    'and it is told that an edit would stop halfway',
+    str_contains(implode(' ', $report['findings']), 'No formatter declared'),
+    implode(' | ', $report['findings']),
+);
+check(
+    // Derived from what this repository actually carries. A canned command naming some
+    // other project's paths is advice the reader has to correct before it works.
+    'and the command it is given names this project\'s own formatter',
+    str_contains(
+        implode(' ', $report['findings']),
+        '"vendor/bin/php-cs-fixer","fix","--config=.php-cs-fixer.php"',
+    ),
+    implode(' | ', $report['findings']),
+);
+// A TYPO3 extension moves composer's bin-dir and keeps its configuration under Build/.
+$typo3 = workspace();
+file_put_contents($typo3 . '/composer.json', '{"config":{"bin-dir":".Build/bin"}}');
+mkdir($typo3 . '/Build');
+file_put_contents($typo3 . '/Build/.php-cs-fixer.php', "<?php\nreturn [];\n");
+RepositoryConfig::write($typo3, 120);
+check(
+    'and it follows the project to another bin-dir and config path',
+    str_contains(
+        implode(' ', (new Doctor())->examine($typo3)['findings']),
+        '".Build/bin/php-cs-fixer","fix","--config=Build/.php-cs-fixer.php"',
+    ),
+    implode(' | ', (new Doctor())->examine($typo3)['findings']),
+);
+removeTree($typo3);
+
+// Every formatter doctor knows gets its own shape, and the paths-mode note belongs to the
+// only one that has a paths mode.
+foreach ([
+    ['pint.json', '{}', '"vendor/bin/pint","{files}"', false],
+    ['ecs.php', "<?php\nreturn [];\n", '"vendor/bin/ecs","check","--fix","{files}"', false],
+    ['phpcs.xml', "<ruleset/>\n", '"vendor/bin/phpcbf","--standard=phpcs.xml","{files}"', false],
+] as [$configFile, $configBody, $expected, $wantsPathMode]) {
+    $shape = workspace();
+    file_put_contents($shape . '/' . $configFile, $configBody);
+    RepositoryConfig::write($shape, 120);
+    $said = implode(' ', (new Doctor())->examine($shape)['findings']);
+    check(
+        'the suggestion for ' . $configFile . ' names its own tool',
+        str_contains($said, $expected),
+        $said,
+    );
+    check(
+        'and ' . $configFile . ' is not told about a paths mode it has not got',
+        str_contains($said, 'paths mode is not decoration') === $wantsPathMode,
+        $said,
+    );
+    removeTree($shape);
+}
+// Declaring it is the last thing the contract asks for.
+file_put_contents(
+    $dir . '/' . RepositoryConfig::FILE,
+    json_encode(
+        [
+            'canonical' => true,
+            'printWidth' => 80,
+            'formatter' => ['php', 'vendor/bin/php-cs-fixer', 'fix', '--path-mode=intersection', '{files}'],
+        ],
+        JSON_PRETTY_PRINT,
+    ) . "\n",
+);
+$report = (new Doctor())->examine($dir);
+check(
     'a repository meeting the contract is ready',
     $report['status'] === 'ready',
     implode(' | ', $report['findings']),
+);
+check(
+    'and the declared formatter is reported back',
+    ($report['declaredFormatter'][1] ?? '') === 'vendor/bin/php-cs-fixer',
+    json_encode($report['declaredFormatter'] ?? null),
 );
 check(
     'and the formatter is identified',
