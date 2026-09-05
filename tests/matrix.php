@@ -258,6 +258,23 @@ $cases = [
         ],
         'contains' => inA(USE_ITEM),
     ],
+    [
+        'name' => 'a switch arm is written through the switch_case context',
+        'files' => src("<?php\nswitch (\$x) {\n    case 1:\n        return 'a';\n}\n"),
+        'edits' => [
+            at(
+                'stmts[0]',
+                'insert_into',
+                [
+                    'property' => 'cases',
+                    'position' => 'end',
+                    'parseAs' => 'switch_case',
+                    'php' => "case 2:\n    return 'b';",
+                ],
+            ),
+        ],
+        'contains' => inA("case 2:"),
+    ],
     // ---- Signatures, types, modifiers ----------------------------------------------------
     [
         'name' => 'union return type replaces a scalar one',
