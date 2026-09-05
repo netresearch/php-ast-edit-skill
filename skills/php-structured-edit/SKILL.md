@@ -41,7 +41,7 @@ for the printer to agree with, so every edit is a style decision nobody made.
 1. Locate the code with the normal search tools.
 2. Name the target by what it is, and skip the lookup: `"target": {"select":
    "method:Foo::bar"}` — also `class:`, `interface:`, `trait:`, `enum:`, `function:`,
-   `property:Foo::$bar`, `const:Foo::BAR`. The owner may be left out where the file holds
+   `property:Foo::$bar` (promoted constructor properties included), `const:Foo::BAR`. The owner may be left out where the file holds
    one class; an ambiguous selector is refused with the paths it matched, never resolved
    to the first hit.
 3. Where no name fits — an expression, one statement inside a body — `php-ast-edit

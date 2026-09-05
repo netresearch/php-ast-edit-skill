@@ -276,7 +276,8 @@ final class Application
           ref      structural AST path from inspect, e.g. stmts[1].stmts[0].params[0]
           select   what the node is, rather than where: class:Foo, interface:Foo,
                    trait:Foo, enum:Foo, function:foo, method:Foo::bar,
-                   property:Foo::$bar, const:Foo::BAR. The owner may be left out
+                   property:Foo::$bar (promoted constructor properties included),
+                   const:Foo::BAR. The owner may be left out
                    where the file holds one class; an ambiguous selector is refused
                    with the paths it matched. Needs no inspect first.
         
