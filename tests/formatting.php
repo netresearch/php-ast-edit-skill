@@ -1129,6 +1129,30 @@ check(
     implode(' | ', (new Doctor())->examine($typo3)['findings']),
 );
 removeTree($typo3);
+
+// Every formatter doctor knows gets its own shape, and the paths-mode note belongs to the
+// only one that has a paths mode.
+foreach ([
+    ['pint.json', '{}', '"vendor/bin/pint","{files}"', false],
+    ['ecs.php', "<?php\nreturn [];\n", '"vendor/bin/ecs","check","--fix","{files}"', false],
+    ['phpcs.xml', "<ruleset/>\n", '"vendor/bin/phpcbf","--standard=phpcs.xml","{files}"', false],
+] as [$configFile, $configBody, $expected, $wantsPathMode]) {
+    $shape = workspace();
+    file_put_contents($shape . '/' . $configFile, $configBody);
+    RepositoryConfig::write($shape, 120);
+    $said = implode(' ', (new Doctor())->examine($shape)['findings']);
+    check(
+        'the suggestion for ' . $configFile . ' names its own tool',
+        str_contains($said, $expected),
+        $said,
+    );
+    check(
+        'and ' . $configFile . ' is not told about a paths mode it has not got',
+        str_contains($said, 'paths mode is not decoration') === $wantsPathMode,
+        $said,
+    );
+    removeTree($shape);
+}
 // Declaring it is the last thing the contract asks for.
 file_put_contents(
     $dir . '/' . RepositoryConfig::FILE,

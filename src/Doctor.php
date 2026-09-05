@@ -99,7 +99,13 @@ final class Doctor
 
         if ($config->canonical && $config->formatter === null) {
             $suggestion = $this->suggestedFormatter($root, $formatters);
-            $findings[] = 'No formatter declared in ' . RepositoryConfig::FILE . '. The fixed point belongs to the printer and the project formatter together, so an edit that stops after printing leaves a file in neither shape: on a canonical TYPO3 extension, adding one 9-line method reported 34 changed lines rather than 10. Declare the command and `apply` runs it on the files it wrote' . ($suggestion === null ? '.' : ': "formatter": ' . json_encode($suggestion, JSON_UNESCAPED_SLASHES) . '. The paths mode is not decoration: php-cs-fixer defaults to override, which ignores the configuration Finder as soon as paths are named, so this project\'s own exclusions would stop applying.');
+            $advice = $suggestion === null ? '.' : ': "formatter": ' . json_encode($suggestion, JSON_UNESCAPED_SLASHES) . '.';
+
+            if ($suggestion !== null && in_array('--path-mode=intersection', $suggestion, true)) {
+                // Only php-cs-fixer has a paths mode, and only there is the flag load-bearing.
+                $advice .= ' The paths mode is not decoration: php-cs-fixer defaults to override, which ignores the configuration Finder as soon as paths are named, so this project\'s own exclusions would stop applying.';
+            }
+            $findings[] = 'No formatter declared in ' . RepositoryConfig::FILE . '. The fixed point belongs to the printer and the project formatter together, so an edit that stops after printing leaves a file in neither shape: on a canonical TYPO3 extension, adding one 9-line method reported 34 changed lines rather than 10. Declare the command and `apply` runs it on the files it wrote' . $advice;
         }
 
         return [
