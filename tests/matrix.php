@@ -275,6 +275,32 @@ $cases = [
         ],
         'contains' => inA("case 2:"),
     ],
+    [
+        'name' => 'several statements go in as one edit through the stmts context',
+        'files' => src("<?php\nfunction f(): int\n{\n    return 1;\n}\n"),
+        'edits' => [
+            at(
+                'stmts[0].stmts[0]',
+                'insert_before',
+                ['parseAs' => 'stmts', 'php' => "\$a = 1;\n\$b = 2;"],
+            ),
+        ],
+        // Both statements, in the order they were written: asserting only the first would
+        // pass with the second dropped, or with the two the wrong way round.
+        'contains' => inA("    \$a = 1;\n    \$b = 2;\n    return 1;"),
+    ],
+    [
+        'name' => 'and the stmt context still refuses more than one, saying which to use',
+        'files' => src("<?php\nfunction f(): int\n{\n    return 1;\n}\n"),
+        'edits' => [
+            at(
+                'stmts[0].stmts[0]',
+                'insert_before',
+                ['parseAs' => 'stmt', 'php' => "\$a = 1;\n\$b = 2;"],
+            ),
+        ],
+        'error' => 'Use "stmts" to insert several at once',
+    ],
     // ---- Signatures, types, modifiers ----------------------------------------------------
     [
         'name' => 'union return type replaces a scalar one',

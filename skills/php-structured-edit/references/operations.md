@@ -76,7 +76,8 @@ A snippet is parsed inside a synthetic host construct, so the grammar always com
 | `parseAs` | Synthetic host | Produces |
 | --- | --- | --- |
 | `expr` | `<snippet>;` | `Expr` |
-| `stmt` / `stmts` | `<snippet>` | one or more `Stmt` |
+| `stmt` | `<snippet>` | exactly one `Stmt` |
+| `stmts` | `<snippet>` | one or more `Stmt`, inserted together |
 | `member` | `class X { <snippet> }` | `Stmt_ClassMethod`, `Stmt_Property`, `Stmt_ClassConst`, `Stmt_TraitUse` |
 | `enum_case` | `enum X { <snippet> }` | `Stmt_EnumCase` |
 | `param` | `function f(<snippet>) {}` | `Param` |

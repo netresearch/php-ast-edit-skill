@@ -151,15 +151,21 @@ final class ContextParser
      */
     public function parse(string $context, string $code): array
     {
-        if ($context === 'stmts') {
-            $context = 'stmt';
-        }
+        // `stmts` is `stmt` with the arity relaxed: same host, same template, but a snippet
+        // may carry several statements. Without it, inserting a guard — an assignment and
+        // the `if` that reads it — took two edits, and the second shifted the index the
+        // first had just moved, so they landed in the wrong order.
+        // The name the caller used stays in `$context` and therefore in every message:
+        // being told a snippet is invalid in the "stmt" context, having asked for "stmts",
+        // sends the reader looking at the wrong contract. Only the lookup is mapped.
+        $many = $context === 'stmts';
+        $lookup = $many ? 'stmt' : $context;
 
         if ($context === 'file') {
             return $this->file($code);
         }
 
-        if (!isset($this->contexts[$context])) {
+        if (!isset($this->contexts[$lookup])) {
             throw new EditException(
                 sprintf(
                     'Unknown parseAs context "%s". Known contexts: %s.',
@@ -177,7 +183,7 @@ final class ContextParser
         if ($context === 'expr') {
             $code = rtrim($code, "; \t\n\r\x00\v");
         }
-        $spec = $this->contexts[$context];
+        $spec = $this->contexts[$lookup];
         $source = sprintf($spec['template'], $code);
 
         try {
@@ -221,14 +227,20 @@ final class ContextParser
             throw new EditException('Snippet must not leave the PHP context.');
         }
 
-        if (count($stmts) !== 1) {
+        if (!$many && count($stmts) !== 1) {
             throw new EditException(
                 sprintf(
-                    'Snippet does not fit the "%s" context: it produced %d top-level statements.',
+                    'Snippet does not fit the "%s" context: it produced %d top-level statements. Use "stmts" to insert several at once.',
                     $context,
                     count($stmts),
                 ),
             );
+        }
+
+        if ($many) {
+            // Every statement is its own node here; the single-statement extractor would
+            // hand back only the first.
+            return $stmts;
         }
         $nodes = $spec['extract']($stmts);
         $nodes = array_values(array_filter($nodes, static fn (mixed $node): bool => $node instanceof Node));
