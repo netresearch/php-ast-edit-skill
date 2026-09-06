@@ -34,6 +34,23 @@ No. Existing files use format-preserving printing by default. Review the diff be
 changed subtrees may still reflow. Canonical formatting is optional and should be adopted
 as a separately reviewed formatting change.
 
+## Can I adopt it incrementally?
+
+| Stage | Setup | What the agent gains |
+| --- | --- | --- |
+| Structured edits | Install the engine; preserve existing formatting | Named targets, typed changes and guarded batches |
+| Integrated checks | Configure the project's formatter and `verify` commands | One report containing the edit and the checks actually run |
+| Canonical repository | Explicitly adopt normalization and a formatting gate | A shared printer/formatter fixed point, when the project supports it |
+
+The first stage does not require `doctor` or repository-wide normalization. Add later
+stages when their benefits justify the setup and review cost for your project.
+
+## Does it replace Rector or PHPStan?
+
+No. Rector supplies migration and refactoring rules; PHPStan analyzes PHP programs.
+`php-ast-edit` supplies structured write operations. Existing project checks can run through
+`verify`, including PHPStan. Combining the calls does not eliminate their execution time.
+
 ## Does rename_method find all references?
 
 No. It operates on the selected declaration and structurally attributable calls in the

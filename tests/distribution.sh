@@ -10,6 +10,7 @@ smoke() {
   shift
   jq -n --arg path "$fixture" '{files:[{path:$path,mode:"create",php:"<?php echo 41;"}]}' \
     | "$@" apply > "$WORK/result.json"
+  # Creation prints the statement on line 3, after the PHP tag and blank line.
   "$@" inspect --file "$fixture" --line 3 --column 6 > "$WORK/inspect.json"
   jq -e '.nodes[0].type == "Scalar_Int"' "$WORK/inspect.json" > /dev/null
   jq --arg path "$fixture" '{files:[{path:$path,sha256:.sha256,edits:[{

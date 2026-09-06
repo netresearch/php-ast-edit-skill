@@ -73,6 +73,13 @@ bash scripts/build-release.sh "v$(jq -r .version plugin.json)"
 Build output is in `dist/releases/`. The release builder installs runtime-only dependencies
 in an isolated directory, leaving development dependencies in your working checkout.
 
+Dependency versions are resolved at build time within the Composer constraints, using
+the supported PHP floor. This library does not track a root `composer.lock`. Each release
+records its resolved runtime dependencies and tests the exact packaged bytes before
+signing them. Rebuilding the same source tag later can select newer compatible packages;
+the pipeline does not promise byte-identical rebuilds. Use the verified release assets and
+their dependency manifest when reproducing a deployed toolchain.
+
 ## Install agent instructions
 
 For an agent supported by the skills installer:

@@ -55,6 +55,59 @@
     "sha256": {
       "type": "string",
       "pattern": "^[a-f0-9]{64}$"
+    },
+    "duration": {
+      "type": "number",
+      "minimum": 0
+    },
+    "tool_interval": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "call_id",
+        "start_ms",
+        "end_ms"
+      ],
+      "properties": {
+        "call_id": {
+          "$ref": "#/$defs/text"
+        },
+        "start_ms": {
+          "$ref": "#/$defs/duration"
+        },
+        "end_ms": {
+          "$ref": "#/$defs/duration"
+        }
+      }
+    },
+    "tool_intervals": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "origin",
+        "clock",
+        "intervals"
+      ],
+      "properties": {
+        "origin": {
+          "type": "string",
+          "enum": [
+            "native_harness_tool_execution"
+          ]
+        },
+        "clock": {
+          "type": "string",
+          "enum": [
+            "monotonic_ms_from_task_start"
+          ]
+        },
+        "intervals": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/tool_interval"
+          }
+        }
+      }
     }
   },
   "properties": {
@@ -112,6 +165,9 @@
           "$ref": "#/$defs/count"
         },
         "cached_input": {
+          "$ref": "#/$defs/count"
+        },
+        "cache_write_input": {
           "$ref": "#/$defs/count"
         }
       }
@@ -174,6 +230,29 @@
     },
     "oracle": {
       "$ref": "#/$defs/evidence"
+    },
+    "failed_tool_calls": {
+      "$ref": "#/$defs/count"
+    },
+    "tool_timing": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "execution_sum_ms",
+        "busy_wall_ms",
+        "evidence"
+      ],
+      "properties": {
+        "execution_sum_ms": {
+          "$ref": "#/$defs/duration"
+        },
+        "busy_wall_ms": {
+          "$ref": "#/$defs/duration"
+        },
+        "evidence": {
+          "$ref": "#/$defs/evidence"
+        }
+      }
     }
   }
 }

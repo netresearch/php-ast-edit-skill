@@ -104,7 +104,7 @@ def grade(task, work, state):
     }
     same_scope = not has_symlinks and sorted(files) == sorted(state["baseline"])
     lint = {
-        name: same_scope and invoke(["php", "-l", name], work).returncode == 0
+        name: invoke(["php", "-l", name], work).returncode == 0 if same_scope else None
         for name in state["baseline"]
     }
     # A candidate can exit successfully while require() is still loading it. Only
@@ -188,6 +188,9 @@ def validate_schema(value, schema, path="$", root=None):
                 )
             elif schema.get("additionalProperties") is False:
                 raise ValueError(f"{path}: unknown {key}")
+    if isinstance(value, list) and "items" in schema:
+        for index, child in enumerate(value):
+            validate_schema(child, schema["items"], f"{path}[{index}]", root)
     if isinstance(value, str) and "pattern" in schema:
         pattern = HASH_PATTERNS.get(schema["pattern"])
         if pattern is None:
@@ -200,9 +203,75 @@ def validate_schema(value, schema, path="$", root=None):
         raise ValueError(f"{path}: negative value")
 
 
+def validate_optional_metrics(record, parent, schema):
+    if record.get("failed_tool_calls", 0) > record["tool_calls"]:
+        raise ValueError("Failed tool calls cannot exceed total tool calls")
+    tokens = record["tokens"]
+    if tokens["cached_input"] + tokens.get("cache_write_input", 0) > tokens["input"]:
+        raise ValueError("Cache-read and cache-write tokens exceed total input")
+    timing = record.get("tool_timing")
+    if timing is None:
+        return
+    evidence = timing["evidence"]
+    source = (parent / evidence["path"]).resolve()
+    if digest(source) != evidence["sha256"]:
+        raise ValueError("Tool timing evidence checksum mismatch")
+    native = load(source)
+    validate_schema(native, {"$ref": "#/$defs/tool_intervals"}, root=schema)
+    events = native["intervals"]
+    if len(events) != record["tool_calls"] or len(
+        {e["call_id"] for e in events}
+    ) != len(events):
+        raise ValueError("Tool intervals must cover every tool call exactly once")
+    intervals = sorted((e["start_ms"], e["end_ms"]) for e in events)
+    covered_until = 0
+    busy = 0
+    durations = []
+    for start, end in intervals:
+        if end < start or end > record["elapsed_ms"]:
+            raise ValueError("Tool interval lies outside the task duration")
+        durations.append(end - start)
+        busy += max(0, end - max(start, covered_until))
+        covered_until = max(covered_until, end)
+    measured = {"execution_sum_ms": math.fsum(durations), "busy_wall_ms": busy}
+    for key, value in measured.items():
+        if not math.isclose(timing[key], value, rel_tol=1e-9, abs_tol=1e-6):
+            raise ValueError(f"{key} disagrees with native tool intervals")
+
+
+def summarize_optional_metrics(rows):
+    failures = [r["failed_tool_calls"] for r in rows if "failed_tool_calls" in r]
+    writes = [
+        r["tokens"]["cache_write_input"]
+        for r in rows
+        if "cache_write_input" in r["tokens"]
+    ]
+    timings = [r["tool_timing"] for r in rows if "tool_timing" in r]
+    return {
+        "failed_tool_calls": {
+            "measured_runs": len(failures),
+            "total": sum(failures) if failures else None,
+        },
+        "cache_write_input": {
+            "measured_runs": len(writes),
+            "total": sum(writes) if writes else None,
+        },
+        "tool_timing": {
+            "measured_runs": len(timings),
+            "execution_sum_ms": math.fsum(t["execution_sum_ms"] for t in timings)
+            if timings
+            else None,
+            "busy_wall_ms": math.fsum(t["busy_wall_ms"] for t in timings)
+            if timings
+            else None,
+        },
+    }
+
+
 def import_run(record_path, destination):
     record = load(record_path)
-    validate_schema(record, load(SCHEMA))
+    schema = load(SCHEMA)
+    validate_schema(record, schema)
     task_by_id(record["task_id"])
     parent = record_path.resolve().parent
     transcript = (parent / record["transcript"]["path"]).resolve()
@@ -225,6 +294,7 @@ def import_run(record_path, destination):
         raise ValueError("First-attempt success inconsistent with repairs/outcome")
     if record["tokens"]["cached_input"] > record["tokens"]["input"]:
         raise ValueError("Cached input must be a subset of total input")
+    validate_optional_metrics(record, parent, schema)
     identity = [
         record[key]
         for key in (
@@ -314,6 +384,7 @@ def summarize(path):
                 ),
                 "tool_calls_all_attempts": sum(r["tool_calls"] for r in rows),
                 "model_rounds_all_attempts": sum(r["model_rounds"] for r in rows),
+                "optional_metrics": summarize_optional_metrics(rows),
             }
         )
     return {
@@ -400,8 +471,116 @@ def self_test_imports(task, work, state, base):
         or summary["groups"][0]["successful_runs"] != 1
     ):
         raise RuntimeError("Synthetic import summary counted rejected rows")
+    self_test_optional_metrics(record, candidate, base)
     print(
         "OK: synthetic importer checks reject duplicates, invalid metrics, and altered evidence"
+    )
+
+
+def self_test_optional_metrics(legacy, candidate, base):
+    results = base / "synthetic-optional-results.jsonl"
+    save(candidate, legacy)
+    import_run(candidate, results)
+    old_summary = summarize(results)["groups"][0]["optional_metrics"]
+    if (
+        old_summary["tool_timing"]["measured_runs"] != 0
+        or old_summary["tool_timing"]["busy_wall_ms"] is not None
+    ):
+        raise RuntimeError("Unmeasured legacy timing was converted to zero")
+    source = base / "synthetic-tool-intervals.json"
+    native = {
+        "origin": "native_harness_tool_execution",
+        "clock": "monotonic_ms_from_task_start",
+        "intervals": [
+            {"call_id": "a", "start_ms": 0, "end_ms": 20},
+            {"call_id": "b", "start_ms": 10, "end_ms": 25},
+        ],
+    }
+    save(source, native)
+    measured = {
+        **legacy,
+        "repetition": 20,
+        "tool_calls": 2,
+        "failed_tool_calls": 1,
+        "first_attempt_success": False,
+        "repair_attempts": 1,
+        "elapsed_ms": 30,
+        "tokens": {
+            "input": 100,
+            "output": 0,
+            "cached_input": 40,
+            "cache_write_input": 20,
+        },
+        "tool_timing": {
+            "execution_sum_ms": 35,
+            "busy_wall_ms": 25,
+            "evidence": {"path": source.name, "sha256": digest(source)},
+        },
+    }
+    save(candidate, measured)
+    import_run(candidate, results)
+    summary = summarize(results)["groups"][0]["optional_metrics"]
+    if summary != {
+        "failed_tool_calls": {"measured_runs": 1, "total": 1},
+        "cache_write_input": {"measured_runs": 1, "total": 20},
+        "tool_timing": {"measured_runs": 1, "execution_sum_ms": 35, "busy_wall_ms": 25},
+    }:
+        raise RuntimeError("Mixed legacy/measured rows lost optional metric coverage")
+    invalid_records = [
+        {**measured, "failed_tool_calls": 3},
+        {**measured, "tokens": {**measured["tokens"], "cache_write_input": 70}},
+        {**measured, "failed_tool_calls": None},
+        {**measured, "tool_timing": {**measured["tool_timing"], "busy_wall_ms": 35}},
+        {
+            **measured,
+            "tool_timing": {**measured["tool_timing"], "execution_sum_ms": 25},
+        },
+        {**measured, "tool_timing": {"execution_sum_ms": 35, "busy_wall_ms": 25}},
+        {
+            **measured,
+            "tool_timing": {
+                **measured["tool_timing"],
+                "evidence": {"path": source.name, "sha256": "f" * 64},
+            },
+        },
+    ]
+    for index, record in enumerate(invalid_records):
+        save(candidate, {**record, "repetition": 30 + index})
+        try:
+            import_run(candidate, results)
+        except ValueError:
+            continue
+        raise RuntimeError("Invalid optional metric record was accepted")
+    invalid_intervals = [
+        [],
+        [native["intervals"][0], native["intervals"][0]],
+        [native["intervals"][0], {"call_id": "b", "start_ms": 25, "end_ms": 10}],
+        [native["intervals"][0], {"call_id": "b", "start_ms": 10, "end_ms": 31}],
+        [
+            native["intervals"][0],
+            {"call_id": "b", "start_ms": float("nan"), "end_ms": 25},
+        ],
+    ]
+    for index, intervals in enumerate(invalid_intervals):
+        save(source, {**native, "intervals": intervals})
+        save(
+            candidate,
+            {
+                **measured,
+                "repetition": 50 + index,
+                "tool_timing": {
+                    **measured["tool_timing"],
+                    "evidence": {"path": source.name, "sha256": digest(source)},
+                },
+            },
+        )
+        try:
+            import_run(candidate, results)
+        except ValueError:
+            continue
+        raise RuntimeError("Invalid native tool intervals were accepted")
+    print(
+        "OK: optional native metrics preserve legacy rows and account for overlapping tools"
     )
 
 
@@ -448,9 +627,10 @@ def self_test_oracle_integrity(task, work, state, base, binary):
             outcome["passed"]
             or outcome["file_scope_passed"]
             or outcome["runtime_passed"]
+            or any(value is not None for value in outcome["lint"].values())
         ):
             raise RuntimeError(
-                "A borrowed same-content source symlink escaped the oracle"
+                "A borrowed source symlink escaped the oracle or skipped lint was misreported"
             )
     finally:
         source.unlink()

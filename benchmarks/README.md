@@ -118,14 +118,19 @@ The importer validates the record, evidence checksums, oracle/task identity, hum
 cached-token accounting, first-attempt consistency, and duplicate run identity. It cannot
 independently verify a provider's billing from a prose transcript; retain native usage
 records and review them before publishing cost claims. Never fill missing measurements
-with zero. `cost_usd` alone may be null when no reliable cost is available.
+with zero. `cost_usd` may be null when no reliable cost is available. Optional metrics
+are omitted when unavailable; existing records without them remain valid.
 
 | Field | Definition |
 | --- | --- |
-| `tokens.input` | Total reported input tokens, including cached input |
-| `tokens.cached_input` | Cached subset of input, never added again to total |
+| `tokens.input` | Total input tokens, including cache reads and cache writes; normalize provider-specific counters without double-counting |
+| `tokens.cached_input` | Cache-read subset of input, never added again to total |
+| `tokens.cache_write_input` | Optional cache-write subset, distinct from cache reads; retain the native usage record |
 | `tokens.output` | Reported generated tokens, using provider semantics documented in the harness config |
 | `tool_calls` | Actual harness tool invocations; a shell call containing ten commands is one tool call |
+| `failed_tool_calls` | Optional count of tool invocations ending in an error, bounded by `tool_calls`; use native tool outcomes |
+| `tool_timing.execution_sum_ms` | Optional sum of measured execution durations; concurrent calls overlap in this sum |
+| `tool_timing.busy_wall_ms` | Optional union of execution intervals: wall time with at least one tool executing |
 | `cli_invocations` | Explicit editor invocations, independently of tool calls |
 | `model_rounds` | Actual model request/response cycles |
 | `repair_attempts` | Attempts after the first candidate fails a tool or outcome check |
@@ -135,6 +140,34 @@ with zero. `cost_usd` alone may be null when no reliable cost is available.
 | `first_attempt_success` | Success without a failed candidate or repair |
 | `harness_config_sha256` | Hash of the retained common model/tool/limit setup; record variant instructions separately in the trace |
 
+When supplying `tool_timing`, also supply its `evidence` path and SHA-256. The evidence is
+an export of native harness execution events, using one shared monotonic clock and offsets
+from task start:
+
+```json
+{
+  "origin": "native_harness_tool_execution",
+  "clock": "monotonic_ms_from_task_start",
+  "intervals": [
+    {"call_id": "tool-1", "start_ms": 100, "end_ms": 300},
+    {"call_id": "tool-2", "start_ms": 200, "end_ms": 400}
+  ]
+}
+```
+
+This illustrative overlap has `execution_sum_ms: 400` and `busy_wall_ms: 300`; it is not a
+measured project run. The importer requires exactly one interval per counted tool call,
+unique call IDs, intervals within `elapsed_ms`, and recomputes both timing values. Include
+failed invocations in the timing export. Omit the entire timing block if complete native
+start/end events are unavailable. Retain the original events in the transcript alongside
+this normalized export, and document where execution starts and ends in the harness.
+
+Summed execution time can exceed wall time during parallel work. Subtracting that sum
+from total elapsed time does not give orchestration or model time. Even `elapsed_ms` minus
+the interval union includes model requests, queues, harness overhead, and uninstrumented
+waiting; this schema does not label that remainder as model time. Optional metric summaries
+state how many runs supplied each measurement and use null totals when none did.
+
 The summary groups distinct commits, models, settings, and cache conditions separately.
 It reports success rates and total tokens/calls including failures; cost per successful
 task must include unsuccessful attempts. Check equal paired task coverage before comparing
@@ -143,3 +176,20 @@ supports them. A few successful showcase tasks must not become a universal perce
 
 No complete model A/B campaign is represented by these files. Publishing one requires
 running the chosen models, retaining their native usage, and reviewing all outcomes.
+
+## Historical development measurements
+
+The [v0.7.0 release](https://github.com/netresearch/php-ast-edit-skill/releases/tag/v0.7.0)
+reports twelve controlled `claude -p` runs with identical worktrees and per-run JSON
+usage. These are published first-party development observations. They compare successive
+tool iterations: [PR #27](https://github.com/netresearch/php-ast-edit-skill/pull/27) reports
+15 to 13 turns, 106 to 82 seconds, and $0.375 to $0.348; the
+[later error-message change](https://github.com/netresearch/php-ast-edit-skill/commit/2789c54a46e5887338d8c5b00f7cfee5b0b62859)
+reports 6 turns and $0.244. The 82-second result belongs to the intermediate 13-turn build.
+
+The public tag tree, release assets, and linked PR materials inspected for this review did
+not expose the underlying run JSON, full transcripts, and complete model/harness settings.
+The linked Claude session was not readable with the review tools. This does not establish
+that the runs never happened or that their author did not retain the evidence. The numbers
+are attributable observations, not an independently reproduced comparison with a competent
+patch baseline. They have not been imported as new measured rows in this benchmark ledger.

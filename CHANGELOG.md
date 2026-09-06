@@ -24,7 +24,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Measurement note
 
-The historical turn and dollar figures below are development observations, not a controlled model A/B study. They lack retained paired-run evidence and must not be used as general savings claims. The new benchmark protocol records failures, model settings, native usage and independent outcomes before such a claim can be published.
+The historical figures below come from reported controlled runs comparing successive tool builds. The [v0.7.0 release](https://github.com/netresearch/php-ast-edit-skill/releases/tag/v0.7.0) describes twelve separate agent processes and per-run JSON accounting. Publicly inspectable paired raw runs and complete harness configuration have not been located in the inspected release assets, source tree or linked PRs. This does not establish that the authors failed to retain them. These observations are useful development evidence; they are not a reproduced comparison against a competent contextual-patch baseline or general savings claims. The new benchmark protocol records failures, model settings, native usage and independent outcomes before publishing such a comparison.
 
 ## [0.7.0] - 2026-09-06
 

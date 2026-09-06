@@ -23,6 +23,7 @@ cp -R "$ROOT/src" "$ROOT/bin" "$WORK/runtime/"
 cp "$ROOT/composer.json" "$ROOT/LICENSE-MIT" "$ROOT/LICENSE-CC-BY-SA-4.0" "$WORK/runtime/"
 cp "$ROOT/scripts/build-phar.php" "$WORK/runtime/scripts/"
 # Resolve on the supported PHP floor even when building with a newer interpreter.
+# Library policy leaves the root unlocked; record and test the resolved artifact below.
 COMPOSER_ROOT_VERSION="${VERSION#v}" composer config --working-dir="$WORK/runtime" platform.php 8.2.0
 # --no-plugins prevents the optional skill installer from changing the build host.
 COMPOSER_ROOT_VERSION="${VERSION#v}" composer install --working-dir="$WORK/runtime" --no-dev --no-plugins --no-scripts --prefer-dist --no-interaction --no-progress --quiet
