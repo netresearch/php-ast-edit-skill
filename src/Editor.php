@@ -618,6 +618,11 @@ final class Editor
             ksort($transaction->effects);
             $result['effects'] = $transaction->effects;
         }
+        $unfinished = $this->unfinishedRenames($transaction->effects);
+
+        if ($unfinished !== null) {
+            $result['warning'] = $unfinished;
+        }
         $diff = $this->unifiedDiff($transaction);
 
         if ($diff !== null) {
@@ -2337,5 +2342,40 @@ final class Editor
         }
 
         return $node->name instanceof Node\Identifier && $node->name->toString() === $name;
+    }
+
+    /**
+     * A warning when a rename left something of the old name behind.
+     *
+     * The count was already in `effects`, and a model read `remainingInFile: 2` and stopped
+     * anyway. A number nested inside a per-edit record is easy to walk past; a warning beside
+     * the result is not. The tool cannot make the caller act, but it can stop the omission
+     * from being quiet.
+     *
+     * @param array<int, array<string, int|string>> $effects
+     */
+    private function unfinishedRenames(array $effects): ?string
+    {
+        $said = [];
+
+        foreach ($effects as $effect) {
+            $left = (int) ($effect['remainingInFile'] ?? $effect['otherReceivers'] ?? 0);
+
+            if ($left < 1) {
+                continue;
+            }
+            $said[] = sprintf(
+                '%s left %d occurrence%s of the old name in this file',
+                (string) ($effect['operation'] ?? 'the rename'),
+                $left,
+                $left === 1 ? '' : 's',
+            );
+        }
+
+        if ($said === []) {
+            return null;
+        }
+
+        return 'INCOMPLETE_RENAME: ' . implode('; ', $said) . '. A rename is scoped, so the rest sit in scopes this edit did not name, on another receiver, or in text. Name them, or say why they stay.';
     }
 }

@@ -719,6 +719,13 @@ check(
     json_encode($reported['effects'] ?? null),
 );
 check(
+    // The count was already in `effects`, and a model read `remainingInFile: 2` and stopped
+    // anyway. A number nested in a per-edit record is easy to walk past; a warning is not.
+    'an incomplete rename is warned about, not only counted',
+    str_contains((string) ($reported['warning'] ?? ''), 'INCOMPLETE_RENAME'),
+    (string) ($reported['warning'] ?? '(keine Warnung)'),
+);
+check(
     'and shows the change, so nobody reads the file back',
     str_contains((string) ($reported['diff'] ?? ''), '+        return $value;'),
     (string) ($reported['diff'] ?? '(kein Diff)'),
