@@ -4,9 +4,7 @@ declare(strict_types=1);
 
 namespace Netresearch\PhpAstEdit;
 
-use PhpParser\Node\Stmt;
 use PhpParser\Parser;
-use PhpParser\Token;
 
 /**
  * One file inside an apply transaction. Instances carry every intermediate state so that
@@ -31,12 +29,6 @@ final class FileTransaction
     /** Lines the write actually changes, measured after printing. */
     public ?int $changedLines = null;
 
-    /**
-     * @param 'edit'|'create'|'delete' $mode
-     * @param list<Stmt> $roots the tree the edits mutate
-     * @param list<Stmt>|null $original the pristine tree, kept for format-preserving printing
-     * @param list<Token>|null $tokens the pristine token stream, likewise
-     */
     public function __construct(
         public readonly string $path,
         public readonly string $mode,
@@ -47,7 +39,12 @@ final class FileTransaction
         public readonly bool $existed,
         public readonly ?array $original = null,
         public readonly ?array $tokens = null,
-    ) {}
+    ) {
+        $this->linkTarget = is_link($path) ? readlink($path) : null;
+        $this->resolvedPath = $existed ? realpath($path) ?: $path : null;
+        $modeBits = $existed ? @fileperms($path) : false;
+        $this->permissions = $modeBits === false ? null : $modeBits & 0777;
+    }
 
     public function beforeSha(): ?string
     {
@@ -70,4 +67,14 @@ final class FileTransaction
      * @var array<int, array<string, int|string>>
      */
     public array $effects = [];
+
+    public ?string $linkTarget = null;
+
+    public ?string $resolvedPath = null;
+
+    public ?int $permissions = null;
+
+    public array $lint = [];
+
+    public array $verify = [];
 }

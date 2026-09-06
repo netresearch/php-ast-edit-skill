@@ -3,29 +3,39 @@
 declare(strict_types=1);
 
 $root = dirname(__DIR__);
-$autoload = $root.'/vendor/autoload.php';
+$autoload = $_composer_autoload_path ?? (is_file($root . '/vendor/autoload.php') ? $root . '/vendor/autoload.php' : $root . '/../../autoload.php');
 
 if (is_file($autoload)) {
     require $autoload;
 } else {
-    spl_autoload_register(static function (string $class) use ($root): void {
-        $prefix = 'Netresearch\\PhpAstEdit\\';
-        if (!str_starts_with($class, $prefix)) {
-            return;
-        }
-        $relative = str_replace('\\', '/', substr($class, strlen($prefix)));
-        $file = $root.'/src/'.$relative.'.php';
-        if (is_file($file)) {
-            require $file;
-        }
-    });
+    spl_autoload_register(
+        static function (string $class) use ($root): void {
+            $prefix = 'Netresearch\PhpAstEdit\\';
+
+            if (!str_starts_with($class, $prefix)) {
+                return;
+            }
+            $relative = str_replace('\\', '/', substr($class, strlen($prefix)));
+            $file = $root . '/src/' . $relative . '.php';
+
+            if (is_file($file)) {
+                require $file;
+            }
+        },
+    );
 }
 
 if (!class_exists(PhpParser\ParserFactory::class)) {
     if (in_array($argv[1] ?? '', ['help', '--help', '-h'], true) || !isset($argv[1])) {
-        fwrite(STDERR, "warning: nikic/php-parser is not installed; parsing commands require composer install\n");
+        fwrite(
+            STDERR,
+            "warning: nikic/php-parser is not installed; parsing commands require composer install\n",
+        );
     } else {
-        fwrite(STDERR, "php-ast-edit requires nikic/php-parser. Run composer install or use the release PHAR.\n");
+        fwrite(
+            STDERR,
+            "php-ast-edit requires nikic/php-parser. Run composer install or use the release PHAR.\n",
+        );
         exit(4);
     }
 }

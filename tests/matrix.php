@@ -137,8 +137,8 @@ $cases = [
     [
         'name' => 'first parameter into an empty parameter list',
         'files' => src(EMPTY_FUNCTION),
-        'edits' => [at(CLASS_REF, 'add_parameter', ['php' => 'private readonly ?Foo $foo = null'])],
-        'contains' => inA('function foo(private readonly ?Foo $foo = null)'),
+        'edits' => [at(CLASS_REF, 'add_parameter', ['php' => '?Foo $foo = null'])],
+        'contains' => inA('function foo(?Foo $foo = null)'),
     ],
     [
         'name' => 'first item into an empty array',

@@ -236,17 +236,21 @@ final class RepositoryConfig
         self::assertWidth($width);
         self::assertExclusions($exclude);
         $path = rtrim($directory, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . self::FILE;
-        $payload = json_encode(
-            array_filter(
-                ['canonical' => true, 'printWidth' => $width, 'exclude' => array_values($exclude)],
-                static fn (mixed $value): bool => $value !== [],
-            ),
-            JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR,
-        ) . "\n";
+        $data = new \stdClass();
 
-        if (file_put_contents($path, $payload) === false) {
-            throw new EditException('Cannot write ' . $path);
+        if (is_file($path)) {
+            self::fromFile($path);
+            $data = json_decode((string) file_get_contents($path), false, 32, JSON_THROW_ON_ERROR);
+
+            if (!$data instanceof \stdClass) {
+                throw new EditException($path . ' must contain a JSON object.');
+            }
         }
+        $data->canonical = true;
+        $data->printWidth = $width;
+        $data->exclude = array_values($exclude);
+        $payload = json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR) . "\n";
+        (new AtomicWriter())->write($path, $payload);
 
         return $path;
     }

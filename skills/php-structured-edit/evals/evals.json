@@ -5,216 +5,258 @@
       "id": 1,
       "eval_name": "rename-method-not-string-literal",
       "prompt": "Rename the method `findByUid` to `resolveByUid` in src/Domain/Repository/ProductRepository.php. There is also a log message in that file containing the text 'findByUid'.",
-      "expected_output": "Runs php-ast-edit inspect at the method name, then apply with set_name on the Identifier node. The string literal stays untouched.",
+      "expected_output": "Uses a named method selector or guarded inspected node to rename the intended declaration and in-scope callers; leaves the log literal unchanged. Reports unresolved project callers or safely refuses unsupported inheritance.",
       "files": [],
       "assertions": [
-        "Uses php-ast-edit (repo bin, vendor/bin, or the skill wrapper) — not sed, perl, regex substitution, or apply_patch",
-        "Calls inspect before apply to obtain the node kind and file SHA-256",
-        "Targets an Identifier node with operation set_name, not a text range",
-        "Does not modify the string literal that happens to contain the same text"
+        "The intended method is renamed or an unsafe rename is refused without writes",
+        "The same-named log string is unchanged",
+        "A selector is accepted without a redundant inspect; coordinate/ref edits use a snapshot guard",
+        "Uses php-ast-edit while the skill is active"
       ]
     },
     {
       "id": 2,
       "eval_name": "insert-guard-clause",
       "prompt": "Add a null guard at the top of `Checkout::submit()` in src/Checkout.php that throws CartEmpty when the cart has no items.",
-      "expected_output": "insert_before against the first statement of the method body, with a compact one-line PHP snippet.",
+      "expected_output": "Adds a guard inside the method before work that requires a nonempty cart; uses insert_into or an equivalent structural edit.",
       "files": [],
       "assertions": [
-        "Uses operation insert_before or insert_after against a statement-list target",
-        "Passes the new code as a PHP snippet in the `php` field rather than pre-formatted indented text",
-        "Does not hand-format the snippet for indentation — the printer canonicalizes output",
-        "Runs the project formatter after the transaction rather than formatting inside the edit"
+        "Empty cart throws CartEmpty before normal processing",
+        "Nonempty cart preserves normal behavior",
+        "The guard is inside Checkout::submit and surrounding code is preserved",
+        "Does not rerun an already completed formatter/check without a new reason"
       ]
     },
     {
       "id": 3,
       "eval_name": "replace-call-argument-by-index",
       "prompt": "The third argument of the GeneralUtility::makeInstance call on line 88 of src/Service/Importer.php is wrong. Replace it with $this->context.",
-      "expected_output": "replace_argument with a zero-based index of 2 and expression PHP.",
+      "expected_output": "Changes only the third argument to $this->context using a guarded structural edit.",
       "files": [],
       "assertions": [
-        "Uses operation replace_argument, not replace_expression across the whole call",
-        "Uses zero-based index 2 for the third argument",
-        "Supplies the replacement as expression PHP in the `php` field",
-        "Includes the SHA-256 from inspect as an optimistic lock"
+        "The first, second, and any later arguments preserve their values",
+        "The third argument becomes $this->context",
+        "Coordinates or refs rely on the inspected source hash",
+        "replace_argument index 2 or an equivalent narrow AST operation is acceptable"
       ]
     },
     {
       "id": 4,
       "eval_name": "edit-sql-inside-php-string",
       "prompt": "Change the SQL in the $query string literal in src/Report/ReportService.php to also select the `created_at` column. Do not touch the surrounding PHP.",
-      "expected_output": "set_string on the Scalar_String node holding the SQL.",
+      "expected_output": "Changes the intended SQL string to include created_at and preserves the surrounding PHP.",
       "files": [],
       "assertions": [
-        "Targets the Scalar_String node and uses operation set_string",
-        "Does not attempt to parse the SQL as PHP or use replace_expression",
-        "Leaves the assignment and surrounding statements structurally unchanged",
-        "Does not fall back to a regex over the file for the SQL text"
+        "The intended query includes created_at",
+        "Other string literals remain unchanged",
+        "The PHP remains executable under its intended runtime",
+        "Uses a string-node operation or an equivalent guarded AST edit"
       ]
     },
     {
       "id": 5,
       "eval_name": "batch-edits-one-transaction",
       "prompt": "In src/Foo.php: rename the property $items to $lines, remove the now-unused second argument of the render() call, and delete the debug statement on line 61.",
-      "expected_output": "One apply transaction containing all three edits for the file, each with its own target and guards.",
+      "expected_output": "Applies all three requested structural changes in one transaction after determining the affected references.",
       "files": [],
       "assertions": [
-        "Sends all three edits in a single apply document for the file rather than three sequential runs",
-        "Each edit carries its own target and expect guards",
-        "Includes the file SHA-256 once at the file level",
-        "Handles a detached-target failure by re-running inspect rather than retrying blindly"
+        "The intended property and relevant in-scope accesses use lines",
+        "The obsolete argument and debug statement are removed",
+        "Unrelated statements and strings are unchanged",
+        "Batches independent changes and rereads/reassesses if a target is invalidated"
       ]
     },
     {
       "id": 6,
       "eval_name": "delete-debug-statement",
       "prompt": "Remove the leftover var_dump on line 34 of src/Import/RowMapper.php.",
-      "expected_output": "delete against the statement node holding the var_dump call.",
+      "expected_output": "Removes the intended debug statement and preserves the surrounding control flow.",
       "files": [],
       "assertions": [
-        "Uses operation delete on a statement node, not a line-based deletion",
-        "Targets the enclosing statement rather than the call expression alone",
-        "Does not use sed -i, a line-range deletion, or a patch hunk",
-        "Leaves the surrounding statements intact"
+        "The targeted var_dump statement is absent",
+        "Surrounding statements remain intact",
+        "A statement deletion or equivalent AST operation is used",
+        "Does not delete a different same-named call"
       ]
     },
     {
       "id": 7,
       "eval_name": "stale-source-recovery",
       "prompt": "Apply that rename now. (A formatter has rewritten the file since the last inspect.)",
-      "expected_output": "The transaction fails with STALE_SOURCE; the agent re-runs inspect for a fresh hash and position before retrying.",
+      "expected_output": "Recognizes stale source, rereads it, reassesses the intended change, and uses a new guarded transaction if still applicable.",
       "files": [],
       "assertions": [
-        "Recognises STALE_SOURCE as a hash-guard rejection, not a tool defect",
-        "Re-runs inspect to obtain a fresh SHA-256 and node position",
-        "Does not drop the sha256 field to force the edit through",
-        "Does not fall back to a text-based edit after the failure"
+        "The stale transaction does not overwrite the changed source",
+        "Rereads the new source before retrying",
+        "Does not drop the sha256 guard merely to force the original edit",
+        "Reassesses applicability rather than reusing stale refs"
       ]
     },
     {
       "id": 8,
       "eval_name": "discovery-stays-textual",
       "prompt": "Find every class in src/ that still calls the deprecated `legacyRender()` and rename those calls to `render()`.",
-      "expected_output": "Textual or structural search locates the call sites; each mutation goes through php-ast-edit.",
+      "expected_output": "Searches for candidate callers, checks their meaning, and batches related confirmed edits across files.",
       "files": [],
       "assertions": [
-        "Uses rg, ast-grep, or an LSP for the search step — the skill does not constrain discovery",
-        "Does not use a rewriting search tool (for example ast-grep --rewrite or sed) to perform the change",
-        "Runs php-ast-edit apply per file, batching that file's edits into one transaction",
-        "Inspects each call site to confirm the node kind before editing"
+        "Discovery can use search, an LSP, or code reading",
+        "Only calls belonging to the intended deprecated API change",
+        "Related edits can share one multi-file transaction",
+        "Inspection is optional when a named selector or another known guarded target suffices"
       ]
     },
     {
       "id": 9,
       "eval_name": "remove-deprecated-argument",
       "prompt": "The `$legacy` flag was dropped from Renderer::render(). Remove the second argument from all four calls in src/View/PageView.php.",
-      "expected_output": "One transaction with four remove_argument edits at index 1.",
+      "expected_output": "Removes the obsolete argument from the four intended calls without changing retained arguments.",
       "files": [],
       "assertions": [
-        "Uses operation remove_argument with zero-based index 1",
-        "Sends all four edits in a single apply document for the file",
-        "Resolves each target against the original source rather than recomputing offsets after each edit",
-        "Does not rewrite the calls as replaced expressions"
+        "All four intended calls omit the legacy argument",
+        "Retained arguments preserve their order and values",
+        "Independent edits share one apply document",
+        "remove_argument index 1 or an equivalent AST replacement is acceptable"
       ]
     },
     {
       "id": 10,
       "eval_name": "replace-return-expression",
       "prompt": "In src/Pricing/Calculator.php the return in `net()` should return $this->round($value) rather than $value.",
-      "expected_output": "replace_expression against the returned expression, or replace_statement against the return statement.",
+      "expected_output": "Changes the return expression while preserving surrounding behavior.",
       "files": [],
       "assertions": [
-        "Uses replace_expression or replace_statement with the new code in the `php` field",
-        "Chooses the narrowest node that covers the change",
-        "Supplies the snippet without a <?php prefix",
-        "Does not reformat the rest of the method by hand"
+        "net returns the result of round applied to value",
+        "Unrelated returns remain unchanged",
+        "Uses an expression or statement AST edit",
+        "Reads existing check results before deciding which additional checks are needed"
       ]
     },
     {
       "id": 11,
       "eval_name": "non-php-file-out-of-scope",
       "prompt": "Update the button label in Resources/Private/Templates/Product/Show.html and in config/services.yaml.",
-      "expected_output": "Ordinary text editing tools. php-ast-edit is not involved for Fluid or YAML files.",
+      "expected_output": "Uses ordinary non-PHP editing tools and leaves php-ast-edit uninvolved.",
       "files": [],
       "assertions": [
-        "Does not invoke php-ast-edit on a non-PHP file",
-        "Uses the normal edit tooling for the template and the YAML file",
-        "Does not claim the AST tool is required outside PHP source",
-        "Handles the YAML file with a structure-aware tool where one is available"
+        "Does not invoke php-ast-edit on Fluid or YAML files",
+        "Changes the requested labels",
+        "Preserves the template and configuration structure",
+        "Does not require normalization or PHP-specific checks"
       ]
     },
     {
       "id": 12,
       "eval_name": "create-new-php-file",
       "prompt": "Create src/Support/Clock.php with a final class Clock in namespace App\\Support that has a now() method returning a DateTimeImmutable.",
-      "expected_output": "A single apply transaction with a file entry in mode create, full construction syntax in php, and the class body either in that syntax or added with add_member.",
+      "expected_output": "Creates App\\Support\\Clock through mode create, qualifies or imports DateTimeImmutable, and verifies the intended return type.",
       "files": [],
       "assertions": [
-        "Uses php-ast-edit apply with \"mode\": \"create\" — does not write the .php file with Write, a heredoc, or a shell redirect",
-        "Passes the whole file as construction syntax in the php field including the <?php open tag",
-        "Relies on expectAbsent rather than checking for the file separately",
-        "Does not hand-format the output — the printer canonicalizes it"
+        "Uses mode create with full PHP construction syntax",
+        "The class has the requested namespace and final modifier",
+        "now returns the global DateTimeImmutable type rather than a missing namespaced class",
+        "The absent-file guard prevents overwriting existing work"
       ]
     },
     {
       "id": 13,
       "eval_name": "first-method-into-empty-class",
       "prompt": "src/Registry.php contains an empty class Registry with no members. Add a public method register(string $name): void to it.",
-      "expected_output": "insert_into (or add_member) against the Stmt_Class node with property stmts — no sibling anchor exists, so insert_before/insert_after cannot apply.",
+      "expected_output": "Adds register(string $name): void to the empty Registry class.",
       "files": [],
       "assertions": [
-        "Uses insert_into with \"property\": \"stmts\", or the add_member shorthand",
-        "Does not claim the operation is unsupported and fall back to sed, Write, or apply_patch",
-        "Targets the Stmt_Class node, not a position inside the braces",
-        "Passes the member as a compact PHP snippet in the php field"
+        "The public method exists with the requested parameter and return type",
+        "Uses add_member, insert_into, or an equivalent AST edit",
+        "A class selector is sufficient without redundant inspection",
+        "The result passes applicable checks"
       ]
     },
     {
       "id": 14,
       "eval_name": "add-first-parameter-to-signature",
-      "prompt": "Give the function App\\bootstrap() in src/bootstrap.php a first parameter `private readonly LoggerInterface $logger`.",
-      "expected_output": "add_parameter (or insert_into on property params) against the function node; the parameter list is empty, so there is no anchor to insert around.",
+      "prompt": "Give App\\Registry::__construct() in src/Registry.php its first promoted parameter: private readonly LoggerInterface $logger. LoggerInterface is already imported.",
+      "expected_output": "Adds the promoted parameter to the constructor; promotion is not legal on an ordinary function.",
       "files": [],
       "assertions": [
-        "Uses add_parameter or insert_into with \"property\": \"params\"",
-        "Passes the parameter as a param snippet, promoted property syntax included",
-        "Does not rewrite the whole function signature as a text replacement"
+        "The constructor receives private readonly LoggerInterface $logger",
+        "Promotion is applied to __construct, not an ordinary function",
+        "Uses add_parameter or an equivalent AST operation",
+        "Existing imports and other members remain intact"
       ]
     },
     {
       "id": 15,
       "eval_name": "change-return-type-to-union",
       "prompt": "Change the return type of Checkout::submit() in src/Checkout.php from string to string|false.",
-      "expected_output": "set_return_type (or replace_child on the returnType slot) with a type snippet; the union type is constructed by the parser, not assembled by hand.",
+      "expected_output": "Changes the specified return type to string|false while preserving the method body.",
       "files": [],
       "assertions": [
-        "Uses set_return_type or replace_child with \"property\": \"returnType\"",
-        "Passes the type as a snippet (\"string|false\"), not as raw AST JSON",
-        "Does not edit the signature line as text"
+        "The target method declares string|false",
+        "The body remains unchanged unless the task requires a behavioral fix",
+        "Uses set_return_type or an equivalent slot/node edit",
+        "Uses relevant checks to distinguish syntax from return-value behavior"
       ]
     },
     {
       "id": 16,
       "eval_name": "delete-obsolete-php-file",
       "prompt": "src/Legacy/OldMailer.php is no longer referenced anywhere. Remove it.",
-      "expected_output": "A file entry with \"mode\": \"delete\" and the sha256 from inspect or validate.",
+      "expected_output": "Deletes the obsolete file with an optimistic lock.",
       "files": [],
       "assertions": [
-        "Uses php-ast-edit apply with \"mode\": \"delete\" rather than rm",
-        "Passes the sha256 guard so a concurrently changed file is not deleted blindly"
+        "Uses mode delete with a sha256 snapshot guard",
+        "A concurrent source change prevents deletion",
+        "Unrelated files remain untouched"
       ]
     },
     {
       "id": 17,
       "eval_name": "multi-file-transaction-is-all-or-nothing",
       "prompt": "Rename the interface Payable to Billable and update the two classes that implement it, in src/Payable.php, src/Invoice.php and src/Order.php.",
-      "expected_output": "One apply document listing all three files, so either every file changes or none does.",
+      "expected_output": "Batches the interface rename and implementing declarations across three files, then checks their relationship.",
       "files": [],
       "assertions": [
-        "Sends all three files in a single apply document, not three separate transactions",
-        "Includes the sha256 for each file",
-        "Does not write the first files and then discover the third one fails"
+        "The interface and both implementing declarations use Billable",
+        "Uses one apply document for related changes",
+        "Snapshot guards protect the source files relied upon",
+        "Parser success is not presented as proof of project-wide reference resolution"
+      ]
+    },
+    {
+      "id": 18,
+      "eval_name": "rename-capture-collision",
+      "prompt": "Rename x to y in calc(), where an inner arrow function already binds y. Refuse if bindings would collide.",
+      "expected_output": "Rejects the unsafe rename, preserves the file, and explains the binding collision.",
+      "files": [],
+      "executable_case": "captured-variable-collision",
+      "assertions": [
+        "Behavior stays unchanged",
+        "The unsafe rename is refused before writing",
+        "Reports the collision without claiming universal semantic safety"
+      ]
+    },
+    {
+      "id": 19,
+      "eval_name": "rename-inherited-method",
+      "prompt": "Rename the child override of old(); its body calls parent::old(). Preserve inherited dispatch or refuse safely.",
+      "expected_output": "Refuses unsupported inherited dispatch without changing the file.",
+      "files": [],
+      "executable_case": "inherited-method",
+      "assertions": [
+        "The parent call remains correct",
+        "No partial declaration rename lands",
+        "Explains the supported scope and the unresolved inheritance"
+      ]
+    },
+    {
+      "id": 20,
+      "eval_name": "read-only-question",
+      "prompt": "Explain why this PHP method returns false; do not change any files.",
+      "expected_output": "Reads and explains the method without activating the mutation workflow.",
+      "files": [],
+      "assertions": [
+        "No mutation CLI call is made",
+        "No normalization or formatting setup is requested",
+        "The explanation is based on the relevant code"
       ]
     }
   ]

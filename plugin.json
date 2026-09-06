@@ -2,7 +2,7 @@
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "php-structured-edit",
   "version": "0.7.0",
-  "description": "AST-native PHP source mutations for coding agents: typed edits through nikic/php-parser with hash guards and canonical printing.",
+  "description": "Structured PHP edits for coding agents: named selectors, hash-guarded batches, format preservation and explicit validation results.",
   "author": {
     "name": "Netresearch DTT GmbH",
     "url": "https://www.netresearch.de"
@@ -15,5 +15,6 @@
     "php-parser",
     "refactoring",
     "code-editing"
-  ]
+  ],
+  "homepage": "https://netresearch.github.io/claude-code-marketplace/en/skills/php-structured-edit/"
 }

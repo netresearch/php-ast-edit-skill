@@ -1,20 +1,6 @@
 interface:
   display_name: "PHP Structured Edit"
   description: >-
-    Writes PHP through its abstract syntax tree. Find the code however you like —
-    ripgrep, ast-grep, an LSP, or reasoning — then let this skill produce the
-    change: new files, classes, methods, properties, constants, enum cases,
-    parameters, types, modifiers, attributes, statements, expressions, arrays,
-    match arms, docblocks, call arguments, deletions and moves. Compact PHP syntax
-    is accepted as construction input, parsed into an AST, mutated there, and
-    written back exclusively from that AST. A small primitive layer — replace_node,
-    delete_node, insert_into, replace_child, delete_child, move_node — reaches every
-    node and every container, including empty ones; the named operations are
-    ergonomics on top. Every edit is checked against the expected syntax node, the
-    whole transaction is reparsed before anything is written, and a change that
-    would produce invalid PHP fails rather than landing.
+    Edits PHP syntax through named selectors, typed operations, and guarded multi-file transactions. Reports diffs, accumulated warnings, parser/lint status, and configured checks. Existing layout is preserved by default; semantic correctness still requires project tests.
   when_to_use: >-
-    Any creation, modification, replacement, deletion or movement of PHP syntax,
-    new files included — that is, anywhere the alternative would be sed, a regex
-    substitution, raw string replacement, a unified-diff patch, or writing a .php
-    file directly.
+    Creating, changing, deleting, or moving PHP syntax, including PHP string literals. Not for read-only questions or edits to non-PHP files.

@@ -1,0 +1,22 @@
+[
+ {"query":"Add a public method to this PHP class.","should_trigger":true},
+ {"query":"Rename the local variable inside the PHP callback.","should_trigger":true},
+ {"query":"Replace the third factory-call argument in Importer.php.","should_trigger":true},
+ {"query":"Update the SQL literal inside this PHP service.","should_trigger":true},
+ {"query":"Create a namespaced PHP Clock class.","should_trigger":true},
+ {"query":"Remove the obsolete PHP file from this package.","should_trigger":true},
+ {"query":"Add a promoted constructor parameter in Registry.php.","should_trigger":true},
+ {"query":"Change the PHP method return type to string|false.","should_trigger":true},
+ {"query":"Insert a guard at the start of Checkout::submit.","should_trigger":true},
+ {"query":"Remove the PHP debug statement and its unused argument.","should_trigger":true},
+ {"query":"Explain this PHP method without changing it.","should_trigger":false},
+ {"query":"Find every use of legacyRender; just list the locations.","should_trigger":false},
+ {"query":"Update the label in the Fluid HTML template.","should_trigger":false},
+ {"query":"Set the service timeout in YAML.","should_trigger":false},
+ {"query":"Review whether this Composer dependency is needed.","should_trigger":false},
+ {"query":"Run the existing tests and report failures.","should_trigger":false},
+ {"query":"Write a README explaining installation.","should_trigger":false},
+ {"query":"Show the git diff for the PHP change.","should_trigger":false},
+ {"query":"Change the TypeScript interface property.","should_trigger":false},
+ {"query":"Find the project formatting configuration.","should_trigger":false}
+]

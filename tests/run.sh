@@ -5,6 +5,15 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
+if [[ ! -f vendor/autoload.php ]]; then
+  echo "Missing dependencies: run composer install before tests/run.sh." >&2
+  exit 2
+fi
+if [[ $# -gt 1 || ( $# -eq 1 && "$1" != --runtime-only ) ]]; then
+  echo "Usage: bash tests/run.sh [--runtime-only]" >&2
+  exit 2
+fi
+
 fail=0
 
 echo "::group::scripts/check.php (php -l over shipped sources)"
@@ -19,15 +28,19 @@ echo "::group::tests/matrix.php (grammar and operation coverage matrix)"
 php tests/matrix.php || fail=1
 echo "::endgroup::"
 
-echo "::group::skills/php-structured-edit/scripts/php-ast-edit (wrapper resolves an executable)"
-if [ -f vendor/autoload.php ]; then
-  skills/php-structured-edit/scripts/php-ast-edit validate --file tests/fixtures/sample.php || fail=1
-else
-  echo "SKIP: vendor/autoload.php missing; wrapper needs the parser."
-fi
+echo "::group::tests/renames.php (binding collisions and method dispatch)"
+php tests/renames.php || fail=1
 echo "::endgroup::"
 
-echo '::group::tests/php-floor.php (dereferenced `new` needs parentheses below PHP 8.4)'
+echo "::group::tests/transactions.php (guards, rollback and validation contract)"
+php tests/transactions.php || fail=1
+echo "::endgroup::"
+
+echo "::group::skills/php-structured-edit/scripts/php-ast-edit (wrapper resolves an executable)"
+bash skills/php-structured-edit/scripts/php-ast-edit validate --file tests/fixtures/sample.php || fail=1
+echo "::endgroup::"
+
+echo '::group::tests/php-floor.php (new-expression dereference below PHP 8.4)'
 php tests/php-floor.php || fail=1
 echo "::endgroup::"
 
@@ -51,17 +64,19 @@ echo "::group::tests/corpus.php (real-world round trip through the AST)"
 php -d memory_limit=1G tests/corpus.php || fail=1
 echo "::endgroup::"
 
-echo "::group::scripts/build-phar.php (PHAR builds and answers)"
-if [ -f vendor/autoload.php ]; then
-  php -d phar.readonly=0 scripts/build-phar.php
-  php dist/php-ast-edit.phar validate --file tests/fixtures/sample.php || fail=1
-  # `validate` never touches ContextParser or FileTransaction; `contexts` does, so this is
-  # what proves the whole engine is inside the archive.
-  php dist/php-ast-edit.phar contexts > /dev/null || fail=1
-else
-  echo "SKIP: vendor/autoload.php missing; PHAR build needs the parser."
-fi
+echo "::group::docs/quickstart.sh (documented first edit and runtime result)"
+bash docs/quickstart.sh || fail=1
 echo "::endgroup::"
+
+echo "::group::benchmarks/agent_benchmark.py (task oracles and evidence validation)"
+python3 benchmarks/agent_benchmark.py self-test || fail=1
+echo "::endgroup::"
+
+if [[ "${1:-}" != --runtime-only ]]; then
+  echo "::group::tests/distribution.sh (clean install and executable artifacts)"
+  bash tests/distribution.sh || fail=1
+  echo "::endgroup::"
+fi
 
 if [ "$fail" -ne 0 ]; then
   echo "FAIL: at least one check failed." >&2

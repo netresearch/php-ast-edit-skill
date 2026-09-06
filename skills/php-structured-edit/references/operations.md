@@ -2,12 +2,28 @@
 
 ## Contents
 
+- [Selectors](#selectors) — named declarations without a coordinate lookup
 - [Inspect](#inspect) — node ancestry, structural refs, slots
 - [Apply document](#apply-document) — schema, file modes, transaction semantics
 - [parseAs contexts](#parseas-contexts) — how a snippet becomes any AST node
 - [Primitives](#primitives) — the complete mutation algebra
 - [Convenience operations](#convenience-operations) — the ergonomic layer above it
 - [Snippet style](#snippet-style)
+
+## Selectors
+
+Prefer `target.select` when the target is a named declaration:
+
+```json
+{"target":{"select":"method:Checkout::submit"},"operation":"set_return_type","php":"string|false"}
+```
+
+Supported prefixes: `class:`, `interface:`, `trait:`, `enum:`, `function:`,
+`method:Owner::name`, `property:Owner::$name`, and `const:Owner::NAME`.
+The owner may be omitted when unambiguous. Selectors use declaration short names. For duplicate names across namespaces, use an inspected ref with its snapshot hash.
+Ambiguous selectors fail and report candidates; they never select the first match.
+Batch independent edits and files in a single document. Use `sha256` when relying on a
+previously read source snapshot, including with selectors.
 
 ## Inspect
 
@@ -51,7 +67,7 @@ A `ref` is only valid together with the `sha256` it was produced from. Refs surv
 }
 ```
 
-`target` accepts `ref`, `offset` (zero-based byte offset), or `line` + `column` (one-based byte coordinates). `kind` is optional but recommended. `expect.name`, `expect.value` and `expect.type` are optional safety guards.
+`target` accepts `select`, `ref`, `offset` (zero-based byte offset), or `line` + `column` (one-based byte coordinates). `kind` is optional but recommended. `expect.name`, `expect.value` and `expect.type` are optional safety guards.
 
 ### File modes
 
@@ -65,7 +81,14 @@ A `ref` is only valid together with the `sha256` it was produced from. Refs surv
 
 Every file is read, guarded, resolved, mutated, printed and re-parsed **before the first byte is written**. A failure in any phase leaves the working tree untouched; a failure during the write phase rolls the already written files back. Before each operation the tool verifies its target is still attached, so an edit invalidated by an earlier edit fails instead of silently mutating a detached node.
 
-The re-parse before the write is the universal net: an operation that would produce invalid PHP — an emptied slot that must not be empty, a snippet that does not fit its position — fails the whole transaction.
+Parser validation rejects output the configured parser cannot parse. Host lint also runs
+before writes when the selected target version is compatible with the running interpreter;
+otherwise the report explicitly marks lint skipped. Neither check establishes semantic
+correctness. Read the validation report and run relevant project tests.
+
+Writes are atomic per file, not across the entire file set as observed by other processes.
+Rollback covers transaction-managed paths, not arbitrary external-command side effects.
+Configured verification failures leave the edit in place and return a failing CLI status.
 
 Immediately before the first write, every file is compared against the snapshot it was resolved from. A file that changed, appeared or disappeared while the transaction was being prepared fails with `CONCURRENT_CHANGE` and nothing is written — otherwise the output, built from a version that no longer exists, would silently discard whoever else wrote.
 
@@ -128,9 +151,41 @@ Shorthands over the primitives. They are ergonomics, not the coverage boundary.
 - `add_implements` / `set_extends` — class hierarchy. Require `php`.
 - `set_doc_comment` — set the docblock. `value` is plain text or a complete `/** … */` block; an existing docblock is replaced, not duplicated.
 - `remove_doc_comment` — drop the docblock. Line and block comments on the same node are left alone.
-- `rename_method` — rename a method declaration and the calls to it that this file can see, in one edit. Targets the declaration and takes `to`; `from` is the name the target already carries. What counts as a call to *this* method is decided structurally: `$this->`, `self::`, `static::` and `parent::` inside the declaring class. A call on any other receiver may belong to a different class that happens to share the name, so it is counted and left alone — the report returns `renamed` and `otherReceivers`, and the second number is the one that says whether anything is left to do. Callers in other files are outside this tool's reach by construction; it edits one file at a time.
-- `rename_variable` — rename one variable throughout a scope. Targets the method, function, closure or arrow function the variable lives in, and takes `from` and `to` (with or without the `$`). Renames `Expr_Variable` and `Param` nodes whose name matches exactly, so a property fetch, a method name and a string literal are untouched by construction: in a file holding `$nonce` eleven times beside `$this->nonceCache`, `getNonceCacheKey()`, `'nonce_'` and `'noncePrefix'`, only the eleven move. A `$$name` is left alone — its name is an expression, not a name. One edit, not one per occurrence.
-  Scope is respected rather than approximated: a nested named function, method or class body is a scope of its own and is not entered; a closure is entered only when it captures the name in `use`, and then the capture and the body move together; an arrow function captures by value on its own, so it is entered unless a parameter of its own shadows the name. `$this` is refused as either endpoint.
+- `rename_method` — rename the selected method declaration and structurally attributable calls
+  in the same file. Takes `to`; use `expect.name` for an optional declaration-name guard. Calls to `parent::` cannot be
+  treated as calls to the child declaration. Inheritance, other receivers, and external
+  callers require further analysis; read effect counts and warnings. The convenience operation accepts a private method or a method in a final class, with
+  no extends/implements/trait composition; magic methods and unsafe late-static dispatch
+  are refused. Calls in the declaring class's property hooks are included. This operation does not perform project-wide type resolution. A transaction may still contain several files.
+- `rename_variable` — rename a variable in a selected method, function, closure, or arrow
+  function. Takes `from` and `to`, with or without `$`. Renames matching variable/parameter
+  nodes and associated explicit captures; unrelated property and string names stay intact.
+  Nested scopes and destination bindings are analyzed before mutation. Recognized binding
+  collisions are rejected instead of capturing or merging names. `$this` is refused as
+  either endpoint. Property hooks are not supported as direct scope targets. Parameter renames do not update named arguments at callers. Dynamic variable behavior is not fully resolvable statically.
+
+## Result fields
+
+For each file, inspect:
+
+| Field | Meaning |
+| --- | --- |
+| `changed`, `changedLines`, `diff` | Measured final output, including a configured formatter |
+| `effects` | Operation effects and residual references; residual names may belong to another scope |
+| `warnings` | All accumulated warnings, omitted when empty; do not read only the first |
+| `warning` | Legacy joined warning string for older consumers |
+| `parsed` | Output accepted by the selected PHP parser |
+| `valid` | Deprecated alias of `parsed`; **not** semantic validation |
+| `validation.parser` | Parser status |
+| `validation.lint` | Host lint status, runtime, and a reason when skipped |
+| `validation.checks` | Status of configured project verification |
+| `formatter`, `verify` | Formatter execution and individual verification results, where present |
+
+The top-level `checksPassed` is `true`, `false`, or `null` when no checks ran. A failing
+verification makes `apply` exit nonzero; examine the retained edit before repairing it.
+`--dry-run` does not run commands that need the files written. Never report those checks
+as passed merely because preparation succeeded.
+Deletion has no output source to parse or lint, so those validation statuses are `not_run`.
 
 ## Limits
 

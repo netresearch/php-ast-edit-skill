@@ -2,6 +2,8 @@
 # The skill tells agents to drive the CLI, not the Editor class: these are the argument
 # shapes, output fields and exit codes SKILL.md promises. tests/run.php and tests/matrix.php
 # both bypass all of it.
+# PHP variables in single-quoted code and JSON must reach PHP without shell expansion.
+# shellcheck disable=SC2016
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -15,7 +17,8 @@ fi
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
 
-BIN="php $ROOT/bin/php-ast-edit"
+run_cli() { php "$ROOT/bin/php-ast-edit" "$@"; }
+BIN=run_cli
 fail=0
 
 expect() {
@@ -51,6 +54,16 @@ expect "inspect --kind filters the ancestry" "1" \
 expect "contexts lists the file mode catalog" "edit create delete" \
   "$($BIN contexts | php -r 'echo implode(" ", json_decode(stream_get_contents(STDIN), true)["fileModes"]);')"
 
+$BIN contexts --operation rename_variable > "$WORK/operation.json"
+expect "targeted contexts returns only one operation contract" "true" \
+  "$(jq 'keys == ["arguments", "operation"] and .operation == "rename_variable" and (.arguments | tostring | contains("from"))' "$WORK/operation.json")"
+set +e
+$BIN contexts --operation no_such_operation > /dev/null 2> "$WORK/unknown-operation.json"
+operation_code=$?
+set -e
+expect "unknown operation exits 2" "2" "$operation_code"
+expect "unknown operation is machine-readable" "false" "$(jq '.ok' "$WORK/unknown-operation.json")"
+
 # apply from stdin, dry run: reports the change without touching the file
 BEFORE="$(cat "$WORK/a.php")"
 printf '{"files":[{"path":"%s","edits":[{"target":{"ref":"stmts[0]"},"operation":"add_member","php":"public int $n = 1;"}]}]}' "$WORK/a.php" \
@@ -58,6 +71,8 @@ printf '{"files":[{"path":"%s","edits":[{"target":{"ref":"stmts[0]"},"operation"
 expect "apply --dry-run reports the change" "1" \
   "$(php -r 'echo (int) json_decode(file_get_contents($argv[1]), true)["files"][0]["changed"];' "$WORK/dry.json")"
 expect "apply --dry-run leaves the file alone" "$BEFORE" "$(cat "$WORK/a.php")"
+expect "dry-run separates parse, lint and project checks" "true" \
+  "$(jq '.files[0] | .parsed == true and .validation.parser == "passed" and .validation.lint.status == "passed" and .validation.checks == "not_run"' "$WORK/dry.json")"
 
 # apply from a file: writes
 printf '{"files":[{"path":"%s","edits":[{"target":{"ref":"stmts[0].name"},"operation":"set_name","value":"Bar"}]}]}' "$WORK/a.php" > "$WORK/edits.json"

@@ -1,0 +1,179 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Measured PHP AST agent task run",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "task_id",
+    "variant",
+    "model",
+    "model_version",
+    "reasoning",
+    "cache_condition",
+    "repetition",
+    "source_commit",
+    "harness_config_sha256",
+    "tokens",
+    "tool_calls",
+    "cli_invocations",
+    "model_rounds",
+    "repair_attempts",
+    "elapsed_ms",
+    "setup_elapsed_ms",
+    "cost_usd",
+    "success",
+    "first_attempt_success",
+    "review",
+    "transcript",
+    "oracle"
+  ],
+  "$defs": {
+    "text": {
+      "type": "string",
+      "minLength": 1
+    },
+    "count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "sha256"
+      ],
+      "properties": {
+        "path": {
+          "$ref": "#/$defs/text"
+        },
+        "sha256": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    }
+  },
+  "properties": {
+    "task_id": {
+      "$ref": "#/$defs/text"
+    },
+    "variant": {
+      "enum": [
+        "contextual_patch",
+        "cli_reference",
+        "full_skill"
+      ],
+      "type": "string"
+    },
+    "model": {
+      "$ref": "#/$defs/text"
+    },
+    "model_version": {
+      "$ref": "#/$defs/text"
+    },
+    "reasoning": {
+      "$ref": "#/$defs/text"
+    },
+    "cache_condition": {
+      "enum": [
+        "cold",
+        "warm"
+      ],
+      "type": "string"
+    },
+    "repetition": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "source_commit": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{40}$"
+    },
+    "harness_config_sha256": {
+      "$ref": "#/$defs/sha256"
+    },
+    "tokens": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "input",
+        "output",
+        "cached_input"
+      ],
+      "properties": {
+        "input": {
+          "$ref": "#/$defs/count"
+        },
+        "output": {
+          "$ref": "#/$defs/count"
+        },
+        "cached_input": {
+          "$ref": "#/$defs/count"
+        }
+      }
+    },
+    "tool_calls": {
+      "$ref": "#/$defs/count"
+    },
+    "cli_invocations": {
+      "$ref": "#/$defs/count"
+    },
+    "model_rounds": {
+      "$ref": "#/$defs/count"
+    },
+    "repair_attempts": {
+      "$ref": "#/$defs/count"
+    },
+    "elapsed_ms": {
+      "type": "number",
+      "minimum": 0
+    },
+    "setup_elapsed_ms": {
+      "type": "number",
+      "minimum": 0
+    },
+    "cost_usd": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 0
+    },
+    "success": {
+      "type": "boolean"
+    },
+    "first_attempt_success": {
+      "type": "boolean"
+    },
+    "review": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "passed",
+        "reviewer",
+        "notes"
+      ],
+      "properties": {
+        "passed": {
+          "type": "boolean"
+        },
+        "reviewer": {
+          "$ref": "#/$defs/text"
+        },
+        "notes": {
+          "$ref": "#/$defs/text"
+        }
+      }
+    },
+    "transcript": {
+      "$ref": "#/$defs/evidence"
+    },
+    "oracle": {
+      "$ref": "#/$defs/evidence"
+    }
+  }
+}

@@ -11,11 +11,12 @@
     }
   ],
   "require": {
-    "php": ">=8.2",
+    "composer-runtime-api": "^2.2",
     "ext-json": "*",
     "ext-tokenizer": "*",
+    "netresearch/composer-agent-skill-plugin": "*",
     "nikic/php-parser": "^5.8",
-    "netresearch/composer-agent-skill-plugin": "*"
+    "php": ">=8.2"
   },
   "config": {
     "allow-plugins": {

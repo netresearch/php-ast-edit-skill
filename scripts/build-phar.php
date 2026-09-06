@@ -13,6 +13,15 @@ if ((int) ini_get('phar.readonly') !== 0) {
     fwrite(STDERR, "Run with php -d phar.readonly=0 scripts/build-phar.php\n");
     exit(2);
 }
+require $vendorAutoload;
+
+if ((Composer\InstalledVersions::getRootPackage()['dev'] ?? true) !== false) {
+    fwrite(
+        STDERR,
+        "Refusing to bundle development dependencies. Use bash scripts/build-release.sh or install with composer install --no-dev in a clean checkout.\n",
+    );
+    exit(2);
+}
 $dist = $root . '/dist';
 
 if (!is_dir($dist)) {
@@ -31,12 +40,20 @@ foreach (['bin', 'src', 'vendor'] as $directory) {
     );
 
     foreach ($iterator as $file) {
+        if ($file->isLink()) {
+            throw new RuntimeException('Refusing to package symlink: ' . $file->getPathname());
+        }
+
         if (!$file->isFile()) {
             continue;
         }
         $local = substr($file->getPathname(), strlen($root) + 1);
         $phar->addFile($file->getPathname(), $local);
     }
+}
+
+foreach (['LICENSE-MIT', 'LICENSE-CC-BY-SA-4.0'] as $license) {
+    $phar->addFile($root . '/' . $license, $license);
 }
 $stub = <<<'PHP'
 #!/usr/bin/env php

@@ -76,31 +76,27 @@ final class Editor
     public function validate(string $path, ?string $phpVersion = null): array
     {
         [$source, , $roots] = $this->parseFile($path, $phpVersion);
+        $lint = (new PhpLint())->check($source, $path, $phpVersion);
 
         return [
             'file' => $path,
             'sha256' => hash('sha256', $source),
             'statements' => count($roots),
+            'parsed' => true,
             'valid' => true,
+            'validation' => ['parser' => 'passed', 'lint' => $lint, 'checks' => 'not_run'],
         ];
     }
 
-    /**
-     * Apply a transaction across one or more files.
-     *
-     * Every file is read, guarded, resolved, mutated, printed and re-parsed before the first
-     * byte is written. A failure in any phase leaves the working tree untouched; a failure
-     * during the write phase rolls the already written files back.
-     */
     public function apply(array $document, bool $forceDryRun = false): array
     {
+        $this->verifyResults = [];
         $files = $document['files'] ?? null;
 
         if (!is_array($files) || $files === []) {
             throw new EditException('apply input requires a non-empty files array.');
         }
         $dryRun = $forceDryRun || (bool) ($document['dryRun'] ?? false);
-        // Phase 1 — read, guard and resolve every target against its pristine snapshot.
         $transactions = [];
         $seen = [];
 
@@ -124,32 +120,34 @@ final class Editor
             $transactions[] = $transaction;
         }
 
-        // Phase 2 — mutate in memory.
         foreach ($transactions as $transaction) {
             $this->mutate($transaction);
         }
 
-        // Phase 3 — print and re-parse; nothing invalid reaches the working tree.
         foreach ($transactions as $transaction) {
             $this->render($transaction);
         }
 
-        // Phase 4 — commit, with best-effort rollback.
         if (!$dryRun) {
             $this->commit($transactions);
         }
 
         return [
             'files' => array_map(
-                fn (FileTransaction $transaction): array => $this->report($transaction, $dryRun),
+                fn (FileTransaction $file): array => $this->report($file, $dryRun),
                 $transactions,
             ),
+            'checksPassed' => $this->verifyResults === [] ? null : !in_array(false, array_column($this->verifyResults, 'ok'), true),
         ];
     }
 
     private function prepare(array $spec): FileTransaction
     {
         $path = $this->requiredString($spec, 'path');
+
+        if (($spec['mode'] ?? 'edit') === 'create' && is_link($path) && !is_file($path)) {
+            throw new EditException('DANGLING_SYMLINK: refusing creation through ' . $path);
+        }
         $mode = (string) ($spec['mode'] ?? 'edit');
 
         if (!in_array($mode, ['edit', 'create', 'delete'], true)) {
@@ -183,27 +181,24 @@ final class Editor
                     ),
                 );
             }
+            $source = $existed ? $this->readFile($path) : null;
+
+            if ($source !== null) {
+                $this->assertSha($spec, $path, hash('sha256', $source));
+            } elseif (isset($spec['sha256'])) {
+                throw new EditException(
+                    'STALE_SOURCE: ' . $path . ' does not exist for the supplied sha256.',
+                );
+            }
             $parser = $this->parser($phpVersion);
             $roots = (new ContextParser($parser))->file($this->requiredString($spec, 'php'));
-            $transaction = new FileTransaction(
-                $path,
-                'create',
-                $existed ? $this->readFile($path) : null,
-                $roots,
-                $parser,
-                $phpVersion,
-                $existed,
-            );
-            // Targets inside a freshly constructed file resolve against the construction syntax.
+            $transaction = new FileTransaction($path, 'create', $source, $roots, $parser, $phpVersion, $existed);
             $this->resolveTargets($transaction, $spec, $this->requiredString($spec, 'php'));
 
             return $transaction;
         }
         [$source, $parser, $roots] = $this->parseFile($path, $phpVersion);
         $this->assertSha($spec, $path, hash('sha256', $source));
-        // The edits mutate a clone; the pristine tree and its tokens stay behind, because
-        // format-preserving printing needs to diff the two and can only map a node back to
-        // the source when the original object is still intact.
         $tokens = $parser->getTokens();
         $mutable = (new NodeTraverser(new CloningVisitor()))->traverse($roots);
         $transaction = new FileTransaction(
@@ -228,16 +223,6 @@ final class Editor
         return $transaction;
     }
 
-    /**
-     * Canonical or format-preserving — declared, never inferred.
-     *
-     * Whether a file may be rewritten canonically cannot be read off the file. The fixed
-     * point belongs to the printer and the project's formatter together, and the formatter
-     * runs last: on a correctly normalised extension, re-printing differed from disk in 48 of
-     * 63 files, every difference the formatter's own (blank lines, `declare` spacing,
-     * operator alignment). A measurement over that cannot tell a well-kept repository from a
-     * neglected one, so `php-ast-edit normalize` writes a marker and this reads it.
-     */
     private function choosePrinter(FileTransaction $transaction, string $requested): void
     {
         if ($requested !== 'auto') {
@@ -249,29 +234,8 @@ final class Editor
         $declared = RepositoryConfig::widthFor($transaction->path);
 
         if ($config->excludes($transaction->path)) {
-            // The project took this path out of the tool's reach. Canonical printing is half of a
-            // pair whose other half is the project formatter, and the exclusion exists so that
-            // neither runs here; printing canonically anyway would hand the formatter a file the
-            // project never meant it to see.
             $transaction->printer = 'format-preserving';
-            $transaction->warning = sprintf(
-                'EXCLUDED: %s lists this path under `exclude`, so the edit was printed format-preserving and the project formatter was not run. Remove the entry if the file is meant to be canonical.',
-                RepositoryConfig::FILE,
-            );
-
-            return;
-        }
-
-        if ($config->canonical && $declared['width'] === null) {
-            // Declared canonical, but the project states no width anywhere the printer may
-            // read. Print by the width the normalisation recorded rather than reflowing the
-            // repository to a number nobody chose, and name what is missing.
-            $transaction->printer = 'canonical';
-            $transaction->warning = sprintf(
-                'NO_DECLARED_WIDTH: no max_line_length in .editorconfig, so printing at the %d ' . 'columns %s recorded at normalisation. Line width belongs to the project, not ' . 'to this tool: declare it under [*] or [*.php] so the two cannot drift apart.',
-                $declared['recorded'] ?? CanonicalPrinter::DEFAULT_WIDTH,
-                RepositoryConfig::FILE,
-            );
+            $transaction->warning = 'EXCLUDED: using format-preserving output; project formatter is excluded for this path.';
 
             return;
         }
@@ -279,13 +243,17 @@ final class Editor
         if ($config->canonical) {
             $transaction->printer = 'canonical';
 
+            if ($declared['width'] === null) {
+                $transaction->warning = sprintf(
+                    'NO_DECLARED_WIDTH: using recorded width %d; declare max_line_length in .editorconfig.',
+                    $declared['recorded'] ?? CanonicalPrinter::DEFAULT_WIDTH,
+                );
+            }
+
             return;
         }
         $transaction->printer = 'format-preserving';
-        $transaction->warning = sprintf(
-            'NOT_CANONICAL: no %s declaring this repository canonically formatted, so the edit ' . 'was printed format-preserving to keep the diff small. Canonical printing is the ' . 'intended mode: run `php-ast-edit normalize`, then the project formatter, and ' . 'commit that separately. Until then a node this printer cannot map back to the ' . 'source is re-printed anyway, so parts of the file may still be reflowed.',
-            RepositoryConfig::FILE,
-        );
+        $transaction->warning = 'NOT_CANONICAL: using format-preserving output; inspect changedLines and diff. Canonical normalization is optional.';
     }
 
     private function resolveTargets(FileTransaction $transaction, array $spec, string $source): void
@@ -373,9 +341,6 @@ final class Editor
         } catch (EditException $failure) {
             throw $failure;
         } catch (\Throwable $failure) {
-            // The printer and the parser both speak in their own exception types, and a
-            // mutation that left the AST in an impossible state only shows up here. Name the
-            // file, so the caller knows which one of a multi-file transaction was at fault.
             throw new EditException(
                 sprintf(
                     'INVALID_RESULT: %s could not be printed and re-parsed after the edits: %s',
@@ -384,6 +349,7 @@ final class Editor
                 ),
             );
         }
+        $transaction->lint = (new PhpLint())->check($output, $transaction->path, $transaction->phpVersion);
         $transaction->output = $output;
         $transaction->changed = $transaction->source !== $output;
         $transaction->changedLines = $transaction->source === null ? substr_count($output, "\n") : $this->countChangedLines($transaction->source, $output);
@@ -491,20 +457,18 @@ final class Editor
         return $previous[count($b)];
     }
 
-    /** @param list<FileTransaction> $transactions */
     private function commit(array $transactions): void
     {
-        // Phase 1 read the sources; everything since then happened in memory. If a file moved
-        // underneath us in the meantime, its resolved targets and its printed output both
-        // describe a version that no longer exists — writing now would discard whoever else
-        // wrote. The sha guard is only worth as much as this check.
         foreach ($transactions as $transaction) {
             if ($transaction->changed) {
                 $this->assertUnchangedOnDisk($transaction);
+                $link = is_link($transaction->path) ? readlink($transaction->path) : null;
+
+                if ($link !== $transaction->linkTarget) {
+                    throw new EditException('CONCURRENT_CHANGE: symlink changed at ' . $transaction->path);
+                }
             }
         }
-
-        /** @var list<array{path: string, previous: ?string}> $done */
         $done = [];
 
         try {
@@ -512,50 +476,32 @@ final class Editor
                 if (!$transaction->changed) {
                     continue;
                 }
+                $done[] = $transaction;
 
                 if ($transaction->mode === 'delete') {
-                    $done[] = ['path' => $transaction->path, 'previous' => $transaction->source];
-
                     if (!@unlink($transaction->path)) {
                         throw new EditException('Cannot delete ' . $transaction->path);
                     }
 
                     continue;
                 }
-                $done[] = [
-                    'path' => $transaction->path,
-                    'previous' => $transaction->existed ? $transaction->source : null,
-                ];
                 $this->atomicWrite($transaction->path, (string) $transaction->output);
             }
             $this->runFormatter($transactions);
-            // After the formatter and inside the same try: a check reads the file the
-            // caller will commit, not an intermediate.
             $this->runVerify($transactions);
         } catch (\Throwable $failure) {
             $restoreErrors = [];
+            $restorer = new FileRestorer();
 
-            foreach (array_reverse($done) as $entry) {
+            foreach (array_reverse($done) as $transaction) {
                 try {
-                    if ($entry['previous'] === null) {
-                        if (is_file($entry['path'])) {
-                            @unlink($entry['path']);
-                        }
-
-                        continue;
-                    }
-                    $this->atomicWrite($entry['path'], $entry['previous']);
+                    $restorer->restore($transaction);
                 } catch (\Throwable $restoreFailure) {
-                    $restoreErrors[] = $entry['path'] . ': ' . $restoreFailure->getMessage();
+                    $restoreErrors[] = $transaction->path . ': ' . $restoreFailure->getMessage();
                 }
             }
             $message = 'COMMIT_FAILED: ' . $failure->getMessage();
-
-            if ($restoreErrors !== []) {
-                $message .= ' Rollback incomplete for ' . implode('; ', $restoreErrors);
-            } else {
-                $message .= ' All files were rolled back.';
-            }
+            $message .= $restoreErrors === [] ? ' All files were rolled back.' : ' Rollback incomplete for ' . implode('; ', $restoreErrors);
 
             throw new EditException($message);
         }
@@ -602,56 +548,7 @@ final class Editor
 
     private function report(FileTransaction $transaction, bool $dryRun): array
     {
-        $result = [
-            'path' => $transaction->path,
-            'mode' => $transaction->mode,
-            'beforeSha256' => $transaction->beforeSha(),
-            'afterSha256' => $transaction->output === null ? null : hash('sha256', $transaction->output),
-            'changed' => $transaction->changed,
-            'changedLines' => $transaction->changedLines,
-            'printer' => $transaction->printer,
-            'editsApplied' => count($transaction->resolved),
-            'dryRun' => $dryRun,
-        ];
-
-        if ($transaction->effects !== []) {
-            ksort($transaction->effects);
-            $result['effects'] = $transaction->effects;
-        }
-        $unfinished = $this->unfinishedRenames($transaction->effects);
-
-        if ($unfinished !== null) {
-            $result['warning'] = $unfinished;
-        }
-        $diff = $this->unifiedDiff($transaction);
-
-        if ($diff !== null) {
-            $result['diff'] = $diff;
-        }
-
-        if ($transaction->formatter !== null) {
-            $result['formatter'] = $transaction->formatter;
-        }
-
-        if ($this->verifyResults !== []) {
-            $result['verify'] = $this->verifyResults;
-        }
-
-        if ($transaction->changed && $transaction->mode !== 'delete') {
-            // The write already parsed what it produced; saying so spares a `validate` call
-            // that asks the question again.
-            $result['valid'] = true;
-        }
-
-        if ($transaction->warning !== null) {
-            $result['warning'] = $transaction->warning;
-        }
-
-        if ($dryRun && $transaction->output !== null) {
-            $result['code'] = $transaction->output;
-        }
-
-        return $result;
+        return EditReport::file($transaction, $dryRun, $this->unifiedDiff($transaction));
     }
 
     private function applyOperation(
@@ -1736,14 +1633,6 @@ final class Editor
         }
     }
 
-    /**
-     * Take over what the formatter left on disk, once it is known to still be PHP.
-     *
-     * Phase 3 guarantees that nothing invalid reaches the working tree, and a formatter that
-     * exits zero after writing something unparseable would walk straight through it. Parsing
-     * the result keeps the guarantee, and re-deriving `changed` keeps a formatter that puts
-     * the original bytes back from being reported as a change with no lines in it.
-     */
     private function adoptFormatterResult(FileTransaction $transaction): void
     {
         $after = file_get_contents($transaction->path);
@@ -1765,6 +1654,7 @@ final class Editor
                 ),
             );
         }
+        $transaction->lint = (new PhpLint())->check($after, $transaction->path, $transaction->phpVersion);
         $transaction->output = $after;
         $transaction->changed = $transaction->source !== $after;
         $transaction->changedLines = $transaction->source === null ? substr_count($after, "\n") : $this->countChangedLines($transaction->source, $after);
@@ -1796,139 +1686,9 @@ final class Editor
         }
     }
 
-    /**
-     * Rename one variable everywhere inside a function, method, closure or arrow function.
-     *
-     * A variable is not a place, it is every occurrence of a name inside one scope, and
-     * addressing those one at a time is what makes a rename expensive and unsafe: a file
-     * holding `$nonce` eleven times also holds `$this->nonceCache`, `getNonceCacheKey()`,
-     * `'nonce_'` and `'noncePrefix'`, and a textual pass reaches all of them. This walks the
-     * scope and renames `Expr_Variable` and `Param` nodes whose name matches exactly, so a
-     * property fetch, a method name and a string literal are untouched by construction.
-     *
-     * Nested closures are part of the scope: a `use ($nonce)` binds the same name and is
-     * renamed with it. A `$$name` is left alone — its name is an expression, not a name.
-     */
     private function renameVariable(Node $scope, string $from, string $to): int
     {
-        if ($from === '' || $to === '') {
-            throw new EditException('rename_variable needs a non-empty from and to.');
-        }
-        $from = ltrim($from, '$');
-        $to = ltrim($to, '$');
-
-        if (!preg_match('/^[A-Za-z_\x80-\xff][A-Za-z0-9_\x80-\xff]*$/', $to)) {
-            throw new EditException('rename_variable: "' . $to . '" is not a variable name.');
-        }
-
-        if ($from === 'this' || $to === 'this') {
-            // `$this` is the receiver, not a local. Renaming it away would leave every
-            // `$this->…` in the scope pointing at a variable that holds nothing; renaming
-            // something else to it would silently take the receiver's place.
-            throw new EditException('rename_variable will not rename $this.');
-        }
-        $renamed = 0;
-        $this->renameInScope($scope, $from, $to, $renamed);
-
-        if ($renamed === 0) {
-            throw new EditException(
-                sprintf('rename_variable: $%s does not occur in %s.', $from, $scope->getType()),
-            );
-        }
-
-        return $renamed;
-    }
-
-    /**
-     * The recursive half of `renameVariable()`.
-     *
-     * A `Variable`'s name is a string only when it was written literally; for `$$name` it is
-     * an expression and there is nothing to rename. A `Param`'s name is a `Variable`, so it
-     * is reached by the same branch.
-     *
-     * Descent stops where the name means something else. A nested named function, method or
-     * class body is a scope of its own: `$nonce` in there is not the `$nonce` being renamed,
-     * and moving it changes code the caller did not ask about. A closure is the interesting
-     * case — it sees nothing of its surroundings unless it says so, so it is entered only
-     * when it captures the name in `use`, and then the capture and the body move together.
-     * An arrow function captures by value on its own, so it is entered unless a parameter of
-     * its own shadows the name.
-     */
-    private function renameInScope(Node $node, string $from, string $to, int &$renamed): void
-    {
-        if ($node instanceof Expr\Variable && is_string($node->name) && $node->name === $from) {
-            $node->name = $to;
-            ++$renamed;
-        }
-
-        foreach ($node->getSubNodeNames() as $subNodeName) {
-            $value = $node->{$subNodeName};
-
-            if ($value instanceof Node) {
-                if (!$this->bindsItsOwn($value, $from)) {
-                    $this->renameInScope($value, $from, $to, $renamed);
-                }
-
-                continue;
-            }
-
-            if (!is_array($value)) {
-                continue;
-            }
-
-            foreach ($value as $child) {
-                if ($child instanceof Node && !$this->bindsItsOwn($child, $from)) {
-                    $this->renameInScope($child, $from, $to, $renamed);
-                }
-            }
-        }
-    }
-
-    /**
-     * Whether `$name` inside this node is a different variable from the one outside it.
-     *
-     * The question a rename has to answer before it descends. PHP's scoping makes it a short
-     * list: a function, a method and a class body share nothing with their surroundings; a
-     * closure shares only what it names in `use`; an arrow function shares everything, until
-     * a parameter of its own takes the name back.
-     */
-    private function bindsItsOwn(Node $node, string $name): bool
-    {
-        if ($node instanceof Stmt\Function_ || $node instanceof Stmt\ClassMethod || $node instanceof Stmt\ClassLike) {
-            return true;
-        }
-
-        if ($node instanceof Expr\Closure) {
-            foreach ($node->uses as $use) {
-                if ((string) $use->var->name === $name) {
-                    return false;
-                }
-            }
-
-            return true;
-        }
-
-        if ($node instanceof Expr\ArrowFunction) {
-            return $this->hasParameterNamed($node->params, $name);
-        }
-
-        return false;
-    }
-
-    /**
-     * Whether one of these parameters takes the name for itself.
-     *
-     * @param list<Node\Param> $params
-     */
-    private function hasParameterNamed(array $params, string $name): bool
-    {
-        foreach ($params as $param) {
-            if ($param->var instanceof Expr\Variable && is_string($param->var->name) && $param->var->name === $name) {
-                return true;
-            }
-        }
-
-        return false;
+        return (new RenameVariable())->rename($scope, $from, $to);
     }
 
     /**
@@ -2170,28 +1930,9 @@ final class Editor
      */
     private array $verifyResults = [];
 
-    /**
-     * Run the checks the project declared, on the files this write produced.
-     *
-     * The same shape as `formatter`, for the same reason: the project owns the commands and
-     * this only executes them. Measured on a controlled run, a model that had just made a
-     * correct four-line edit then spent twelve calls on `validate`, PHPStan four times, the
-     * coding-standards check twice and a `git diff` — a quality gate nobody asked it for,
-     * assembled by reading `composer.json`. Declaring the checks turns that into one field.
-     *
-     * A failing check does not roll the write back. The code is written and it parses; what
-     * failed is an opinion about it, and the caller is the one who decides what to do with
-     * that. The output comes back so the decision does not need another call.
-     *
-     * @param list<FileTransaction> $transactions
-     */
     private function runVerify(array $transactions): void
     {
-        // This instance outlives one `apply()`. Without clearing, a later write with no
-        // eligible checks would report the previous run's results as its own.
         $this->verifyResults = [];
-
-        /** @var array<string, array{verify: list<list<string>>, paths: list<string>}> $groups */
         $groups = [];
 
         foreach ($transactions as $transaction) {
@@ -2204,8 +1945,9 @@ final class Editor
                 continue;
             }
             $root = \dirname($config->path);
-            $groups[$root] ??= ['verify' => $config->verify, 'paths' => []];
+            $groups[$root] ??= ['verify' => $config->verify, 'paths' => [], 'files' => []];
             $groups[$root]['paths'][] = realpath($transaction->path) ?: $transaction->path;
+            $groups[$root]['files'][] = $transaction;
         }
 
         foreach ($groups as $root => $group) {
@@ -2213,38 +1955,40 @@ final class Editor
                 $expanded = [];
 
                 foreach ($command as $argument) {
-                    if ($argument !== RepositoryConfig::FILES_PLACEHOLDER) {
+                    if ($argument === RepositoryConfig::FILES_PLACEHOLDER) {
+                        array_push($expanded, ...$group['paths']);
+                    } else {
                         $expanded[] = $argument;
-
-                        continue;
-                    }
-
-                    foreach ($group['paths'] as $path) {
-                        $expanded[] = $path;
                     }
                 }
-                $this->verifyResults[] = $this->captureCommand($expanded, $root);
+                $result = $this->captureCommand($expanded, $root);
+                $this->verifyResults[] = $result;
+
+                foreach ($group['files'] as $transaction) {
+                    $transaction->verify[] = $result;
+                }
             }
         }
     }
 
-    /**
-     * Run one declared check and report how it went, without deciding anything.
-     *
-     * @param  list<string> $command
-     * @return array{command: string, ok: bool, output?: string}
-     */
     private function captureCommand(array $command, string $root): array
     {
         $out = tempnam(sys_get_temp_dir(), 'php-ast-edit-verify-');
         $err = tempnam(sys_get_temp_dir(), 'php-ast-edit-verify-');
 
         if ($out === false || $err === false) {
+            if (is_string($out)) {
+                @unlink($out);
+            }
+
+            if (is_string($err)) {
+                @unlink($err);
+            }
+
             throw new EditException('Cannot create a temporary file for the check output.');
         }
 
         try {
-            $pipes = [];
             $process = proc_open($command, [1 => ['file', $out, 'w'], 2 => ['file', $err, 'w']], $pipes, $root);
 
             if (!is_resource($process)) {
@@ -2259,7 +2003,7 @@ final class Editor
             $result = ['command' => implode(' ', $command), 'ok' => $status === 0];
 
             if ($status !== 0) {
-                $result['output'] = mb_substr($said, 0, self::VERIFY_OUTPUT_CAP);
+                $result['output'] = substr($said, 0, self::VERIFY_OUTPUT_CAP);
             }
 
             return $result;
@@ -2269,158 +2013,8 @@ final class Editor
         }
     }
 
-    /**
-     * Rename a method and the calls to it that this file can see.
-     *
-     * `method:` finds a declaration; renaming it leaves every `$this->old()` behind, so the
-     * caller goes hunting. Measured: told to rename a private method and its calls, a model
-     * spent four `inspect` calls locating the call sites before it could write anything.
-     *
-     * What counts as a call to *this* method is decided structurally, not by name alone: a
-     * call on `$this`, `self`, `static` or `parent` inside the class that declares it. A call
-     * on any other receiver may belong to a different class that happens to share the name,
-     * and renaming it would be a guess. Those are counted, not touched, and the count comes
-     * back so the caller knows whether anything is left.
-     *
-     * @param  list<Node\Stmt> $roots
-     * @return array{renamed: int, otherReceivers: int}
-     */
     private function renameMethod(NodeLocation $location, string $to, array $roots): array
     {
-        $method = $location->node;
-
-        if (!$method instanceof Stmt\ClassMethod) {
-            throw new EditException('rename_method targets a method declaration.');
-        }
-
-        if (!preg_match('/^[A-Za-z_\x80-\xff][A-Za-z0-9_\x80-\xff]*$/', $to)) {
-            throw new EditException('rename_method: "' . $to . '" is not a method name.');
-        }
-        $from = (string) $method->name;
-        $owner = $location->parent;
-
-        if (!$owner instanceof Stmt\ClassLike) {
-            throw new EditException('rename_method needs the class the method is declared in.');
-        }
-        $method->name = new Node\Identifier($to, $method->name->getAttributes());
-        $renamed = 1;
-
-        foreach ($this->ownCalls($owner, $from) as $call) {
-            $call->name = new Node\Identifier($to, $call->name->getAttributes());
-            ++$renamed;
-        }
-        $others = 0;
-
-        foreach ((new NodeFinder())->find($roots, static fn (Node $n): bool => true) as $node) {
-            if (self::namesMethod($node, $from)) {
-                ++$others;
-            }
-        }
-
-        return ['renamed' => $renamed, 'otherReceivers' => $others];
-    }
-
-    /**
-     * Whether this node calls `$name` on the class that declares it.
-     *
-     * `$this`, `self`, `static` and `parent` are the receivers a rename inside one class may
-     * follow. Anything else could be another class with the same method name.
-     */
-    private static function callsOwnMethod(Node $node, string $name): bool
-    {
-        if (!self::namesMethod($node, $name)) {
-            return false;
-        }
-
-        if ($node instanceof Expr\MethodCall || $node instanceof Expr\NullsafeMethodCall) {
-            return $node->var instanceof Expr\Variable && $node->var->name === 'this';
-        }
-
-        return $node instanceof Expr\StaticCall && $node->class instanceof Node\Name && in_array($node->class->toLowerString(), ['self', 'static', 'parent'], true);
-    }
-
-    /** Whether this node is a call carrying the literal method name `$name`. */
-    private static function namesMethod(Node $node, string $name): bool
-    {
-        if (!$node instanceof Expr\MethodCall && !$node instanceof Expr\NullsafeMethodCall && !$node instanceof Expr\StaticCall) {
-            return false;
-        }
-
-        // PHP resolves method names without regard to ASCII case, so `$this->OLD()` is a
-        // call to `old()` and a strict comparison would leave it behind.
-        return $node->name instanceof Node\Identifier && strcasecmp($node->name->toString(), $name) === 0;
-    }
-
-    /**
-     * A warning when a rename left something of the old name behind.
-     *
-     * The count was already in `effects`, and a model read `remainingInFile: 2` and stopped
-     * anyway. A number nested inside a per-edit record is easy to walk past; a warning beside
-     * the result is not. The tool cannot make the caller act, but it can stop the omission
-     * from being quiet.
-     *
-     * @param array<int, array<string, int|string>> $effects
-     */
-    private function unfinishedRenames(array $effects): ?string
-    {
-        $said = [];
-
-        foreach ($effects as $effect) {
-            $left = (int) ($effect['remainingInFile'] ?? $effect['otherReceivers'] ?? 0);
-
-            if ($left < 1) {
-                continue;
-            }
-            $said[] = sprintf(
-                '%s left %d occurrence%s of the old name in this file',
-                (string) ($effect['operation'] ?? 'the rename'),
-                $left,
-                $left === 1 ? '' : 's',
-            );
-        }
-
-        if ($said === []) {
-            return null;
-        }
-
-        return 'INCOMPLETE_RENAME: ' . implode('; ', $said) . '. A rename is scoped, so the rest sit in scopes this edit did not name, on another receiver, or in text. Name them, or say why they stay.';
-    }
-
-    /**
-     * The calls to `$name` that belong to this class, and not to something nested inside it.
-     *
-     * A `$this->old()` inside an anonymous class declared in a method body is that class's
-     * call, not this one's, and renaming it would break code the edit was never about. The
-     * walk therefore stops at every nested class-like declaration and at every function that
-     * carries its own `$this` — a closure does not, an arrow function does not, but a nested
-     * named function and a nested method do.
-     *
-     * @return list<Expr\MethodCall|Expr\NullsafeMethodCall|Expr\StaticCall>
-     */
-    private function ownCalls(Node $node, string $name): array
-    {
-        $found = [];
-
-        foreach ($node->getSubNodeNames() as $subNodeName) {
-            $value = $node->{$subNodeName};
-            $children = $value instanceof Node ? [$value] : (is_array($value) ? $value : []);
-
-            foreach ($children as $child) {
-                if (!$child instanceof Node) {
-                    continue;
-                }
-
-                if ($child instanceof Stmt\ClassLike || $child instanceof Expr\New_ && $child->class instanceof Stmt\Class_) {
-                    continue;
-                }
-
-                if (self::callsOwnMethod($child, $name)) {
-                    $found[] = $child;
-                }
-                $found = array_merge($found, $this->ownCalls($child, $name));
-            }
-        }
-
-        return $found;
+        return (new RenameMethod())->rename($location, $to, $roots);
     }
 }

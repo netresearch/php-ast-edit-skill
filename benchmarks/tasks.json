@@ -1,0 +1,232 @@
+{
+  "schema_version": 1,
+  "tasks": [
+    {
+      "id": "add-clock-method",
+      "prompt": "Add a public now() method to App\\Clock returning a DateTimeImmutable. Preserve the namespace and existing class.",
+      "files": [
+        {
+          "path": "Clock.php",
+          "php": "<?php namespace App; final class Clock {}"
+        }
+      ],
+      "edits": [
+        {
+          "path": "Clock.php",
+          "edits": [
+            {
+              "target": {
+                "select": "class:Clock"
+              },
+              "operation": "add_member",
+              "php": "public function now(): \\DateTimeImmutable { return new \\DateTimeImmutable(); }"
+            }
+          ]
+        }
+      ],
+      "oracle": "require 'Clock.php'; if (!(new App\\Clock())->now() instanceof DateTimeImmutable) { exit(1); }",
+      "outcome": "changed"
+    },
+    {
+      "id": "method-and-literal",
+      "prompt": "Rename Product::findByUid() to resolveByUid(), including its internal call. Preserve the literal log label 'findByUid'.",
+      "files": [
+        {
+          "path": "Product.php",
+          "php": "<?php final class Product { public function findByUid(): int { return 7; } public function run(): array { return [$this->findByUid(), 'findByUid']; } }"
+        }
+      ],
+      "edits": [
+        {
+          "path": "Product.php",
+          "edits": [
+            {
+              "target": {
+                "select": "method:Product::findByUid"
+              },
+              "operation": "rename_method",
+              "to": "resolveByUid"
+            }
+          ]
+        }
+      ],
+      "oracle": "require 'Product.php'; $p = new Product(); if ($p->run() !== [7, 'findByUid'] || !method_exists($p, 'resolveByUid') || method_exists($p, 'findByUid')) { exit(1); }",
+      "outcome": "changed"
+    },
+    {
+      "id": "captured-variable-collision",
+      "prompt": "Rename x to y in calc(). If that would capture another binding, refuse and leave the file unchanged; explain the collision.",
+      "files": [
+        {
+          "path": "Calc.php",
+          "php": "<?php function calc($x) { $f = fn($y) => $x + $y; return $f(2); }"
+        }
+      ],
+      "edits": [
+        {
+          "path": "Calc.php",
+          "edits": [
+            {
+              "target": {
+                "select": "function:calc"
+              },
+              "operation": "rename_variable",
+              "from": "x",
+              "to": "y"
+            }
+          ]
+        }
+      ],
+      "oracle": "require 'Calc.php'; if (calc(1) !== 3) { exit(1); }",
+      "outcome": "rejected_unchanged"
+    },
+    {
+      "id": "inherited-method",
+      "prompt": "Rename ChildExample::old() to renamed(). If inherited dispatch cannot be established safely, refuse and preserve the file; do not rewrite parent::old() blindly.",
+      "files": [
+        {
+          "path": "Child.php",
+          "php": "<?php class ParentExample { public function old(): int { return 3; } } final class ChildExample extends ParentExample { public function old(): int { return parent::old(); } }"
+        }
+      ],
+      "edits": [
+        {
+          "path": "Child.php",
+          "edits": [
+            {
+              "target": {
+                "select": "method:ChildExample::old"
+              },
+              "operation": "rename_method",
+              "to": "renamed"
+            }
+          ]
+        }
+      ],
+      "oracle": "require 'Child.php'; $child = new ChildExample(); $method = method_exists($child, 'renamed') ? 'renamed' : 'old'; if ($child->$method() !== 3 || (new ParentExample())->old() !== 3) { exit(1); }",
+      "outcome": "changed_or_refused",
+      "reference_rejects": true
+    },
+    {
+      "id": "sql-literal",
+      "prompt": "Make query() return SQL selecting id and created_at from records. Keep label() and the surrounding PHP unchanged.",
+      "files": [
+        {
+          "path": "Report.php",
+          "php": "<?php function query(): string { return 'SELECT id FROM records'; } function label(): string { return 'SELECT id FROM records'; }"
+        }
+      ],
+      "edits": [
+        {
+          "path": "Report.php",
+          "edits": [
+            {
+              "target": {
+                "ref": "stmts[0].stmts[0].expr"
+              },
+              "operation": "set_string",
+              "value": "SELECT id, created_at FROM records"
+            }
+          ]
+        }
+      ],
+      "oracle": "require 'Report.php'; if (query() !== 'SELECT id, created_at FROM records' || label() !== 'SELECT id FROM records') { exit(1); }",
+      "outcome": "changed"
+    },
+    {
+      "id": "local-variable",
+      "prompt": "Rename the nonce local variable to token inside Cache::key(). Preserve nonceCache, the getNonceCacheKey method, and the string 'nonce_'.",
+      "files": [
+        {
+          "path": "Cache.php",
+          "php": "<?php final class Cache { public string $nonceCache = 'kept'; public function getNonceCacheKey(): string { return 'kept'; } public function key(): string { $nonce = '42'; $f = function () use ($nonce) { return $nonce; }; return 'nonce_' . $f(); } }"
+        }
+      ],
+      "edits": [
+        {
+          "path": "Cache.php",
+          "edits": [
+            {
+              "target": {
+                "select": "method:Cache::key"
+              },
+              "operation": "rename_variable",
+              "from": "nonce",
+              "to": "token"
+            }
+          ]
+        }
+      ],
+      "oracle": "require 'Cache.php'; $c = new Cache(); $s = file_get_contents('Cache.php'); if ($c->key() !== 'nonce_42' || $c->nonceCache !== 'kept' || $c->getNonceCacheKey() !== 'kept' || !str_contains($s, '$token') || str_contains($s, '$nonce =')) { exit(1); }",
+      "outcome": "changed"
+    },
+    {
+      "id": "remove-middle-argument",
+      "prompt": "Remove the obsolete second argument from the render() call inside page(); preserve the first and third argument values.",
+      "files": [
+        {
+          "path": "Page.php",
+          "php": "<?php function render(...$args): array { return $args; } function page(): array { return render('first', 'legacy', 'third'); }"
+        }
+      ],
+      "edits": [
+        {
+          "path": "Page.php",
+          "edits": [
+            {
+              "target": {
+                "ref": "stmts[1].stmts[0].expr"
+              },
+              "operation": "remove_argument",
+              "index": 1
+            }
+          ]
+        }
+      ],
+      "oracle": "require 'Page.php'; if (page() !== ['first', 'third']) { exit(1); }",
+      "outcome": "changed"
+    },
+    {
+      "id": "multi-file-members",
+      "prompt": "Add public const VERSION = 2 to both First and Second. Preserve each existing id() result. Apply both changes as one task.",
+      "files": [
+        {
+          "path": "First.php",
+          "php": "<?php final class First { public function id(): int { return 1; } }"
+        },
+        {
+          "path": "Second.php",
+          "php": "<?php final class Second { public function id(): int { return 2; } }"
+        }
+      ],
+      "edits": [
+        {
+          "path": "First.php",
+          "edits": [
+            {
+              "target": {
+                "select": "class:First"
+              },
+              "operation": "add_member",
+              "php": "public const VERSION = 2;"
+            }
+          ]
+        },
+        {
+          "path": "Second.php",
+          "edits": [
+            {
+              "target": {
+                "select": "class:Second"
+              },
+              "operation": "add_member",
+              "php": "public const VERSION = 2;"
+            }
+          ]
+        }
+      ],
+      "oracle": "require 'First.php'; require 'Second.php'; if (First::VERSION !== 2 || Second::VERSION !== 2 || (new First())->id() !== 1 || (new Second())->id() !== 2) { exit(1); }",
+      "outcome": "changed"
+    }
+  ]
+}

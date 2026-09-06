@@ -40,4 +40,5 @@ jobs:
         uses: ramsey/composer-install@65e4f84970763564f46a70b8a54b90d033b3bdda  # 4.0.0
 
       - name: Run tests
-        run: bash tests/run.sh
+        # Distribution has its own clean-install matrix on PHP 8.2 and 8.5.
+        run: bash tests/run.sh --runtime-only

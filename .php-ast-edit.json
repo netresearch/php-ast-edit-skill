@@ -9,6 +9,7 @@
         "vendor/bin/php-cs-fixer",
         "fix",
         "--path-mode=intersection",
+        "--config=.php-cs-fixer.php",
         "{files}"
     ]
 }

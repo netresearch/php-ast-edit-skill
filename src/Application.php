@@ -21,7 +21,7 @@ final class Application
                 'inspect' => $this->inspect($options),
                 'apply' => $this->apply($options),
                 'validate' => $this->validate($options),
-                'contexts' => $this->contexts(),
+                'contexts' => $this->contexts($options),
                 'format' => $this->format($options, false),
                 'normalize' => $this->format($options, true),
                 'doctor' => $this->doctor($options),
@@ -96,10 +96,10 @@ final class Application
         if (!is_array($document)) {
             throw new EditException('Apply input must decode to a JSON object.');
         }
-        $editor = new Editor();
-        $this->json($editor->apply($document, isset($options['dry-run'])));
+        $result = (new Editor())->apply($document, isset($options['dry-run']));
+        $this->json($result);
 
-        return 0;
+        return $result['checksPassed'] === false ? 1 : 0;
     }
 
     private function format(array $options, bool $normalize): int
@@ -206,8 +206,22 @@ final class Application
         return $report['status'] === 'ready' ? 0 : 1;
     }
 
-    private function contexts(): int
+    private function contexts(array $options = []): int
     {
+        $arguments = Editor::operationArguments();
+
+        if (isset($options['operation'])) {
+            $operation = (string) $options['operation'];
+
+            if (!isset($arguments[$operation])) {
+                throw new EditException(
+                    'Unknown operation: ' . $operation . '. Run contexts for the catalog.',
+                );
+            }
+            $this->json(['operation' => $operation, 'arguments' => $arguments[$operation]]);
+
+            return 0;
+        }
         $parser = (new ParserFactory())->createForHostVersion();
         $this->json(
             [
@@ -246,7 +260,7 @@ final class Application
                     ],
                 ],
                 'fileModes' => ['edit', 'create', 'delete'],
-                'operationArguments' => Editor::operationArguments(),
+                'operationArguments' => $arguments,
             ],
         );
 
@@ -256,95 +270,55 @@ final class Application
     private function help(): int
     {
         echo <<<'TEXT'
-        php-ast-edit - AST-native PHP writer for coding agents
+        php-ast-edit — AST-based PHP edits for coding agents
         
-        Every creation, modification, replacement, deletion and movement of PHP syntax goes
-        through this tool. PHP text is accepted as construction input only: it is parsed,
-        mutated as an AST, and written back exclusively from that AST.
-        
-        Usage:
+        Commands:
           php-ast-edit inspect --file FILE (--offset N | --line N --column N) [--kind TYPE] [--php-version 8.4]
-          php-ast-edit validate --file FILE [--php-version 8.4]
-          php-ast-edit contexts
           php-ast-edit apply [--input FILE|-] [--dry-run]
-          php-ast-edit format [--path DIR|FILE] [--dry-run] [--php-version 8.4]
-          php-ast-edit normalize [--path DIR] [--exclude a,b] [--dry-run]
-          php-ast-edit doctor [--path DIR]
+          php-ast-edit validate --file FILE [--php-version 8.4]
+          php-ast-edit contexts [--operation OPERATION]
+          php-ast-edit doctor [--path DIRECTORY]
+          php-ast-edit normalize [--path DIRECTORY] [--exclude PATHS] [--dry-run]
+          php-ast-edit format [--path FILE_OR_DIRECTORY] [--dry-run]
         
-        Coordinates:
-          offset   zero-based byte offset in the original source
-          line     one-based line
-          column   one-based byte column
-          ref      structural AST path from inspect, e.g. stmts[1].stmts[0].params[0]
-          select   what the node is, rather than where: class:Foo, interface:Foo,
-                   trait:Foo, enum:Foo, function:foo, method:Foo::bar,
-                   property:Foo::$bar (promoted constructor properties included),
-                   const:Foo::BAR. The owner may be left out
-                   where the file holds one class; an ambiguous selector is refused
-                   with the paths it matched. Needs no inspect first.
+        Use a selector when the target has a name; inspect only when coordinates are needed:
+          {"files":[{"path":"src/Foo.php","edits":[{"target":{"select":"method:Foo::bar"},
+            "operation":"set_return_type","php":"string|int"}]}]}
         
-        Apply JSON:
-          {
-            "files": [{
-              "path": "src/Foo.php",
-              "mode": "edit",            // edit (default) | create | delete
-              "sha256": "hash from inspect",
-              "phpVersion": "8.4",
-              "edits": [{
-                "target": {"select": "method:Foo::oldMethod"},
-                "expect": {"name": "oldMethod"},
-                "operation": "set_name",
-                "value": "newMethod"
-              }]
-            }]
-          }
+        Selectors: class:, interface:, trait:, enum:, method:Foo::bar, function:,
+        property:Foo::$bar, const:Foo::BAR. Names are short names; ambiguity is refused.
+        Coordinates are byte-based: offsets start at zero, lines and columns at one.
+        Include inspect's sha256 when addressing its structural refs or coordinates.
         
-        Primitives:
-          replace_node, delete_node, insert_into, replace_child, delete_child, move_node
+        Operation arguments: contexts --operation rename_variable
+        Full operation and parseAs catalog: contexts
+        File modes: edit (default), create (requires php with an opening tag), delete.
+        create refuses an existing file unless expectAbsent:false; a supplied sha256 is checked.
+        Batch all edits and files belonging to one transaction in one apply request.
         
-        Convenience:
-          set_name, set_string, replace_expression, replace_statement,
-          insert_before, insert_after, delete,
-          replace_argument, add_argument, remove_argument,
-          add_member, add_parameter, add_attribute,
-          set_return_type, set_type, set_visibility, add_implements, set_extends,
-          set_doc_comment, remove_doc_comment, rename_variable, rename_method
+        Reports separate parsed, validation.lint and validation.checks.
+        valid is a compatibility alias for parser success, not semantic correctness.
+        Host PHP lint runs before writes; a newer explicit target reports lint skipped.
+        Declared project verify checks run after writing. Failed checks keep the edit and
+        make apply exit 1; read verify and fix the result. Errors before commit leave files
+        unchanged; commit failures attempt rollback and report any restore failures.
+        warnings contains every diagnostic; warning is the joined compatibility field.
+        Rename operations refuse unsafe bindings; they are not project-wide refactoring.
         
-        Run `php-ast-edit contexts` for the full parseAs and operation catalog.
+        Format-preserving output is the default for an unconfigured repository.
+        Inspect changedLines and diff. Canonical formatting is optional and reflows files.
+        To adopt it, declare max_line_length in .editorconfig, run normalize, then the
+        project formatter, review the whole change and commit it separately.
+        normalize preserves declared formatter and verify commands.
+        A formatter declaration is an argv list with a whole-element {files} placeholder:
+          {"formatter":["php","vendor/bin/php-cs-fixer","fix","--config=.php-cs-fixer.php",
+            "--path-mode=intersection","{files}"]}
+        verify is a list of argv lists. Never run project-wide format just to close a
+        local edit. A clean-checkout CI gate may run format + formatter + git diff --exit-code.
         
-        Formatting contract:
-          The output is canonical — one rendering per AST — so an edit to a repository that
-          already sits on that fixed point changes only what the edit touches. Reaching it is a
-          one-time `normalize` plus a run of the project's own formatter, committed on its own.
-          Without the resulting .php-ast-edit.json, apply falls back to format-preserving
-          printing and says so. `doctor` reports whether the repository is set up for it.
-          A path listed under `exclude` is left to the project entirely: printed
-          format-preserving, and the formatter is not run there.
-        
-          Declare the formatter and apply finishes the file itself:
-        
-            {"canonical": true, "printWidth": 120,
-             "formatter": ["php", ".Build/bin/php-cs-fixer", "fix",
-                           "--config=Build/.php-cs-fixer.php",
-                           "--path-mode=intersection", "{files}"]}
-        
-          An argv list, not a command line — nothing goes through a shell. `{files}` is one
-          element and expands to the files the edit wrote, never the tree. A non-zero exit
-          rolls the write back and reports what the formatter said.
-        
-          `verify` is the same shape, a list of commands, run after the formatter:
-        
-            "verify": [["php", ".Build/bin/phpstan", "analyse",
-                        "-c", "Build/phpstan.neon", "{files}"]]
-        
-          Those run on what will be committed and report `ok` with the output of anything
-          that failed. A failing check does not roll the write back: the code is written
-          and it parses, and what failed is an opinion about it. The report also carries
-          `valid`, `effects` — what each edit did — and `diff`, so the write does not have
-          to be read back to be understood.
-        
-        PHP snippets are syntax, not formatting. Compact one-line snippets are preferred;
-        the printer decides the layout.
+        Exit codes: 0 command completed; 1 doctor/format/check result needs attention;
+        2 invalid input, refused edit or transaction failure; 3 unexpected internal error;
+        4 runtime dependency missing.
         TEXT;
         echo "\n";
 
