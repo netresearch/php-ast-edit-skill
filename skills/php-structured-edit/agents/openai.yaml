@@ -1,6 +1,8 @@
 interface:
   display_name: "PHP Structured Edit"
   description: >-
-    Edits PHP syntax through named selectors, typed operations, and guarded multi-file transactions. Reports diffs, accumulated warnings, parser/lint status, and configured checks. Existing layout is preserved by default; semantic correctness still requires project tests.
+    Edits PHP syntax through named selectors, typed operations, and guarded multi-file transactions.
+    Reports diffs, accumulated warnings, parser/lint status, and configured checks.
+    Existing layout is preserved by default; semantic correctness still requires project tests.
   when_to_use: >-
     Creating, changing, deleting, or moving PHP syntax, including PHP string literals. Not for read-only questions or edits to non-PHP files.

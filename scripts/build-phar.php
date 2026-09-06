@@ -13,7 +13,7 @@ if ((int) ini_get('phar.readonly') !== 0) {
     fwrite(STDERR, "Run with php -d phar.readonly=0 scripts/build-phar.php\n");
     exit(2);
 }
-require $vendorAutoload;
+require_once $vendorAutoload;
 
 if ((Composer\InstalledVersions::getRootPackage()['dev'] ?? true) !== false) {
     fwrite(

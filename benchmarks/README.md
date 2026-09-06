@@ -3,13 +3,15 @@
 The CLI microbenchmark measures local processes. The agent harness measures whether a
 complete task passes its oracle and imports actual model usage. Neither substitutes for
 the other. The harness does not call a paid model API or invent usage data.
+Read the [execution and trust boundaries](TRUST.md) before grading candidate code or
+importing evidence; they also record the narrowly scoped static-analysis decisions.
 
 ## Reproduce the local comparison
 
 Requirements: installed project dependencies, PHP, Python 3.10+, and Git.
 
 ```bash
-python3 benchmarks/cli_microbenchmark.py --repetitions 30 --include-operation-help --output /tmp/php-ast-cli.json
+XDEBUG_MODE=off python3 benchmarks/cli_microbenchmark.py --repetitions 30 --include-operation-help --output /tmp/php-ast-cli.json
 jq '.environment, .parameters, .summary' /tmp/php-ast-cli.json
 ```
 
