@@ -151,16 +151,46 @@ function sourceView(string $source, string $mode, ?string $select): array
     ];
 }
 
+/** @return array{sources: list<string>, mode: 'full'|'focused', select: ?string} */
+function decodeReadRequest(string $json): array
+{
+    $request = json_decode($json, false, 512, JSON_THROW_ON_ERROR);
+
+    if (!$request instanceof stdClass) {
+        throw new InvalidArgumentException('Invalid read request: expected a JSON object');
+    }
+
+    if (!isset($request->sources) || !is_array($request->sources)) {
+        throw new InvalidArgumentException('Invalid read request: sources must be a list of strings');
+    }
+
+    if (!in_array($request->mode ?? null, ['full', 'focused'], true)) {
+        throw new InvalidArgumentException('Invalid read request: mode must be full or focused');
+    }
+
+    if (!property_exists($request, 'select') || $request->select !== null && !is_string($request->select)) {
+        throw new InvalidArgumentException('Invalid read request: select must be null or a string');
+    }
+
+    foreach ($request->sources as $source) {
+        if (!is_string($source)) {
+            throw new InvalidArgumentException('Invalid read request: sources must be a list of strings');
+        }
+    }
+
+    return ['sources' => $request->sources, 'mode' => $request->mode, 'select' => $request->select];
+}
+
 try {
     $autoload = getenv('PHP_AST_AGENT_AUTOLOAD');
 
     if ($autoload === false || !is_file($autoload)) {
         throw new InvalidArgumentException(
-            "PHP_AST_EDIT_BIN must point to a source runtime with vendor/autoload.php",
+            "PHP_AST_AGENT_AUTOLOAD must point to an existing vendor/autoload.php",
         );
     }
     require_once $autoload;
-    $request = json_decode(stream_get_contents(STDIN), true, 512, JSON_THROW_ON_ERROR);
+    $request = decodeReadRequest(stream_get_contents(STDIN));
     $views = [];
 
     foreach ($request['sources'] as $source) {

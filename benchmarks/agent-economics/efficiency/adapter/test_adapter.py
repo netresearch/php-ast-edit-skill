@@ -26,6 +26,97 @@ final class Cache {
 """
 
 
+class ReadHelperTests(unittest.TestCase):
+    def setUp(self):
+        self.env = {
+            **os.environ,
+            "PHP_AST_AGENT_AUTOLOAD": str(
+                ENGINE.resolve().parent.parent / "vendor/autoload.php"
+            ),
+        }
+
+    def call_helper(self, payload=None, *, raw=None, env=None):
+        return subprocess.run(
+            ["php", "-d", "display_errors=stderr", str(HERE / "read.php")],
+            input=raw if raw is not None else json.dumps(payload),
+            text=True,
+            capture_output=True,
+            env=self.env if env is None else env,
+            check=False,
+        )
+
+    def assert_failure(self, result, message):
+        self.assertEqual(result.returncode, 2, (result.stdout, result.stderr))
+        self.assertEqual(result.stdout, "")
+        self.assertIn(message, result.stderr)
+        self.assertNotIn("Warning:", result.stderr)
+
+    def test_invalid_request_shapes_are_rejected_before_rendering(self):
+        valid = {"sources": [], "mode": "full", "select": None}
+        cases = [None, [], "source", 42, True, {}]
+        cases.extend(
+            {key: value for key, value in valid.items() if key != omitted}
+            for omitted in valid
+        )
+        cases.extend(
+            {**valid, "sources": value}
+            for value in (
+                None,
+                {},
+                {"0": SOURCE},
+                SOURCE,
+                [None],
+                [1],
+                [False],
+                [{}],
+                [[]],
+                [SOURCE, 1],
+            )
+        )
+        cases.extend(
+            {**valid, "mode": value}
+            for value in (None, False, 1, [], {}, "", "FULL", "other")
+        )
+        cases.extend({**valid, "select": value} for value in (False, 1, [], {}))
+        for payload in cases:
+            with self.subTest(payload=payload):
+                result = self.call_helper(payload)
+                self.assert_failure(result, "Invalid read request")
+
+    def test_malformed_json_is_rejected_without_success_output(self):
+        result = self.call_helper(raw="{invalid")
+        self.assert_failure(result, "Syntax error")
+
+    def test_valid_empty_and_full_batches_remain_supported(self):
+        for mode in ("full", "focused"):
+            result = self.call_helper({"sources": [], "mode": mode, "select": None})
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(json.loads(result.stdout), [])
+            self.assertEqual(result.stderr, "")
+        result = self.call_helper(
+            {"sources": [SOURCE, SOURCE], "mode": "full", "select": None}
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(
+            json.loads(result.stdout), [{"mode": "full", "source": SOURCE}] * 2
+        )
+        self.assertEqual(result.stderr, "")
+
+    def test_autoload_diagnostic_names_the_actual_configuration(self):
+        for configured in (None, "", str(HERE), str(HERE / "missing-autoload.php")):
+            env = dict(self.env)
+            if configured is None:
+                env.pop("PHP_AST_AGENT_AUTOLOAD")
+            else:
+                env["PHP_AST_AGENT_AUTOLOAD"] = configured
+            with self.subTest(autoload=configured):
+                result = self.call_helper(
+                    {"sources": [], "mode": "full", "select": None}, env=env
+                )
+                self.assert_failure(result, "PHP_AST_AGENT_AUTOLOAD")
+                self.assertNotIn("PHP_AST_EDIT_BIN", result.stderr)
+
+
 class AdapterTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory(prefix="php-ast-agent-tests-")
@@ -293,6 +384,15 @@ class AdapterTests(unittest.TestCase):
         self.assertIn("dryRun is unsupported", result["error"])
         self.assertEqual(self.first.read_text(), SOURCE)
         self.assertTrue(self.call("apply", payload={"files": [self.edit(view)]})["ok"])
+
+    def test_read_helper_failure_is_wrapped_as_a_json_error(self):
+        self.env["PHP_AST_EDIT_BIN"] = str(
+            self.work / "missing-runtime/bin/php-ast-edit"
+        )
+        result = self.call("read", "--files", "First.php", "--mode", "full", status=2)
+        self.assertFalse(result["ok"])
+        self.assertIn("PHP_AST_AGENT_AUTOLOAD", result["error"])
+        self.assertEqual(self.first.read_text(), SOURCE)
 
 
 if __name__ == "__main__":
