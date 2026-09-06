@@ -689,6 +689,7 @@ final class Editor
                         $node,
                         $this->requiredString($edit, 'from'),
                         $this->requiredString($edit, 'to'),
+                        $roots,
                     ),
                     'remainingInFile' => $this->remainingVariables($roots, $this->requiredString($edit, 'from')),
                 ];
@@ -1686,9 +1687,27 @@ final class Editor
         }
     }
 
-    private function renameVariable(Node $scope, string $from, string $to): int
+    /** @param list<Stmt> $roots */
+    private function renameVariable(Node $scope, string $from, string $to, array $roots): int
     {
-        return (new RenameVariable())->rename($scope, $from, $to);
+        // Resolve imports on a separate tree: analysis must not alter the printable AST.
+        $clones = (new NodeTraverser(new CloningVisitor()))->traverse($roots);
+        $resolved = (new NodeTraverser(new \PhpParser\NodeVisitor\NameResolver(null, ['replaceNodes' => false])))->traverse(
+            $clones,
+        );
+        $functionNames = [];
+
+        foreach ((new NodeFinder())->findInstanceOf($resolved, Expr\FuncCall::class) as $call) {
+            $original = $call->getAttribute('origNode');
+
+            if (!$original instanceof Expr\FuncCall || !$call->name instanceof Node\Name) {
+                continue;
+            }
+            $name = $call->name->getAttribute('resolvedName', $call->name);
+            $functionNames[spl_object_id($original)] = strtolower($name->getLast());
+        }
+
+        return (new RenameVariable($functionNames))->rename($scope, $from, $to);
     }
 
     /**

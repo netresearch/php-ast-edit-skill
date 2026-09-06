@@ -15,6 +15,9 @@ final class RenameVariable
 {
     private const SPECIAL_VARIABLES = ['GLOBALS', '_SERVER', '_GET', '_POST', '_FILES', '_COOKIE', '_SESSION', '_REQUEST', '_ENV'];
 
+    /** @param array<int, string> $functionNames Resolved names keyed by original call identity. */
+    public function __construct(private readonly array $functionNames = []) {}
+
     public function rename(Node $scope, string $from, string $to): int
     {
         $from = ltrim($from, '$');
@@ -166,8 +169,14 @@ final class RenameVariable
 
     private function usesSymbolTable(Node $node): bool
     {
-        return $node instanceof Expr\FuncCall && $node->name instanceof Node\Name && in_array(
-            strtolower($node->name->getLast()),
+        if (!$node instanceof Expr\FuncCall || !$node->name instanceof Node\Name) {
+            return false;
+        }
+
+        // Callback forwarding may be compiled as a direct call into this local symbol table.
+        // Do not infer callback targets from expressions or runtime values.
+        return in_array(
+            $this->functionNames[spl_object_id($node)] ?? strtolower($node->name->getLast()),
             [
                 'compact',
                 'extract',
@@ -175,6 +184,8 @@ final class RenameVariable
                 'parse_str',
                 'mb_parse_str',
                 'import_request_variables',
+                'call_user_func',
+                'call_user_func_array',
             ],
             true,
         );

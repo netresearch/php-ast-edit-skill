@@ -162,7 +162,11 @@ Shorthands over the primitives. They are ergonomics, not the coverage boundary.
   nodes and associated explicit captures; unrelated property and string names stay intact.
   Nested scopes and destination bindings are analyzed before mutation. Recognized binding
   collisions are rejected instead of capturing or merging names. `$this` is refused as
-  either endpoint. Property hooks are not supported as direct scope targets. Parameter renames do not update named arguments at callers. Dynamic variable behavior is not fully resolvable statically.
+  either endpoint. Function imports are resolved before checking symbol-table access.
+  Affected scopes containing `call_user_func()` or `call_user_func_array()` are refused
+  conservatively; callback target analysis is not performed. Property hooks are not
+  supported as direct scope targets. Parameter renames do not update named arguments
+  at callers. Dynamic variable behavior is not fully resolvable statically.
 
 ## Result fields
 

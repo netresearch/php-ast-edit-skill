@@ -8,6 +8,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Fixed
 
+- Resolve imported symbol-table function aliases before variable renames, and conservatively refuse `call_user_func()` and `call_user_func_array()` in affected scopes to prevent behavior-changing renames.
 - Reject variable renames that collide with local, parameter or captured bindings, or depend on unsafe dynamic scope. Refuse ambiguous inherited method renames, case-insensitive destination conflicts and unsupported late-static dispatch; preserve parent calls and nested lexical scopes.
 - Load Composer consumer autoloaders, including custom vendor and binary directories. Prevent a standalone skill wrapper from invoking itself recursively.
 - Preserve formatter, verification and custom JSON settings during normalization. Enforce supplied SHA guards on create-overwrite and restore file contents, permissions and symlink identity after failed transactions.
