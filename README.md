@@ -1,273 +1,159 @@
-# php-ast-edit
-
-Agent skill plus PHP CLI: **coding agents stop writing PHP directly.** They describe syntax, `php-ast-edit` turns it into an AST, mutates the AST, and only the AST may produce a `.php` file. Discovery stays textual; every write goes through `nikic/php-parser`.
+# php-ast-edit — AST-based PHP edits for coding agents
 
 ## What this skill solves
 
-An agent that writes PHP with regex, `sed`, string replacement or a unified-diff patch has no structural model of the file. A rename hits a same-named string literal, an inserted guard clause lands outside the block it was meant to protect, a replaced argument breaks the call it belonged to — and the damage surfaces at runtime, not at edit time.
+Select a PHP symbol, apply a typed change, and review the resulting diff. `php-ast-edit` supports guarded, multi-file transactions, preserves existing formatting by default, and reports the checks it actually ran.
 
-- Maps a source position (byte offset, or line/column) to the AST node ancestry covering it, and hands back a structural `ref` for each node.
-- Provides a small complete mutation algebra over that AST — `replace_node`, `delete_node`, `insert_into`, `replace_child`, `delete_child`, `move_node`, plus file creation and deletion — with typed shorthands (`set_name`, `add_member`, `set_return_type`, …) layered on top.
-- Parses every snippet inside a synthetic host context, so the grammar comes from `nikic/php-parser` rather than being modelled a second time here. New PHP syntax arrives with the parser.
-- Pretty-prints the whole file, reparses the result, and writes it atomically. A transaction spans files: everything is mutated, printed and reparsed before the first byte is written.
-
-## Why this is a skill (model delta)
-
-- **Value categories:** tool-boundary discipline, failure patterns that surface only after the edit ships.
-- **Without the skill:** the model reaches for `sed`/regex/`apply_patch` on PHP because they are the tools always at hand, and silently corrupts a file whenever the textual match is broader than the syntactic target — most often a rename that also rewrites a string literal, or an insertion placed outside its intended block.
-- **Eval evidence:** `skills/php-structured-edit/evals/evals.json` (trigger cases, including one negative case for non-PHP files).
-
-## Use when
-
-- Creating a new PHP file, class, interface, trait or enum.
-- Adding a method, property, constant, enum case, parameter, attribute or trait use — including into an empty container.
-- Renaming a method, function, class, property or variable.
-- Changing types, return types, visibility, `extends` or `implements`.
-- Replacing an expression or statement, inserting a guard clause, deleting a statement or a whole file.
-- Changing call arguments, array items, match arms, closure `use` clauses or docblocks.
-- Editing a string literal, including foreign code (SQL, HTML, JSON) stored inside a PHP string.
-- Any point where the alternative would be `sed`, a regex substitution, raw string replacement, `apply_patch`, or writing a `.php` file directly.
-
-Discovery is out of scope: keep using ripgrep, ast-grep, an LSP, symbol search or plain reasoning to find the location.
-
-## Expected outputs
-
-- An `inspect` JSON document: file SHA-256 plus the AST ancestry at the requested position, smallest node first.
-- A mutated PHP file, canonically printed and reparsed before the write.
-- A structured failure (`STALE_SOURCE`, expectation mismatch, detached target) when a guard rejects the transaction — the file is left untouched.
-
-## Context requirements
-
-- PHP 8.2+ with `ext-json` and `ext-tokenizer`.
-- `nikic/php-parser` 5.8+ — via `composer install`, or bundled in the release PHAR.
-- Write access to the target working tree. No external network access.
-
-## Example prompts
-
-```text
-"Rename the method `findByUid` to `resolveByUid` in src/Domain/Repository/ProductRepository.php."
-
-"Add a null guard at the top of `Checkout::submit()` that throws CartEmpty when the cart has no items."
-
-"The third argument of that GeneralUtility::makeInstance call is wrong — replace it with $this->context."
-
-"Change the SQL in the $query string literal in ReportService.php to select the new column, without touching the surrounding PHP."
-```
-
-## Classification
-
-| Field | Value |
+| Name | What it is |
 | --- | --- |
-| `action_level` | `modifies_files` |
-| `risk_level` | `medium` |
-
-## Related skills
-
-- [`php-modernization`](https://github.com/netresearch/php-modernization-skill) — decides *what* to modernize (PHP 8.x features, PHPStan, Rector); this skill carries out the resulting hand edits.
-- [`file-search`](https://github.com/netresearch/file-search-skill) — the discovery half: ripgrep, ast-grep and `fd` locate the target position this skill then edits.
+| `netresearch/php-ast-edit-skill` | This repository and Composer package |
+| `php-ast-edit` | The PHP command-line editor |
+| `php-structured-edit` | Agent instructions and a wrapper for that editor |
 
 ## Installation
 
-### Marketplace (recommended)
+The source checkout below follows development `main`. Published v0.7.0 archives
+remain unchanged; repaired release assets require a subsequent publication.
 
-```bash
-/plugin marketplace add netresearch/claude-code-marketplace
-```
-
-### npx ([skills.sh](https://skills.sh))
-
-```bash
-npx skills add https://github.com/netresearch/php-ast-edit-skill --skill php-structured-edit
-```
-
-### Composer (PHP projects)
-
-```bash
-composer require netresearch/php-ast-edit-skill
-```
-
-Requires [netresearch/composer-agent-skill-plugin](https://github.com/netresearch/composer-agent-skill-plugin). This path also installs the `php-ast-edit` binary to `vendor/bin/`.
-
-### Download release
-
-Download the [latest release](https://github.com/netresearch/php-ast-edit-skill/releases/latest) and extract it into your agent's skills directory.
-
-### Git clone
+Requirements: PHP 8.2+ with JSON and tokenizer, Composer 2.2+, and Git. The executable example also uses Bash and `jq`. Installation needs network access; local editing does not.
 
 ```bash
 git clone https://github.com/netresearch/php-ast-edit-skill.git
 cd php-ast-edit-skill
-composer install
-vendor/bin/php-ast-edit help
+composer install --no-interaction
+bin/php-ast-edit help
+bash docs/quickstart.sh
 ```
 
-## Usage
+The example creates a temporary PHP class **through the CLI**, adds a method using a named selector, checks the return value at runtime, and displays the diff. It removes its temporary files afterwards. No repository-wide formatting setup is required.
 
-### Inspect a location
+Use `bin/php-ast-edit` inside a source checkout. Use `vendor/bin/php-ast-edit` when installed into another project through Composer. Installing agent instructions alone does not necessarily install the executable. See [installation](docs/installation.md) for Composer VCS, release archives, and skill setup.
 
-```bash
-vendor/bin/php-ast-edit inspect --file src/Foo.php --line 42 --column 18
+## Context requirements
+
+Provide the file paths, intended change, and any source snapshot used to select targets.
+The engine requires a writable working tree and the local dependencies above. Project
+formatting and verification commands are optional configuration.
+
+## Expected outputs
+
+A guarded source edit, a measured diff, operation effects, accumulated warnings, and
+separate parser, lint, and project-check statuses. Inspect requests return node ancestry
+and the source hash; rejected requests return machine-readable errors.
+
+## Example prompts
+
+- “Add a `now()` method returning `\DateTimeImmutable` to `App\Clock`.”
+- “Rename `$nonce` inside `Cache::key()`; preserve the property and log strings.”
+- “Replace the third argument in this factory call with `$this->context`.”
+
+## Apply several changes in one call
+
+Suppose `src/Clock.php` contains:
+
+```php
+<?php
+namespace App;
+final class Clock {}
 ```
 
-The result contains the file SHA-256 plus the AST ancestry covering that byte position. Pick the narrowest useful node type. Coordinates are byte-based: `offset` is zero-based, `line` and `column` are one-based.
-
-### Apply a transaction
+Send this JSON to `php-ast-edit apply --input edits.json`:
 
 ```json
 {
-  "files": [
-    {
-      "path": "src/Foo.php",
-      "sha256": "...",
-      "edits": [
-        {
-          "target": {"line": 42, "column": 18, "kind": "Identifier"},
-          "expect": {"name": "oldMethod"},
-          "operation": "set_name",
-          "value": "newMethod"
-        }
-      ]
-    }
-  ]
+  "files": [{
+    "path": "src/Clock.php",
+    "edits": [{
+      "target": {"select": "class:Clock"},
+      "operation": "add_member",
+      "php": "public function now(): \\DateTimeImmutable { return new \\DateTimeImmutable(); }"
+    }, {
+      "target": {"select": "class:Clock"},
+      "operation": "add_member",
+      "php": "public const TIMEZONE = 'UTC';"
+    }]
+  }]
 }
 ```
 
-```bash
-vendor/bin/php-ast-edit apply --input edits.json
-```
+Use a file-level `sha256` guard when editing a previously read snapshot. Selectors identify named declarations without a coordinate lookup. For an expression or statement, `inspect --file src/Clock.php --line 4 --column 10` returns node ancestry, structural refs, and the snapshot hash. Ambiguous selectors fail rather than choosing the first match. Related changes across files belong in the same `files` array.
 
-For inserted or replacement PHP snippets, formatting is irrelevant — the snippet is parsed into AST nodes and the complete file is printed canonically:
+Read `diff`, `effects`, `warnings`, and `validation` in the report. A successful parse is not proof of correct behavior; run the relevant project tests if they have not already run through configured `verify` commands.
 
-```json
-{
-  "operation": "insert_before",
-  "php": "if ($customer === null) { throw new CustomerNotFound($id); }"
-}
-```
+## Use when
 
-### Operations
+- Add a member, parameter, type, attribute, statement, or argument without locating text ranges.
+- Edit several symbols or files with shared preconditions and one CLI startup.
+- Change a PHP string literal without modifying neighboring PHP syntax.
+- Reject stale source, ambiguous targets, malformed snippets, and recognized unsafe rename cases before writing.
+- Create and delete files through the same transaction API.
 
-**Primitives** — the complete CRUD algebra over the AST:
+Search remains your choice: ripgrep, ast-grep, an LSP, or normal code reading. The [operation reference](skills/php-structured-edit/references/operations.md) lists all primitives, shorthands, selectors, and snippet contexts. `php-ast-edit contexts` is the executable catalog.
 
-`replace_node` · `delete_node` · `insert_into` · `replace_child` · `delete_child` · `move_node`
+## Guarantees and limits
 
-`insert_into` addresses a container by node, property and position, so it needs no existing sibling as an anchor. That is what writes the first method into an empty class, the first statement into an empty body, the first parameter into an empty signature.
+| Check | What it establishes |
+| --- | --- |
+| SHA-256 and target guards | The selected snapshot and expected syntax still match |
+| Parser validation | Output can be parsed by the configured PHP parser |
+| Host PHP lint, when reported as passed | Output passes `php -l` on the reported runtime |
+| Configured `verify` results | The named project commands passed or failed |
+| Runtime tests | Only the behavior those tests exercise |
 
-**Convenience** — ergonomic shorthands over the primitives, not the coverage boundary:
+All files are prepared and parsed before the first write. Files are rechecked against their snapshots before writing. Each file uses a temporary file and rename; failures during writing or formatting trigger rollback. This is **not** an operating-system-wide atomic commit: concurrent readers can observe intermediate file states, and external command side effects are outside the rollback boundary. Verification failures leave the edit available for repair and make the CLI fail.
 
-`set_name` · `set_string` · `replace_expression` · `replace_statement` · `insert_before` · `insert_after` · `delete` · `replace_argument` · `add_argument` · `remove_argument` · `add_member` · `add_parameter` · `add_attribute` · `set_return_type` · `set_type` · `set_visibility` · `add_implements` · `set_extends` · `set_doc_comment` · `remove_doc_comment`
+Method renaming is scoped to a declaration and structurally attributable calls in the same file. It is not project-wide type resolution. Dynamic dispatch, reflection, external callers, inheritance, and variable binding require care; read the [limits and alternatives](docs/limits-and-alternatives.md).
 
-**File lifecycle** — a file entry carries `"mode": "edit"` (default), `"create"` or `"delete"`. `create` takes full construction syntax in `php`, parses it, and writes only the resulting AST; `expectAbsent` guards against clobbering.
+Existing files use format-preserving printing unless the repository declares canonical formatting or the request explicitly selects a printer. Some changed subtrees may still be reprinted. Review the measured diff. [Canonical formatting](skills/php-structured-edit/references/formatting-contract.md) is an optional project-wide choice.
 
-The public API exposes stable agent-oriented operations rather than raw PHP-Parser AST JSON, and uses PHP source snippets only as a compact syntax for constructing nodes. Run `php-ast-edit contexts` for the live catalog. Full schema: [`skills/php-structured-edit/references/operations.md`](skills/php-structured-edit/references/operations.md).
+## Does it save tokens, calls, or time?
 
-### Creating a file
+Batching reduces CLI startups. Named selectors can eliminate an `inspect` call. Integrated reports and configured checks can avoid redundant reads and validation. These are capabilities, not a universal cost guarantee.
 
-```json
-{
-  "files": [
-    {
-      "path": "src/Clock.php",
-      "mode": "create",
-      "php": "<?php declare(strict_types=1); namespace App; final class Clock {}",
-      "edits": [
-        {
-          "target": {"ref": "stmts[1].stmts[0]"},
-          "operation": "add_member",
-          "php": "public function now(): DateTimeImmutable { return new DateTimeImmutable(); }"
-        }
-      ]
-    }
-  ]
-}
-```
+A contextual patch is a valid baseline and can also batch changes. Small edits may cost more through an AST tool. Full agent savings depend on instruction loading, model output, tool latency, retries, correctness, and caching. [Benchmarks](benchmarks/README.md) provides a reproducible local comparison and a separate protocol for measuring complete agent tasks. No general token or model-round reduction is claimed from a CLI microbenchmark.
 
-### Transaction safety
+The [first native agent pilot](benchmarks/agent-economics/results/2026-09-06-native-pilot/REPORT.md) found **no token savings** on two small tasks: six runs supplied with the full skill used 195,701 input-plus-output tokens versus 111,385 for six contextual-edit runs (**75.7% more**), with 29 versus 24 tool calls and 30.4% more candidate wall time. Both variants passed all six runtime oracles and independent AI output review. All six skill-assigned runs omitted the instructed snapshot hashes; [instruction adherence](benchmarks/agent-economics/results/2026-09-06-native-pilot/adherence.json) is recorded separately. These are three paired repetitions per task with Claude Sonnet 4.6; input includes cache reads and writes, provider cache state was uncontrolled, and human acceptance remains pending. This pilot does not establish a general performance percentage.
 
-- Optional SHA-256 optimistic-lock guard (`STALE_SOURCE` on mismatch); `create` additionally guards with `expectAbsent`.
-- Optional expected node type, name and value guards.
-- All targets resolve against the original source before mutation. A structural `ref` is only valid together with the snapshot it came from.
-- Before each edit the target node must still be attached to the current AST; invalidated follow-up edits fail.
-- **The transaction spans every file in the document.** All files are read, guarded, resolved, mutated, printed and reparsed before the first byte is written — a failure in file three no longer leaves files one and two changed. A failure during the write phase rolls the already written files back.
-- Immediately before the first write, every file is re-compared against the snapshot it was resolved from; one that changed, appeared or disappeared in the meantime fails with `CONCURRENT_CHANGE` and nothing is written.
-- The reparse before the write is the universal net: any mutation that would produce invalid PHP fails the whole transaction.
-- Writes use a same-directory temporary file plus atomic rename.
+## Why this is a skill (model delta)
 
-### Enforcement
+Value categories: tool-boundary discipline and failure recovery. An agent unfamiliar with this CLI may guess operation arguments or omit snapshot guards; the [task evals](skills/php-structured-edit/evals/evals.json) test these behaviors. They are evaluation definitions, not measured model deltas.
 
-The rule "never write PHP as text" is an instruction, and an instruction cannot be checked after the fact — the same file edited through the AST and edited by a lucky regex is byte-identical. `hooks/php-ast-only.py` is a `PreToolUse` gate that denies `Edit`/`Write`/`MultiEdit`/`NotebookEdit` on `.php` and `sed -i`-style shell mutation, before the write. See [`references/enforcement.md`](skills/php-structured-edit/references/enforcement.md).
+The [skill](skills/php-structured-edit/SKILL.md) gives a short selector-first workflow and loads detailed references only when needed. It requires AST writes when active; decide whether that workflow suits your project. The optional [enforcement hook](skills/php-structured-edit/references/enforcement.md) catches common text-edit patterns. It is a linter-like aid that can be bypassed, not a security sandbox.
 
-### PHAR
+The skill's [task evaluations](skills/php-structured-edit/evals/evals.json) assess outcomes and guards without prescribing redundant inspection or formatting calls. [Executable fixture cases](benchmarks/tasks.json) supply runtime oracles; [routing cases](skills/php-structured-edit/evals/eval_queries.json) include tasks that should not activate the skill. These definitions are not results of completed model evaluations.
 
-```bash
-composer install
-php -d phar.readonly=0 scripts/build-phar.php
-./dist/php-ast-edit.phar help
-```
+## Documentation
 
-The PHAR is the portable executable for agent environments. MCP can be added as a thin adapter over the same `inspect`, `apply` and `validate` contract.
-
-## Tests
-
-```bash
-bash tests/run.sh
-```
-
-`scripts/check.php` runs `php -l` over every shipped PHP file and needs no dependencies. `tests/run.php` exercises the inspect/apply round-trip. `tests/matrix.php` is the table-driven grammar and operation matrix: file root, namespace, use, class, interface, trait, enum, members, params, types, modifiers, statements, expressions, arrays, match, attributes, anonymous classes and closures, comments, empty containers, file lifecycle — plus the failure modes (stale SHA, wrong kind, detached target, invalid contextual snippet, duplicate path, `phpVersion` pinning, multi-file and write-phase rollback). Both skip themselves when `vendor/` is absent; CI installs Composer dependencies so they actually execute.
-
-## Security
-
-Report vulnerabilities to <security@netresearch.de>. The tool writes only to paths named in the transaction document and performs no network access.
+- [Installation and troubleshooting](docs/installation.md)
+- [Executable quickstart](docs/quickstart.sh)
+- [Frequently asked questions](docs/faq.md)
+- [Limits and comparison with patch, LSP, and Rector](docs/limits-and-alternatives.md)
+- [Measurements and agent evaluation protocol](benchmarks/README.md)
+- [Full operation reference](skills/php-structured-edit/references/operations.md)
 
 ## Contributing
 
-Contributions welcome — open an issue or a PR against `main`. Use [`.github/pull_request_template.md`](.github/pull_request_template.md); commits follow Conventional Commits.
-
-## Repository extras
-
-- Checkpoints: none (justified — the skill governs how a mutation is performed at authoring time. A file edited through the AST and the same file edited by a lucky regex are byte-identical afterwards, so no post-hoc repository state can grade adherence.)
-- **CI split:** the `netresearch/skill-repo-skill` reusables run the suite on one PHP version, including `composer install`. `.github/workflows/php-tests.yml` stays repo-local for the version matrix (8.2/8.3/8.4/8.5), which a shared reusable running a single version cannot provide. The matrix additionally pins `phpVersion` per case, so grammar support is exercised independently of the runner's own PHP version.
-- **Proposed GitHub topics:** `agent-skill`, `php`, `ast`, `refactoring`, `code-editing`, `php-parser`.
-- **Marketplace sync:** when the classification table, example prompts or related skills change here, update the entry in [`netresearch/claude-code-marketplace`](https://github.com/netresearch/claude-code-marketplace) in the same change.
-
-## Repository layout
-
-```text
-php-ast-edit-skill/
-├── AGENTS.md                       # Agent rules / harness index
-├── plugin.json                     # Portable Agent Plugins 1.0.0 manifest
-├── .claude-plugin/plugin.json      # Generated Claude Code manifest
-├── composer.json                   # PHP distribution
-├── bin/php-ast-edit                # CLI entrypoint
-├── src/                            # Editor, NodeLocator, CanonicalPrinter, Doctor, …
-├── hooks/php-ast-only.py           # PreToolUse gate: no text mutation of PHP
-├── scripts/                        # check.php (php -l gate), build-phar.php
-├── tests/                          # run.sh, run.php, matrix.php, fixtures
-├── .github/workflows/              # Reusable-workflow callers + php-tests.yml
-└── skills/
-    └── php-structured-edit/
-        ├── SKILL.md                # Agent runtime instructions
-        ├── agents/openai.yaml      # OpenAI-style agent descriptor
-        ├── evals/evals.json        # Trigger evals
-        ├── references/             # operations.md, formatting-contract.md, enforcement.md
-        └── scripts/php-ast-edit    # Wrapper resolving the binary or PHAR
+```bash
+bash tests/run.sh
+python3 benchmarks/agent_benchmark.py self-test
+python3 benchmarks/cli_microbenchmark.py --repetitions 30 --output /tmp/php-ast-benchmark.json
 ```
+
+The suite includes grammar, semantic regression, transaction, formatting, CLI, distribution, and documentation examples. Supported host runtimes are PHP 8.2–8.5; newer target syntax still needs validation on its intended runtime. See [AGENTS.md](AGENTS.md), [CHANGELOG.md](CHANGELOG.md), and the [contribution template](.github/pull_request_template.md).
+
+## Related skills
+
+ [php-modernization](https://github.com/netresearch/php-modernization-skill) for modernization decisions and [file-search](https://github.com/netresearch/file-search-skill) for discovery.
+
+Classification: `action_level: modifies_files`; `risk_level: medium`.
+
+Checkpoints: none (justified — workflow adherence requires tool traces; executable fixtures
+and distribution tests cover observable outcomes). When discovery descriptions change,
+update the [marketplace](https://github.com/netresearch/claude-code-marketplace) entry in
+the corresponding release process.
 
 ## License
 
-Split licensing:
-
-- **Code** (`src/`, `bin/`, `scripts/`, workflows, configs): [MIT](LICENSE-MIT)
-- **Content** (`skills/**/*.md`, `references/`, this README): [CC-BY-SA-4.0](LICENSE-CC-BY-SA-4.0)
-
-Copyright Netresearch DTT GmbH.
-
-## German summary
-
-`php-ast-edit` ist die Schreibschicht für Coding-Agenten in PHP-Projekten: Agenten schreiben PHP nicht mehr direkt, sie beschreiben Syntax. Die wird geparst, als AST verändert, und nur aus dem AST entsteht wieder eine `.php`-Datei — neue Dateien eingeschlossen. Gesucht wird weiterhin mit ripgrep, ast-grep oder LSP. Eine kleine vollständige Primitivebene (`replace_node`, `delete_node`, `insert_into`, `replace_child`, `delete_child`, `move_node`) deckt jeden Knoten und jeden Container ab; die benannten Operationen sind die bequeme Oberfläche darüber. Jede Transaktion ist per SHA-256 und erwartetem Knoten abgesichert, umfasst alle beteiligten Dateien und wird vor dem Schreiben neu geparst. Eine Umbenennung trifft damit nur den Bezeichner und nicht das gleichnamige String-Literal daneben.
-
----
+Code (`src/`, `bin/`, `scripts/`, `benchmarks/*.py`, workflows, and executable tests): [MIT](LICENSE-MIT). Documentation and skill content: [CC-BY-SA-4.0](LICENSE-CC-BY-SA-4.0).
 
 Developed and maintained by [Netresearch DTT GmbH](https://www.netresearch.de/).
-
-**Made with ❤️ for Open Source by [Netresearch](https://www.netresearch.de/)**

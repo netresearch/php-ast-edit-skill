@@ -1,0 +1,17 @@
+diff --git a/Cache.php b/Cache.php
+index 7c92073..3beeaff 100644
+--- a/Cache.php
++++ b/Cache.php
+@@ -9,9 +9,9 @@ final class Cache
+     }
+     public function key(): string
+     {
+-        $nonce = '42';
+-        $f = function () use ($nonce) {
+-            return $nonce;
++        $token = '42';
++        $f = function () use ($token) {
++            return $token;
+         };
+         return 'nonce_' . $f();
+     }

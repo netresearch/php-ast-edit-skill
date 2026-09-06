@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "task_id": "multi-file-members",
+  "task_manifest_sha256": "f2c2e6ea3a758eedd6f838f4a8448a0ebcf5ef8d8db025433373543b4edbc609",
+  "passed": true,
+  "file_scope_passed": true,
+  "lint": {
+    "First.php": true,
+    "Second.php": true
+  },
+  "runtime_passed": true,
+  "expected_change_passed": true,
+  "runtime_stderr": "",
+  "output_hashes": {
+    "First.php": "c11e6650fd997d0ff7f74a7c2df9c89e3255fcd19afff85d41984220e5c79d12",
+    "Second.php": "6e5aea47ebccb8681170e66f919d760ff4584faea42460a0e50bbfeb8bb44f66"
+  },
+  "limitation": "Runtime oracle covers the supplied behavior. Human review of diff and refusal explanation remains required."
+}

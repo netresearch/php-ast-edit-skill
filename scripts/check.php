@@ -13,6 +13,9 @@ $paths = [
     $root . '/tests/corpus.php',
     $root . '/tests/formatting.php',
     $root . '/tests/php-floor.php',
+    $root . '/tests/transactions.php',
+    $root . '/tests/renames.php',
+    $root . '/tests/distribution.php',
 ];
 $files = [];
 $missing = [];

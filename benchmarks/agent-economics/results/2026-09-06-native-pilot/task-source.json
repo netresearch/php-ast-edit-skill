@@ -1,0 +1,71 @@
+[
+  {
+    "id": "local-variable",
+    "prompt": "Rename the nonce local variable to token inside Cache::key(). Preserve nonceCache, the getNonceCacheKey method, and the string 'nonce_'.",
+    "files": [
+      {
+        "path": "Cache.php",
+        "php": "<?php final class Cache { public string $nonceCache = 'kept'; public function getNonceCacheKey(): string { return 'kept'; } public function key(): string { $nonce = '42'; $f = function () use ($nonce) { return $nonce; }; return 'nonce_' . $f(); } }"
+      }
+    ],
+    "edits": [
+      {
+        "path": "Cache.php",
+        "edits": [
+          {
+            "target": {
+              "select": "method:Cache::key"
+            },
+            "operation": "rename_variable",
+            "from": "nonce",
+            "to": "token"
+          }
+        ]
+      }
+    ],
+    "oracle": "require 'Cache.php'; $c = new Cache(); $s = file_get_contents('Cache.php'); if ($c->key() !== 'nonce_42' || $c->nonceCache !== 'kept' || $c->getNonceCacheKey() !== 'kept' || !str_contains($s, '$token') || str_contains($s, '$nonce =')) { exit(1); }",
+    "outcome": "changed"
+  },
+  {
+    "id": "multi-file-members",
+    "prompt": "Add public const VERSION = 2 to both First and Second. Preserve each existing id() result. Apply both changes as one task.",
+    "files": [
+      {
+        "path": "First.php",
+        "php": "<?php final class First { public function id(): int { return 1; } }"
+      },
+      {
+        "path": "Second.php",
+        "php": "<?php final class Second { public function id(): int { return 2; } }"
+      }
+    ],
+    "edits": [
+      {
+        "path": "First.php",
+        "edits": [
+          {
+            "target": {
+              "select": "class:First"
+            },
+            "operation": "add_member",
+            "php": "public const VERSION = 2;"
+          }
+        ]
+      },
+      {
+        "path": "Second.php",
+        "edits": [
+          {
+            "target": {
+              "select": "class:Second"
+            },
+            "operation": "add_member",
+            "php": "public const VERSION = 2;"
+          }
+        ]
+      }
+    ],
+    "oracle": "require 'First.php'; require 'Second.php'; if (First::VERSION !== 2 || Second::VERSION !== 2 || (new First())->id() !== 1 || (new Second())->id() !== 2) { exit(1); }",
+    "outcome": "changed"
+  }
+]

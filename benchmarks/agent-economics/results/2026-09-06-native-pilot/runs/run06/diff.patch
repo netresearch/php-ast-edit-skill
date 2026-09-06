@@ -1,0 +1,26 @@
+diff --git a/First.php b/First.php
+index 0566ee9..92e3c62 100644
+--- a/First.php
++++ b/First.php
+@@ -2,6 +2,8 @@
+ 
+ final class First
+ {
++    public const VERSION = 2;
++
+     public function id(): int
+     {
+         return 1;
+diff --git a/Second.php b/Second.php
+index be27fe8..0b1b79d 100644
+--- a/Second.php
++++ b/Second.php
+@@ -2,6 +2,8 @@
+ 
+ final class Second
+ {
++    public const VERSION = 2;
++
+     public function id(): int
+     {
+         return 2;

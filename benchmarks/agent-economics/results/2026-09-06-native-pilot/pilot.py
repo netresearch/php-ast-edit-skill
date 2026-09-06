@@ -1,0 +1,480 @@
+"""Pinned, disposable native-Claude pilot. No repository or global config mutations."""
+
+import argparse
+import hashlib
+import json
+import os
+import random
+import shutil
+import signal
+import subprocess
+import tarfile
+import time
+from pathlib import Path
+
+BASE = Path(os.environ["PHP_AST_PILOT_OUTPUT"]).resolve()
+SOURCE = Path(os.environ["PHP_AST_PILOT_SOURCE"]).resolve()
+COMMIT = "33f85b8ef83d8dda81491c82fa86d18046168063"
+CLAUDE = os.environ.get("PHP_AST_PILOT_CLAUDE", "claude")
+ENGINE = BASE / "runtime"
+SKILL = ENGINE / "skills/php-structured-edit"
+CONTROLLER = BASE / "controller"
+TASKS = ["local-variable", "multi-file-members"]
+SCHEDULE_FILE = "schedule.json"
+CONFIG_FILE = "config.json"
+RAW_TRACE_FILE = "raw.jsonl"
+ORACLE_FILE = "oracle.json"
+COMMON = """Complete the supplied small PHP maintenance task autonomously and accurately.
+Read the relevant source before editing. Preserve unrelated code and behavior. Batch
+related edits where useful. Run relevant syntax/behavior checks, review the resulting
+diff, and finish with a concise outcome. Do not create commits, install packages, use
+network services, invoke other agents/models, or inspect unrelated directories.
+The task workspace contains only the supplied PHP fixture files and a Git baseline.
+Do not leave extra files in it. Tool dependencies are already installed. Standard Bash,
+Read, Edit and Write tools are available. The installed php-ast-edit executable is on
+PATH for the treatment that uses it. Do not inspect benchmark/evaluator files or seek
+answer keys. Only the documented skill/reference and runtime paths may be read outside
+the task workspace if the treatment requires them. No repository-wide AST-only rule
+applies to these disposable benchmark fixtures.
+"""
+BASELINE = """For this run, use competent ordinary contextual editing: the Edit tool or
+contextual patches, normal source discovery, batching when useful, and relevant checks.
+Do not use php-ast-edit for this run.
+"""
+
+
+def save(path, value):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(value, indent=2) + "\n")
+
+
+def digest(path):
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def call(args, cwd=None, **kwargs):
+    return subprocess.run(
+        args, cwd=cwd, text=True, capture_output=True, check=True, **kwargs
+    )
+
+
+def extract(paths, destination):
+    destination.mkdir(parents=True, exist_ok=True)
+    archive = destination / "snapshot.tar"
+    with archive.open("wb") as output:
+        subprocess.run(
+            ["git", "archive", COMMIT, *paths], cwd=SOURCE, stdout=output, check=True
+        )
+    with tarfile.open(archive) as source:
+        source.extractall(destination, filter="data")
+    archive.unlink()
+
+
+def prepare():
+    if (BASE / SCHEDULE_FILE).exists():
+        raise RuntimeError("Already prepared; refusing to reset existing evidence")
+    setup_start = time.monotonic()
+    extract(["src", "bin", "skills/php-structured-edit"], ENGINE)
+    shutil.copytree(SOURCE / "vendor", ENGINE / "vendor", symlinks=True)
+    extract(["benchmarks"], CONTROLLER)
+    runtime_hashes = {
+        str(p.relative_to(ENGINE)): digest(p)
+        for p in sorted(ENGINE.rglob("*"))
+        if p.is_file()
+    }
+    save(BASE / "runtime-sha256.json", runtime_hashes)
+    full = (
+        "For this run, apply the complete skill below. Relative reference links "
+        f"resolve beneath {SKILL}. The executable is already on PATH.\n\n"
+        + (SKILL / "SKILL.md").read_text()
+    )
+    variants = {"contextual_patch": BASELINE, "full_skill": full}
+    config = {
+        "source_commit": COMMIT,
+        "source_tree_status_at_preparation": call(
+            ["git", "status", "--porcelain"], SOURCE
+        ).stdout,
+        "runtime_path": str(ENGINE),
+        "runtime_hash_manifest_sha256": digest(BASE / "runtime-sha256.json"),
+        "cli_version": call([CLAUDE, "--version"]).stdout.strip(),
+        "requested_model": "claude-sonnet-4-6",
+        "reasoning": "medium",
+        "tools": ["Bash", "Read", "Edit", "Write"],
+        "cache_condition": "unknown; fresh independent sessions; native counters retained",
+        "max_list_price_usd_per_run": 0.75,
+        "max_wall_seconds_per_run": 120,
+        "seed": 20260906,
+        "tasks": TASKS,
+        "repetitions_per_task_variant": 3,
+        "common_system_append": COMMON,
+        "variant_instructions": variants,
+        "billing_note": "Subscription authentication; native USD is list estimate, not charged dollars",
+        "human_review": "pending; AI review must not be represented as human acceptance",
+        "source_storage": "Windows mount",
+        "runtime_and_fixture_storage": "Linux /tmp",
+        "time_scope": "candidate CLI wall only; preparation and external grading reported separately",
+        "php_version": call(["php", "--version"]).stdout.splitlines()[0],
+        "cli_argv_common": [
+            "-p",
+            "--safe-mode",
+            "--disable-slash-commands",
+            "--strict-mcp-config",
+            "--setting-sources",
+            "",
+            "--no-session-persistence",
+            "--tools",
+            "Bash,Read,Edit,Write",
+            "--model",
+            "claude-sonnet-4-6",
+            "--effort",
+            "medium",
+            "--max-budget-usd",
+            "0.75",
+            "--output-format",
+            "stream-json",
+            "--verbose",
+            "--permission-mode",
+            "bypassPermissions",
+            "--prompt-suggestions",
+            "false",
+            "--name",
+            "php-edit-pilot",
+        ],
+    }
+    pairs = [(task, repetition) for task in TASKS for repetition in range(1, 4)]
+    rng = random.Random(config["seed"])
+    # A recorded seed orders benchmark samples; it produces no secrets. See README.md.
+    rng.shuffle(pairs)  # NOSONAR(S2245)
+    first_variants = ["contextual_patch", "full_skill"] * 3
+    rng.shuffle(first_variants)  # NOSONAR(S2245)
+    schedule = []
+    for (task, repetition), first in zip(pairs, first_variants):
+        second = "full_skill" if first == "contextual_patch" else "contextual_patch"
+        paired_hashes = []
+        for variant in (first, second):
+            start = time.monotonic()
+            run_id = f"run{len(schedule) + 1:02}"
+            directory = BASE / "runs" / run_id
+            work = directory / "work"
+            artifact = directory / "evidence"
+            artifact.mkdir(parents=True)
+            prepared = call(
+                [
+                    "python3",
+                    str(CONTROLLER / "benchmarks/agent_benchmark.py"),
+                    "--bin",
+                    str(ENGINE / "bin/php-ast-edit"),
+                    "prepare",
+                    task,
+                    "--work",
+                    str(work),
+                    "--state",
+                    str(artifact / "state.json"),
+                ]
+            )
+            prepared_data = json.loads(prepared.stdout)
+            save(artifact / "prepared.json", prepared_data)
+            hashes = {name: digest(work / name) for name in prepared_data["files"]}
+            paired_hashes.append(hashes)
+            save(artifact / "initial-hashes.json", hashes)
+            baseline = artifact / "initial"
+            baseline.mkdir()
+            for name in hashes:
+                shutil.copy2(work / name, baseline / name)
+            call(["git", "-c", "init.templateDir=", "init", "-q"], work)
+            call(["git", "add", "--", *prepared_data["files"]], work)
+            call(
+                [
+                    "git",
+                    "-c",
+                    "core.hooksPath=/dev/null",
+                    "-c",
+                    "user.name=Benchmark Fixture",
+                    "-c",
+                    "user.email=benchmark@example.invalid",
+                    "-c",
+                    "commit.gpgsign=false",
+                    "commit",
+                    "-qm",
+                    "Fixture baseline",
+                ],
+                work,
+            )
+            (artifact / "system-append.txt").write_text(
+                COMMON + "\n" + variants[variant]
+            )
+            prompt = (
+                prepared_data["prompt"]
+                + "\n\nFiles: "
+                + ", ".join(prepared_data["files"])
+            )
+            (artifact / "prompt.txt").write_text(prompt + "\n")
+            schedule.append(
+                {
+                    "run_id": run_id,
+                    "task_id": task,
+                    "variant": variant,
+                    "repetition": repetition,
+                    "work": str(work),
+                    "evidence": str(artifact),
+                    "fixture_setup_ms": (time.monotonic() - start) * 1000,
+                }
+            )
+        if paired_hashes[0] != paired_hashes[1]:
+            raise RuntimeError("Paired starting files differ")
+    config["total_preparation_ms"] = (time.monotonic() - setup_start) * 1000
+    save(BASE / CONFIG_FILE, config)
+    save(BASE / SCHEDULE_FILE, schedule)
+    print(
+        json.dumps(
+            {"prepared": len(schedule), "setup_ms": config["total_preparation_ms"]}
+        )
+    )
+
+
+def usage_totals(model_usage):
+    if not model_usage:
+        return None
+    required = [
+        "inputTokens",
+        "outputTokens",
+        "cacheReadInputTokens",
+        "cacheCreationInputTokens",
+    ]
+    for row in model_usage.values():
+        if any(type(row.get(key)) is not int or row[key] < 0 for key in required):
+            raise ValueError("Native usage is missing valid required token counters")
+    totals = {key: sum(row[key] for row in model_usage.values()) for key in required}
+    if all(
+        type(row.get("thinkingTokens")) is int and row["thinkingTokens"] >= 0
+        for row in model_usage.values()
+    ):
+        totals["thinkingTokens"] = sum(
+            row["thinkingTokens"] for row in model_usage.values()
+        )
+    totals["totalInputTokens"] = (
+        totals["inputTokens"]
+        + totals["cacheReadInputTokens"]
+        + totals["cacheCreationInputTokens"]
+    )
+    totals["totalTokens"] = totals["totalInputTokens"] + totals["outputTokens"]
+    return totals
+
+
+def execute_candidate(argv, work, artifact, timeout_seconds):
+    """Capture the operator-selected process, including timeout and startup costs."""
+    env = os.environ.copy()
+    env["PATH"] = str(ENGINE / "bin") + os.pathsep + env.get("PATH", "")
+    started = time.monotonic()
+    timed_out = False
+    with (
+        (artifact / RAW_TRACE_FILE).open("wb") as output,
+        (artifact / "stderr.txt").open("wb") as error,
+    ):
+        # The local operator selects argv/config; candidate output never supplies it.
+        # This explicit process capability is not a service input. See README.md.
+        process = subprocess.Popen(  # NOSONAR(S6350)
+            argv,
+            cwd=work,
+            env=env,
+            stdout=output,
+            stderr=error,
+            start_new_session=True,
+        )
+        try:
+            process.wait(timeout=timeout_seconds)
+        except subprocess.TimeoutExpired:
+            timed_out = True
+            os.killpg(process.pid, signal.SIGTERM)
+            try:
+                process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                os.killpg(process.pid, signal.SIGKILL)
+                process.wait()
+    elapsed = (time.monotonic() - started) * 1000
+    return process.returncode, timed_out, elapsed
+
+
+def read_native_events(path):
+    """Keep valid JSON events and retain malformed lines as explicit evidence."""
+    events = []
+    malformed = []
+    for line in path.read_text().splitlines():
+        try:
+            events.append(json.loads(line))
+        except json.JSONDecodeError:
+            malformed.append(line)
+    return events, malformed
+
+
+def collect_message_events(events):
+    """Deduplicate streamed response and tool events by their native IDs."""
+    tool_uses = {}
+    tool_results = {}
+    response_ids = set()
+    for event in events:
+        message = event.get("message", {})
+        if event.get("type") == "assistant" and message.get("id"):
+            response_ids.add(message["id"])
+        content = message.get("content", [])
+        if not isinstance(content, list):
+            continue
+        for item in content:
+            if item.get("type") == "tool_use":
+                tool_uses[item["id"]] = item
+            elif item.get("type") == "tool_result":
+                tool_results[item["tool_use_id"]] = item
+    return tool_uses, tool_results, response_ids
+
+
+def validate_native_init(init, requested_model):
+    if not init or any(init.get(k) for k in ["plugins", "skills", "mcp_servers"]):
+        raise RuntimeError("Isolation could not be verified; stop subsequent calls")
+    if init.get("model") != requested_model:
+        raise RuntimeError("Unexpected primary model; stop subsequent calls")
+
+
+def run_one(row, config):
+    artifact = Path(row["evidence"])
+    work = Path(row["work"])
+    if (artifact / "measurement.json").exists() or (artifact / RAW_TRACE_FILE).exists():
+        raise RuntimeError("Refusing to replace run evidence: " + row["run_id"])
+    argv = [
+        CLAUDE,
+        *config["cli_argv_common"],
+        "--append-system-prompt",
+        (artifact / "system-append.txt").read_text(),
+        (artifact / "prompt.txt").read_text(),
+    ]
+    save(artifact / "argv.json", argv)
+    exit_code, timed_out, elapsed = execute_candidate(
+        argv, work, artifact, config["max_wall_seconds_per_run"]
+    )
+    events, malformed = read_native_events(artifact / RAW_TRACE_FILE)
+    result = next((e for e in reversed(events) if e.get("type") == "result"), None)
+    init = next(
+        (e for e in events if e.get("type") == "system" and e.get("subtype") == "init"),
+        None,
+    )
+    tool_uses, tool_results, response_ids = collect_message_events(events)
+    save(artifact / "tool-uses.json", list(tool_uses.values()))
+    save(artifact / "tool-results.json", list(tool_results.values()))
+    save(artifact / "native-result.json", result)
+    before_grade = time.monotonic()
+    graded = subprocess.run(
+        [
+            "python3",
+            str(CONTROLLER / "benchmarks/agent_benchmark.py"),
+            "grade",
+            row["task_id"],
+            "--work",
+            str(work),
+            "--state",
+            str(artifact / "state.json"),
+            "--output",
+            str(artifact / ORACLE_FILE),
+        ],
+        text=True,
+        capture_output=True,
+        timeout=70,
+        check=False,
+    )
+    grade_ms = (time.monotonic() - before_grade) * 1000
+    (artifact / "grade-stdout.txt").write_text(graded.stdout)
+    (artifact / "grade-stderr.txt").write_text(graded.stderr)
+    (artifact / "diff.patch").write_text(
+        call(["git", "diff", "--no-ext-diff", "--"], work).stdout
+    )
+    (artifact / "git-status.txt").write_text(
+        call(["git", "status", "--porcelain"], work).stdout
+    )
+    files = json.loads((artifact / "initial-hashes.json").read_text())
+    save(
+        artifact / "final-hashes.json",
+        {
+            name: digest(work / name) if (work / name).is_file() else None
+            for name in files
+        },
+    )
+    models = result.get("modelUsage", {}) if result else {}
+    reported_result = result or {}
+    primary = {k: v for k, v in models.items() if k == config["requested_model"]}
+    measurement = {
+        **row,
+        "source_commit": COMMIT,
+        "config_sha256": digest(BASE / CONFIG_FILE),
+        "process_exit_code": exit_code,
+        "timed_out": timed_out,
+        "candidate_wall_ms": elapsed,
+        "external_grading_ms": grade_ms,
+        "native_result_present": result is not None,
+        "native_is_error": reported_result.get("is_error"),
+        "native_subtype": reported_result.get("subtype"),
+        "reported_model": init.get("model") if init else None,
+        "isolation_init": {
+            key: init.get(key) for key in ["tools", "plugins", "skills", "mcp_servers"]
+        }
+        if init
+        else None,
+        "all_model_usage": models,
+        "primary_model_tokens": usage_totals(primary),
+        "all_model_tokens": usage_totals(models),
+        "native_list_price_usd": reported_result.get("total_cost_usd"),
+        "native_num_turns": reported_result.get("num_turns"),
+        "native_duration_ms": reported_result.get("duration_ms"),
+        "native_duration_api_ms": reported_result.get("duration_api_ms"),
+        "primary_response_ids": sorted(response_ids),
+        "primary_model_rounds": len(response_ids),
+        "auxiliary_model_rounds": None,
+        "tool_calls": len(tool_uses),
+        "failed_tool_calls": sum(
+            bool(t.get("is_error")) for t in tool_results.values()
+        ),
+        "tool_results_received": len(tool_results),
+        "malformed_json_lines": malformed,
+        "oracle": json.loads((artifact / ORACLE_FILE).read_text())
+        if (artifact / ORACLE_FILE).exists()
+        else None,
+        "review": {"human": "pending", "agent": "pending"},
+    }
+    save(artifact / "measurement.json", measurement)
+    print(
+        json.dumps(
+            {
+                key: measurement[key]
+                for key in [
+                    "run_id",
+                    "task_id",
+                    "variant",
+                    "repetition",
+                    "process_exit_code",
+                    "timed_out",
+                    "candidate_wall_ms",
+                    "native_list_price_usd",
+                    "all_model_tokens",
+                    "tool_calls",
+                    "failed_tool_calls",
+                ]
+            }
+            | {
+                "oracle_passed": measurement["oracle"]["passed"]
+                if measurement["oracle"]
+                else None
+            }
+        ),
+        flush=True,
+    )
+    validate_native_init(init, config["requested_model"])
+
+
+def run():
+    config = json.loads((BASE / CONFIG_FILE).read_text())
+    for row in json.loads((BASE / SCHEDULE_FILE).read_text()):
+        run_one(row, config)
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("command", choices=["prepare", "run"])
+    args = parser.parse_args()
+    prepare() if args.command == "prepare" else run()

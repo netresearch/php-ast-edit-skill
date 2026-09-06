@@ -1,0 +1,9 @@
+{
+  "local-variable": {
+    "Cache.php": "<?php\n\nfinal class Cache\n{\n    public string $nonceCache = 'kept';\n    public function getNonceCacheKey(): string\n    {\n        return 'kept';\n    }\n    public function key(): string\n    {\n        $nonce = '42';\n        $f = function () use ($nonce) {\n            return $nonce;\n        };\n        return 'nonce_' . $f();\n    }\n}\n"
+  },
+  "multi-file-members": {
+    "First.php": "<?php\n\nfinal class First\n{\n    public function id(): int\n    {\n        return 1;\n    }\n}\n",
+    "Second.php": "<?php\n\nfinal class Second\n{\n    public function id(): int\n    {\n        return 2;\n    }\n}\n"
+  }
+}

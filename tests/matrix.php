@@ -137,8 +137,8 @@ $cases = [
     [
         'name' => 'first parameter into an empty parameter list',
         'files' => src(EMPTY_FUNCTION),
-        'edits' => [at(CLASS_REF, 'add_parameter', ['php' => 'private readonly ?Foo $foo = null'])],
-        'contains' => inA('function foo(private readonly ?Foo $foo = null)'),
+        'edits' => [at(CLASS_REF, 'add_parameter', ['php' => '?Foo $foo = null'])],
+        'contains' => inA('function foo(?Foo $foo = null)'),
     ],
     [
         'name' => 'first item into an empty array',
@@ -334,7 +334,13 @@ $cases = [
         'files' => src(
             "<?php\nclass W\n{\n    public function __construct(public string \$name { get => \$this->name; })\n" . "    {\n    }\n}\n",
         ),
-        'edits' => [pick('property:W::$name', 'set_type', ['php' => '?string'])],
+        'document' => fn (array $p): array => tx(
+            [
+                'path' => $p['a.php'],
+                'phpVersion' => '8.4',
+                'edits' => [pick('property:W::$name', 'set_type', ['php' => '?string'])],
+            ],
+        ),
         'contains' => inA('?string $name'),
     ],
     [

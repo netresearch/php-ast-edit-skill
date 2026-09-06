@@ -1,0 +1,175 @@
+# Twelve observed native-agent runs
+
+Read [REPORT.md](REPORT.md) for the bounded result: the complete skill used 75.70%
+more input-plus-output tokens on these two small tasks. Both arms passed all six
+runtime outcomes. Two recovered AST errors are included, not discarded.
+The grouping records assignment to the complete skill. All six assigned skill runs
+omitted its snapshot-hash guards; [adherence.json](adherence.json) documents this
+instruction-adherence limitation without rewriting any request or measurement.
+
+## Verify without model calls
+
+From the repository root, with Git history containing commit
+`33f85b8ef83d8dda81491c82fa86d18046168063`, PHP, Python 3.12+ and jq installed:
+
+```bash
+python3 benchmarks/agent-economics/results/2026-09-06-native-pilot/verify.py
+```
+
+This command is specifically for this checked-in historical publication. It verifies
+the published checksums, derives accounting from the sanitized
+native events, recomputes the complete summary, applies all twelve diffs to their
+original fixture bytes, and runs the grader and PHP oracles from the measured
+commit. Temporary files stay outside the repository. It makes **zero model calls**.
+It verifies retained evidence and behavior, not the provider's authorship or billing.
+It also checks the published review schema against the recorded AI attestation.
+The offline [adherence.py](adherence.py) helper derives every audit row and all three
+aggregate counts directly from the six assigned skill traces, then compares them
+with `adherence.json`. It links completed Read, Write and Edit requests to each apply,
+reconstructs the actual JSON payload (including the retry edit), checks file-level
+snapshot hashes, and retains successful and failed attempts. A supplied hash must
+match the initial source snapshot; null, malformed or mismatched values are rejected.
+
+This derivation supports only the sequential tool calls, local `edits.json` input,
+quoted `EOF` heredoc and exact cleanup/diff commands observed in this historical
+bundle. The heredoc destination must match its apply argument. Overlapping calls,
+unmatched IDs, missing prerequisite results, ambiguous edits and unsupported command
+or payload forms fail verification. Trace commands are parsed as data and never
+executed. The helper is not a general shell interpreter or a verifier for new
+experiments. These checks do not authenticate reviewer identity or independently
+establish every skill instruction's compliance.
+
+## Reproduce preparation, then optionally run a new experiment
+
+`pilot.py` is a portable derivative of the original runner. Configuration
+roots and executable selection were parameterized; formatting was normalized for
+the repository and the existing subprocess `check=False` default made explicit.
+The portable derivative also rejects missing or invalid required input/output/cache
+counters, preserving raw evidence and stopping instead of filling them with zero.
+Optional thinking-token detail is omitted from normalized totals if unavailable.
+All twelve historical records contain the required fields; their numbers are unchanged.
+The derivative also names repeated evidence filenames and separates process capture,
+JSON parsing, streamed-message collection and native init validation into helpers.
+These changes preserve the original event normalization, process limits and prepared
+schedule.
+The original executed runner is archived as
+[runner-original.py.txt](runner-original.py.txt), with identifying path constants
+replaced. The original byte hash is in [source-provenance.json](source-provenance.json).
+
+Set a fresh output directory and a source checkout containing the measured commit
+and installed `vendor/` dependencies. From the repository root:
+
+```bash
+export PHP_AST_PILOT_SOURCE="$PWD"
+export PHP_AST_PILOT_OUTPUT="$(mktemp -d /tmp/php-ast-pilot-reproduction.XXXXXX)"
+export PHP_AST_PILOT_CLAUDE=claude
+python3 benchmarks/agent-economics/results/2026-09-06-native-pilot/pilot.py prepare
+```
+
+Preparation makes no model calls. It extracts the pinned engine, skill and grader,
+copies existing dependencies, verifies identical paired fixtures, and records a
+seeded schedule and complete prompts. It refuses to reset existing evidence.
+The measured parser was `nikic/php-parser` v5.8.0 at source reference
+`044a6a392ff8ad0d61f14370a5fbbd0a0107152f`; see [dependencies.json](dependencies.json)
+and [runtime-sha256.json](runtime-sha256.json). Compare recorded runtime hashes;
+different dependency bytes are a different environment. No dependencies are installed
+or user configuration edited by this runner.
+
+Only an operator who intends another twelve model calls should run:
+
+```bash
+python3 benchmarks/agent-economics/results/2026-09-06-native-pilot/pilot.py run
+```
+
+That command uses existing CLI authentication and invokes Claude sequentially with
+the recorded model, effort, tools and limits. Each call is capped at USD 0.75 in
+native list-price estimates and 120 seconds. Fresh processes do not establish a
+cold provider cache. A new provider serving build, CLI version, cache state or
+dependency set can change results; this command cannot guarantee historical tokens.
+Review every new diff and retained failure separately. The checked-in observations
+are never overwritten.
+
+## Manual publication step
+
+The runner produces private raw evidence. This historical bundle was created in a
+separate, reviewed export after the candidate runs and AI output reviews. `verify.py`
+expects that historical publication layout; it is not a general consumer of a fresh
+`pilot.py` output directory. Producing new raw runs alone does not reproduce the
+publication or its review attestations.
+
+| Raw producer output | Reviewed historical publication |
+| --- | --- |
+| `runs/<id>/evidence/raw.jsonl` | `runs/<id>/native.jsonl`: allowlist export, path redaction and stable ID pseudonyms described below. |
+| `runs/<id>/evidence/measurement.json` | `runs/<id>/measurement.json`: numerical observations retained, paths and response IDs redacted, named review statuses attached after actual reviews. |
+| `review: {agent: "pending", human: "pending"}` | `review: {operator_agent: "passed", independent_root_agent: "passed", human: "pending"}` in each of the twelve published records, matching `agent-review.json`. |
+| Per-run source, diff, state and oracle evidence | Exact initial bytes collected in `initial-fixtures.json`; diffs, source hashes and oracle outcomes copied into each published run directory. |
+| Original config and native-file hashes | Original-byte hashes retained in `source-provenance.json`; `SHA256SUMS` separately covers the redacted published files. |
+| Candidate outputs and tool traces | Post-run AI output attestation in `agent-review.json` and a scoped snapshot-guard audit in `adherence.json`. |
+
+Review statuses are post-processing attestations, not native CLI measurements or
+automatic consequences of a passing oracle. The published per-run review schema
+has exactly the three status fields shown above. The verifier checks those fields,
+human-pending status and all twelve run IDs against the bundle attestation. New
+experiments need their own output review and publication step; no existing acceptance
+or adherence result transfers automatically. Historical raw requests remain unchanged.
+
+## Retained and omitted fields
+
+[config.json](config.json), [schedule.json](schedule.json) and per-run prompts retain
+the actual instructions and order. `{PILOT_ROOT}`, `{SOURCE_ROOT}` and `{CLAUDE_CLI}`
+replace the original absolute paths. `initial-fixtures.json` stores exact initial
+PHP bytes as data; each run retains its diff, initial/final hashes and oracle JSON.
+[task-source.json](task-source.json) holds the two task records from the pinned
+manifest, including evaluator answers; never supply it to a candidate.
+
+Each `runs/runNN/native.jsonl` is an explicit allowlist export of the native CLI
+stream. It retains init model/tool/isolation fields, assistant text and tool calls,
+tool outcomes, assistant usage, and the final native usage/modelUsage, turns,
+durations and list-price estimate. Numerical accounting values are unchanged.
+Response and tool IDs are replaced with stable per-run `response-NN` and `tool-NN`
+values, preserving request/tool counts and tool-result linkage.
+
+Session IDs, UUIDs, transport request IDs, sockets, auth-source fields, timestamps,
+account/rate-limit events, internal diagnostic/thinking blocks and duplicate tool
+result metadata are omitted. Original streams, native result files and runner
+remain with the operator outside the repository. Their hashes are retained separately
+from the published hashes. Existing `config_sha256` fields refer to the original
+pre-redaction config bytes; [SHA256SUMS](SHA256SUMS) covers the published files.
+The scoped `.gitattributes` preserves blank context-line bytes in the actual patch
+evidence; other whitespace rules remain enabled. The Markdown review bundle trims
+presentation whitespace and is not the canonical patch source.
+
+The initial capability smoke is excluded from the twelve-run comparison. It
+reported an auxiliary model call; all twelve campaign modelUsage objects contain
+only the requested Sonnet model, so primary and all-model totals coincide.
+
+## Review and execution boundary
+
+Both the pilot operator AI and an independent root AI reviewed all twelve final
+diffs and explanations and accepted the output scope. **Human review is pending.**
+Their acceptance concerns final requested behavior and incidental changes. It does
+not certify instruction adherence: **0/6** assigned skill runs supplied the requested
+file-level `sha256` after reading source. All eight apply requests, including the
+two failed attempts, omitted these guards. The six runs stay in their originally
+assigned `full_skill` group (intention-to-treat), with every token and failure retained.
+These are not accepted records for the older cold/warm-and-human-review importer.
+No claim of general savings, statistical representativeness or provider billing
+authentication follows from this small pilot.
+
+The runner isolates supplied context, not operating-system access. One candidate
+used `/tmp/edits.json` as its transaction payload; its commands remain in the trace.
+The runtime oracle executes trusted repository-owned PHP in disposable directories.
+The verifier and runner accept operator-selected local paths and executable argv,
+not remote jobs. This follows the [existing evaluator trust boundary](../../../TRUST.md).
+Do not use these scripts as an adversarial sandbox or expose them as a service.
+
+The portable runner's rule-specific static-analysis annotations cover only these
+reviewed operations, consistent with the existing evaluator trust boundary:
+
+| Operation | Rule | Reviewed reason |
+| --- | --- | --- |
+| Two seeded `shuffle` calls | S2245 | The recorded seed orders task pairs and their starting variants reproducibly. It generates no secrets or security decisions. |
+| `Popen` argv | S6350 | The local operator selects the CLI and retained configuration; candidate output does not supply command arguments. The list is passed directly without a shell. This intentional process capability is not a remotely exposed input. |
+
+These annotations leave other checks enabled. Reassess them if the runner accepts
+remote jobs, configuration from another principal, or claims an execution sandbox.

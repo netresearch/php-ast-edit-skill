@@ -1,112 +1,76 @@
 ---
 name: php-structured-edit
-description: "Use when creating, modifying, replacing, deleting or moving PHP syntax — new files included. Discovery stays as it is; PHP is written exclusively through php-ast-edit, never with regex, sed, raw string replacement, apply_patch, or by writing a .php file directly. Covers files, classes, interfaces, traits, enums, methods, properties, constants, parameters, types, modifiers, attributes, statements, expressions, arrays, match arms, docblocks and call arguments."
+description: "Use when creating, changing, deleting, or moving PHP syntax with the php-ast-edit CLI: symbols, members, types, statements, expressions, and PHP string literals. Use ordinary search for discovery. Not for read-only PHP questions or edits to non-PHP files."
 ---
 
 # PHP Structured Edit
 
-Discovery stays whatever it already is. This skill controls **how PHP is written**.
+Use `php-ast-edit` for PHP writes while this skill is active. PHP snippets are construction
+input: the tool parses them, changes the AST, and prints the result. Do not fall back to
+text mutation after a rejected transaction; inspect the error and correct its cause.
 
-## The rule
+## First use
 
-Any creation, modification, replacement, deletion or movement of PHP syntax MUST go
-through `php-ast-edit`. PHP text may be *authored* as compact syntax, but it is parsed,
-mutated as an AST, and written back exclusively from that AST.
+Resolve the executable once: repository `bin/php-ast-edit`, project `vendor/bin/php-ast-edit`,
+installed `php-ast-edit`, or this skill's `scripts/php-ast-edit` wrapper. Run `help` if needed.
+A missing parser requires installing the engine, not repeated edit attempts.
 
-Never fall back to text mutation when an AST operation looks unsupported. Every PHP
-construct is reachable: a snippet is parsed inside a synthetic host context
-(`parseAs`), and the primitives address any node or container.
-
-## Before the first edit: is the repository set up?
-
-An AST write reprints the file from the tree, so the repository has to be written the way
-this printer writes — otherwise a one-line change reflows the file. Run `doctor` once:
-
-```bash
-scripts/php-ast-edit doctor
-```
-
-`ready` means an edit prints canonically, runs the project's formatter itself and costs only the lines it touches. A repository that declares no `formatter` is reported `warn`: the fixed point belongs to the printer and the formatter together, so a write that stops after printing leaves a file in neither shape. `warn` names what
-is missing. Do not paper over it: **say what is missing and what it costs**, and offer the
-one-time setup — `normalize`, then the project's formatter, committed on its own. Until
-then `apply` falls back to format-preserving printing and returns a `NOT_CANONICAL`
-warning; pass that warning on rather than dropping it.
-
-A repository with no formatting rules at all is the case to raise loudest: there is nothing
-for the printer to agree with, so every edit is a style decision nobody made.
-`references/formatting-contract.md` has the measured detail and the setup commands.
+Existing files use format-preserving printing by default. No normalization is needed to
+start. `doctor` explains optional canonical configuration; it is not a prerequisite for
+every edit. Read the formatting reference only when formatting setup is part of the task.
 
 ## Workflow
 
-1. Locate the code with the normal search tools.
-2. Name the target by what it is, and skip the lookup: `"target": {"select":
-   "method:Foo::bar"}` — also `class:`, `interface:`, `trait:`, `enum:`, `function:`,
-   `property:Foo::$bar` (promoted constructor properties included), `const:Foo::BAR`. The owner may be left out where the file holds
-   one class; an ambiguous selector is refused with the paths it matched, never resolved
-   to the first hit.
-3. Where no name fits — an expression, one statement inside a body — `php-ast-edit
-   inspect` at a byte offset or line/column, and take the narrowest useful node from the
-   returned ancestry. Each entry carries a `ref` (`stmts[1].stmts[0].params[0]`) and its
-   `slots`, the sub node names you can insert into or replace.
-4. Send every edit for one transaction in a single `apply`. Where an `inspect` was needed,
-   pass its `sha256`: refs and coordinates are resolved against that snapshot, and the
-   write is refused if the file moved underneath.
-5. Renaming a variable is one edit, not one per occurrence: `rename_variable` on the
-   method, function or closure it lives in, with `from` and `to`. It moves `Expr_Variable`
-   and `Param` nodes only, so a property, a method name and a string literal that share the
-   word are untouched by construction.
-6. Write compact, syntactically valid snippets. Spend no tokens on formatting; the
-   printer canonicalizes the output.
-7. Where the repository declares a `formatter` in `.php-ast-edit.json`, `apply` runs it on
-   the files it wrote and the write is finished — the report says `"formatter": "ran"` and
-   `changedLines` describes the file that survives. Adding one 9-line method to a canonical
-   TYPO3 extension goes from 34 changed lines to 10 that way. A repository may declare
-   `verify` beside it — PHPStan, the coding-standards check — and those run on what will
-   be committed. The report then carries `valid`, `effects` (what each edit did, and for a
-   rename how much of the old name the file still holds), `diff`, and each check's result:
-   read it instead of running the checks again.
+1. Find the relevant code with normal search or an LSP.
+2. Prefer a named target: `{"select":"method:Checkout::submit"}`. Other selectors:
+   `class:`, `interface:`, `trait:`, `enum:`, `function:`, `property:Foo::$items`,
+   `const:Foo::LIMIT`. Ambiguous names are refused. Use `inspect` only where a name does
+   not identify the target, such as an expression inside a body; keep its `ref` and `sha256`.
+3. Put related edits, including multiple files, in one `apply` transaction. Include the
+   file's `sha256` when relying on a snapshot you read. Refs and coordinates are tied to
+   that snapshot. After `STALE_SOURCE`, reread and reassess; never drop the guard to force it.
+4. Supply compact valid snippets. In namespaced PHP, import external types or qualify them,
+   for example `\\DateTimeImmutable` inside JSON. Do not spend tokens reproducing indentation.
+5. Read `effects`, `diff`, **all** `warnings`, and `validation`. `parsed` means parser
+   success; legacy `valid` has the same limited meaning. Check whether lint and the project's
+   verification commands ran. A failed verification needs repair even when a file was written.
+6. Run only relevant checks that remain unperformed. Review the intended diff; an edit is
+   expected to change it. Do not use a clean Git diff as a post-edit success condition.
+   Avoid repository-wide `format` for a local edit.
 
-   Where it does not, close the transaction yourself, with the whole chain:
+Minimal transaction:
 
-   ```bash
-   scripts/php-ast-edit format && <the project's formatter> && git diff --exit-code
-   ```
-
-   The fixed point belongs to the printer and the formatter together, so the file is only
-   back on it once both have run; `git diff --exit-code` is what proves it, since neither
-   tool reports drift on its own. Then the project's normal validation.
-
-For foreign code stored inside a PHP string, target the `Scalar_String` node and use
-`set_string` unless a dedicated nested-language editor exists.
-
-## Choosing an operation
-
-- Inserting into an **empty or slot-based container** (a class with no members, an empty
-  body, an empty parameter list): `insert_into` with `property` and `position`. It needs
-  no existing sibling.
-- Swapping **any** node — `Param`, `Arg`, `AttributeGroup`, `ArrayItem`, `MatchArm`, a
-  type: `replace_node`.
-- **New file**: a file entry with `"mode": "create"` and full construction syntax in
-  `php`. **Removing a file**: `"mode": "delete"` under the sha guard.
-- The named shorthands (`set_name`, `add_member`, `add_parameter`, `set_return_type`, …)
-  are ergonomics over the primitives; reach for a primitive as soon as one does not fit.
-
-## Commands
-
-```bash
-scripts/php-ast-edit inspect --file src/Foo.php --line 42 --column 18
-scripts/php-ast-edit apply --input edits.json
-scripts/php-ast-edit validate --file src/Foo.php
-scripts/php-ast-edit contexts
-scripts/php-ast-edit doctor
-scripts/php-ast-edit normalize --width 80
-scripts/php-ast-edit format
+```json
+{"files":[{"path":"src/Registry.php","edits":[{"target":{"select":"class:Registry"},"operation":"add_member","php":"public function register(string $name): void {}"}]}]}
 ```
 
-Coordinates are byte-based: `offset` is zero-based; `line` and `column` are one-based.
+```bash
+php-ast-edit apply --input edits.json
+```
 
-Read `references/operations.md` for the edit schema, the `parseAs` contexts and the full
-operation catalog. Read `references/formatting-contract.md` for what the repository must
-provide, why no PHP formatter decides line breaking, and how the fallback behaves. Read
-`references/enforcement.md` to block text edits on `.php` at the tool layer rather than by
-instruction alone.
+## Choose the narrow operation
+
+- Empty member/body/parameter list: `insert_into` with `property` and `position`, or a
+  shorthand such as `add_member`. No sibling anchor is needed.
+- Replace any node: `replace_node`; change a slot: `replace_child`.
+- New file: `mode: create`, full PHP including `<?php`, and default `expectAbsent` guard.
+  Delete: `mode: delete` with the snapshot hash.
+- Local variable rename: `rename_variable` on the enclosing method/function/closure with
+  `from` and `to`. Unsafe binding collisions are rejected. Dynamic variable behavior is
+  not fully resolvable statically.
+- Method rename: `rename_method` with `to`. Inspect unresolved receivers and inheritance
+  limitations; this does not update every caller in a project. A declaration-only change
+  may use `set_name` when that is the intended scope.
+- SQL/HTML/JSON inside a PHP literal: `set_string` on its `Scalar_String` node.
+
+Use `php-ast-edit contexts --operation rename_variable` for compact argument help before
+guessing an unfamiliar operation.
+
+Do not equate an AST, parser pass, or host lint pass with correct application behavior.
+Use project-aware refactoring tools when the task requires cross-file symbol resolution.
+
+## References, when needed
+
+- [Operations](references/operations.md): full schema, selectors, guards, `parseAs`, reports.
+- [Formatting](references/formatting-contract.md): preserving layout, optional normalization.
+- [Enforcement](references/enforcement.md): optional hook and its limits.

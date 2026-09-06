@@ -6,6 +6,26 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Fixed
+
+- Reject variable renames that collide with local, parameter or captured bindings, or depend on unsafe dynamic scope. Refuse ambiguous inherited method renames, case-insensitive destination conflicts and unsupported late-static dispatch; preserve parent calls and nested lexical scopes.
+- Load Composer consumer autoloaders, including custom vendor and binary directories. Prevent a standalone skill wrapper from invoking itself recursively.
+- Preserve formatter, verification and custom JSON settings during normalization. Enforce supplied SHA guards on create-overwrite and restore file contents, permissions and symlink identity after failed transactions.
+- Reject PHP compile errors before writing and after formatting when the host runtime can check the target. Report `parsed`, `validation.lint` and `validation.checks` separately; `valid` remains a deprecated parser-only compatibility alias.
+- Preserve multiple warnings in `warnings`; retain the combined legacy `warning` field. Reset verification state between transactions. Failed project checks now return exit 1 while retaining the edit; transaction failures still return exit 2.
+- Make the documented quickstart executable, correct source/Composer installation paths, and remove obsolete normalization flags and the misleading post-edit clean-tree gate.
+
+### Added
+
+- Isolated runtime-only PHAR builds, engine-bundled skill/plugin archives, dependency manifests, signed checksums and provenance. Clean installation and extracted-artifact tests run on PHP 8.2 and 8.5 before release publication. Historical release assets remain unchanged.
+- `contexts --operation NAME` for a compact single-operation contract, plus shorter selector-first skill instructions with optional canonical mode.
+- Outcome and routing evaluations, executable task oracles, actual model-run evidence import, and a reproducible CLI benchmark comparing both batched AST edits and batched contextual patches with lint.
+- Installation, FAQ, limits and alternatives documentation, with explicit distinctions between parsing, lint, behavior, local timings and measured model usage.
+
+### Measurement note
+
+The historical figures below come from reported controlled runs comparing successive tool builds. The [v0.7.0 release](https://github.com/netresearch/php-ast-edit-skill/releases/tag/v0.7.0) describes twelve separate agent processes and per-run JSON accounting. Publicly inspectable paired raw runs and complete harness configuration have not been located in the inspected release assets, source tree or linked PRs. This does not establish that the authors failed to retain them. These observations are useful development evidence; they are not a reproduced comparison against a competent contextual-patch baseline or general savings claims. The new benchmark protocol records failures, model settings, native usage and independent outcomes before publishing such a comparison.
+
 ## [0.7.0] - 2026-09-06
 
 ### Added

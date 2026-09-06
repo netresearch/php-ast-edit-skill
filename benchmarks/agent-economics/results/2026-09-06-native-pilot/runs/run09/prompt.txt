@@ -1,0 +1,3 @@
+Add public const VERSION = 2 to both First and Second. Preserve each existing id() result. Apply both changes as one task.
+
+Files: First.php, Second.php
