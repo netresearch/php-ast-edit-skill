@@ -21,6 +21,8 @@ RELATIVE = Path("benchmarks/agent-economics/efficiency")
 CONFIG = "config.json"
 SCHEDULE = "schedule.json"
 MEASUREMENT = "measurement.json"
+RECOVERED = "measurement-recovered.json"
+AMENDMENT = "amendment-provenance.json"
 RAW = "raw.jsonl"
 ORACLE = "oracle.json"
 INITIAL_HASHES = "initial-hashes.json"
@@ -550,6 +552,7 @@ def run_one(base, row, config):
     result = {
         **row,
         **observed,
+        "controller_provenance": controller_provenance(base),
         "source_commit": config["source_commit"],
         "config_sha256": digest(base / CONFIG),
         "raw_sha256": digest(evidence / RAW),
@@ -614,13 +617,118 @@ def bounded_cost(result, limit):
     return amount
 
 
+def controller_provenance(base):
+    config = load(base / CONFIG)
+    if HERE == base / "controller/efficiency":
+        return {
+            "kind": "original_frozen_controller",
+            "source_commit": config["source_commit"],
+            "runner_sha256": digest(HERE / "runner.py"),
+            "native_sha256": digest(HERE / "native.py"),
+        }
+    require(
+        HERE == base / "controller-amendment-v1", "Unrecognized controller location"
+    )
+    manifest = load(HERE / AMENDMENT)
+    require(
+        manifest["original_source_commit"] == config["source_commit"],
+        "Amendment source mismatch",
+    )
+    require(
+        manifest["config_sha256"] == digest(base / CONFIG),
+        "Amendment configuration mismatch",
+    )
+    revision = manifest.get("source_commit", "")
+    require(
+        len(revision) == 40 and all(c in "0123456789abcdef" for c in revision),
+        "Missing amendment commit",
+    )
+    require(
+        set(manifest["files"]) == {"runner.py", "native.py", "PROTOCOL.md"},
+        "Unexpected amendment files",
+    )
+    for name, checksum in manifest["files"].items():
+        require(digest(HERE / name) == checksum, f"Amendment changed: {name}")
+    return {
+        "kind": "controller-amendment-v1",
+        "source_commit": revision,
+        "manifest_sha256": digest(HERE / AMENDMENT),
+        "files": manifest["files"],
+    }
+
+
+def recovered_measurement(base, evidence):
+    original = load(evidence / MEASUREMENT)
+    require(
+        original["accounting_errors"] == ["Response input totals differ"],
+        "Unsupported recovery error",
+    )
+    require(not original["timed_out"], "Cannot recover timed-out candidate")
+    require(
+        original["config_sha256"] == digest(base / CONFIG), "Recovery config changed"
+    )
+    require(original["raw_sha256"] == digest(evidence / RAW), "Recovery raw changed")
+    events, malformed = read_events(evidence / RAW)
+    require(not malformed, "Cannot recover malformed native events")
+    accounting = summarize(events, original["requested_model"])
+    require(
+        accounting["response_input_coverage"] == "incomplete_native_retry",
+        "Unsupported recovery coverage",
+    )
+    provenance = controller_provenance(base)
+    require(
+        provenance["kind"] == "controller-amendment-v1",
+        "Recovery requires frozen amendment",
+    )
+    return {
+        **original,
+        **accounting,
+        "accounting_errors": [],
+        "original_accounting_errors": original["accounting_errors"],
+        "original_measurement_sha256": digest(evidence / MEASUREMENT),
+        "controller_provenance": provenance,
+        "recovery_note": "Offline native accounting interpretation only; original attempt and measurement retained",
+    }
+
+
+def recover(base, run_id):
+    validate(base)
+    matches = [row for row in load(base / SCHEDULE) if row["run_id"] == run_id]
+    require(len(matches) == 1, "Recovery run ID not in frozen schedule")
+    evidence = Path(matches[0]["evidence"])
+    require(not (evidence / RECOVERED).exists(), "Recovery sidecar already exists")
+    result = recovered_measurement(base, evidence)
+    bounded_cost(result, load(base / CONFIG)["max_run_usd"])
+    save(evidence / RECOVERED, result)
+    print(
+        json.dumps(
+            {
+                "recovered": run_id,
+                "model_calls": 0,
+                "sidecar": str(evidence / RECOVERED),
+            }
+        )
+    )
+
+
+def existing_measurement(base, evidence):
+    if not (evidence / RECOVERED).exists():
+        return load(evidence / MEASUREMENT)
+    recovered = load(evidence / RECOVERED)
+    require(
+        recovered == recovered_measurement(base, evidence),
+        "Recovery sidecar differs from linked native evidence",
+    )
+    return recovered
+
+
 def spent_so_far(base, schedule):
     spent = Decimal(0)
     config = load(base / CONFIG)
     for row in schedule:
         evidence = Path(row["evidence"])
         if (evidence / MEASUREMENT).exists():
-            result = load(evidence / MEASUREMENT)
+            result = existing_measurement(base, evidence)
             require(
                 not result["accounting_errors"],
                 "Existing run has unresolved accounting",
@@ -654,6 +762,7 @@ def run(base, execute_models):
     config, schedule = load(base / CONFIG), load(base / SCHEDULE)
     require(config["execution_allowed"], "Development snapshots cannot invoke models")
     validate(base)
+    controller_provenance(base)
     with (base / "campaign.lock").open("a") as lock:
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
         spent = spent_so_far(base, schedule)
@@ -679,7 +788,7 @@ def run(base, execute_models):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=["prepare", "validate", "run"])
+    parser.add_argument("command", choices=["prepare", "validate", "recover", "run"])
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--source", type=Path, default=HERE.parents[2])
     parser.add_argument("--source-ref", default="HEAD")
@@ -693,12 +802,15 @@ def main():
     )
     parser.add_argument("--development", action="store_true")
     parser.add_argument("--execute-models", action="store_true")
+    parser.add_argument("--run-id")
     args = parser.parse_args()
     if args.command == "prepare":
         args.vendor = args.vendor or args.source / "vendor"
         prepare(args)
     elif args.command == "validate":
         validate(args.output.resolve())
+    elif args.command == "recover":
+        recover(args.output.resolve(), args.run_id)
     else:
         run(args.output.resolve(), args.execute_models)
 

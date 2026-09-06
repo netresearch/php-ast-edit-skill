@@ -82,6 +82,36 @@ is reported only with complete tool coverage; otherwise `tool_execution_ms` is n
 and coverage is marked partial/not_exposed. API duration is never subtracted from
 process wall time to invent tool or orchestration timing.
 
+### Accounting amendment after Phase 1 run004
+
+The original controller stopped after run004 because visible response input sums
+were smaller than final native totals. Its raw trace explicitly contains the native
+synthetic message that a previous response had no visible output. Terminal `usage`
+and summed `modelUsage` agree; aggregate input, output and cost remain known.
+The amendment checks that agreement independently and accepts a positive visible
+input remainder only with that exact synthetic retry event between assistant events.
+Negative remainders, missing counters and unexplained gaps still stop execution.
+It records `response_input_coverage`, all three `visible_response_input_remainder`
+counters and the retry event indexes. `primary_model_rounds` counts only visible
+response IDs; `primary_model_rounds_exact` is false with incomplete coverage. No
+missing response, hidden round count or per-response output/cost is fabricated.
+
+The original source commit, engine, prompts, task files, schedule, frozen controller
+and `measurement.json` remain unchanged. A separately committed controller is copied
+to `controller-amendment-v1/` with `runner.py`, `native.py` and this protocol. Its
+`amendment-provenance.json` records the amendment source commit, original source
+commit, unchanged campaign config hash and SHA-256 for those three files. Execution
+verifies that manifest and records its hash and source commit in subsequent rows.
+The original campaign's `frozen-sha256.json` continues to validate unchanged inputs.
+
+Before resuming, run the new controller's `recover --output CAMPAIGN --run-id run004`
+offline. It writes a separate `measurement-recovered.json` containing the raw and
+original measurement hashes, original accounting error and amendment provenance.
+It changes only the accounting interpretation, retaining grading and process data.
+Budget resumption recomputes this sidecar from the original trace and requires an
+exact match. Completed attempts are skipped and never rerun. Recovery and validation
+make no model calls; the operator reviews the amendment before resuming execution.
+
 The passive PATH engine launcher records full-skill apply payloads, SHA presence,
 captured source hashes and native outcomes while preserving engine stdout/stderr.
 The compact adapter records reads, modes/selectors, returned revisions and every

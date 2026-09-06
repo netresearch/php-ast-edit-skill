@@ -15,6 +15,10 @@ INPUT_KEYS = {
     "cache_creation_input_tokens": "cacheCreationInputTokens",
 }
 CORE_TOOLS = {"Bash", "Read", "Edit", "Write"}
+EMPTY_RESPONSE_RETRY = (
+    "[Your previous response had no visible output. Please continue and produce a "
+    "user-visible response.]"
+)
 
 
 def require(condition, message):
@@ -95,16 +99,58 @@ def validate_init(init, requested_model):
         require(key in init and init[key] == [], f"Native isolation differs: {key}")
 
 
-def validate_inputs(responses, models, requested_model):
+def validate_terminal_usage(terminal, totals):
+    usage = terminal.get("usage", {})
+    for native_key, final_key in {
+        **INPUT_KEYS,
+        "output_tokens": "outputTokens",
+    }.items():
+        value = usage.get(native_key)
+        require(
+            type(value) is int and value >= 0 and value == totals[final_key],
+            "Terminal usage and modelUsage differ or required counter is missing",
+        )
+
+
+def synthetic_retries(events):
+    return [
+        index
+        for index, event in enumerate(events)
+        if event.get("type") == "user"
+        and event.get("isSynthetic") is True
+        and event.get("message", {}).get("content")
+        == [{"type": "text", "text": EMPTY_RESPONSE_RETRY}]
+        and any(row.get("type") == "assistant" for row in events[:index])
+        and any(row.get("type") == "assistant" for row in events[index + 1 :])
+    ]
+
+
+def validate_inputs(responses, models, requested_model, events):
     require(responses, "Missing primary responses")
     for row in responses.values():
         require(row["model"] == requested_model, "Response model differs")
+    remainder = {}
     for message_key, final_key in INPUT_KEYS.items():
         observed = sum(row["input"][message_key] for row in responses.values())
-        require(
-            observed == models[requested_model][final_key],
-            "Response input totals differ",
-        )
+        remainder[message_key] = models[requested_model][final_key] - observed
+    require(
+        all(value >= 0 for value in remainder.values()),
+        "Response inputs exceed native totals",
+    )
+    incomplete = any(remainder.values())
+    retries = synthetic_retries(events)
+    require(
+        not incomplete or retries,
+        "Response input totals differ without native retry evidence",
+    )
+    return {
+        "response_input_coverage": "incomplete_native_retry"
+        if incomplete
+        else "complete",
+        "visible_response_input_remainder": remainder,
+        "primary_model_rounds_exact": not incomplete,
+        "native_empty_response_retry_event_indexes": retries,
+    }
 
 
 def tool_timings(events, calls):
@@ -159,16 +205,18 @@ def summarize(events, requested_model):
     require(terminal is not None, "Missing native terminal result; spend is unknown")
     models = terminal.get("modelUsage", {})
     all_tokens = usage_totals(models)
+    validate_terminal_usage(terminal, all_tokens)
     require(requested_model in models, "Requested model absent from final usage")
     responses, calls, results = collect(events)
     require(set(calls) == set(results), "Native tool/result linkage incomplete")
-    validate_inputs(responses, models, requested_model)
+    coverage = validate_inputs(responses, models, requested_model, events)
     cost = terminal.get("total_cost_usd")
     require(
         type(cost) in (int, float) and math.isfinite(cost) and cost >= 0,
         "Native cost is unknown",
     )
     return {
+        **coverage,
         **tool_timings(events, calls),
         "reported_model": init["model"],
         "isolation_init": {
