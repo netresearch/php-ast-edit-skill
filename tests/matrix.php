@@ -327,6 +327,16 @@ $cases = [
         'edits' => [pick('property:W::$items', 'set_type', ['php' => 'iterable'])],
         'contains' => inA('private iterable $items'),
     ],
+    [
+        // A hooked parameter is promoted without carrying a visibility modifier, so a flags
+        // check alone would not see it. The parser answers the question; ask it.
+        'name' => 'a promoted property with hooks is reachable by name too',
+        'files' => src(
+            "<?php\nclass W\n{\n    public function __construct(public string \$name { get => \$this->name; })\n" . "    {\n    }\n}\n",
+        ),
+        'edits' => [pick('property:W::$name', 'set_type', ['php' => '?string'])],
+        'contains' => inA('?string $name'),
+    ],
     // ---- Signatures, types, modifiers ----------------------------------------------------
     [
         'name' => 'union return type replaces a scalar one',

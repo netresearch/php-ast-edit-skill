@@ -472,9 +472,12 @@ final class NodeLocator
      * one TYPO3 extension, 58 of its 65 properties are promoted and 7 are declared in the
      * class body. A `property:` selector that only saw `Stmt_Property` therefore found the
      * exception and missed the rule.
+     *
+     * The parser answers the question itself, and answers it wider than a flags check would:
+     * a parameter with property hooks and no visibility modifier is promoted too.
      */
     private function promotesProperty(Node $node, string $name): bool
     {
-        return $node instanceof Node\Param && $node->flags !== 0 && $node->var instanceof Expr\Variable && is_string($node->var->name) && $node->var->name === $name;
+        return $node instanceof Node\Param && $node->isPromoted() && $node->var instanceof Expr\Variable && is_string($node->var->name) && $node->var->name === $name;
     }
 }
