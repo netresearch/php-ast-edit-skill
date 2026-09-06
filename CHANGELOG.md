@@ -6,6 +6,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-09-06
+
 ### Added
 
 - **`rename_method` moves a declaration and the calls to it in one edit.** `method:` finds a declaration; renaming it left every `$this->old()` behind, so the caller went hunting — measured, four `inspect` calls spent locating call sites before anything could be written. What counts as a call to *this* method is decided structurally rather than by name: `$this->`, `self::`, `static::` and `parent::` inside the declaring class. A call on any other receiver may belong to a different class that shares the name, so it is counted and left alone; `otherReceivers` in the report is the number that says whether anything is left to do. On `ChallengeService`, renaming `getNonceCacheKey` is now one call: declaration and both call sites, `otherReceivers: 0`.
@@ -159,7 +161,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - `php-structured-edit` Agent Skill with the operation reference and a wrapper resolving the repository binary, `vendor/bin`, a local PHAR, or `PATH`.
 - PHAR build via `scripts/build-phar.php`.
 
-[Unreleased]: https://github.com/netresearch/php-ast-edit-skill/compare/v0.6.1...HEAD
+[Unreleased]: https://github.com/netresearch/php-ast-edit-skill/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/netresearch/php-ast-edit-skill/compare/v0.6.1...v0.7.0
 [0.6.1]: https://github.com/netresearch/php-ast-edit-skill/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/netresearch/php-ast-edit-skill/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/netresearch/php-ast-edit-skill/compare/v0.4.0...v0.5.0
