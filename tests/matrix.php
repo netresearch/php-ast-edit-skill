@@ -84,6 +84,16 @@ function at(string $ref, string $operation, array $rest = [], ?string $kind = nu
 {
     return ['target' => array_filter(['ref' => $ref, 'kind' => $kind]), 'operation' => $operation] + $rest;
 }
+
+/**
+ * One edit whose target is named rather than addressed — the `select` counterpart to `at()`.
+ *
+ * @param array<string, mixed> $rest
+ */
+function pick(string $select, string $operation, array $rest = [], ?string $kind = null): array
+{
+    return ['target' => array_filter(['select' => $select, 'kind' => $kind]), 'operation' => $operation] + $rest;
+}
 function tx(array ...$fileSpecs): array
 {
     return ['files' => array_values($fileSpecs)];
@@ -300,6 +310,32 @@ $cases = [
             ),
         ],
         'error' => 'Use "stmts" to insert several at once',
+    ],
+    [
+        'name' => 'a promoted constructor property is reachable by name',
+        'files' => src(
+            "<?php\nclass W\n{\n    public function __construct(private readonly string \$name)\n    {\n    }\n}\n",
+        ),
+        'edits' => [pick('property:W::$name', 'set_type', ['php' => '?string'])],
+        'contains' => inA('private readonly ?string $name'),
+    ],
+    [
+        'name' => 'and a classic one still is, beside it',
+        'files' => src(
+            "<?php\nclass W\n{\n    private array \$items = [];\n\n    public function __construct(private string \$name)\n    {\n    }\n}\n",
+        ),
+        'edits' => [pick('property:W::$items', 'set_type', ['php' => 'iterable'])],
+        'contains' => inA('private iterable $items'),
+    ],
+    [
+        // A hooked parameter is promoted without carrying a visibility modifier, so a flags
+        // check alone would not see it. The parser answers the question; ask it.
+        'name' => 'a promoted property with hooks is reachable by name too',
+        'files' => src(
+            "<?php\nclass W\n{\n    public function __construct(public string \$name { get => \$this->name; })\n" . "    {\n    }\n}\n",
+        ),
+        'edits' => [pick('property:W::$name', 'set_type', ['php' => '?string'])],
+        'contains' => inA('?string $name'),
     ],
     // ---- Signatures, types, modifiers ----------------------------------------------------
     [

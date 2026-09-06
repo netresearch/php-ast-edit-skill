@@ -6,6 +6,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Fixed
+
+- **`property:` finds promoted constructor properties.** It matched `Stmt_Property` only, which in a modern extension is the exception: measured on `netresearch/t3x-nr-passkeys-be`, **58 of its 65 properties are promoted** and 7 are declared in the class body. Naming a dependency therefore fell back to a `ref`, which has to be read out of an `inspect` first — the coordinate hunt the selector exists to remove, reappearing on the most common target in the codebase.
+
 ## [0.6.1] - 2026-09-05
 
 ### Fixed
