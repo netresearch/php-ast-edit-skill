@@ -245,6 +245,7 @@ final class Application
                     ],
                 ],
                 'fileModes' => ['edit', 'create', 'delete'],
+                'operationArguments' => Editor::operationArguments(),
             ],
         );
 

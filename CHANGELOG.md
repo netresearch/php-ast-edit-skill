@@ -6,6 +6,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Added
+
+- **The catalogue publishes what each operation takes, and a misfiled edit is told.** `contexts` listed operation names and nothing else, so a caller reading it had to guess the argument names — and guessed by analogy with whatever it had seen last. Measured on a controlled run: asked to rename a variable, a model sent `expect` and `value`, which is `set_name`'s shape, three times over. Each attempt met `Expected node name $nonce, got createChallengeToken` — true, and no help at all. Four of its six `apply` calls failed on the contract rather than on the code; it then abandoned selectors for hand-guessed refs and renamed one scope at a time, leaving two of eleven occurrences behind. `contexts` now carries `operationArguments`, the check runs before the target's `expect` so the message is about the edit rather than the node, and `tests/catalog.php` requires an entry for every dispatched operation. The same run repeated: 13 turns instead of 15, and correct instead of incomplete.
+
 ### Fixed
 
 - **`property:` finds promoted constructor properties.** It matched `Stmt_Property` only, which in a modern extension is the exception: measured on `netresearch/t3x-nr-passkeys-be`, **58 of its 65 properties are promoted** and 7 are declared in the class body. Naming a dependency therefore fell back to a `ref`, which has to be read out of an `inspect` first — the coordinate hunt the selector exists to remove, reappearing on the most common target in the codebase.

@@ -337,6 +337,23 @@ $cases = [
         'edits' => [pick('property:W::$name', 'set_type', ['php' => '?string'])],
         'contains' => inA('?string $name'),
     ],
+    [
+        // The message a caller who guessed the shape actually needs. Measured: a model sent
+        // `expect` and `value` — set_name's shape — three times before finding from/to, and
+        // met "Expected node name mode, got render" each time, which is true and no help.
+        'name' => 'a misfiled operation is told which arguments it takes',
+        'files' => src(
+            "<?php\nclass W\n{\n    public function f(string \$a): string\n    {\n        return \$a;\n    }\n}\n",
+        ),
+        'edits' => [pick('method:W::f', 'rename_variable', ['expect' => ['name' => 'a'], 'value' => 'b'])],
+        'error' => 'rename_variable requires "from" and "to". This edit carries value.',
+    ],
+    [
+        'name' => 'and an operation with optional arguments names those too',
+        'files' => src(ONE_LINE_CLASS),
+        'edits' => [pick('class:Foo', 'add_member', [])],
+        'error' => 'add_member requires "php" (optional: position). This edit carries none of them.',
+    ],
     // ---- Signatures, types, modifiers ----------------------------------------------------
     [
         'name' => 'union return type replaces a scalar one',

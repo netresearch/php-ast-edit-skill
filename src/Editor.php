@@ -321,6 +321,7 @@ final class Editor
                     isset($target['kind']) ? (string) $target['kind'] : null,
                 );
             }
+            $this->assertOperationArguments($this->requiredString($edit, 'operation'), $edit);
             $this->assertExpectations($location->node, $edit['expect'] ?? []);
             $transaction->resolved[] = ['edit' => $edit, 'location' => $location, 'index' => (int) $index];
         }
@@ -626,6 +627,7 @@ final class Editor
         ContextParser $snippets,
     ): void {
         $operation = $this->requiredString($edit, 'operation');
+
         $applied = $this->applyPrimitive($operation, $location, $edit, $roots, $snippets) || $this->applyComment($operation, $location, $edit) || $this->applyShorthand($operation, $location, $edit, $roots, $snippets) || $this->applySemantic($operation, $location, $edit, $snippets);
 
         if (!$applied) {
@@ -1886,5 +1888,109 @@ final class Editor
         }
 
         return false;
+    }
+
+    /**
+     * What each operation needs, beside its target.
+     *
+     * The catalogue used to list operation names and nothing else, so a caller reading
+     * `contexts` or `--help` had to guess the argument names — and guessed by analogy with
+     * whatever it had seen last. Measured on a controlled run: a model given the task of
+     * renaming a variable sent `expect` and `value`, the shape `set_name` uses, three times
+     * over before finding `from` and `to`. Four of its six `apply` calls failed on the
+     * contract rather than on the code, and it gave up on selectors afterwards and renamed
+     * one scope at a time — leaving two of eleven occurrences behind.
+     *
+     * `tests/catalog.php` requires an entry here for every dispatched operation, so the table
+     * cannot fall behind the dispatcher.
+     *
+     * @var array<string, array{requires: list<string>, optional: list<string>}>
+     */
+    private const OPERATION_ARGUMENTS = [
+        'replace_node' => ['requires' => ['php'], 'optional' => ['parseAs']],
+        'delete_node' => ['requires' => [], 'optional' => []],
+        'insert_into' => ['requires' => ['property', 'php'], 'optional' => ['position', 'parseAs']],
+        'replace_child' => ['requires' => ['property', 'php'], 'optional' => ['index', 'parseAs']],
+        'delete_child' => ['requires' => ['property'], 'optional' => ['index']],
+        'move_node' => ['requires' => ['into'], 'optional' => ['position']],
+        'set_doc_comment' => ['requires' => ['value'], 'optional' => []],
+        'remove_doc_comment' => ['requires' => [], 'optional' => []],
+        'set_name' => ['requires' => ['value'], 'optional' => []],
+        'set_string' => ['requires' => ['value'], 'optional' => []],
+        'replace_expression' => ['requires' => ['php'], 'optional' => []],
+        'replace_statement' => ['requires' => ['php'], 'optional' => []],
+        'insert_before' => ['requires' => ['php'], 'optional' => ['parseAs']],
+        'insert_after' => ['requires' => ['php'], 'optional' => ['parseAs']],
+        'delete' => ['requires' => [], 'optional' => []],
+        'replace_argument' => ['requires' => ['php'], 'optional' => ['index', 'name']],
+        'add_argument' => ['requires' => ['php'], 'optional' => ['position', 'name']],
+        'remove_argument' => ['requires' => [], 'optional' => ['index', 'name']],
+        'add_member' => ['requires' => ['php'], 'optional' => ['position']],
+        'add_parameter' => ['requires' => ['php'], 'optional' => ['position']],
+        'add_attribute' => ['requires' => ['php'], 'optional' => []],
+        'set_return_type' => ['requires' => ['php'], 'optional' => []],
+        'set_type' => ['requires' => ['php'], 'optional' => []],
+        'set_visibility' => ['requires' => ['value'], 'optional' => []],
+        'add_implements' => ['requires' => ['php'], 'optional' => []],
+        'set_extends' => ['requires' => ['php'], 'optional' => []],
+        'rename_variable' => ['requires' => ['from', 'to'], 'optional' => []],
+    ];
+
+    /**
+     * Hold an edit to the arguments its operation actually takes.
+     *
+     * Checked before the dispatcher runs, so a caller that guessed the shape is told the
+     * shape rather than meeting whatever error the wrong field happens to trip first. The old
+     * failure for a misfiled rename was `Expected node name $nonce, got createChallengeToken`
+     * — true, and no help at all.
+     *
+     * @param array<string, mixed> $edit
+     */
+    private function assertOperationArguments(string $operation, array $edit): void
+    {
+        $spec = self::OPERATION_ARGUMENTS[$operation] ?? null;
+
+        if ($spec === null) {
+            return;
+        }
+        $missing = [];
+
+        foreach ($spec['requires'] as $required) {
+            if (!isset($edit[$required])) {
+                $missing[] = $required;
+            }
+        }
+
+        if ($missing === []) {
+            return;
+        }
+        $given = array_values(array_diff(array_keys($edit), ['operation', 'target', 'expect', 'parseAs']));
+
+        throw new EditException(
+            sprintf(
+                '%s requires %s%s. %s',
+                $operation,
+                implode(
+                    ' and ',
+                    array_map(static fn (string $k): string => '"' . $k . '"', $spec['requires']),
+                ),
+                $spec['optional'] === [] ? '' : ' (optional: ' . implode(', ', $spec['optional']) . ')',
+                $given === [] ? 'This edit carries none of them.' : 'This edit carries ' . implode(', ', $given) . '.',
+            ),
+        );
+    }
+
+    /**
+     * What each operation takes, for the catalogue to publish.
+     *
+     * `contexts` listed operation names and nothing else, so a caller had to guess the
+     * argument names or find them in a reference file it may not have. Publishing the table
+     * makes one call answer the question the guessing was for.
+     *
+     * @return array<string, array{requires: list<string>, optional: list<string>}>
+     */
+    public static function operationArguments(): array
+    {
+        return self::OPERATION_ARGUMENTS;
     }
 }

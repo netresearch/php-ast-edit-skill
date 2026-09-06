@@ -42,6 +42,23 @@ foreach (['applyPrimitive', 'applyComment', 'applyShorthand', 'applySemantic'] a
     $dispatchers = array_merge($dispatchers, $matches[1]);
 }
 sort($dispatchers);
+// Every dispatched operation must publish what it takes. A caller that has to guess the
+// argument names guesses by analogy: in a controlled run a model sent `expect` and `value`
+// — set_name's shape — three times before finding `from` and `to`, and four of its six
+// `apply` calls failed on the contract rather than on the code.
+$arguments = Netresearch\PhpAstEdit\Editor::operationArguments();
+
+foreach ($dispatchers as $operation) {
+    if (!array_key_exists($operation, $arguments)) {
+        $problems[] = 'operation "' . $operation . '" is dispatched but publishes no argument list.';
+    }
+}
+
+foreach (array_keys($arguments) as $operation) {
+    if (!in_array($operation, $dispatchers, true)) {
+        $problems[] = 'operation "' . $operation . '" publishes an argument list but is not dispatched.';
+    }
+}
 $catalog = json_decode(
     (string) shell_exec(
         escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg($root . '/bin/php-ast-edit') . ' contexts',
