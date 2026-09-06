@@ -1963,17 +1963,17 @@ final class Editor
         'insert_before' => ['requires' => ['php'], 'optional' => ['parseAs']],
         'insert_after' => ['requires' => ['php'], 'optional' => ['parseAs']],
         'delete' => ['requires' => [], 'optional' => []],
-        'replace_argument' => ['requires' => ['php'], 'optional' => ['index', 'name']],
-        'add_argument' => ['requires' => ['php'], 'optional' => ['position', 'name']],
-        'remove_argument' => ['requires' => [], 'optional' => ['index', 'name']],
-        'add_member' => ['requires' => ['php'], 'optional' => ['position']],
+        'replace_argument' => ['requires' => ['index', 'php'], 'optional' => []],
+        'add_argument' => ['requires' => ['index', 'php'], 'optional' => ['parseAs']],
+        'remove_argument' => ['requires' => ['index'], 'optional' => []],
+        'add_member' => ['requires' => ['php'], 'optional' => ['position', 'parseAs']],
         'add_parameter' => ['requires' => ['php'], 'optional' => ['position']],
-        'add_attribute' => ['requires' => ['php'], 'optional' => []],
+        'add_attribute' => ['requires' => ['php'], 'optional' => ['position']],
         'set_return_type' => ['requires' => ['php'], 'optional' => []],
         'set_type' => ['requires' => ['php'], 'optional' => []],
         'set_visibility' => ['requires' => ['value'], 'optional' => []],
-        'add_implements' => ['requires' => ['php'], 'optional' => []],
-        'set_extends' => ['requires' => ['php'], 'optional' => []],
+        'add_implements' => ['requires' => ['php'], 'optional' => ['position']],
+        'set_extends' => ['requires' => ['php'], 'optional' => ['position']],
         'rename_variable' => ['requires' => ['from', 'to'], 'optional' => []],
         'rename_method' => ['requires' => ['to'], 'optional' => []],
     ];
@@ -2012,9 +2012,12 @@ final class Editor
         $shape = ['target' => '…', 'operation' => $operation];
 
         foreach ($spec['requires'] as $required) {
-            $shape[$required] = '…';
+            // `into` is an object, and a placeholder that says otherwise sends the caller
+            // through a second error to learn the type.
+            $shape[$required] = $required === 'into' ? ['ref' => '…', 'property' => '…'] : '…';
         }
-        $given = array_values(array_diff(array_keys($edit), ['operation', 'target', 'expect', 'parseAs']));
+        // `parseAs` is a published argument, so an edit carrying it is not carrying none.
+        $given = array_values(array_diff(array_keys($edit), ['operation', 'target', 'expect']));
 
         throw new EditException(
             sprintf(
@@ -2184,6 +2187,10 @@ final class Editor
      */
     private function runVerify(array $transactions): void
     {
+        // This instance outlives one `apply()`. Without clearing, a later write with no
+        // eligible checks would report the previous run's results as its own.
+        $this->verifyResults = [];
+
         /** @var array<string, array{verify: list<list<string>>, paths: list<string>}> $groups */
         $groups = [];
 
@@ -2298,16 +2305,14 @@ final class Editor
         $method->name = new Node\Identifier($to, $method->name->getAttributes());
         $renamed = 1;
 
-        foreach ((new NodeFinder())->find($owner, static fn (Node $n): bool => true) as $node) {
-            if (self::callsOwnMethod($node, $from)) {
-                $node->name = new Node\Identifier($to, $node->name->getAttributes());
-                ++$renamed;
-            }
+        foreach ($this->ownCalls($owner, $from) as $call) {
+            $call->name = new Node\Identifier($to, $call->name->getAttributes());
+            ++$renamed;
         }
         $others = 0;
 
         foreach ((new NodeFinder())->find($roots, static fn (Node $n): bool => true) as $node) {
-            if (self::namesMethod($node, $from) && !self::callsOwnMethod($node, $from)) {
+            if (self::namesMethod($node, $from)) {
                 ++$others;
             }
         }
@@ -2341,7 +2346,9 @@ final class Editor
             return false;
         }
 
-        return $node->name instanceof Node\Identifier && $node->name->toString() === $name;
+        // PHP resolves method names without regard to ASCII case, so `$this->OLD()` is a
+        // call to `old()` and a strict comparison would leave it behind.
+        return $node->name instanceof Node\Identifier && strcasecmp($node->name->toString(), $name) === 0;
     }
 
     /**
@@ -2377,5 +2384,43 @@ final class Editor
         }
 
         return 'INCOMPLETE_RENAME: ' . implode('; ', $said) . '. A rename is scoped, so the rest sit in scopes this edit did not name, on another receiver, or in text. Name them, or say why they stay.';
+    }
+
+    /**
+     * The calls to `$name` that belong to this class, and not to something nested inside it.
+     *
+     * A `$this->old()` inside an anonymous class declared in a method body is that class's
+     * call, not this one's, and renaming it would break code the edit was never about. The
+     * walk therefore stops at every nested class-like declaration and at every function that
+     * carries its own `$this` — a closure does not, an arrow function does not, but a nested
+     * named function and a nested method do.
+     *
+     * @return list<Expr\MethodCall|Expr\NullsafeMethodCall|Expr\StaticCall>
+     */
+    private function ownCalls(Node $node, string $name): array
+    {
+        $found = [];
+
+        foreach ($node->getSubNodeNames() as $subNodeName) {
+            $value = $node->{$subNodeName};
+            $children = $value instanceof Node ? [$value] : (is_array($value) ? $value : []);
+
+            foreach ($children as $child) {
+                if (!$child instanceof Node) {
+                    continue;
+                }
+
+                if ($child instanceof Stmt\ClassLike || $child instanceof Expr\New_ && $child->class instanceof Stmt\Class_) {
+                    continue;
+                }
+
+                if (self::callsOwnMethod($child, $name)) {
+                    $found[] = $child;
+                }
+                $found = array_merge($found, $this->ownCalls($child, $name));
+            }
+        }
+
+        return $found;
     }
 }
