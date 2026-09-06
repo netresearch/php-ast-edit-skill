@@ -14,7 +14,7 @@ import time
 from decimal import Decimal
 from pathlib import Path
 
-from native import read_events, require, summarize
+from native import collect, read_events, require, summarize, validate_init
 
 HERE = Path(__file__).resolve().parent
 RELATIVE = Path("benchmarks/agent-economics/efficiency")
@@ -23,6 +23,7 @@ SCHEDULE = "schedule.json"
 MEASUREMENT = "measurement.json"
 RECOVERED = "measurement-recovered.json"
 AMENDMENT = "amendment-provenance.json"
+TIMEOUT_RESERVATION = "timeout-reservation.json"
 RAW = "raw.jsonl"
 ORACLE = "oracle.json"
 INITIAL_HASHES = "initial-hashes.json"
@@ -633,7 +634,8 @@ def controller_provenance(base):
             "native_sha256": digest(HERE / "native.py"),
         }
     require(
-        HERE == base / "controller-amendment-v1", "Unrecognized controller location"
+        HERE in {base / "controller-amendment-v1", base / "controller-amendment-v2"},
+        "Unrecognized controller location",
     )
     manifest = load(HERE / AMENDMENT)
     require(
@@ -656,7 +658,7 @@ def controller_provenance(base):
     for name, checksum in manifest["files"].items():
         require(digest(HERE / name) == checksum, f"Amendment changed: {name}")
     return {
-        "kind": "controller-amendment-v1",
+        "kind": HERE.name,
         "source_commit": revision,
         "manifest_sha256": digest(HERE / AMENDMENT),
         "files": manifest["files"],
@@ -728,12 +730,126 @@ def existing_measurement(base, evidence):
     return recovered
 
 
-def spent_so_far(base, schedule):
-    spent = Decimal(0)
+def timeout_evidence(base, evidence):
+    original = load(evidence / MEASUREMENT)
+    require(original["timed_out"] is True, "Reservation requires actual timeout")
+    require(
+        original["accounting_errors"]
+        == ["Missing native terminal result; spend is unknown"],
+        "Unsupported timeout accounting error",
+    )
+    require(
+        original.get("native_list_price_usd") is None, "Timeout cost is not unknown"
+    )
+    require(
+        original["config_sha256"] == digest(base / CONFIG), "Timeout config changed"
+    )
+    require(original["raw_sha256"] == digest(evidence / RAW), "Timeout raw changed")
+    events, malformed = read_events(evidence / RAW)
+    require(
+        not malformed and not any(row.get("type") == "result" for row in events),
+        "Timeout has malformed events or a terminal result",
+    )
+    init = next(
+        (
+            row
+            for row in events
+            if row.get("type") == "system" and row.get("subtype") == "init"
+        ),
+        None,
+    )
+    validate_init(init, original["requested_model"])
+    responses, calls, results = collect(events)
+    require(
+        responses
+        and all(
+            row["model"] == original["requested_model"] for row in responses.values()
+        ),
+        "Timeout response model differs",
+    )
+    require(set(calls) == set(results), "Timeout tool linkage incomplete")
+    return original
+
+
+def timeout_reservation(base, evidence):
+    original = timeout_evidence(base, evidence)
+    provenance = controller_provenance(base)
+    require(
+        provenance["kind"] == "controller-amendment-v2",
+        "Timeout review requires frozen v2 controller",
+    )
+    reviews = load(HERE / AMENDMENT).get("approved_timeout_reviews", {})
+    review = reviews.get(original["run_id"], {})
+    links = {
+        "run_id": original["run_id"],
+        "config_sha256": digest(base / CONFIG),
+        "raw_sha256": digest(evidence / RAW),
+        "original_measurement_sha256": digest(evidence / MEASUREMENT),
+    }
+    require(
+        all(review.get(key) == value for key, value in links.items()),
+        "Timeout lacks individually linked approval",
+    )
+    for role in ("operator", "independent"):
+        attestation = review.get(role, {})
+        require(
+            attestation.get("status") == "approved"
+            and attestation.get("reviewer")
+            and attestation.get("note"),
+            "Timeout review is not approved",
+        )
+    return {
+        "schema_version": 1,
+        "kind": "operator_reviewed_timeout_budget_reservation",
+        **links,
+        "budget_reservation_usd": str(Decimal(str(load(base / CONFIG)["max_run_usd"]))),
+        "observed_native_cost_usd": None,
+        "native_usage_status": "unknown_no_terminal_result",
+        "note": "Planning reservation only; neither observed cost nor a proven actual spending ceiling. Original failure and unknown usage remain unchanged.",
+        "review": review,
+        "controller_provenance": provenance,
+    }
+
+
+def reserve_timeout(base, run_id):
+    validate(base)
+    matches = [row for row in load(base / SCHEDULE) if row["run_id"] == run_id]
+    require(len(matches) == 1, "Timeout run ID not in frozen schedule")
+    evidence = Path(matches[0]["evidence"])
+    require(
+        load(evidence / MEASUREMENT)["run_id"] == run_id,
+        "Timeout measurement run ID differs from schedule",
+    )
+    require(
+        not (evidence / TIMEOUT_RESERVATION).exists(),
+        "Timeout reservation already exists",
+    )
+    save(evidence / TIMEOUT_RESERVATION, timeout_reservation(base, evidence))
+    print(
+        json.dumps(
+            {"reserved_timeout": run_id, "model_calls": 0, "observed_cost": None}
+        )
+    )
+
+
+def budget_so_far(base, schedule):
+    known, reserved = Decimal(0), Decimal(0)
     config = load(base / CONFIG)
     for row in schedule:
         evidence = Path(row["evidence"])
         if (evidence / MEASUREMENT).exists():
+            require(
+                load(evidence / MEASUREMENT)["run_id"] == row["run_id"],
+                "Existing measurement run ID differs from schedule",
+            )
+            if (evidence / TIMEOUT_RESERVATION).exists():
+                sidecar = load(evidence / TIMEOUT_RESERVATION)
+                require(
+                    sidecar == timeout_reservation(base, evidence),
+                    "Timeout reservation differs from approved evidence",
+                )
+                reserved += Decimal(sidecar["budget_reservation_usd"])
+                continue
             result = existing_measurement(base, evidence)
             require(
                 not result["accounting_errors"],
@@ -748,17 +864,26 @@ def spent_so_far(base, schedule):
                 result["raw_sha256"] == digest(evidence / RAW),
                 "Existing raw evidence changed",
             )
-            spent += bounded_cost(result, config["max_run_usd"])
+            known += bounded_cost(result, config["max_run_usd"])
         else:
             require(
                 not (evidence / RAW).exists(),
                 "Interrupted raw run requires offline recovery; never repeat it",
             )
     require(
-        spent <= Decimal(str(config["campaign_budget_usd"])),
-        "Existing campaign spend exceeds budget",
+        known + reserved <= Decimal(str(config["campaign_budget_usd"])),
+        "Existing campaign allocation exceeds budget",
     )
-    return spent
+    return {
+        "known_native_list_usd": known,
+        "reserved_unknown_usd": reserved,
+        "allocated_usd": known + reserved,
+    }
+
+
+def spent_so_far(base, schedule):
+    """Known native subtotal only; use budget_so_far for planning allocation."""
+    return budget_so_far(base, schedule)["known_native_list_usd"]
 
 
 def run(base, execute_models):
@@ -771,30 +896,39 @@ def run(base, execute_models):
     controller_provenance(base)
     with (base / "campaign.lock").open("a") as lock:
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        spent = spent_so_far(base, schedule)
+        budget = budget_so_far(base, schedule)
         for row in schedule:
             if (Path(row["evidence"]) / MEASUREMENT).exists():
                 continue
             require(
-                spent + Decimal(str(config["max_run_usd"]))
+                budget["allocated_usd"] + Decimal(str(config["max_run_usd"]))
                 <= Decimal(str(config["campaign_budget_usd"])),
                 "Campaign budget cannot reserve the next run; stop",
             )
             result = run_one(base, row, config)
-            spent += Decimal(str(result["native_list_price_usd"]))
+            amount = Decimal(str(result["native_list_price_usd"]))
+            budget["known_native_list_usd"] += amount
+            budget["allocated_usd"] += amount
             save(
                 base / "campaign-progress.json",
-                {"spent_native_list_usd": str(spent), "last_run": row["run_id"]},
+                {
+                    "spent_native_list_usd": str(budget["known_native_list_usd"]),
+                    "reserved_unknown_usd": str(budget["reserved_unknown_usd"]),
+                    "allocated_budget_usd": str(budget["allocated_usd"]),
+                    "last_run": row["run_id"],
+                },
             )
             require(
-                spent <= Decimal(str(config["campaign_budget_usd"])),
-                "Campaign native budget exceeded; stop",
+                budget["allocated_usd"] <= Decimal(str(config["campaign_budget_usd"])),
+                "Campaign allocation exceeded; stop",
             )
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=["prepare", "validate", "recover", "run"])
+    parser.add_argument(
+        "command", choices=["prepare", "validate", "recover", "reserve-timeout", "run"]
+    )
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--source", type=Path, default=HERE.parents[2])
     parser.add_argument("--source-ref", default="HEAD")
@@ -818,6 +952,8 @@ def main():
         validate(args.output.resolve())
     elif args.command == "recover":
         recover(args.output.resolve(), args.run_id)
+    elif args.command == "reserve-timeout":
+        reserve_timeout(args.output.resolve(), args.run_id)
     else:
         run(args.output.resolve(), args.execute_models)
 

@@ -112,6 +112,41 @@ Budget resumption recomputes this sidecar from the original trace and requires a
 exact match. Completed attempts are skipped and never rerun. Recovery and validation
 make no model calls; the operator reviews the amendment before resuming execution.
 
+### Reviewed timeout planning reservation after Phase 2 run020
+
+The original stop policy halted Phase 2 after run020 reached 120 seconds without a
+native terminal result. The attempt failed its output oracle and retains its original
+measurement, trace, wall time, tool failures and unknown aggregate usage/cost. It is
+never rerun or assigned zero usage. Operator and independent AI review confirmed the
+unchanged source and the failed apply attempts before authorizing a planning-only
+reservation of its previously allocated USD 0.75. This is **not observed cost or a
+proven actual spending ceiling**. The USD 8 allowance is an operator planning limit;
+neither the original CLI cap nor this reservation guarantees provider billing.
+
+A separate `controller-amendment-v2/` keeps both earlier frozen controllers intact.
+Its hashed `amendment-provenance.json` records individually approved timeout reviews,
+keyed by run ID and bound to config, raw trace and original measurement SHA-256.
+Each review includes approved operator and independent-reviewer attestations and
+notes. These are review records, not cryptographic authentication of authorship.
+The controller accepts only timed-out, well-formed traces with the exact missing
+terminal error, correct model/isolation and complete observed tool-result linkage.
+It does not turn their incomplete input/output snapshots into aggregate metrics.
+
+`reserve-timeout --output CAMPAIGN --run-id run020` writes a separate
+`timeout-reservation.json` offline. The native observed cost is explicitly null;
+the planning reservation is a separate field. Resumption recomputes the complete
+sidecar against the individually approved manifest and immutable evidence, then
+skips the original attempt. Every new unknown-cost attempt still stops for its own
+review; the command never grants a campaign-wide exception.
+
+`budget_so_far` returns the known native subtotal, reserved unknown amount and their
+planning allocation. `spent_so_far` remains the known native subtotal only. Progress
+retains `spent_native_list_usd` for that known subtotal and adds
+`reserved_unknown_usd` and `allocated_budget_usd`; reservations never enter a field
+claiming observed native spend. Later phases deduct both known costs and reservations
+from the shared planning allowance. All unresolved costs remain visibly unknown in
+the results even when the operator authorizes continued experimentation.
+
 The passive PATH engine launcher records full-skill apply payloads, SHA presence,
 captured source hashes and native outcomes while preserving engine stdout/stderr.
 The compact adapter records reads, modes/selectors, returned revisions and every
