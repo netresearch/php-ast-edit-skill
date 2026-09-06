@@ -22,9 +22,22 @@ native events, recomputes the complete summary, applies all twelve diffs to thei
 original fixture bytes, and runs the grader and PHP oracles from the measured
 commit. Temporary files stay outside the repository. It makes **zero model calls**.
 It verifies retained evidence and behavior, not the provider's authorship or billing.
-It also checks the published review schema against the recorded AI attestation and
-links the adherence audit to its traces. It does not authenticate reviewer identity
-or independently establish every skill instruction's compliance.
+It also checks the published review schema against the recorded AI attestation.
+The offline [adherence.py](adherence.py) helper derives every audit row and all three
+aggregate counts directly from the six assigned skill traces, then compares them
+with `adherence.json`. It links completed Read, Write and Edit requests to each apply,
+reconstructs the actual JSON payload (including the retry edit), checks file-level
+snapshot hashes, and retains successful and failed attempts. A supplied hash must
+match the initial source snapshot; null, malformed or mismatched values are rejected.
+
+This derivation supports only the sequential tool calls, local `edits.json` input,
+quoted `EOF` heredoc and exact cleanup/diff commands observed in this historical
+bundle. The heredoc destination must match its apply argument. Overlapping calls,
+unmatched IDs, missing prerequisite results, ambiguous edits and unsupported command
+or payload forms fail verification. Trace commands are parsed as data and never
+executed. The helper is not a general shell interpreter or a verifier for new
+experiments. These checks do not authenticate reviewer identity or independently
+establish every skill instruction's compliance.
 
 ## Reproduce preparation, then optionally run a new experiment
 

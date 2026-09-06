@@ -11,6 +11,8 @@ import subprocess
 import tempfile
 from pathlib import Path
 
+from adherence import aggregate, derive_run
+
 BUNDLE = Path(__file__).resolve().parent
 REPO = BUNDLE.parents[3]
 
@@ -57,21 +59,25 @@ def check_published_reviews(measured):
 
 
 def check_adherence_evidence(measured):
-    """Bind the scoped AI audit to the unchanged traces and assigned run coverage."""
+    """Recompute the scoped audit from the frozen native tool requests and results."""
     audit = load(BUNDLE / "adherence.json")
-    expected = {row["run_id"] for row in measured if row["variant"] == "full_skill"}
-    records = audit["runs"]
-    check(len(records) == len(expected), "Adherence audit run count differs")
+    derived = []
+    for row in sorted(measured, key=lambda item: item["run_id"]):
+        if row["variant"] != "full_skill":
+            continue
+        run = BUNDLE / "runs" / row["run_id"]
+        derived.append(
+            derive_run(row, run / "native.jsonl", load(run / "initial-hashes.json"))
+        )
     check(
-        {row["run_id"] for row in records} == expected,
-        "Adherence audit coverage differs",
+        json.dumps(audit["runs"], sort_keys=True)
+        == json.dumps(derived, sort_keys=True),
+        "Adherence audit rows differ from native tool evidence",
     )
-    for row in records:
-        trace = f"runs/{row['run_id']}/native.jsonl"
-        check(row["native_trace"] == trace, "Adherence trace path differs")
+    for key, value in aggregate(derived).items():
         check(
-            digest(BUNDLE / trace) == row["native_trace_sha256"],
-            "Adherence trace changed",
+            type(audit[key]) is int and audit[key] == value,
+            f"Adherence aggregate differs: {key}",
         )
 
 
