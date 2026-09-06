@@ -5,7 +5,7 @@ Each cell contains three attempted runs. Tokens include cache reads and writes. 
 ## phase1
 
 | Task | Model | Arm | Oracle | Guarded AST write | Tokens | Native turns | Tool calls | Wall seconds |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | local-variable | haiku | compact_focused | 3/3 | 3/3 | 27,569 | 5 | 4 | 16.95 |
 | local-variable | haiku | compact_full | 3/3 | 3/3 | 33,735 | 6 | 5 | 18.5 |
 | local-variable | haiku | contextual_patch | 3/3 | n/a | 20,244 | 4 | 3 | 11.69 |
@@ -26,7 +26,7 @@ Each cell contains three attempted runs. Tokens include cache reads and writes. 
 ## phase2
 
 | Task | Model | Arm | Oracle | Guarded AST write | Tokens | Native turns | Tool calls | Wall seconds |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | public-llm-obsolete-helper | haiku | compact_focused | 3/3 | 3/3 | 94,431 | 8 | 7 | 25.31 |
 | public-llm-obsolete-helper | haiku | compact_full | 3/3 | 3/3 | 109,327 | 9 | 8 | 29.58 |
 | public-llm-obsolete-helper | haiku | contextual_patch | 3/3 | n/a | 64,572 | 7 | 6 | 19.55 |
@@ -47,7 +47,7 @@ Each cell contains three attempted runs. Tokens include cache reads and writes. 
 ## phase3
 
 | Task | Model | Arm | Oracle | Guarded AST write | Tokens | Native turns | Tool calls | Wall seconds |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | public-llm-obsolete-helper-directed | haiku | compact_focused | 3/3 | 2/3 | 63,866 | 8 | 7 | 25.16 |
 | public-llm-obsolete-helper-directed | haiku | compact_full | 3/3 | 3/3 | 99,359 | 8 | 7 | 27.36 |
 | public-llm-obsolete-helper-directed | sonnet | compact_focused | 3/3 | 3/3 | 16,892 | 3 | 2 | 11.54 |

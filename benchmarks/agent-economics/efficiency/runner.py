@@ -684,6 +684,12 @@ def controller_provenance(base, folder=None):
 
 
 def recovered_measurement(base, evidence, folder=None):
+    """Reinterpret the legacy controller's input-total rejection under amendment v1.
+
+    Current producers already accept evidenced native retries. Their unexplained
+    input gaps remain unsupported; this is not a general accounting-error repair.
+    Full current raw-trace validation and the frozen v1 provenance still apply.
+    """
     original = load(evidence / MEASUREMENT)
     require(
         original["accounting_errors"] == ["Response input totals differ"],
