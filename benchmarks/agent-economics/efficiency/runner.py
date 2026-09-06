@@ -199,7 +199,11 @@ def variants(base):
     }
 
 
-def balanced_order(task_ids, seed):
+def balanced_order(task_ids, seed, arms=ARMS):
+    require(
+        arms and len(arms) == len(set(arms)) and set(arms) <= set(ARMS),
+        "Invalid or duplicate arms",
+    )
     # A fixed seed orders samples reproducibly; it makes no security decisions.
     rng = random.Random(seed)
     blocks = [
@@ -209,12 +213,12 @@ def balanced_order(task_ids, seed):
         for repeat in range(1, 4)
     ]
     rng.shuffle(blocks)  # NOSONAR(S2245)
-    starts = list(range(4)) * (len(blocks) // 4)
-    starts += list(range(len(blocks) % 4))
+    starts = list(range(len(arms))) * (len(blocks) // len(arms))
+    starts += list(range(len(blocks) % len(arms)))
     rng.shuffle(starts)  # NOSONAR(S2245)
     rows = []
     for (task, model, repeat), start in zip(blocks, starts):
-        order = ARMS[start:] + ARMS[:start]
+        order = arms[start:] + arms[:start]
         for arm in order:
             rows.append(
                 {
@@ -327,6 +331,8 @@ def freeze(base):
 
 
 def prepare(args):
+    arms = tuple(args.arms.split(","))
+    planned_order = balanced_order(args.tasks.split(","), args.seed, arms)
     base = args.output.resolve()
     require(
         base.is_relative_to(Path("/tmp")), "Use a fresh Linux /tmp output directory"
@@ -343,13 +349,13 @@ def prepare(args):
     )
     tasks = load(base / "controller/benchmarks/tasks.json")["tasks"]
     require(set(task_ids) <= {task["id"] for task in tasks}, "Unknown task IDs")
-    instructions = variants(base)
+    instructions = {arm: text for arm, text in variants(base).items() if arm in arms}
     templates = make_templates(base, task_ids, tasks)
     schedule = [
         prepare_fixture(
             base, row, templates[row["task_id"]], instructions[row["variant"]]
         )
-        for row in balanced_order(task_ids, args.seed)
+        for row in planned_order
     ]
     config = {
         "schema_version": 1,
@@ -357,7 +363,7 @@ def prepare(args):
         "source_status": status,
         "execution_allowed": not args.development,
         "models": MODELS,
-        "arms": ARMS,
+        "arms": arms,
         "task_ids": task_ids,
         "repetitions": 3,
         "seed": args.seed,
@@ -795,6 +801,7 @@ def main():
     parser.add_argument("--vendor", type=Path)
     parser.add_argument("--manifest", "--tasks-json", type=Path)
     parser.add_argument("--tasks", default="local-variable,multi-file-members")
+    parser.add_argument("--arms", default=",".join(ARMS))
     parser.add_argument("--seed", type=int, default=20260906)
     parser.add_argument("--campaign-budget-usd", type=float, default=8.0)
     parser.add_argument(

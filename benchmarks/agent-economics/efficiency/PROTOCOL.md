@@ -177,3 +177,19 @@ Only source fixtures and the task prompt enter the candidate workspace; expected
 edits and oracles stay in the controller. The copied grader reads the frozen manifest
 from its normal relative path and enforces its hash. A new phase requires a separate
 frozen manifest and operator review within the already authorized aggregate budget.
+
+### Separate directed-read ablation
+
+The original four-arm observations retain the agent's own selector choices, including
+whole-class selections that do not test a narrow projection. A separate, predeclared
+follow-up can add an exact initial method selector to each public task prompt, with
+the same addition in both compact arms and no operation or recovery hints. It retains
+the original observations rather than replacing or selecting successful trials.
+
+Use `--arms compact_full,compact_focused` with a separate frozen task manifest and
+output directory. Two tasks, two models and three repetitions then produce 24 runs.
+Preparation accepts any nonempty, duplicate-free subset of the four existing arms;
+the default four-arm schedule is unchanged. Selected arms are recorded in config,
+and arm rotations remain balanced across task/model/repetition blocks. The runtime
+and adapter bytes must match the prior phases, and the remaining aggregate budget
+must be supplied explicitly. Preparing this follow-up does not authorize execution.
