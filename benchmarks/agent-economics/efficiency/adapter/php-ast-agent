@@ -1,0 +1,325 @@
+#!/usr/bin/env python3
+"""Local benchmark adapter: revisions bind reads to the existing AST engine's writes."""
+
+import argparse
+import difflib
+import fcntl
+import hashlib
+import json
+import os
+import secrets
+import subprocess
+import sys
+import time
+from contextlib import contextmanager
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+DIFF_LINES = 100
+DIFF_BYTES = 12000
+
+
+class AdapterError(Exception):
+    pass
+
+
+def encode(value):
+    return json.dumps(value, ensure_ascii=False, separators=(",", ":"))
+
+
+def sha(source):
+    return hashlib.sha256(source).hexdigest()
+
+
+def engine_path():
+    configured = os.environ.get("PHP_AST_EDIT_BIN")
+    return (
+        Path(configured).resolve()
+        if configured
+        else HERE.parents[3] / "bin/php-ast-edit"
+    )
+
+
+@contextmanager
+def state_store():
+    configured = os.environ.get("PHP_AST_AGENT_STATE_DIR")
+    if not configured:
+        raise AdapterError(
+            "PHP_AST_AGENT_STATE_DIR must name a directory outside the workspace"
+        )
+    directory = Path(configured).resolve()
+    if directory == Path.cwd() or Path.cwd() in directory.parents:
+        raise AdapterError("Revision state must be outside the candidate workspace")
+    directory.mkdir(parents=True, exist_ok=True, mode=0o700)
+    with (directory / "lock").open("a") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        path = directory / "state.json"
+        state = (
+            json.loads(path.read_text())
+            if path.exists()
+            else {"revisions": {}, "reports": {}}
+        )
+        yield directory, state
+        temporary = directory / "state.next"
+        temporary.write_text(encode(state))
+        temporary.replace(path)
+
+
+def audit(directory, event, **data):
+    with (directory / "audit.jsonl").open("a") as output:
+        output.write(
+            encode({"event": event, "monotonic_ns": time.monotonic_ns(), **data}) + "\n"
+        )
+
+
+def resolve_file(value):
+    if not isinstance(value, str) or not value:
+        raise AdapterError("Every file needs a nonempty path")
+    path = Path(value).resolve()
+    if not path.is_file():
+        raise AdapterError(f"Existing regular source file required: {value}")
+    return path
+
+
+def read_files(args, directory, state):
+    mode = args.mode or ("focused" if args.select else "full")
+    paths = [resolve_file(name) for name in args.files]
+    if len(set(paths)) != len(paths):
+        raise AdapterError("Duplicate file paths")
+    snapshots = [path.read_bytes() for path in paths]
+    request = {
+        "mode": mode,
+        "select": args.select,
+        "sources": [s.decode("utf-8") for s in snapshots],
+    }
+    env = os.environ.copy()
+    env["PHP_AST_AGENT_AUTOLOAD"] = str(
+        engine_path().parent.parent / "vendor/autoload.php"
+    )
+    process = subprocess.run(
+        ["php", str(HERE / "read.php")],
+        input=encode(request),
+        text=True,
+        capture_output=True,
+        env=env,
+        check=False,
+    )
+    if process.returncode:
+        raise AdapterError(process.stderr.strip() or "Focused source read failed")
+    views = json.loads(process.stdout)
+    if not isinstance(views, list) or len(views) != len(snapshots):
+        raise AdapterError("Source reader returned an incomplete snapshot")
+    files = []
+    for name, path, source, view in zip(args.files, paths, snapshots, views):
+        revision = secrets.token_hex(8)
+        state["revisions"][revision] = {
+            "path": str(path),
+            "sha256": sha(source),
+            "source": source.decode("utf-8"),
+        }
+        files.append({"path": name, "revision": revision, **view})
+    audit(
+        directory,
+        "read",
+        mode=mode,
+        select=args.select,
+        files=[
+            {"path": str(path), "revision": file["revision"], "sha256": sha(source)}
+            for path, file, source in zip(paths, files, snapshots)
+        ],
+    )
+    return {"files": files}, 0
+
+
+def compact_file(report, before, after, display):
+    result = {
+        key: value
+        for key, value in report.items()
+        if key
+        not in {
+            "path",
+            "beforeSha256",
+            "afterSha256",
+            "warning",
+            "warnings",
+            "parsed",
+            "valid",
+            "diff",
+            "dryRun",
+        }
+    }
+    result["path"] = display
+    result["changed"] = before != after
+    warnings = report.get(
+        "warnings", [report["warning"]] if report.get("warning") else []
+    )
+    genuine = []
+    for warning in warnings:
+        if warning.startswith("NOT_CANONICAL:"):
+            result["printer_info"] = "not_canonical"
+        else:
+            genuine.append(warning)
+    if genuine:
+        result["warnings"] = genuine
+    lines = difflib.unified_diff(
+        before.decode("utf-8").splitlines(keepends=True),
+        after.decode("utf-8").splitlines(keepends=True),
+        fromfile=display,
+        tofile=display,
+        n=3,
+    )
+    diff = "".join(
+        line if line.endswith("\n") else line + "\n\\ No newline at end of file\n"
+        for line in lines
+    )
+    return result, diff
+
+
+def apply_edits(directory, state):
+    raw_input = sys.stdin.read()
+    try:
+        request = json.loads(raw_input)
+    except json.JSONDecodeError as failure:
+        audit(directory, "apply_attempt", invalid_json=raw_input)
+        audit(directory, "apply_result", files=[], ok=False, error=str(failure))
+        raise
+    audit(directory, "apply_attempt", request=request)
+    resolved = []
+    try:
+        if (
+            not isinstance(request, dict)
+            or not isinstance(request.get("files"), list)
+            or not request["files"]
+        ):
+            raise AdapterError("Apply expects a nonempty files array")
+        if request.get("dryRun"):
+            raise AdapterError(
+                "This experimental apply reports committed edits; dryRun is unsupported"
+            )
+        document = {**request, "files": []}
+        seen = set()
+        for spec in request["files"]:
+            if not isinstance(spec, dict):
+                raise AdapterError("Every file entry must be an object")
+            revision = spec.get("revision")
+            if not isinstance(revision, str) or revision not in state["revisions"]:
+                raise AdapterError("Unknown or consumed revision; read the file again")
+            record = state["revisions"][revision]
+            path = resolve_file(spec.get("path"))
+            item = {"path": str(path), "revision": revision, "sha256": record["sha256"]}
+            resolved.append(item)
+            if str(path) != record["path"]:
+                raise AdapterError("Revision belongs to a different file path")
+            if path in seen:
+                raise AdapterError("Duplicate file paths")
+            seen.add(path)
+            if sha(path.read_bytes()) != record["sha256"]:
+                raise AdapterError(
+                    "STALE_REVISION: file changed since read; reread and reassess"
+                )
+            if "sha256" in spec:
+                raise AdapterError("Supply revision only; the adapter resolves sha256")
+            if spec.get("mode", "edit") not in ("edit", "delete"):
+                raise AdapterError(
+                    "This experimental adapter edits or deletes previously read files only"
+                )
+            document["files"].append(
+                {
+                    **{k: v for k, v in spec.items() if k != "revision"},
+                    "path": str(path),
+                    "sha256": record["sha256"],
+                }
+            )
+        process = subprocess.run(
+            [str(engine_path()), "apply"],
+            input=encode(document),
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        raw = process.stdout.strip() or process.stderr.strip()
+        try:
+            engine = json.loads(raw)
+        except json.JSONDecodeError:
+            engine = {"ok": False, "error": raw or "Engine returned no report"}
+        engine_reports = {r["path"]: r for r in engine.get("files", [])}
+        output = {k: v for k, v in engine.items() if k not in {"files", "dryRun"}}
+        output["ok"] = process.returncode == 0
+        output["files"] = []
+        full_diffs = {}
+        consumed_paths = set()
+        for spec, item in zip(request["files"], resolved):
+            before = state["revisions"][item["revision"]]["source"].encode("utf-8")
+            path = Path(item["path"])
+            after = path.read_bytes() if path.is_file() else b""
+            if process.returncode == 0 or before != after:
+                consumed_paths.add(str(path))
+            result, diff = compact_file(
+                engine_reports.get(str(path), {}), before, after, spec["path"]
+            )
+            if diff:
+                full_diffs[spec["path"]] = diff
+                bounded = "".join(diff.splitlines(keepends=True)[:DIFF_LINES])
+                if len(bounded.encode("utf-8")) > DIFF_BYTES:
+                    bounded = bounded.encode("utf-8")[:DIFF_BYTES].decode(
+                        "utf-8", errors="ignore"
+                    )
+                result["diff"] = bounded
+                if bounded != diff:
+                    result["diff_truncated"] = True
+            output["files"].append(result)
+        state["revisions"] = {
+            key: value
+            for key, value in state["revisions"].items()
+            if value["path"] not in consumed_paths
+        }
+        if any(file.get("diff_truncated") for file in output["files"]):
+            report_id = secrets.token_hex(8)
+            state["reports"][report_id] = full_diffs
+            output["full_diff"] = f"php-ast-agent diff --report {report_id}"
+        if process.stderr.strip() and process.stdout.strip():
+            output["engine_stderr"] = process.stderr.strip()
+        audit(
+            directory,
+            "apply_result",
+            files=resolved,
+            ok=output["ok"],
+            engine_exit=process.returncode,
+            result=output,
+        )
+        return output, process.returncode
+    except (AdapterError, OSError, ValueError) as failure:
+        audit(directory, "apply_result", files=resolved, ok=False, error=str(failure))
+        raise
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    commands = parser.add_subparsers(dest="command", required=True)
+    reader = commands.add_parser("read")
+    reader.add_argument("--files", nargs="+", required=True)
+    reader.add_argument("--select")
+    reader.add_argument("--mode", choices=["full", "focused"])
+    commands.add_parser("apply")
+    diff = commands.add_parser("diff")
+    diff.add_argument("--report", required=True)
+    args = parser.parse_args()
+    try:
+        with state_store() as (directory, state):
+            if args.command == "read":
+                output, status = read_files(args, directory, state)
+            elif args.command == "apply":
+                output, status = apply_edits(directory, state)
+            else:
+                if args.report not in state["reports"]:
+                    raise AdapterError("Unknown diff report")
+                output, status = {"diffs": state["reports"][args.report]}, 0
+        print(encode(output))
+        return status
+    except (AdapterError, OSError, ValueError) as failure:
+        print(encode({"ok": False, "error": str(failure)}))
+        return 2
+
+
+if __name__ == "__main__":
+    sys.exit(main())

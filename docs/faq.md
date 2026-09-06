@@ -8,17 +8,27 @@ The `php-structured-edit` skill teaches an agent this workflow.
 
 ## Does it reduce tokens and tool calls?
 
-It can remove coordinate inspection when a symbol selector suffices, and it can combine
-multiple edits in one invocation. Those features do not prove lower total token use.
-Instructions, JSON responses, retries, and caching also affect cost. See the
-[measurement protocol and local results](../benchmarks/README.md). In the
-[first native agent pilot](../benchmarks/agent-economics/results/2026-09-06-native-pilot/REPORT.md),
-six full-skill runs used **75.7% more input-plus-output tokens**, including cache reads
-and writes, than six contextual-edit runs. Both variants passed all six runtime oracles
-and independent AI output review; human acceptance remains pending. All six skill-assigned
-runs omitted the instructed snapshot hashes, so outcome acceptance does not establish
-workflow adherence. That two-task pilot does not support a token-saving claim or a general
-performance percentage.
+Sometimes. In the [follow-up experiments](../benchmarks/agent-economics/results/2026-09-06-efficiency/REPORT.md),
+an experimental compact adapter reduced Sonnet's median token use by 39% and tool calls
+from six to two on the two-file seed task. Small local renames cost more tokens, and a
+public TYPO3 rename exposed recovery loops, timeouts and text-edit bypasses. The compact
+adapter is benchmark tooling; these results are not a claim about the default skill.
+
+Instructions, responses, retries and caching all affect the result. Three repetitions
+per task/model/arm support descriptive comparisons only. Input includes cache reads and
+writes; cache conditions are unknown. Correct output and guarded AST workflow adherence
+are reported separately. The [original pilot](../benchmarks/agent-economics/results/2026-09-06-native-pilot/REPORT.md)
+is retained: its complete-skill arm used 75.7% more tokens. See the
+[measurement protocol](../benchmarks/README.md) before drawing broader conclusions.
+
+## Should an agent read the whole AST instead of PHP source?
+
+A serialized AST can be substantially larger than the source and still consumes model
+tokens. The experimental adapter uses the parser to select a complete method, its
+comments and declaration context, then returns PHP source plus a compact outline.
+Full source remains available. A class selector still returns the whole class, so
+focused mode alone does not guarantee a smaller view. The follow-up report separates
+autonomous selector choices from a directed initial-method-read experiment.
 
 ## Is AST editing always safer than a patch?
 
