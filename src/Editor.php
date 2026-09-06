@@ -28,6 +28,7 @@ use PhpParser\Node\StaticVar;
 use PhpParser\Node\Stmt;
 use PhpParser\Node\UseItem;
 use PhpParser\Node\VarLikeIdentifier;
+use PhpParser\NodeFinder;
 use PhpParser\NodeTraverser;
 use PhpParser\NodeVisitor\CloningVisitor;
 use PhpParser\Parser;
@@ -321,6 +322,7 @@ final class Editor
                     isset($target['kind']) ? (string) $target['kind'] : null,
                 );
             }
+            $this->assertOperationArguments($this->requiredString($edit, 'operation'), $edit);
             $this->assertExpectations($location->node, $edit['expect'] ?? []);
             $transaction->resolved[] = ['edit' => $edit, 'location' => $location, 'index' => (int) $index];
         }
@@ -343,12 +345,17 @@ final class Editor
                     ),
                 );
             }
+            $this->lastEffect = [];
             $this->applyOperation(
                 $entry['location'],
                 $entry['edit'],
                 $transaction->roots,
                 $snippets,
             );
+
+            if ($this->lastEffect !== []) {
+                $transaction->effects[$entry['index']] = $this->lastEffect + ['operation' => (string) $entry['edit']['operation']];
+            }
         }
     }
 
@@ -522,6 +529,9 @@ final class Editor
                 $this->atomicWrite($transaction->path, (string) $transaction->output);
             }
             $this->runFormatter($transactions);
+            // After the formatter and inside the same try: a check reads the file the
+            // caller will commit, not an intermediate.
+            $this->runVerify($transactions);
         } catch (\Throwable $failure) {
             $restoreErrors = [];
 
@@ -604,8 +614,33 @@ final class Editor
             'dryRun' => $dryRun,
         ];
 
+        if ($transaction->effects !== []) {
+            ksort($transaction->effects);
+            $result['effects'] = $transaction->effects;
+        }
+        $unfinished = $this->unfinishedRenames($transaction->effects);
+
+        if ($unfinished !== null) {
+            $result['warning'] = $unfinished;
+        }
+        $diff = $this->unifiedDiff($transaction);
+
+        if ($diff !== null) {
+            $result['diff'] = $diff;
+        }
+
         if ($transaction->formatter !== null) {
             $result['formatter'] = $transaction->formatter;
+        }
+
+        if ($this->verifyResults !== []) {
+            $result['verify'] = $this->verifyResults;
+        }
+
+        if ($transaction->changed && $transaction->mode !== 'delete') {
+            // The write already parsed what it produced; saying so spares a `validate` call
+            // that asks the question again.
+            $result['valid'] = true;
         }
 
         if ($transaction->warning !== null) {
@@ -626,6 +661,7 @@ final class Editor
         ContextParser $snippets,
     ): void {
         $operation = $this->requiredString($edit, 'operation');
+
         $applied = $this->applyPrimitive($operation, $location, $edit, $roots, $snippets) || $this->applyComment($operation, $location, $edit) || $this->applyShorthand($operation, $location, $edit, $roots, $snippets) || $this->applySemantic($operation, $location, $edit, $snippets);
 
         if (!$applied) {
@@ -741,17 +777,24 @@ final class Editor
         $node = $location->node;
 
         switch ($operation) {
+            case 'rename_method':
+                $this->lastEffect = $this->renameMethod($location, $this->requiredString($edit, 'to'), $roots);
+
+                return true;
             case 'rename_variable':
                 if (!$node instanceof Stmt\ClassMethod && !$node instanceof Stmt\Function_ && !$node instanceof Expr\Closure && !$node instanceof Expr\ArrowFunction) {
                     throw new EditException(
                         'rename_variable targets the scope the variable lives in: a method, function, closure or arrow function.',
                     );
                 }
-                $this->renameVariable(
-                    $node,
-                    $this->requiredString($edit, 'from'),
-                    $this->requiredString($edit, 'to'),
-                );
+                $this->lastEffect = [
+                    'renamed' => $this->renameVariable(
+                        $node,
+                        $this->requiredString($edit, 'from'),
+                        $this->requiredString($edit, 'to'),
+                    ),
+                    'remainingInFile' => $this->remainingVariables($roots, $this->requiredString($edit, 'from')),
+                ];
 
                 return true;
                 // ---- Convenience shorthands over the primitives ------------------------------
@@ -1886,5 +1929,498 @@ final class Editor
         }
 
         return false;
+    }
+
+    /**
+     * What each operation needs, beside its target.
+     *
+     * The catalogue used to list operation names and nothing else, so a caller reading
+     * `contexts` or `--help` had to guess the argument names — and guessed by analogy with
+     * whatever it had seen last. Measured on a controlled run: a model given the task of
+     * renaming a variable sent `expect` and `value`, the shape `set_name` uses, three times
+     * over before finding `from` and `to`. Four of its six `apply` calls failed on the
+     * contract rather than on the code, and it gave up on selectors afterwards and renamed
+     * one scope at a time — leaving two of eleven occurrences behind.
+     *
+     * `tests/catalog.php` requires an entry here for every dispatched operation, so the table
+     * cannot fall behind the dispatcher.
+     *
+     * @var array<string, array{requires: list<string>, optional: list<string>}>
+     */
+    private const OPERATION_ARGUMENTS = [
+        'replace_node' => ['requires' => ['php'], 'optional' => ['parseAs']],
+        'delete_node' => ['requires' => [], 'optional' => []],
+        'insert_into' => ['requires' => ['property', 'php'], 'optional' => ['position', 'parseAs']],
+        'replace_child' => ['requires' => ['property', 'php'], 'optional' => ['index', 'parseAs']],
+        'delete_child' => ['requires' => ['property'], 'optional' => ['index']],
+        'move_node' => ['requires' => ['into'], 'optional' => ['position']],
+        'set_doc_comment' => ['requires' => ['value'], 'optional' => []],
+        'remove_doc_comment' => ['requires' => [], 'optional' => []],
+        'set_name' => ['requires' => ['value'], 'optional' => []],
+        'set_string' => ['requires' => ['value'], 'optional' => []],
+        'replace_expression' => ['requires' => ['php'], 'optional' => []],
+        'replace_statement' => ['requires' => ['php'], 'optional' => []],
+        'insert_before' => ['requires' => ['php'], 'optional' => ['parseAs']],
+        'insert_after' => ['requires' => ['php'], 'optional' => ['parseAs']],
+        'delete' => ['requires' => [], 'optional' => []],
+        'replace_argument' => ['requires' => ['index', 'php'], 'optional' => []],
+        'add_argument' => ['requires' => ['index', 'php'], 'optional' => ['parseAs']],
+        'remove_argument' => ['requires' => ['index'], 'optional' => []],
+        'add_member' => ['requires' => ['php'], 'optional' => ['position', 'parseAs']],
+        'add_parameter' => ['requires' => ['php'], 'optional' => ['position']],
+        'add_attribute' => ['requires' => ['php'], 'optional' => ['position']],
+        'set_return_type' => ['requires' => ['php'], 'optional' => []],
+        'set_type' => ['requires' => ['php'], 'optional' => []],
+        'set_visibility' => ['requires' => ['value'], 'optional' => []],
+        'add_implements' => ['requires' => ['php'], 'optional' => ['position']],
+        'set_extends' => ['requires' => ['php'], 'optional' => ['position']],
+        'rename_variable' => ['requires' => ['from', 'to'], 'optional' => []],
+        'rename_method' => ['requires' => ['to'], 'optional' => []],
+    ];
+
+    /**
+     * Hold an edit to the arguments its operation actually takes.
+     *
+     * Checked before the target's own `expect`, so a caller that guessed the shape is told
+     * the shape rather than meeting whatever error the wrong field happens to trip first.
+     *
+     * The message shows the edit rather than listing field names. Naming them was not enough:
+     * told `rename_variable requires "from" and "to". This edit carries value.`, a model put
+     * `from` and `to` inside `value` and met the same error again. A caller who has the shape
+     * wrong needs to see the shape.
+     *
+     * @param array<string, mixed> $edit
+     */
+    private function assertOperationArguments(string $operation, array $edit): void
+    {
+        $spec = self::OPERATION_ARGUMENTS[$operation] ?? null;
+
+        if ($spec === null) {
+            return;
+        }
+        $missing = [];
+
+        foreach ($spec['requires'] as $required) {
+            if (!isset($edit[$required])) {
+                $missing[] = $required;
+            }
+        }
+
+        if ($missing === []) {
+            return;
+        }
+        $shape = ['target' => '…', 'operation' => $operation];
+
+        foreach ($spec['requires'] as $required) {
+            // `into` is an object, and a placeholder that says otherwise sends the caller
+            // through a second error to learn the type.
+            $shape[$required] = $required === 'into' ? ['ref' => '…', 'property' => '…'] : '…';
+        }
+        // `parseAs` is a published argument, so an edit carrying it is not carrying none.
+        $given = array_values(array_diff(array_keys($edit), ['operation', 'target', 'expect']));
+
+        throw new EditException(
+            sprintf(
+                '%s takes its arguments beside "operation", not inside another field: %s.%s This edit carries %s.',
+                $operation,
+                json_encode($shape, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
+                $spec['optional'] === [] ? '' : ' Optional: ' . implode(', ', $spec['optional']) . '.',
+                $given === [] ? 'none of them' : implode(', ', $given),
+            ),
+        );
+    }
+
+    /**
+     * What each operation takes, for the catalogue to publish.
+     *
+     * `contexts` listed operation names and nothing else, so a caller had to guess the
+     * argument names or find them in a reference file it may not have. Publishing the table
+     * makes one call answer the question the guessing was for.
+     *
+     * @return array<string, array{requires: list<string>, optional: list<string>}>
+     */
+    public static function operationArguments(): array
+    {
+        return self::OPERATION_ARGUMENTS;
+    }
+
+    /**
+     * What the operation now running has to report, or an empty array.
+     *
+     * Read by `mutate()` straight after the dispatcher and cleared before each edit, so an
+     * operation that counts something can say so without every handler in the chain having to
+     * carry a return value it does not use.
+     *
+     * @var array<string, int|string>
+     */
+    private array $lastEffect = [];
+
+    /**
+     * How often the old name still occurs in the file, outside the scope just renamed.
+     *
+     * A rename is scoped, and a caller cannot know from the request whether the name lives in
+     * other scopes too. Measured: told nothing, a model renamed two of three scopes, checked
+     * with a `grep`, then sent a second `apply` — and in an earlier run stopped after two and
+     * left the third alone. Counting what is left turns that into one number the write
+     * already has.
+     *
+     * @param list<Node\Stmt> $roots
+     */
+    private function remainingVariables(array $roots, string $name): int
+    {
+        $name = ltrim($name, '$');
+        $found = 0;
+
+        foreach ((new NodeFinder())->findInstanceOf($roots, Expr\Variable::class) as $variable) {
+            if (is_string($variable->name) && $variable->name === $name) {
+                ++$found;
+            }
+        }
+
+        return $found;
+    }
+
+    /** Above this many changed lines a diff stops being an answer and becomes the file again. */
+    private const DIFF_LINE_CAP = 200;
+
+    /**
+     * A unified diff of what this write did, or null when it is too large to be an answer.
+     *
+     * The point of returning it is that nobody has to read the file back. Measured on a
+     * controlled run: after a successful rename the model spent a `grep`, two `Read`s and a
+     * `tail` establishing what had happened — four calls the write could have answered.
+     *
+     * A first normalisation rewrites the whole file, and a diff of that is not an answer to
+     * anything; above the cap the caller is told the number instead.
+     */
+    private function unifiedDiff(FileTransaction $transaction): ?string
+    {
+        if ($transaction->source === null || $transaction->output === null) {
+            return null;
+        }
+
+        if (($transaction->changedLines ?? 0) > self::DIFF_LINE_CAP) {
+            return null;
+        }
+        $before = explode("\n", $transaction->source);
+        $after = explode("\n", $transaction->output);
+        $out = [];
+        $i = 0;
+        $j = 0;
+
+        while ($i < count($before) || $j < count($after)) {
+            if ($i < count($before) && $j < count($after) && $before[$i] === $after[$j]) {
+                ++$i;
+                ++$j;
+
+                continue;
+            }
+            $nextMatch = $this->nextCommonLine($before, $after, $i, $j);
+
+            for (; $i < $nextMatch['before']; ++$i) {
+                $out[] = '-' . $before[$i];
+            }
+
+            for (; $j < $nextMatch['after']; ++$j) {
+                $out[] = '+' . $after[$j];
+            }
+
+            if ($nextMatch['before'] >= count($before) && $nextMatch['after'] >= count($after)) {
+                break;
+            }
+        }
+
+        return $out === [] ? null : implode("\n", $out);
+    }
+
+    /**
+     * Where the two sides line up again, searched forward from a divergence.
+     *
+     * A whole diff algorithm is not the point here: the caller wants to see the lines that
+     * changed, and a bounded forward search finds them for the small edits this cap admits.
+     *
+     * @param  list<string> $before
+     * @param  list<string> $after
+     * @return array{before: int, after: int}
+     */
+    private function nextCommonLine(array $before, array $after, int $i, int $j): array
+    {
+        $limit = self::DIFF_LINE_CAP;
+
+        for ($ahead = 1; $ahead <= $limit; ++$ahead) {
+            for ($b = $i; $b <= min($i + $ahead, count($before) - 1); ++$b) {
+                for ($a = $j; $a <= min($j + $ahead, count($after) - 1); ++$a) {
+                    if ($before[$b] === $after[$a] && $b - $i + ($a - $j) === $ahead) {
+                        return ['before' => $b, 'after' => $a];
+                    }
+                }
+            }
+        }
+
+        return ['before' => count($before), 'after' => count($after)];
+    }
+
+    /** How much of a failing check's output comes back before it stops being a summary. */
+    private const VERIFY_OUTPUT_CAP = 4000;
+
+    /**
+     * What the declared checks said about this write.
+     *
+     * @var list<array{command: string, ok: bool, output?: string}>
+     */
+    private array $verifyResults = [];
+
+    /**
+     * Run the checks the project declared, on the files this write produced.
+     *
+     * The same shape as `formatter`, for the same reason: the project owns the commands and
+     * this only executes them. Measured on a controlled run, a model that had just made a
+     * correct four-line edit then spent twelve calls on `validate`, PHPStan four times, the
+     * coding-standards check twice and a `git diff` — a quality gate nobody asked it for,
+     * assembled by reading `composer.json`. Declaring the checks turns that into one field.
+     *
+     * A failing check does not roll the write back. The code is written and it parses; what
+     * failed is an opinion about it, and the caller is the one who decides what to do with
+     * that. The output comes back so the decision does not need another call.
+     *
+     * @param list<FileTransaction> $transactions
+     */
+    private function runVerify(array $transactions): void
+    {
+        // This instance outlives one `apply()`. Without clearing, a later write with no
+        // eligible checks would report the previous run's results as its own.
+        $this->verifyResults = [];
+
+        /** @var array<string, array{verify: list<list<string>>, paths: list<string>}> $groups */
+        $groups = [];
+
+        foreach ($transactions as $transaction) {
+            if (!$transaction->changed || $transaction->mode === 'delete') {
+                continue;
+            }
+            $config = RepositoryConfig::discover($transaction->path);
+
+            if ($config->verify === null || $config->path === null || $config->excludes($transaction->path)) {
+                continue;
+            }
+            $root = \dirname($config->path);
+            $groups[$root] ??= ['verify' => $config->verify, 'paths' => []];
+            $groups[$root]['paths'][] = realpath($transaction->path) ?: $transaction->path;
+        }
+
+        foreach ($groups as $root => $group) {
+            foreach ($group['verify'] as $command) {
+                $expanded = [];
+
+                foreach ($command as $argument) {
+                    if ($argument !== RepositoryConfig::FILES_PLACEHOLDER) {
+                        $expanded[] = $argument;
+
+                        continue;
+                    }
+
+                    foreach ($group['paths'] as $path) {
+                        $expanded[] = $path;
+                    }
+                }
+                $this->verifyResults[] = $this->captureCommand($expanded, $root);
+            }
+        }
+    }
+
+    /**
+     * Run one declared check and report how it went, without deciding anything.
+     *
+     * @param  list<string> $command
+     * @return array{command: string, ok: bool, output?: string}
+     */
+    private function captureCommand(array $command, string $root): array
+    {
+        $out = tempnam(sys_get_temp_dir(), 'php-ast-edit-verify-');
+        $err = tempnam(sys_get_temp_dir(), 'php-ast-edit-verify-');
+
+        if ($out === false || $err === false) {
+            throw new EditException('Cannot create a temporary file for the check output.');
+        }
+
+        try {
+            $pipes = [];
+            $process = proc_open($command, [1 => ['file', $out, 'w'], 2 => ['file', $err, 'w']], $pipes, $root);
+
+            if (!is_resource($process)) {
+                return [
+                    'command' => implode(' ', $command),
+                    'ok' => false,
+                    'output' => 'could not be started',
+                ];
+            }
+            $status = proc_close($process);
+            $said = trim((string) file_get_contents($out) . "\n" . (string) file_get_contents($err));
+            $result = ['command' => implode(' ', $command), 'ok' => $status === 0];
+
+            if ($status !== 0) {
+                $result['output'] = mb_substr($said, 0, self::VERIFY_OUTPUT_CAP);
+            }
+
+            return $result;
+        } finally {
+            @unlink($out);
+            @unlink($err);
+        }
+    }
+
+    /**
+     * Rename a method and the calls to it that this file can see.
+     *
+     * `method:` finds a declaration; renaming it leaves every `$this->old()` behind, so the
+     * caller goes hunting. Measured: told to rename a private method and its calls, a model
+     * spent four `inspect` calls locating the call sites before it could write anything.
+     *
+     * What counts as a call to *this* method is decided structurally, not by name alone: a
+     * call on `$this`, `self`, `static` or `parent` inside the class that declares it. A call
+     * on any other receiver may belong to a different class that happens to share the name,
+     * and renaming it would be a guess. Those are counted, not touched, and the count comes
+     * back so the caller knows whether anything is left.
+     *
+     * @param  list<Node\Stmt> $roots
+     * @return array{renamed: int, otherReceivers: int}
+     */
+    private function renameMethod(NodeLocation $location, string $to, array $roots): array
+    {
+        $method = $location->node;
+
+        if (!$method instanceof Stmt\ClassMethod) {
+            throw new EditException('rename_method targets a method declaration.');
+        }
+
+        if (!preg_match('/^[A-Za-z_\x80-\xff][A-Za-z0-9_\x80-\xff]*$/', $to)) {
+            throw new EditException('rename_method: "' . $to . '" is not a method name.');
+        }
+        $from = (string) $method->name;
+        $owner = $location->parent;
+
+        if (!$owner instanceof Stmt\ClassLike) {
+            throw new EditException('rename_method needs the class the method is declared in.');
+        }
+        $method->name = new Node\Identifier($to, $method->name->getAttributes());
+        $renamed = 1;
+
+        foreach ($this->ownCalls($owner, $from) as $call) {
+            $call->name = new Node\Identifier($to, $call->name->getAttributes());
+            ++$renamed;
+        }
+        $others = 0;
+
+        foreach ((new NodeFinder())->find($roots, static fn (Node $n): bool => true) as $node) {
+            if (self::namesMethod($node, $from)) {
+                ++$others;
+            }
+        }
+
+        return ['renamed' => $renamed, 'otherReceivers' => $others];
+    }
+
+    /**
+     * Whether this node calls `$name` on the class that declares it.
+     *
+     * `$this`, `self`, `static` and `parent` are the receivers a rename inside one class may
+     * follow. Anything else could be another class with the same method name.
+     */
+    private static function callsOwnMethod(Node $node, string $name): bool
+    {
+        if (!self::namesMethod($node, $name)) {
+            return false;
+        }
+
+        if ($node instanceof Expr\MethodCall || $node instanceof Expr\NullsafeMethodCall) {
+            return $node->var instanceof Expr\Variable && $node->var->name === 'this';
+        }
+
+        return $node instanceof Expr\StaticCall && $node->class instanceof Node\Name && in_array($node->class->toLowerString(), ['self', 'static', 'parent'], true);
+    }
+
+    /** Whether this node is a call carrying the literal method name `$name`. */
+    private static function namesMethod(Node $node, string $name): bool
+    {
+        if (!$node instanceof Expr\MethodCall && !$node instanceof Expr\NullsafeMethodCall && !$node instanceof Expr\StaticCall) {
+            return false;
+        }
+
+        // PHP resolves method names without regard to ASCII case, so `$this->OLD()` is a
+        // call to `old()` and a strict comparison would leave it behind.
+        return $node->name instanceof Node\Identifier && strcasecmp($node->name->toString(), $name) === 0;
+    }
+
+    /**
+     * A warning when a rename left something of the old name behind.
+     *
+     * The count was already in `effects`, and a model read `remainingInFile: 2` and stopped
+     * anyway. A number nested inside a per-edit record is easy to walk past; a warning beside
+     * the result is not. The tool cannot make the caller act, but it can stop the omission
+     * from being quiet.
+     *
+     * @param array<int, array<string, int|string>> $effects
+     */
+    private function unfinishedRenames(array $effects): ?string
+    {
+        $said = [];
+
+        foreach ($effects as $effect) {
+            $left = (int) ($effect['remainingInFile'] ?? $effect['otherReceivers'] ?? 0);
+
+            if ($left < 1) {
+                continue;
+            }
+            $said[] = sprintf(
+                '%s left %d occurrence%s of the old name in this file',
+                (string) ($effect['operation'] ?? 'the rename'),
+                $left,
+                $left === 1 ? '' : 's',
+            );
+        }
+
+        if ($said === []) {
+            return null;
+        }
+
+        return 'INCOMPLETE_RENAME: ' . implode('; ', $said) . '. A rename is scoped, so the rest sit in scopes this edit did not name, on another receiver, or in text. Name them, or say why they stay.';
+    }
+
+    /**
+     * The calls to `$name` that belong to this class, and not to something nested inside it.
+     *
+     * A `$this->old()` inside an anonymous class declared in a method body is that class's
+     * call, not this one's, and renaming it would break code the edit was never about. The
+     * walk therefore stops at every nested class-like declaration and at every function that
+     * carries its own `$this` — a closure does not, an arrow function does not, but a nested
+     * named function and a nested method do.
+     *
+     * @return list<Expr\MethodCall|Expr\NullsafeMethodCall|Expr\StaticCall>
+     */
+    private function ownCalls(Node $node, string $name): array
+    {
+        $found = [];
+
+        foreach ($node->getSubNodeNames() as $subNodeName) {
+            $value = $node->{$subNodeName};
+            $children = $value instanceof Node ? [$value] : (is_array($value) ? $value : []);
+
+            foreach ($children as $child) {
+                if (!$child instanceof Node) {
+                    continue;
+                }
+
+                if ($child instanceof Stmt\ClassLike || $child instanceof Expr\New_ && $child->class instanceof Stmt\Class_) {
+                    continue;
+                }
+
+                if (self::callsOwnMethod($child, $name)) {
+                    $found[] = $child;
+                }
+                $found = array_merge($found, $this->ownCalls($child, $name));
+            }
+        }
+
+        return $found;
     }
 }

@@ -337,6 +337,60 @@ $cases = [
         'edits' => [pick('property:W::$name', 'set_type', ['php' => '?string'])],
         'contains' => inA('?string $name'),
     ],
+    [
+        // The message a caller who guessed the shape actually needs. Measured: a model sent
+        // `expect` and `value` — set_name's shape — three times before finding from/to, and
+        // met "Expected node name mode, got render" each time, which is true and no help.
+        'name' => 'a misfiled operation is told which arguments it takes',
+        'files' => src(
+            "<?php\nclass W\n{\n    public function f(string \$a): string\n    {\n        return \$a;\n    }\n}\n",
+        ),
+        'edits' => [pick('method:W::f', 'rename_variable', ['expect' => ['name' => 'a'], 'value' => 'b'])],
+        'error' => 'rename_variable takes its arguments beside "operation", not inside another field: {"target":"…","operation":"rename_variable","from":"…","to":"…"}. This edit carries value.',
+    ],
+    [
+        'name' => 'and an operation with optional arguments names those too',
+        'files' => src(ONE_LINE_CLASS),
+        'edits' => [pick('class:Foo', 'add_member', [])],
+        'error' => 'add_member takes its arguments beside "operation", not inside another field: {"target":"…","operation":"add_member","php":"…"}. Optional: position, parseAs. This edit carries none of them.',
+    ],
+    [
+        'name' => 'a method and the calls to it move in one edit',
+        'files' => src(
+            "<?php\nclass W\n{\n    public function run(): string\n    {\n        return \$this->old() . self::old();\n" . "    }\n\n    private function old(): string\n    {\n        return 'x';\n    }\n}\n",
+        ),
+        'edits' => [pick('method:W::old', 'rename_method', ['to' => 'fresh'])],
+        'contains' => inA('$this->fresh()', 'self::fresh()', 'private function fresh()'),
+    ],
+    [
+        // A call on another receiver may belong to a different class that shares the name.
+        // Counting it is the honest answer; renaming it would be a guess.
+        'name' => 'and a call on another receiver is counted, not touched',
+        'files' => src(
+            "<?php\nclass W\n{\n    public function run(\$other): string\n    {\n        return \$this->old() . \$other->old();\n" . "    }\n\n    private function old(): string\n    {\n        return 'x';\n    }\n}\n",
+        ),
+        'edits' => [pick('method:W::old', 'rename_method', ['to' => 'fresh'])],
+        'contains' => inA('$this->fresh()', '$other->old()'),
+    ],
+    [
+        // PHP resolves method names without regard to ASCII case, so a strict comparison
+        // would leave `$this->OLD()` pointing at a method that no longer exists.
+        'name' => 'a call spelled in another case moves with the method',
+        'files' => src(
+            "<?php\nclass W\n{\n    public function run(): string\n    {\n        return \$this->OLD();\n    }\n\n" . "    private function old(): string\n    {\n        return 'x';\n    }\n}\n",
+        ),
+        'edits' => [pick('method:W::old', 'rename_method', ['to' => 'fresh'])],
+        'contains' => inA('$this->fresh()'),
+    ],
+    [
+        // A call inside an anonymous class belongs to that class, not to the one around it.
+        'name' => 'and a call inside a nested anonymous class is left alone',
+        'files' => src(
+            "<?php\nclass W\n{\n    public function run(): object\n    {\n        \$this->old();\n\n" . "        return new class {\n            public function go(): string\n            {\n" . "                return \$this->old();\n            }\n\n            private function old(): string\n" . "            {\n                return 'inner';\n            }\n        };\n    }\n\n" . "    private function old(): string\n    {\n        return 'outer';\n    }\n}\n",
+        ),
+        'edits' => [pick('method:W::old', 'rename_method', ['to' => 'fresh'])],
+        'contains' => inA('$this->fresh();', 'return $this->old();', 'private function old()'),
+    ],
     // ---- Signatures, types, modifiers ----------------------------------------------------
     [
         'name' => 'union return type replaces a scalar one',

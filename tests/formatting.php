@@ -659,6 +659,145 @@ try {
 }
 removeTree($scopeDir);
 
+// A write that cannot be seen gets read back. Measured on a controlled run: after a
+// successful rename the model spent a `grep`, two `Read`s and a `tail` establishing what
+// had happened, and sent a second `apply` because nothing had told it a third scope still
+// held the name. The report answers all three.
+$reportDir = workspace();
+RepositoryConfig::write($reportDir, 120);
+$reportPath = $reportDir . '/r.php';
+file_put_contents(
+    $reportPath,
+    <<<'PHP'
+    <?php
+    
+    class R
+    {
+        public function a(string $item): string
+        {
+            return $item;
+        }
+    
+        public function b(string $item): string
+        {
+            return $item;
+        }
+    }
+    PHP . "\n",
+);
+$reported = (new Editor())->apply(
+    [
+        'files' => [
+            [
+                'path' => $reportPath,
+                'edits' => [
+                    [
+                        'target' => ['select' => 'method:R::a'],
+                        'operation' => 'rename_variable',
+                        'from' => 'item',
+                        'to' => 'value',
+                    ],
+                ],
+            ],
+        ],
+    ],
+    true,
+)['files'][0];
+check(
+    'the write says how much it renamed',
+    ($reported['effects'][0]['renamed'] ?? null) === 2,
+    json_encode($reported['effects'] ?? null),
+);
+check(
+    'and how much of the old name the file still holds',
+    ($reported['effects'][0]['remainingInFile'] ?? null) === 2,
+    json_encode($reported['effects'] ?? null),
+);
+check(
+    'and names the operation that did it',
+    ($reported['effects'][0]['operation'] ?? null) === 'rename_variable',
+    json_encode($reported['effects'] ?? null),
+);
+check(
+    // The count was already in `effects`, and a model read `remainingInFile: 2` and stopped
+    // anyway. A number nested in a per-edit record is easy to walk past; a warning is not.
+    'an incomplete rename is warned about, not only counted',
+    str_contains((string) ($reported['warning'] ?? ''), 'INCOMPLETE_RENAME'),
+    (string) ($reported['warning'] ?? '(keine Warnung)'),
+);
+check(
+    'and shows the change, so nobody reads the file back',
+    str_contains((string) ($reported['diff'] ?? ''), '+        return $value;'),
+    (string) ($reported['diff'] ?? '(kein Diff)'),
+);
+removeTree($reportDir);
+
+// The checks a caller would otherwise assemble for itself. Measured: after a correct
+// four-line edit a model spent twelve calls on `validate`, PHPStan four times, the
+// coding-standards check twice and a `git diff` — a quality gate nobody asked it for.
+$verifyDir = workspace();
+file_put_contents($verifyDir . '/pass.php', "<?php\nexit(0);\n");
+file_put_contents(
+    $verifyDir . '/fail.php',
+    "<?php\nfwrite(STDERR, \"two problems found\\n\");\nexit(3);\n",
+);
+file_put_contents(
+    $verifyDir . '/' . RepositoryConfig::FILE,
+    json_encode(
+        [
+            'canonical' => true,
+            'printWidth' => 120,
+            'verify' => [['php', 'pass.php', '{files}'], ['php', 'fail.php', '{files}']],
+        ],
+        JSON_PRETTY_PRINT,
+    ) . "\n",
+);
+$verifyPath = $verifyDir . '/v.php';
+file_put_contents($verifyPath, "<?php\n\n\$config = ['state' => 'beta'];\n");
+$verified = (new Editor())->apply(
+    [
+        'files' => [
+            [
+                'path' => $verifyPath,
+                'edits' => [
+                    [
+                        'target' => ['ref' => 'stmts[0].expr.expr.items[0].value'],
+                        'operation' => 'set_string',
+                        'value' => 'stable',
+                    ],
+                ],
+            ],
+        ],
+    ],
+)['files'][0];
+check(
+    'the write says the result parses, so nobody validates it again',
+    ($verified['valid'] ?? null) === true,
+    json_encode($verified['valid'] ?? null),
+);
+check(
+    'every declared check runs',
+    count($verified['verify'] ?? []) === 2,
+    json_encode($verified['verify'] ?? null),
+);
+check(
+    'a passing check says so and stays quiet',
+    ($verified['verify'][0]['ok'] ?? null) === true && !isset($verified['verify'][0]['output']),
+    json_encode($verified['verify'][0] ?? null),
+);
+check(
+    'a failing one brings back what it said',
+    ($verified['verify'][1]['ok'] ?? null) === false && str_contains((string) ($verified['verify'][1]['output'] ?? ''), 'two problems found'),
+    json_encode($verified['verify'][1] ?? null),
+);
+check(
+    // The code is written and it parses; what failed is an opinion about it.
+    'and a failing check does not undo the write',
+    str_contains((string) file_get_contents($verifyPath), "'stable'"),
+    (string) file_get_contents($verifyPath),
+);
+removeTree($verifyDir);
+
 // ---- The declaration decides the printer -----------------------------------------------
 $dir = workspace();
 file_put_contents(

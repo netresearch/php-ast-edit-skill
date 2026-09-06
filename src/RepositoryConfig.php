@@ -37,6 +37,8 @@ final class RepositoryConfig
         public readonly array $exclude = [],
         /** @var list<string>|null */
         public readonly ?array $formatter = null,
+        /** @var list<list<string>>|null */
+        public readonly ?array $verify = null,
     ) {}
 
     /** Walk up from a file or directory until the marker turns up. */
@@ -99,12 +101,33 @@ final class RepositoryConfig
             $formatter = array_values(array_map(strval(...), $formatter));
         }
 
+        $verify = $data['verify'] ?? null;
+
+        if ($verify !== null) {
+            if (!is_array($verify) || !array_is_list($verify)) {
+                throw new EditException($path . ': verify must be a list of commands.');
+            }
+            $checked = [];
+
+            foreach ($verify as $index => $command) {
+                if (!is_array($command)) {
+                    throw new EditException(
+                        $path . ': verify entry ' . $index . ' must be a command array.',
+                    );
+                }
+                self::assertFormatter($command, $path . ': verify entry ' . $index . ': ');
+                $checked[] = array_values(array_map(strval(...), $command));
+            }
+            $verify = $checked;
+        }
+
         return new self(
             (bool) ($data['canonical'] ?? false),
             $width,
             $path,
             array_values(array_map(strval(...), $exclude)),
             $formatter,
+            $verify,
         );
     }
 
