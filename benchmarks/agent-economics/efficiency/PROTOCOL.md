@@ -147,6 +147,16 @@ claiming observed native spend. Later phases deduct both known costs and reserva
 from the shared planning allowance. All unresolved costs remain visibly unknown in
 the results even when the operator authorizes continued experimentation.
 
+Phase 2 run031 subsequently reached the same deadline without a terminal result.
+It stopped independently and received its own operator/AI review and planning-only
+reservation; the run020 approval did not authorize continuation automatically.
+Successive immutable `controller-amendment-vN/` directories are supported, with a
+positive numeric version and a resolved location directly inside the campaign.
+Every existing sidecar is revalidated against its own recorded archived controller,
+manifest and individual approval. A newer controller can therefore retain the exact
+run020 v2 sidecar while adding run031 under v3, without rewriting prior manifests or
+measurements. Each future unknown still stops and needs an individually linked review.
+
 The passive PATH engine launcher records full-skill apply payloads, SHA presence,
 captured source hashes and native outcomes while preserving engine stdout/stderr.
 The compact adapter records reads, modes/selectors, returned revisions and every

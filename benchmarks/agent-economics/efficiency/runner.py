@@ -6,6 +6,7 @@ import hashlib
 import json
 import os
 import random
+import re
 import shutil
 import signal
 import subprocess
@@ -624,20 +625,23 @@ def bounded_cost(result, limit):
     return amount
 
 
-def controller_provenance(base):
+def controller_provenance(base, folder=None):
+    folder = HERE if folder is None else folder
     config = load(base / CONFIG)
-    if HERE == base / "controller/efficiency":
+    if folder == base / "controller/efficiency":
         return {
             "kind": "original_frozen_controller",
             "source_commit": config["source_commit"],
-            "runner_sha256": digest(HERE / "runner.py"),
-            "native_sha256": digest(HERE / "native.py"),
+            "runner_sha256": digest(folder / "runner.py"),
+            "native_sha256": digest(folder / "native.py"),
         }
     require(
-        HERE in {base / "controller-amendment-v1", base / "controller-amendment-v2"},
+        folder.parent == base
+        and folder.resolve() == folder
+        and re.fullmatch(r"controller-amendment-v[1-9][0-9]*", folder.name),
         "Unrecognized controller location",
     )
-    manifest = load(HERE / AMENDMENT)
+    manifest = load(folder / AMENDMENT)
     require(
         manifest["original_source_commit"] == config["source_commit"],
         "Amendment source mismatch",
@@ -656,16 +660,16 @@ def controller_provenance(base):
         "Unexpected amendment files",
     )
     for name, checksum in manifest["files"].items():
-        require(digest(HERE / name) == checksum, f"Amendment changed: {name}")
+        require(digest(folder / name) == checksum, f"Amendment changed: {name}")
     return {
-        "kind": HERE.name,
+        "kind": folder.name,
         "source_commit": revision,
-        "manifest_sha256": digest(HERE / AMENDMENT),
+        "manifest_sha256": digest(folder / AMENDMENT),
         "files": manifest["files"],
     }
 
 
-def recovered_measurement(base, evidence):
+def recovered_measurement(base, evidence, folder=None):
     original = load(evidence / MEASUREMENT)
     require(
         original["accounting_errors"] == ["Response input totals differ"],
@@ -683,7 +687,7 @@ def recovered_measurement(base, evidence):
         accounting["response_input_coverage"] == "incomplete_native_retry",
         "Unsupported recovery coverage",
     )
-    provenance = controller_provenance(base)
+    provenance = controller_provenance(base, folder)
     require(
         provenance["kind"] == "controller-amendment-v1",
         "Recovery requires frozen amendment",
@@ -724,10 +728,17 @@ def existing_measurement(base, evidence):
         return load(evidence / MEASUREMENT)
     recovered = load(evidence / RECOVERED)
     require(
-        recovered == recovered_measurement(base, evidence),
+        recovered
+        == recovered_measurement(base, evidence, recorded_controller(base, recovered)),
         "Recovery sidecar differs from linked native evidence",
     )
     return recovered
+
+
+def recorded_controller(base, sidecar):
+    kind = sidecar.get("controller_provenance", {}).get("kind")
+    require(isinstance(kind, str), "Missing sidecar controller identity")
+    return base / kind
 
 
 def timeout_evidence(base, evidence):
@@ -771,14 +782,15 @@ def timeout_evidence(base, evidence):
     return original
 
 
-def timeout_reservation(base, evidence):
+def timeout_reservation(base, evidence, folder=None):
+    folder = HERE if folder is None else folder
     original = timeout_evidence(base, evidence)
-    provenance = controller_provenance(base)
+    provenance = controller_provenance(base, folder)
     require(
-        provenance["kind"] == "controller-amendment-v2",
-        "Timeout review requires frozen v2 controller",
+        provenance["kind"].startswith("controller-amendment-v"),
+        "Timeout review requires a frozen versioned controller",
     )
-    reviews = load(HERE / AMENDMENT).get("approved_timeout_reviews", {})
+    reviews = load(folder / AMENDMENT).get("approved_timeout_reviews", {})
     review = reviews.get(original["run_id"], {})
     links = {
         "run_id": original["run_id"],
@@ -845,7 +857,10 @@ def budget_so_far(base, schedule):
             if (evidence / TIMEOUT_RESERVATION).exists():
                 sidecar = load(evidence / TIMEOUT_RESERVATION)
                 require(
-                    sidecar == timeout_reservation(base, evidence),
+                    sidecar
+                    == timeout_reservation(
+                        base, evidence, recorded_controller(base, sidecar)
+                    ),
                     "Timeout reservation differs from approved evidence",
                 )
                 reserved += Decimal(sidecar["budget_reservation_usd"])
