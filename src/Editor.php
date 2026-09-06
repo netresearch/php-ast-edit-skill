@@ -1939,10 +1939,13 @@ final class Editor
     /**
      * Hold an edit to the arguments its operation actually takes.
      *
-     * Checked before the dispatcher runs, so a caller that guessed the shape is told the
-     * shape rather than meeting whatever error the wrong field happens to trip first. The old
-     * failure for a misfiled rename was `Expected node name $nonce, got createChallengeToken`
-     * — true, and no help at all.
+     * Checked before the target's own `expect`, so a caller that guessed the shape is told
+     * the shape rather than meeting whatever error the wrong field happens to trip first.
+     *
+     * The message shows the edit rather than listing field names. Naming them was not enough:
+     * told `rename_variable requires "from" and "to". This edit carries value.`, a model put
+     * `from` and `to` inside `value` and met the same error again. A caller who has the shape
+     * wrong needs to see the shape.
      *
      * @param array<string, mixed> $edit
      */
@@ -1964,18 +1967,20 @@ final class Editor
         if ($missing === []) {
             return;
         }
+        $shape = ['target' => '…', 'operation' => $operation];
+
+        foreach ($spec['requires'] as $required) {
+            $shape[$required] = '…';
+        }
         $given = array_values(array_diff(array_keys($edit), ['operation', 'target', 'expect', 'parseAs']));
 
         throw new EditException(
             sprintf(
-                '%s requires %s%s. %s',
+                '%s takes its arguments beside "operation", not inside another field: %s.%s This edit carries %s.',
                 $operation,
-                implode(
-                    ' and ',
-                    array_map(static fn (string $k): string => '"' . $k . '"', $spec['requires']),
-                ),
-                $spec['optional'] === [] ? '' : ' (optional: ' . implode(', ', $spec['optional']) . ')',
-                $given === [] ? 'This edit carries none of them.' : 'This edit carries ' . implode(', ', $given) . '.',
+                json_encode($shape, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
+                $spec['optional'] === [] ? '' : ' Optional: ' . implode(', ', $spec['optional']) . '.',
+                $given === [] ? 'none of them' : implode(', ', $given),
             ),
         );
     }

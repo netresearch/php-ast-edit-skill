@@ -346,13 +346,13 @@ $cases = [
             "<?php\nclass W\n{\n    public function f(string \$a): string\n    {\n        return \$a;\n    }\n}\n",
         ),
         'edits' => [pick('method:W::f', 'rename_variable', ['expect' => ['name' => 'a'], 'value' => 'b'])],
-        'error' => 'rename_variable requires "from" and "to". This edit carries value.',
+        'error' => 'rename_variable takes its arguments beside "operation", not inside another field: {"target":"…","operation":"rename_variable","from":"…","to":"…"}. This edit carries value.',
     ],
     [
         'name' => 'and an operation with optional arguments names those too',
         'files' => src(ONE_LINE_CLASS),
         'edits' => [pick('class:Foo', 'add_member', [])],
-        'error' => 'add_member requires "php" (optional: position). This edit carries none of them.',
+        'error' => 'add_member takes its arguments beside "operation", not inside another field: {"target":"…","operation":"add_member","php":"…"}. Optional: position. This edit carries none of them.',
     ],
     // ---- Signatures, types, modifiers ----------------------------------------------------
     [
