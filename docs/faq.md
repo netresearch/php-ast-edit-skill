@@ -15,8 +15,10 @@ Instructions, JSON responses, retries, and caching also affect cost. See the
 [first native agent pilot](../benchmarks/agent-economics/results/2026-09-06-native-pilot/REPORT.md),
 six full-skill runs used **75.7% more input-plus-output tokens**, including cache reads
 and writes, than six contextual-edit runs. Both variants passed all six runtime oracles
-and independent AI diff review; human acceptance remains pending. That two-task pilot
-does not support a token-saving claim or a general performance percentage.
+and independent AI output review; human acceptance remains pending. All six skill-assigned
+runs omitted the instructed snapshot hashes, so outcome acceptance does not establish
+workflow adherence. That two-task pilot does not support a token-saving claim or a general
+performance percentage.
 
 ## Is AST editing always safer than a patch?
 

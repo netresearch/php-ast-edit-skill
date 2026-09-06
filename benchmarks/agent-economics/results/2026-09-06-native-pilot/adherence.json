@@ -1,0 +1,217 @@
+{
+  "schema_version": 1,
+  "criterion": "File-level sha256 supplied when an apply request relies on previously read source",
+  "instruction_excerpt": "Include the file's sha256 when relying on a snapshot you read.",
+  "grouping": "intention-to-treat: retain the assigned full_skill variant and every observed attempt",
+  "scope": "Snapshot-guard adherence only; this audit does not certify compliance with all skill instructions",
+  "auditor": "pilot operator AI; independent AI review recorded separately",
+  "assigned_full_skill_runs": 6,
+  "snapshot_guard_adherent_runs": 0,
+  "unguarded_apply_attempts": 8,
+  "notes": [
+    "All six assigned full-skill candidates read the edited source before applying changes.",
+    "Every recorded file entry omitted sha256, including both failed and retried requests.",
+    "No trace, original request, measurement, group assignment or outcome was rewritten.",
+    "Final output correctness and instruction adherence are separate assessments."
+  ],
+  "runs": [
+    {
+      "run_id": "run01",
+      "task_id": "local-variable",
+      "assigned_variant": "full_skill",
+      "snapshot_guard_adherent": false,
+      "native_trace": "runs/run01/native.jsonl",
+      "native_trace_sha256": "2a98094426388d47e98d5091d201e5a387ba8d6ee97a7ebe75afed99231f74f3",
+      "apply_attempts": [
+        {
+          "apply_tool_id": "tool-03",
+          "payload_tool_ids": [
+            "tool-02"
+          ],
+          "tool_outcome": "success",
+          "files": [
+            {
+              "file": "Cache.php",
+              "prior_read_tool_id": "tool-01",
+              "sha256_present": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "run_id": "run03",
+      "task_id": "local-variable",
+      "assigned_variant": "full_skill",
+      "snapshot_guard_adherent": false,
+      "native_trace": "runs/run03/native.jsonl",
+      "native_trace_sha256": "911860fe377704f2d1ec6ee79a2defa9b112e5b8690a636ad908e2faa038dc45",
+      "apply_attempts": [
+        {
+          "apply_tool_id": "tool-03",
+          "payload_tool_ids": [
+            "tool-02"
+          ],
+          "tool_outcome": "success",
+          "files": [
+            {
+              "file": "Cache.php",
+              "prior_read_tool_id": "tool-01",
+              "sha256_present": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "run_id": "run05",
+      "task_id": "multi-file-members",
+      "assigned_variant": "full_skill",
+      "snapshot_guard_adherent": false,
+      "native_trace": "runs/run05/native.jsonl",
+      "native_trace_sha256": "1c43e941538d6c30f7f368832d1f88079624f8049462d6225e2ba0ec2e4be4ce",
+      "apply_attempts": [
+        {
+          "apply_tool_id": "tool-03",
+          "payload_tool_ids": [
+            "tool-03"
+          ],
+          "tool_outcome": "error",
+          "files": [
+            {
+              "file": "First.php",
+              "prior_read_tool_id": "tool-01",
+              "sha256_present": false
+            },
+            {
+              "file": "Second.php",
+              "prior_read_tool_id": "tool-02",
+              "sha256_present": false
+            }
+          ]
+        },
+        {
+          "apply_tool_id": "tool-04",
+          "payload_tool_ids": [
+            "tool-04"
+          ],
+          "tool_outcome": "success",
+          "files": [
+            {
+              "file": "First.php",
+              "prior_read_tool_id": "tool-01",
+              "sha256_present": false
+            },
+            {
+              "file": "Second.php",
+              "prior_read_tool_id": "tool-02",
+              "sha256_present": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "run_id": "run08",
+      "task_id": "multi-file-members",
+      "assigned_variant": "full_skill",
+      "snapshot_guard_adherent": false,
+      "native_trace": "runs/run08/native.jsonl",
+      "native_trace_sha256": "2f3d19206480e00c539458c141af23eeb6e1c4829d62a5d944164132a685ada9",
+      "apply_attempts": [
+        {
+          "apply_tool_id": "tool-04",
+          "payload_tool_ids": [
+            "tool-03"
+          ],
+          "tool_outcome": "error",
+          "files": [
+            {
+              "file": "First.php",
+              "prior_read_tool_id": "tool-01",
+              "sha256_present": false
+            },
+            {
+              "file": "Second.php",
+              "prior_read_tool_id": "tool-02",
+              "sha256_present": false
+            }
+          ]
+        },
+        {
+          "apply_tool_id": "tool-06",
+          "payload_tool_ids": [
+            "tool-03",
+            "tool-05"
+          ],
+          "tool_outcome": "success",
+          "files": [
+            {
+              "file": "First.php",
+              "prior_read_tool_id": "tool-01",
+              "sha256_present": false
+            },
+            {
+              "file": "Second.php",
+              "prior_read_tool_id": "tool-02",
+              "sha256_present": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "run_id": "run10",
+      "task_id": "multi-file-members",
+      "assigned_variant": "full_skill",
+      "snapshot_guard_adherent": false,
+      "native_trace": "runs/run10/native.jsonl",
+      "native_trace_sha256": "8bd2302287d1769b9639715124539e7edfd5ac99406d664921f1db3c7d21145c",
+      "apply_attempts": [
+        {
+          "apply_tool_id": "tool-04",
+          "payload_tool_ids": [
+            "tool-03"
+          ],
+          "tool_outcome": "success",
+          "files": [
+            {
+              "file": "First.php",
+              "prior_read_tool_id": "tool-01",
+              "sha256_present": false
+            },
+            {
+              "file": "Second.php",
+              "prior_read_tool_id": "tool-02",
+              "sha256_present": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "run_id": "run12",
+      "task_id": "local-variable",
+      "assigned_variant": "full_skill",
+      "snapshot_guard_adherent": false,
+      "native_trace": "runs/run12/native.jsonl",
+      "native_trace_sha256": "511bf8229987d2004c74ad297562aa89d9c527f8ea7bf4bb34de326337e1ddc9",
+      "apply_attempts": [
+        {
+          "apply_tool_id": "tool-03",
+          "payload_tool_ids": [
+            "tool-02"
+          ],
+          "tool_outcome": "success",
+          "files": [
+            {
+              "file": "Cache.php",
+              "prior_read_tool_id": "tool-01",
+              "sha256_present": false
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

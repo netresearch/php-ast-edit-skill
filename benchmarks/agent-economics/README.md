@@ -11,6 +11,9 @@ include sanitized native usage, all failures, prompts, fixtures, diffs and oracl
 outcomes. Provider cache state is unknown; actual cache counters are retained.
 Native USD values are list-price estimates, not proof of subscription charges.
 Two independent AI reviews accepted the outputs; human acceptance remains pending.
+All six skill-assigned runs omitted the instructed snapshot hashes. The separate
+[adherence audit](results/2026-09-06-native-pilot/adherence.json) records this failure;
+the variant identifies supplied instructions, not perfect compliance.
 
 These records deliberately do not pretend to satisfy the older import schema's
 cold/warm classification and human-acceptance requirements. See the

@@ -11,6 +11,29 @@
     "Contextual two-file output adds blank separators; AST constant placement varies, without behavioral impact.",
     "run05 and run08 each repair one invalid position=first transaction; both failures retained.",
     "run05 used /tmp/edits.json as its own payload; a copy is retained as external scratch evidence.",
-    "No candidate loaded extra references or evaluator answer files."
-  ]
+    "No candidate loaded extra references or evaluator answer files.",
+    "All six assigned full-skill runs omit the instructed snapshot sha256 guards after reading source; see adherence.json. Output acceptance does not certify instruction adherence."
+  ],
+  "schema_version": 1,
+  "scope": "final_outputs_only",
+  "run_ids": [
+    "run01",
+    "run02",
+    "run03",
+    "run04",
+    "run05",
+    "run06",
+    "run07",
+    "run08",
+    "run09",
+    "run10",
+    "run11",
+    "run12"
+  ],
+  "published_statuses": {
+    "operator_agent": "passed",
+    "independent_root_agent": "passed",
+    "human": "pending"
+  },
+  "adherence_audit": "adherence.json"
 }

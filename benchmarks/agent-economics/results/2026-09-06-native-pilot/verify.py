@@ -1,7 +1,8 @@
-"""Verify published accounting and replay trusted fixtures; never call a model.
+"""Verify this historical published bundle; never call a model.
 
 All files and commands are operator-selected local evidence. The pinned repository
 grader executes repository-owned PHP oracles, as documented in README.md and TRUST.md.
+This is not a verifier for arbitrary new raw output from pilot.py.
 """
 
 import hashlib
@@ -32,6 +33,46 @@ def command(argv, cwd):
 def check(condition, message):
     if not condition:
         raise ValueError(message)
+
+
+def check_published_reviews(measured):
+    """Check recorded review consistency without authenticating reviewer identity."""
+    attestation = load(BUNDLE / "agent-review.json")
+    expected = {
+        "operator_agent": "passed",
+        "independent_root_agent": "passed",
+        "human": "pending",
+    }
+    check(attestation["schema_version"] == 1, "Unknown published review schema")
+    check(attestation["scope"] == "final_outputs_only", "Review scope differs")
+    check(attestation["published_statuses"] == expected, "Review attestation differs")
+    check(attestation["human_review"] == expected["human"], "Human review differs")
+    check(attestation["output_review_passed"] is True, "Output acceptance differs")
+    check(
+        attestation["run_ids"] == sorted(row["run_id"] for row in measured),
+        "Review attestation run coverage differs",
+    )
+    for row in measured:
+        check(row.get("review") == expected, "Published per-run review schema differs")
+
+
+def check_adherence_evidence(measured):
+    """Bind the scoped AI audit to the unchanged traces and assigned run coverage."""
+    audit = load(BUNDLE / "adherence.json")
+    expected = {row["run_id"] for row in measured if row["variant"] == "full_skill"}
+    records = audit["runs"]
+    check(len(records) == len(expected), "Adherence audit run count differs")
+    check(
+        {row["run_id"] for row in records} == expected,
+        "Adherence audit coverage differs",
+    )
+    for row in records:
+        trace = f"runs/{row['run_id']}/native.jsonl"
+        check(row["native_trace"] == trace, "Adherence trace path differs")
+        check(
+            digest(BUNDLE / trace) == row["native_trace_sha256"],
+            "Adherence trace changed",
+        )
 
 
 def check_native(run):
@@ -148,6 +189,8 @@ def main():
     runs = sorted((BUNDLE / "runs").iterdir())
     check(len(runs) == 12, "Expected twelve retained runs")
     measured = [check_native(run) for run in runs]
+    check_published_reviews(measured)
+    check_adherence_evidence(measured)
     summary = command(
         [
             "jq",

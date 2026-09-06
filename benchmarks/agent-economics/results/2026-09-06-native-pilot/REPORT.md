@@ -1,9 +1,11 @@
 # Native Claude pilot: full PHP AST skill versus contextual editing
 
-In this pilot, the full skill did not save tokens. Across six matched pairs, it
+In this pilot, assignment to the complete skill did not save tokens. Across six matched pairs, it
 used 195,701 input-plus-output tokens versus 111,385 for ordinary contextual
 editing: **75.70% more**. Every individual pair used more tokens with the skill.
 This describes two tiny seed tasks, not arbitrary PHP maintenance work.
+The skill was supplied, but complete instruction adherence was not established:
+all six assigned skill runs omitted its snapshot-hash guards, as detailed below.
 
 | Measured quantity, six runs per arm | Contextual editing | Full skill + CLI |
 | --- | ---: | ---: |
@@ -88,6 +90,16 @@ constant at the start or end without that extra blank. These changes are confine
 to the request. The independent root-agent AI review also accepts all twelve outputs.
 **Human acceptance remains pending; AI review is not human review.**
 
+The [snapshot-guard audit](adherence.json) found **0/6** adherence among assigned
+`full_skill` runs. Each candidate read source before applying changes, but all eight
+apply requests omitted file-level `sha256`, covering thirteen file entries including
+the two failed attempts. The audit records native Read, payload and apply tool IDs.
+We retain the original assigned groups and every observation (intention-to-treat).
+Output acceptance does not imply that all skill instructions were followed. This
+pilot therefore does not establish the economics of a fully compliant workflow or
+its protection against concurrent source changes. No recorded request was corrected
+retroactively and no attempt was excluded for this adherence failure.
+
 Provider cache state was not controlled and is **unknown**, despite fresh sessions.
 Actual cache counters are supplied. This is not a documented warm-cache experiment
 or an assertion of cold onboarding. No official importer record was fabricated:
@@ -104,7 +116,7 @@ Three repetitions on two seed tasks do not establish a general efficiency
 percentage, a production performance forecast, or a statistically representative
 comparison. There is no CLI-reference-only arm, no larger repository task, and no
 alternative model in this pilot. The results also do not measure prevention of
-concurrency mistakes or unsafe structural edits. They do show that the full skill
-cannot presently claim token savings for these measured simple tasks.
+concurrency mistakes or unsafe structural edits. The observed assigned-skill runs
+did not save tokens on these measured simple tasks.
 
 See [README.md](README.md) for published evidence, redactions and reproduction.

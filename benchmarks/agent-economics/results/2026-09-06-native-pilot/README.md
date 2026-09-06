@@ -3,6 +3,9 @@
 Read [REPORT.md](REPORT.md) for the bounded result: the complete skill used 75.70%
 more input-plus-output tokens on these two small tasks. Both arms passed all six
 runtime outcomes. Two recovered AST errors are included, not discarded.
+The grouping records assignment to the complete skill. All six assigned skill runs
+omitted its snapshot-hash guards; [adherence.json](adherence.json) documents this
+instruction-adherence limitation without rewriting any request or measurement.
 
 ## Verify without model calls
 
@@ -13,11 +16,15 @@ From the repository root, with Git history containing commit
 python3 benchmarks/agent-economics/results/2026-09-06-native-pilot/verify.py
 ```
 
-This verifies the published checksums, derives accounting from the sanitized
+This command is specifically for this checked-in historical publication. It verifies
+the published checksums, derives accounting from the sanitized
 native events, recomputes the complete summary, applies all twelve diffs to their
 original fixture bytes, and runs the grader and PHP oracles from the measured
 commit. Temporary files stay outside the repository. It makes **zero model calls**.
 It verifies retained evidence and behavior, not the provider's authorship or billing.
+It also checks the published review schema against the recorded AI attestation and
+links the adherence audit to its traces. It does not authenticate reviewer identity
+or independently establish every skill instruction's compliance.
 
 ## Reproduce preparation, then optionally run a new experiment
 
@@ -69,6 +76,30 @@ dependency set can change results; this command cannot guarantee historical toke
 Review every new diff and retained failure separately. The checked-in observations
 are never overwritten.
 
+## Manual publication step
+
+The runner produces private raw evidence. This historical bundle was created in a
+separate, reviewed export after the candidate runs and AI output reviews. `verify.py`
+expects that historical publication layout; it is not a general consumer of a fresh
+`pilot.py` output directory. Producing new raw runs alone does not reproduce the
+publication or its review attestations.
+
+| Raw producer output | Reviewed historical publication |
+| --- | --- |
+| `runs/<id>/evidence/raw.jsonl` | `runs/<id>/native.jsonl`: allowlist export, path redaction and stable ID pseudonyms described below. |
+| `runs/<id>/evidence/measurement.json` | `runs/<id>/measurement.json`: numerical observations retained, paths and response IDs redacted, named review statuses attached after actual reviews. |
+| `review: {agent: "pending", human: "pending"}` | `review: {operator_agent: "passed", independent_root_agent: "passed", human: "pending"}` in each of the twelve published records, matching `agent-review.json`. |
+| Per-run source, diff, state and oracle evidence | Exact initial bytes collected in `initial-fixtures.json`; diffs, source hashes and oracle outcomes copied into each published run directory. |
+| Original config and native-file hashes | Original-byte hashes retained in `source-provenance.json`; `SHA256SUMS` separately covers the redacted published files. |
+| Candidate outputs and tool traces | Post-run AI output attestation in `agent-review.json` and a scoped snapshot-guard audit in `adherence.json`. |
+
+Review statuses are post-processing attestations, not native CLI measurements or
+automatic consequences of a passing oracle. The published per-run review schema
+has exactly the three status fields shown above. The verifier checks those fields,
+human-pending status and all twelve run IDs against the bundle attestation. New
+experiments need their own output review and publication step; no existing acceptance
+or adherence result transfers automatically. Historical raw requests remain unchanged.
+
 ## Retained and omitted fields
 
 [config.json](config.json), [schedule.json](schedule.json) and per-run prompts retain
@@ -103,6 +134,11 @@ only the requested Sonnet model, so primary and all-model totals coincide.
 
 Both the pilot operator AI and an independent root AI reviewed all twelve final
 diffs and explanations and accepted the output scope. **Human review is pending.**
+Their acceptance concerns final requested behavior and incidental changes. It does
+not certify instruction adherence: **0/6** assigned skill runs supplied the requested
+file-level `sha256` after reading source. All eight apply requests, including the
+two failed attempts, omitted these guards. The six runs stay in their originally
+assigned `full_skill` group (intention-to-treat), with every token and failure retained.
 These are not accepted records for the older cold/warm-and-human-review importer.
 No claim of general savings, statistical representativeness or provider billing
 authentication follows from this small pilot.
