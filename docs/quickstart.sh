@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+# shellcheck shell=bash
 # Executable documentation: no network and no project-wide formatting changes.
 set -euo pipefail
 QUICKSTART_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

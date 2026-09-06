@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """CLI microbenchmark; no model calls. All edits affect disposable fixtures only."""
 import argparse
 import datetime
@@ -112,6 +111,7 @@ def benchmark(args):
                 "php": run([args.php, "-v"], cwd=ROOT).splitlines()[0],
                 "php_version_id": php_version_id,
                 "xdebug_loaded": run([args.php, "-r", "echo extension_loaded('xdebug') ? 'yes' : 'no';"], cwd=ROOT),
+                "xdebug_modes": json.loads(run([args.php, "-r", "echo json_encode(function_exists('xdebug_info') ? xdebug_info('mode') : []);"], cwd=ROOT)),
                 "parser": run([args.php, "-r", "require 'vendor/autoload.php'; echo Composer\\InstalledVersions::getPrettyVersion('nikic/php-parser');"], cwd=ROOT)},
             "parameters": {"repetitions": args.repetitions, "warmups": args.warmups,
                            "files": args.files, "seed": args.seed,

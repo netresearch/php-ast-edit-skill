@@ -334,7 +334,13 @@ $cases = [
         'files' => src(
             "<?php\nclass W\n{\n    public function __construct(public string \$name { get => \$this->name; })\n" . "    {\n    }\n}\n",
         ),
-        'edits' => [pick('property:W::$name', 'set_type', ['php' => '?string'])],
+        'document' => fn (array $p): array => tx(
+            [
+                'path' => $p['a.php'],
+                'phpVersion' => '8.4',
+                'edits' => [pick('property:W::$name', 'set_type', ['php' => '?string'])],
+            ],
+        ),
         'contains' => inA('?string $name'),
     ],
     [

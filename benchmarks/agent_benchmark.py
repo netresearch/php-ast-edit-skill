@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Materialize isolated tasks, grade behavior, and import measured agent-run records."""
 import argparse
 import datetime
