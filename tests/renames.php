@@ -68,6 +68,18 @@ $variableFailures = [
     'global source is not a local binding' => 'function calc() { global $x; return $x; }',
     'dynamic variables make bindings unresolved' => 'function calc($x, $name) { return $x + $$name; }',
     'compact refers to local names through strings' => 'function calc($x) { return compact("x"); }',
+    'imported compact alias observes local names' => 'use function compact as harvest; function calc($x) { return harvest("x"); }',
+    'namespaced mixed-case compact alias observes local names' => 'namespace Guard; use function compact as Harvest; function calc($x) { return HARVEST("x"); }',
+    'multiple function imports preserve compact alias identity' => 'namespace Guard; use function compact as harvest, strlen as measure; function calc($x) { return harvest("x"); }',
+    'imported extract alias writes local names' => 'use function extract as importVars; function calc($x) { importVars(["x" => 9]); return $x; }',
+    'imported defined-vars alias exposes local names' => 'use function get_defined_vars as variables; function calc($x) { return variables(); }',
+    'literal callback forwards compact into local scope' => 'function calc($x) { return call_user_func("compact", "x"); }',
+    'array callback forwards compact into local scope' => 'function calc($x) { return call_user_func_array("compact", ["x"]); }',
+    'constant-folded callback forwards compact into local scope' => 'function calc($x) { return call_user_func("com" . "pact", "x"); }',
+    'fully qualified callback forwards compact into local scope' => 'function calc($x) { return \call_user_func("compact", "x"); }',
+    'imported callback alias forwards compact into local scope' => 'use function call_user_func as invoke; function calc($x) { return invoke("compact", "x"); }',
+    'imported array callback alias forwards compact into local scope' => 'use function call_user_func_array as invoke; function calc($x) { return invoke("compact", ["x"]); }',
+    'capturing closure resolves the surrounding function imports' => 'use function compact as harvest; function calc($x) { $f = function () use ($x) { return harvest("x"); }; return $f(); }',
 ];
 
 foreach ($variableFailures as $name => $code) {
@@ -86,6 +98,25 @@ foreach ($variableFailures as $name => $code) {
     renameCheck($name . ' preserves bytes', file_get_contents($path) === $before);
 }
 
+foreach ([
+    'ordinary function import still renames' => 'use function strlen as measure; function calc($x) { return measure($x); } echo calc("abc");',
+    'imports are resolved within their namespace' => 'namespace First { use function compact as harvest; function other($x) { return harvest("x"); } } namespace Second { use function strlen as harvest; function calc($x) { return harvest($x); } echo calc("abc"); }',
+    'independent closure symbol-table access stays in its own scope' => 'use function compact as harvest; function calc($x) { $f = function ($value) { return harvest("value"); }; return $x + $f(1)["value"]; } echo calc(2);',
+] as $name => $source) {
+    $path = renameFixture($source);
+    $beforeControl = (string) file_get_contents($path);
+    renameEdit($path, $variableEdit);
+
+    if ($name === 'ordinary function import still renames') {
+        renameCheck(
+            'name resolution preserves imported source spelling',
+            file_get_contents($path) === str_replace('$x', '$y', $beforeControl),
+        );
+    }
+    $controlOutput = [];
+    exec(escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg($path), $controlOutput, $controlStatus);
+    renameCheck($name, $controlStatus === 0 && implode('', $controlOutput) === '3');
+}
 $methodEdit = ['target' => ['select' => 'method:W::old'], 'operation' => 'rename_method', 'to' => 'fresh'];
 $methodFailures = [
     'existing method declaration conflicts' => 'class W { private function old() {} private function fresh() {} }',
