@@ -1,0 +1,62 @@
+{
+  "source_commit": "33f85b8ef83d8dda81491c82fa86d18046168063",
+  "source_tree_status_at_preparation": " M scripts/build-release.sh\n M tests/distribution.sh\n",
+  "runtime_path": "{PILOT_ROOT}/runtime",
+  "runtime_hash_manifest_sha256": "3c79f56a35eace80088c678d75a897ed41e6eadb4e3e495ba6a0293ed58adaf1",
+  "cli_version": "2.1.261 (Claude Code)",
+  "requested_model": "claude-sonnet-4-6",
+  "reasoning": "medium",
+  "tools": [
+    "Bash",
+    "Read",
+    "Edit",
+    "Write"
+  ],
+  "cache_condition": "unknown; fresh independent sessions; native counters retained",
+  "max_list_price_usd_per_run": 0.75,
+  "max_wall_seconds_per_run": 120,
+  "seed": 20260906,
+  "tasks": [
+    "local-variable",
+    "multi-file-members"
+  ],
+  "repetitions_per_task_variant": 3,
+  "common_system_append": "Complete the supplied small PHP maintenance task autonomously and accurately.\nRead the relevant source before editing. Preserve unrelated code and behavior. Batch\nrelated edits where useful. Run relevant syntax/behavior checks, review the resulting\ndiff, and finish with a concise outcome. Do not create commits, install packages, use\nnetwork services, invoke other agents/models, or inspect unrelated directories.\nThe task workspace contains only the supplied PHP fixture files and a Git baseline.\nDo not leave extra files in it. Tool dependencies are already installed. Standard Bash,\nRead, Edit and Write tools are available. The installed php-ast-edit executable is on\nPATH for the treatment that uses it. Do not inspect benchmark/evaluator files or seek\nanswer keys. Only the documented skill/reference and runtime paths may be read outside\nthe task workspace if the treatment requires them. No repository-wide AST-only rule\napplies to these disposable benchmark fixtures.\n",
+  "variant_instructions": {
+    "contextual_patch": "For this run, use competent ordinary contextual editing: the Edit tool or\ncontextual patches, normal source discovery, batching when useful, and relevant checks.\nDo not use php-ast-edit for this run.\n",
+    "full_skill": "For this run, apply the complete skill below. Relative reference links resolve beneath {PILOT_ROOT}/runtime/skills/php-structured-edit. The executable is already on PATH.\n\n---\nname: php-structured-edit\ndescription: \"Use when creating, changing, deleting, or moving PHP syntax with the php-ast-edit CLI: symbols, members, types, statements, expressions, and PHP string literals. Use ordinary search for discovery. Not for read-only PHP questions or edits to non-PHP files.\"\n---\n\n# PHP Structured Edit\n\nUse `php-ast-edit` for PHP writes while this skill is active. PHP snippets are construction\ninput: the tool parses them, changes the AST, and prints the result. Do not fall back to\ntext mutation after a rejected transaction; inspect the error and correct its cause.\n\n## First use\n\nResolve the executable once: repository `bin/php-ast-edit`, project `vendor/bin/php-ast-edit`,\ninstalled `php-ast-edit`, or this skill's `scripts/php-ast-edit` wrapper. Run `help` if needed.\nA missing parser requires installing the engine, not repeated edit attempts.\n\nExisting files use format-preserving printing by default. No normalization is needed to\nstart. `doctor` explains optional canonical configuration; it is not a prerequisite for\nevery edit. Read the formatting reference only when formatting setup is part of the task.\n\n## Workflow\n\n1. Find the relevant code with normal search or an LSP.\n2. Prefer a named target: `{\"select\":\"method:Checkout::submit\"}`. Other selectors:\n   `class:`, `interface:`, `trait:`, `enum:`, `function:`, `property:Foo::$items`,\n   `const:Foo::LIMIT`. Ambiguous names are refused. Use `inspect` only where a name does\n   not identify the target, such as an expression inside a body; keep its `ref` and `sha256`.\n3. Put related edits, including multiple files, in one `apply` transaction. Include the\n   file's `sha256` when relying on a snapshot you read. Refs and coordinates are tied to\n   that snapshot. After `STALE_SOURCE`, reread and reassess; never drop the guard to force it.\n4. Supply compact valid snippets. In namespaced PHP, import external types or qualify them,\n   for example `\\\\DateTimeImmutable` inside JSON. Do not spend tokens reproducing indentation.\n5. Read `effects`, `diff`, **all** `warnings`, and `validation`. `parsed` means parser\n   success; legacy `valid` has the same limited meaning. Check whether lint and the project's\n   verification commands ran. A failed verification needs repair even when a file was written.\n6. Run only relevant checks that remain unperformed. Review the intended diff; an edit is\n   expected to change it. Do not use a clean Git diff as a post-edit success condition.\n   Avoid repository-wide `format` for a local edit.\n\nMinimal transaction:\n\n```json\n{\"files\":[{\"path\":\"src/Registry.php\",\"edits\":[{\"target\":{\"select\":\"class:Registry\"},\"operation\":\"add_member\",\"php\":\"public function register(string $name): void {}\"}]}]}\n```\n\n```bash\nphp-ast-edit apply --input edits.json\n```\n\n## Choose the narrow operation\n\n- Empty member/body/parameter list: `insert_into` with `property` and `position`, or a\n  shorthand such as `add_member`. No sibling anchor is needed.\n- Replace any node: `replace_node`; change a slot: `replace_child`.\n- New file: `mode: create`, full PHP including `<?php`, and default `expectAbsent` guard.\n  Delete: `mode: delete` with the snapshot hash.\n- Local variable rename: `rename_variable` on the enclosing method/function/closure with\n  `from` and `to`. Unsafe binding collisions are rejected. Dynamic variable behavior is\n  not fully resolvable statically.\n- Method rename: `rename_method` with `to`. Inspect unresolved receivers and inheritance\n  limitations; this does not update every caller in a project. A declaration-only change\n  may use `set_name` when that is the intended scope.\n- SQL/HTML/JSON inside a PHP literal: `set_string` on its `Scalar_String` node.\n\nUse `php-ast-edit contexts --operation rename_variable` for compact argument help before\nguessing an unfamiliar operation.\n\nDo not equate an AST, parser pass, or host lint pass with correct application behavior.\nUse project-aware refactoring tools when the task requires cross-file symbol resolution.\n\n## References, when needed\n\n- [Operations](references/operations.md): full schema, selectors, guards, `parseAs`, reports.\n- [Formatting](references/formatting-contract.md): preserving layout, optional normalization.\n- [Enforcement](references/enforcement.md): optional hook and its limits.\n"
+  },
+  "billing_note": "Subscription authentication; native USD is list estimate, not charged dollars",
+  "human_review": "pending; AI review must not be represented as human acceptance",
+  "source_storage": "Windows mount",
+  "runtime_and_fixture_storage": "Linux /tmp",
+  "time_scope": "candidate CLI wall only; preparation and external grading reported separately",
+  "php_version": "PHP 8.5.10 (cli) (built: Aug 28 2026 06:46:18) (NTS)",
+  "cli_argv_common": [
+    "-p",
+    "--safe-mode",
+    "--disable-slash-commands",
+    "--strict-mcp-config",
+    "--setting-sources",
+    "",
+    "--no-session-persistence",
+    "--tools",
+    "Bash,Read,Edit,Write",
+    "--model",
+    "claude-sonnet-4-6",
+    "--effort",
+    "medium",
+    "--max-budget-usd",
+    "0.75",
+    "--output-format",
+    "stream-json",
+    "--verbose",
+    "--permission-mode",
+    "bypassPermissions",
+    "--prompt-suggestions",
+    "false",
+    "--name",
+    "php-edit-pilot"
+  ],
+  "total_preparation_ms": 29223.872125148773
+}

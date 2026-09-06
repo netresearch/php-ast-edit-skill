@@ -1,0 +1,110 @@
+[
+  {
+    "run_id": "run01",
+    "task_id": "local-variable",
+    "variant": "full_skill",
+    "repetition": 2,
+    "work": "{PILOT_ROOT}/runs/run01/work",
+    "evidence": "{PILOT_ROOT}/runs/run01/evidence",
+    "fixture_setup_ms": 77.27291691116989
+  },
+  {
+    "run_id": "run02",
+    "task_id": "local-variable",
+    "variant": "contextual_patch",
+    "repetition": 2,
+    "work": "{PILOT_ROOT}/runs/run02/work",
+    "evidence": "{PILOT_ROOT}/runs/run02/evidence",
+    "fixture_setup_ms": 73.7739079631865
+  },
+  {
+    "run_id": "run03",
+    "task_id": "local-variable",
+    "variant": "full_skill",
+    "repetition": 1,
+    "work": "{PILOT_ROOT}/runs/run03/work",
+    "evidence": "{PILOT_ROOT}/runs/run03/evidence",
+    "fixture_setup_ms": 71.22939289547503
+  },
+  {
+    "run_id": "run04",
+    "task_id": "local-variable",
+    "variant": "contextual_patch",
+    "repetition": 1,
+    "work": "{PILOT_ROOT}/runs/run04/work",
+    "evidence": "{PILOT_ROOT}/runs/run04/evidence",
+    "fixture_setup_ms": 74.71695402637124
+  },
+  {
+    "run_id": "run05",
+    "task_id": "multi-file-members",
+    "variant": "full_skill",
+    "repetition": 2,
+    "work": "{PILOT_ROOT}/runs/run05/work",
+    "evidence": "{PILOT_ROOT}/runs/run05/evidence",
+    "fixture_setup_ms": 75.80708502791822
+  },
+  {
+    "run_id": "run06",
+    "task_id": "multi-file-members",
+    "variant": "contextual_patch",
+    "repetition": 2,
+    "work": "{PILOT_ROOT}/runs/run06/work",
+    "evidence": "{PILOT_ROOT}/runs/run06/evidence",
+    "fixture_setup_ms": 74.76826896890998
+  },
+  {
+    "run_id": "run07",
+    "task_id": "multi-file-members",
+    "variant": "contextual_patch",
+    "repetition": 1,
+    "work": "{PILOT_ROOT}/runs/run07/work",
+    "evidence": "{PILOT_ROOT}/runs/run07/evidence",
+    "fixture_setup_ms": 76.2326461263001
+  },
+  {
+    "run_id": "run08",
+    "task_id": "multi-file-members",
+    "variant": "full_skill",
+    "repetition": 1,
+    "work": "{PILOT_ROOT}/runs/run08/work",
+    "evidence": "{PILOT_ROOT}/runs/run08/evidence",
+    "fixture_setup_ms": 75.69585391320288
+  },
+  {
+    "run_id": "run09",
+    "task_id": "multi-file-members",
+    "variant": "contextual_patch",
+    "repetition": 3,
+    "work": "{PILOT_ROOT}/runs/run09/work",
+    "evidence": "{PILOT_ROOT}/runs/run09/evidence",
+    "fixture_setup_ms": 75.84381103515625
+  },
+  {
+    "run_id": "run10",
+    "task_id": "multi-file-members",
+    "variant": "full_skill",
+    "repetition": 3,
+    "work": "{PILOT_ROOT}/runs/run10/work",
+    "evidence": "{PILOT_ROOT}/runs/run10/evidence",
+    "fixture_setup_ms": 78.02634499967098
+  },
+  {
+    "run_id": "run11",
+    "task_id": "local-variable",
+    "variant": "contextual_patch",
+    "repetition": 3,
+    "work": "{PILOT_ROOT}/runs/run11/work",
+    "evidence": "{PILOT_ROOT}/runs/run11/evidence",
+    "fixture_setup_ms": 71.22207689099014
+  },
+  {
+    "run_id": "run12",
+    "task_id": "local-variable",
+    "variant": "full_skill",
+    "repetition": 3,
+    "work": "{PILOT_ROOT}/runs/run12/work",
+    "evidence": "{PILOT_ROOT}/runs/run12/evidence",
+    "fixture_setup_ms": 70.62957901507616
+  }
+]

@@ -12,9 +12,8 @@ Select a PHP symbol, apply a typed change, and review the resulting diff. `php-a
 
 ## Installation
 
-When reviewing this change before it merges, run the commands from the reviewed checkout.
-The public clone commands below require `main` to contain the changes. Published v0.7.0
-archives remain unchanged; repaired release assets require a subsequent publication.
+The source checkout below follows development `main`. Published v0.7.0 archives
+remain unchanged; repaired release assets require a subsequent publication.
 
 Requirements: PHP 8.2+ with JSON and tokenizer, Composer 2.2+, and Git. The executable example also uses Bash and `jq`. Installation needs network access; local editing does not.
 
@@ -112,6 +111,8 @@ Existing files use format-preserving printing unless the repository declares can
 Batching reduces CLI startups. Named selectors can eliminate an `inspect` call. Integrated reports and configured checks can avoid redundant reads and validation. These are capabilities, not a universal cost guarantee.
 
 A contextual patch is a valid baseline and can also batch changes. Small edits may cost more through an AST tool. Full agent savings depend on instruction loading, model output, tool latency, retries, correctness, and caching. [Benchmarks](benchmarks/README.md) provides a reproducible local comparison and a separate protocol for measuring complete agent tasks. No general token or model-round reduction is claimed from a CLI microbenchmark.
+
+The [first native agent pilot](benchmarks/agent-economics/results/2026-09-06-native-pilot/REPORT.md) found **no token savings** on two small tasks: six full-skill runs used 195,701 input-plus-output tokens versus 111,385 for six contextual-edit runs (**75.7% more**), with 29 versus 24 tool calls and 30.4% more candidate wall time. Both variants passed all six runtime oracles and independent AI diff review. These are three paired repetitions per task with Claude Sonnet 4.6; input includes cache reads and writes, provider cache state was uncontrolled, and human acceptance remains pending. This pilot does not establish a general performance percentage.
 
 ## Why this is a skill (model delta)
 

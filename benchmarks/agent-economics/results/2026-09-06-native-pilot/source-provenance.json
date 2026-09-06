@@ -1,0 +1,71 @@
+{
+  "source_commit": "33f85b8ef83d8dda81491c82fa86d18046168063",
+  "original_config_sha256": "6366343842705f79a141dd992ddf8545752ddedaa96855d0996c3c9049c3d64e",
+  "original_runner_sha256": "72c5e141bce961513424289295438fd9afefee2bc112c3811bf9008f5aa19a28",
+  "task_manifest_sha256": "f2c2e6ea3a758eedd6f838f4a8448a0ebcf5ef8d8db025433373543b4edbc609",
+  "grader_sha256": "2aee53568c84172048bf8843f8b143c86be2c4eb1bf5ae709a6704cd38ca5bc6",
+  "skill_sha256": "8120c9a4424b07b69f6c22594af8ef26bb576e3b65f132f5293362daf6f2f136",
+  "native_runs": {
+    "run01": {
+      "private_native_sha256": "131ec2da872f8902de47e07ad827760f6134a8b2658ca599b1b65e31209554b4",
+      "published_native_sha256": "2a98094426388d47e98d5091d201e5a387ba8d6ee97a7ebe75afed99231f74f3",
+      "private_measurement_sha256": "c25f355247fca222b54386c553eec7f1289cae9d6688e2c2abcd70614e85996c"
+    },
+    "run02": {
+      "private_native_sha256": "076de53c45b7a1aa564ae6dba2aea3e952390dbe3d9f646a3ae6ac292b5657bb",
+      "published_native_sha256": "f82ac5865512f0fc7476207d9152dacd08e0404db9a68f941fec1d89e3b7aa20",
+      "private_measurement_sha256": "c498a9a4f6166b6c2c853d20ec9c7b83dfd2993113e88f733a4520078464d22d"
+    },
+    "run03": {
+      "private_native_sha256": "b930bfecf9609b75ce61bc45bb25effc021a6f18f93ce7dba6fe9bd2cca2d2cd",
+      "published_native_sha256": "911860fe377704f2d1ec6ee79a2defa9b112e5b8690a636ad908e2faa038dc45",
+      "private_measurement_sha256": "6ed05b2c7814a571910b38a2876bb4b991d8e48df0d16929b27d64e8e26ccb31"
+    },
+    "run04": {
+      "private_native_sha256": "0f9eaa0d8e67b4f4d392a45ae9d7952646d8c059f0d03d98adca7d9f8b73c3bd",
+      "published_native_sha256": "51990495f697c7d531e14cdd5c4ce5e95970fe48bfbe2658122f21c910e9ce72",
+      "private_measurement_sha256": "0e687ee3154acf1af6ea6cfda05e162b5a3d23f1c8701b37c1df635ee109b44d"
+    },
+    "run05": {
+      "private_native_sha256": "205f1e05ee07c52f1ddca76f116eb90013b39f4e8bc97700f9117ac4cc5e2650",
+      "published_native_sha256": "1c43e941538d6c30f7f368832d1f88079624f8049462d6225e2ba0ec2e4be4ce",
+      "private_measurement_sha256": "fae5415efc21f1f4e85753c5b37f8b30efe05f6686bab03e42258dfb933b9bd9"
+    },
+    "run06": {
+      "private_native_sha256": "8a3c175bd64bddcaf5576a0ecbed233d3a9828b3f54ca6740ee0cd05ab584672",
+      "published_native_sha256": "ab443a368272f26b1f3015ffd01fd2bcd5dddacb805059733a3faf7e90ae5b32",
+      "private_measurement_sha256": "2ab129e6b7d1c4f9d4d2343de25166218f629d96257cc9d03a5d0a56d5cbda04"
+    },
+    "run07": {
+      "private_native_sha256": "d31095ee81099efcc2e5d1ceaa3b04d9808ebdb432eeb03b9d80aeebccbe5926",
+      "published_native_sha256": "ca7fc1be1e7fa80e789a6281271a461f3f8391bf1594afbe389cdf8feba8500b",
+      "private_measurement_sha256": "2b1b2b3de8ce032f73913ffacea6a5a5edcdc6480dafff798e3991336d05b9af"
+    },
+    "run08": {
+      "private_native_sha256": "3f19a652fc8a125c018ac010ea38a936990564a8e5086de94e4cbf4094db3055",
+      "published_native_sha256": "2f3d19206480e00c539458c141af23eeb6e1c4829d62a5d944164132a685ada9",
+      "private_measurement_sha256": "eb82b0a1d785c2c77373b1578fcdbc23e4bf9b9058191bf54c65d0f1bb375ce4"
+    },
+    "run09": {
+      "private_native_sha256": "85ffc5c64c5c76ea649ba56c2c39c44496a3595dda45bf7b19ba64741da70cbe",
+      "published_native_sha256": "8217081db1c1beeade79edbb9eb1a48b6f1fac467c01c2f3079ea0e8c5d3b880",
+      "private_measurement_sha256": "a360900fed44fd127834e62367b9c7ca8e15b396874d47866da08ad3d369523b"
+    },
+    "run10": {
+      "private_native_sha256": "22c2c08daca4ebc8ffad3020a54492683e4019ec8f0ba705159d0f27852c7bb0",
+      "published_native_sha256": "8bd2302287d1769b9639715124539e7edfd5ac99406d664921f1db3c7d21145c",
+      "private_measurement_sha256": "282943b7111bef049ae04149d47f844ea7bdb09f6bdc6957049e779254e24aff"
+    },
+    "run11": {
+      "private_native_sha256": "f10a7ac28b5e9ede23bf135200f6346989bee9f8afbee7bcf2d3b89699a477f1",
+      "published_native_sha256": "959f5e05a4463f825e81e60ace6456b7c924891ca3ca646e28ebce110ed0a100",
+      "private_measurement_sha256": "15da706d02b7cc23e5a1cc3c24558c548ab28f2b76e6aa6860753620c1b868e7"
+    },
+    "run12": {
+      "private_native_sha256": "5a83b1fc51111f585976d378cc3e163522e2f111bad4fb4cc2554592aff4f653",
+      "published_native_sha256": "511bf8229987d2004c74ad297562aa89d9c527f8ea7bf4bb34de326337e1ddc9",
+      "private_measurement_sha256": "cc505b507f86a60df92c4626c4efbabca71f4ebdf8ca4090283a9394cb7d5924"
+    }
+  },
+  "hash_note": "Private-original hashes refer to retained pre-redaction bytes; published files have separate checksums. Hashes do not authenticate provider billing."
+}

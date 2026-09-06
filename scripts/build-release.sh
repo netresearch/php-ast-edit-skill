@@ -16,10 +16,34 @@ if [[ -e "$OUTPUT" && -n "$(ls -A "$OUTPUT")" ]]; then
   echo "Output directory must be empty: $OUTPUT" >&2
   exit 2
 fi
+
+# Check each component beneath ROOT; copying through a linked directory hides the link.
+assert_regular_source() {
+  local path="$1" component="$1"
+  while :; do
+    [[ ! -L "$ROOT/$component" ]] || { echo "Refusing source symlink: $component" >&2; exit 2; }
+    [[ "$component" == */* ]] || break
+    component="${component%/*}"
+  done
+  [[ -f "$ROOT/$path" ]] || { echo "Not a regular source file: $path" >&2; exit 2; }
+}
+
+# Only tracked regular files enter archives; no local credentials, symlinks or caches.
+copy_tracked() {
+  local prefix="$1" destination="$2" path relative
+  while IFS= read -r -d '' path; do
+    assert_regular_source "$path"
+    relative="${path#"$prefix"/}"
+    mkdir -p "$destination/$(dirname "$relative")"
+    cp -p "$ROOT/$path" "$destination/$relative"
+  done < <(git -C "$ROOT" ls-files -z -- "$prefix")
+}
+
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
 mkdir -p "$WORK/runtime/scripts" "$WORK/skill" "$WORK/plugin/skills/php-structured-edit"
-cp -R "$ROOT/src" "$ROOT/bin" "$WORK/runtime/"
+copy_tracked src "$WORK/runtime/src"
+copy_tracked bin "$WORK/runtime/bin"
 cp "$ROOT/composer.json" "$ROOT/LICENSE-MIT" "$ROOT/LICENSE-CC-BY-SA-4.0" "$WORK/runtime/"
 cp "$ROOT/scripts/build-phar.php" "$WORK/runtime/scripts/"
 # Resolve on the supported PHP floor even when building with a newer interpreter.
@@ -32,16 +56,6 @@ jq '{dev, packages: [.packages[] | {name, version, source, dist, license}]}' \
   "$WORK/runtime/vendor/composer/installed.json" > "$WORK/runtime-dependencies.json"
 jq -e '.dev == false and ([.packages[].name] | index("friendsofphp/php-cs-fixer") == null)' "$WORK/runtime-dependencies.json" > /dev/null
 
-# Only tracked regular files enter archives; no local credentials, symlinks or caches.
-copy_tracked() {
-  local prefix="$1" destination="$2" path relative
-  while IFS= read -r -d '' path; do
-    [[ -f "$ROOT/$path" && ! -L "$ROOT/$path" ]] || { echo "Not a regular source file: $path" >&2; exit 2; }
-    relative="${path#"$prefix"/}"
-    mkdir -p "$destination/$(dirname "$relative")"
-    cp -p "$ROOT/$path" "$destination/$relative"
-  done < <(git -C "$ROOT" ls-files -z -- "$prefix")
-}
 copy_tracked skills/php-structured-edit "$WORK/skill"
 [[ -s "$WORK/skill/SKILL.md" && -f "$WORK/skill/scripts/php-ast-edit" ]]
 cp "$WORK/runtime/dist/php-ast-edit.phar" "$WORK/skill/scripts/"

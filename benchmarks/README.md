@@ -174,8 +174,12 @@ task must include unsuccessful attempts. Check equal paired task coverage before
 variant aggregates. Report task-family results and confidence intervals when the sample
 supports them. A few successful showcase tasks must not become a universal percentage.
 
-No complete model A/B campaign is represented by these files. Publishing one requires
-running the chosen models, retaining their native usage, and reviewing all outcomes.
+The [native agent pilot](agent-economics/README.md) records twelve actual model runs on
+two seed tasks, with native usage, all failed tool calls, source provenance, and outcome
+review. The full skill used more tokens in every pair; the report keeps that negative
+result separate from the CLI timings. It is a small pilot, not the broader study described
+above. Cache state is unknown and human acceptance is pending, so its records are retained
+in a separate evidence format instead of inventing values required by the importer.
 
 ## Historical development measurements
 

@@ -60,8 +60,9 @@ have substantially different startup costs. See the [full protocol](../README.md
 
 ## What remains unmeasured
 
-No completed model A/B campaign is represented here. Model requests, instruction loading,
-cache usage, billed tokens, repair loops, and time until a real project task is accepted
-require separate agent runs. The executable tasks and oracle self-tests provide evaluation
-infrastructure. They do not establish token savings, fewer model rounds, or general
+These CLI samples do not measure model requests, instruction loading, cache usage, billed
+tokens, repair loops, or time until a real project task is accepted. The separate
+[native agent pilot](../agent-economics/README.md) retains actual usage and outcomes for
+twelve runs on two small tasks and found higher token use with the full skill. Neither
+that pilot nor these process timings establish a general performance percentage or
 application correctness.

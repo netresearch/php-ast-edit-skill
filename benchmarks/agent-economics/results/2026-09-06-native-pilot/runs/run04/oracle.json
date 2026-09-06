@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "task_id": "local-variable",
+  "task_manifest_sha256": "f2c2e6ea3a758eedd6f838f4a8448a0ebcf5ef8d8db025433373543b4edbc609",
+  "passed": true,
+  "file_scope_passed": true,
+  "lint": {
+    "Cache.php": true
+  },
+  "runtime_passed": true,
+  "expected_change_passed": true,
+  "runtime_stderr": "",
+  "output_hashes": {
+    "Cache.php": "cee818b2d1205d5a6de2c2063ab676239bf30039b6f1516e2c224631288727dc"
+  },
+  "limitation": "Runtime oracle covers the supplied behavior. Human review of diff and refusal explanation remains required."
+}

@@ -5,6 +5,45 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
 
+# Refuse source symlinks before dependency resolution, using only a disposable checkout.
+GUARD_SOURCE="$WORK/guard-source"
+GUARD_EXTERNAL="$WORK/guard-external"
+mkdir -p "$GUARD_SOURCE/"{scripts,.claude-plugin,src/nested/deeper,bin} "$GUARD_EXTERNAL" "$WORK/guard-tools"
+cp "$ROOT/scripts/build-release.sh" "$ROOT/scripts/build-phar.php" "$GUARD_SOURCE/scripts/"
+cp "$ROOT/plugin.json" "$ROOT/composer.json" "$ROOT/LICENSE-MIT" "$ROOT/LICENSE-CC-BY-SA-4.0" "$GUARD_SOURCE/"
+cp "$ROOT/.claude-plugin/plugin.json" "$GUARD_SOURCE/.claude-plugin/"
+printf '%s\n' 'tracked source' > "$GUARD_SOURCE/src/nested/deeper/source.txt"
+printf '%s\n' 'tracked executable' > "$GUARD_SOURCE/bin/source.txt"
+git -C "$GUARD_SOURCE" init --quiet
+git -C "$GUARD_SOURCE" add .
+cp -R "$GUARD_SOURCE/src" "$GUARD_SOURCE/bin" "$GUARD_EXTERNAL/"
+cat > "$WORK/guard-tools/composer" <<'SH'
+#!/bin/sh
+touch "$GUARD_COMPOSER_MARKER"
+echo 'Source symlink reached Composer' >&2
+exit 90
+SH
+chmod +x "$WORK/guard-tools/composer"
+for component in src/nested src bin src/nested/deeper/source.txt; do
+  mv "$GUARD_SOURCE/$component" "$WORK/guard-original"
+  ln -s "$GUARD_EXTERNAL/$component" "$GUARD_SOURCE/$component"
+  status=0
+  GUARD_COMPOSER_MARKER="$WORK/guard-composer-ran" PATH="$WORK/guard-tools:$PATH" \
+    bash "$GUARD_SOURCE/scripts/build-release.sh" > "$WORK/guard.out" 2>&1 || status=$?
+  rm "$GUARD_SOURCE/$component"
+  mv "$WORK/guard-original" "$GUARD_SOURCE/$component"
+  if [[ "$status" != 2 || "$(<"$WORK/guard.out")" != *"Refusing source symlink: $component"* || -e "$WORK/guard-composer-ran" ]]; then
+    echo "FAIL: source symlink $component was not refused before Composer (exit $status)" >&2
+    cat "$WORK/guard.out" >&2
+    exit 1
+  fi
+  echo "OK: source symlink $component is refused before Composer"
+done
+
+if [[ "${1:-}" == --guards-only ]]; then
+  exit 0
+fi
+
 smoke() {
   local label="$1" fixture="$WORK/$1.php"
   shift
@@ -87,12 +126,21 @@ if [[ "${1:-}" == --artifacts && -n "${2:-}" ]]; then
 else
   VERSION="v$(jq -r '.version' "$ROOT/plugin.json")"
   RELEASES="$WORK/releases"
-  bash "$ROOT/scripts/build-release.sh" "$VERSION" "$RELEASES"
+  # Preserve the candidate working files and modes, but leave the real checkout alone.
+  BUILD_SOURCE="$WORK/build-source"
+  mkdir -p "$BUILD_SOURCE"
+  git -C "$ROOT" ls-files -z | tar -C "$ROOT" --null -T - -cf - | tar -xf - -C "$BUILD_SOURCE"
+  git -C "$BUILD_SOURCE" init --quiet
+  git -C "$BUILD_SOURCE" add .
+  printf '%s\n' 'untracked distribution sentinel' > "$BUILD_SOURCE/src/distribution-untracked.txt"
+  printf '%s\n' 'untracked distribution sentinel' > "$BUILD_SOURCE/bin/distribution-untracked.txt"
+  bash "$BUILD_SOURCE/scripts/build-release.sh" "$VERSION" "$RELEASES"
 fi
 (cd "$RELEASES" && sha256sum --check SHA256SUMS.txt)
 jq -e '.dev == false and ([.packages[].name] | index("friendsofphp/php-cs-fixer") == null)' "$RELEASES/runtime-dependencies.json" > /dev/null
 smoke phar php "$RELEASES/php-ast-edit.phar"
 php "$ROOT/tests/distribution.php" "$RELEASES/php-ast-edit.phar"
+echo "OK: untracked runtime files are excluded from the PHAR"
 
 for archive in "$RELEASES/"*.zip "$RELEASES/"*.tar.gz; do
   name="$(basename "$archive")"
@@ -108,6 +156,8 @@ for archive in "$RELEASES/"*.zip "$RELEASES/"*.tar.gz; do
   else
     wrapper="$destination/scripts/php-ast-edit"
   fi
+  [[ -x "$wrapper" && -x "$(dirname "$wrapper")/php-ast-edit.phar" ]]
+  cmp "$RELEASES/php-ast-edit.phar" "$(dirname "$wrapper")/php-ast-edit.phar"
   # An unrelated working directory has neither a checkout nor project vendor/bin.
   (cd "$WORK" && smoke "$name" bash "$wrapper")
 done

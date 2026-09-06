@@ -4,6 +4,12 @@ declare(strict_types=1);
 
 $phar = new Phar($argv[1]);
 
+foreach (['src/distribution-untracked.txt', 'bin/distribution-untracked.txt'] as $entry) {
+    if (isset($phar[$entry])) {
+        throw new RuntimeException('Untracked build source leaked into PHAR: ' . $entry);
+    }
+}
+
 foreach ([
     'bin/php-ast-edit',
     'src/Application.php',

@@ -1,0 +1,105 @@
+{
+  "run_id": "run10",
+  "task_id": "multi-file-members",
+  "variant": "full_skill",
+  "repetition": 3,
+  "work": "{PILOT_ROOT}/runs/run10/work",
+  "evidence": "{PILOT_ROOT}/runs/run10/evidence",
+  "fixture_setup_ms": 78.02634499967098,
+  "source_commit": "33f85b8ef83d8dda81491c82fa86d18046168063",
+  "config_sha256": "6366343842705f79a141dd992ddf8545752ddedaa96855d0996c3c9049c3d64e",
+  "process_exit_code": 0,
+  "timed_out": false,
+  "candidate_wall_ms": 16945.394976995885,
+  "external_grading_ms": 85.17970098182559,
+  "native_result_present": true,
+  "native_is_error": false,
+  "native_subtype": "success",
+  "reported_model": "claude-sonnet-4-6",
+  "isolation_init": {
+    "tools": [
+      "Bash",
+      "Edit",
+      "Read",
+      "Write"
+    ],
+    "plugins": [],
+    "skills": [],
+    "mcp_servers": []
+  },
+  "all_model_usage": {
+    "claude-sonnet-4-6": {
+      "inputTokens": 6,
+      "outputTokens": 641,
+      "cacheReadInputTokens": 27106,
+      "cacheCreationInputTokens": 2666,
+      "webSearchRequests": 0,
+      "costUSD": 0.0337608,
+      "contextWindow": 200000,
+      "maxOutputTokens": 32000,
+      "thinkingTokens": 19,
+      "canonicalModel": "claude-sonnet-4-6",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "primary_model_tokens": {
+    "inputTokens": 6,
+    "outputTokens": 641,
+    "cacheReadInputTokens": 27106,
+    "cacheCreationInputTokens": 2666,
+    "thinkingTokens": 19,
+    "totalInputTokens": 29778,
+    "totalTokens": 30419
+  },
+  "all_model_tokens": {
+    "inputTokens": 6,
+    "outputTokens": 641,
+    "cacheReadInputTokens": 27106,
+    "cacheCreationInputTokens": 2666,
+    "thinkingTokens": 19,
+    "totalInputTokens": 29778,
+    "totalTokens": 30419
+  },
+  "native_list_price_usd": 0.0337608,
+  "native_num_turns": 6,
+  "native_duration_ms": 15744,
+  "native_duration_api_ms": 15619,
+  "primary_response_ids": [
+    "response-01",
+    "response-02",
+    "response-03",
+    "response-04",
+    "response-05"
+  ],
+  "primary_model_rounds": 5,
+  "auxiliary_model_rounds": null,
+  "tool_calls": 5,
+  "failed_tool_calls": 0,
+  "tool_results_received": 5,
+  "malformed_json_lines": [],
+  "oracle": {
+    "schema_version": 1,
+    "task_id": "multi-file-members",
+    "task_manifest_sha256": "f2c2e6ea3a758eedd6f838f4a8448a0ebcf5ef8d8db025433373543b4edbc609",
+    "passed": true,
+    "file_scope_passed": true,
+    "lint": {
+      "First.php": true,
+      "Second.php": true
+    },
+    "runtime_passed": true,
+    "expected_change_passed": true,
+    "runtime_stderr": "",
+    "output_hashes": {
+      "First.php": "c11e6650fd997d0ff7f74a7c2df9c89e3255fcd19afff85d41984220e5c79d12",
+      "Second.php": "6e5aea47ebccb8681170e66f919d760ff4584faea42460a0e50bbfeb8bb44f66"
+    },
+    "limitation": "Runtime oracle covers the supplied behavior. Human review of diff and refusal explanation remains required."
+  },
+  "review": {
+    "operator_agent": "passed",
+    "independent_root_agent": "passed",
+    "human": "pending"
+  }
+}

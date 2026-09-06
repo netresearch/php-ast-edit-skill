@@ -11,8 +11,12 @@ The `php-structured-edit` skill teaches an agent this workflow.
 It can remove coordinate inspection when a symbol selector suffices, and it can combine
 multiple edits in one invocation. Those features do not prove lower total token use.
 Instructions, JSON responses, retries, and caching also affect cost. See the
-[measurement protocol and local results](../benchmarks/README.md); complete agent A/B
-measurements must be reported separately from process timings.
+[measurement protocol and local results](../benchmarks/README.md). In the
+[first native agent pilot](../benchmarks/agent-economics/results/2026-09-06-native-pilot/REPORT.md),
+six full-skill runs used **75.7% more input-plus-output tokens**, including cache reads
+and writes, than six contextual-edit runs. Both variants passed all six runtime oracles
+and independent AI diff review; human acceptance remains pending. That two-task pilot
+does not support a token-saving claim or a general performance percentage.
 
 ## Is AST editing always safer than a patch?
 

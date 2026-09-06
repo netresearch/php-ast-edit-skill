@@ -1,0 +1,207 @@
+[
+  {
+    "name": "clue/ndjson-react",
+    "version": "v1.3.0",
+    "source_reference": "392dc165fce93b5bb5c637b67e59619223c931b0"
+  },
+  {
+    "name": "composer/pcre",
+    "version": "3.4.0",
+    "source_reference": "d5a341b3fb61f3001970940afb1d332968a183ed"
+  },
+  {
+    "name": "composer/semver",
+    "version": "3.4.4",
+    "source_reference": "198166618906cb2de69b95d7d47e5fa8aa1b2b95"
+  },
+  {
+    "name": "composer/xdebug-handler",
+    "version": "3.0.5",
+    "source_reference": "6c1925561632e83d60a44492e0b344cf48ab85ef"
+  },
+  {
+    "name": "ergebnis/agent-detector",
+    "version": "1.2.0",
+    "source_reference": "e211f17928c8b95a51e06040792d57f5462fb271"
+  },
+  {
+    "name": "evenement/evenement",
+    "version": "v3.0.2",
+    "source_reference": "0a16b0d71ab13284339abb99d9d2bd813640efbc"
+  },
+  {
+    "name": "fidry/cpu-core-counter",
+    "version": "1.3.0",
+    "source_reference": "db9508f7b1474469d9d3c53b86f817e344732678"
+  },
+  {
+    "name": "friendsofphp/php-cs-fixer",
+    "version": "v3.95.24",
+    "source_reference": "9a4b8050f8768646bf3693ee7416978ceeca6206"
+  },
+  {
+    "name": "netresearch/composer-agent-skill-plugin",
+    "version": "v2.1.1",
+    "source_reference": "143ed8d368949e5db14c68fd89ffd4e416a6b330"
+  },
+  {
+    "name": "nikic/php-parser",
+    "version": "v5.8.0",
+    "source_reference": "044a6a392ff8ad0d61f14370a5fbbd0a0107152f"
+  },
+  {
+    "name": "psr/container",
+    "version": "2.0.2",
+    "source_reference": "c71ecc56dfe541dbd90c5360474fbc405f8d5963"
+  },
+  {
+    "name": "psr/event-dispatcher",
+    "version": "1.0.0",
+    "source_reference": "dbefd12671e8a14ec7f180cab83036ed26714bb0"
+  },
+  {
+    "name": "psr/log",
+    "version": "3.0.2",
+    "source_reference": "f16e1d5863e37f8d8c2a01719f5b34baa2b714d3"
+  },
+  {
+    "name": "react/cache",
+    "version": "v1.2.0",
+    "source_reference": "d47c472b64aa5608225f47965a484b75c7817d5b"
+  },
+  {
+    "name": "react/child-process",
+    "version": "v0.6.7",
+    "source_reference": "970f0e71945556422ee4570ccbabaedc3cf04ad3"
+  },
+  {
+    "name": "react/dns",
+    "version": "v1.14.0",
+    "source_reference": "7562c05391f42701c1fccf189c8225fece1cd7c3"
+  },
+  {
+    "name": "react/event-loop",
+    "version": "v1.6.0",
+    "source_reference": "ba276bda6083df7e0050fd9b33f66ad7a4ac747a"
+  },
+  {
+    "name": "react/promise",
+    "version": "v3.3.0",
+    "source_reference": "23444f53a813a3296c1368bb104793ce8d88f04a"
+  },
+  {
+    "name": "react/socket",
+    "version": "v1.17.0",
+    "source_reference": "ef5b17b81f6f60504c539313f94f2d826c5faa08"
+  },
+  {
+    "name": "react/stream",
+    "version": "v1.4.0",
+    "source_reference": "1e5b0acb8fe55143b5b426817155190eb6f5b18d"
+  },
+  {
+    "name": "sebastian/diff",
+    "version": "9.0.1",
+    "source_reference": "a2df6626c1baf31d5a88674882a3072f151b5a26"
+  },
+  {
+    "name": "symfony/console",
+    "version": "v8.1.6",
+    "source_reference": "eb7d9957d66739649e931ce7a9d05dab69f8abac"
+  },
+  {
+    "name": "symfony/deprecation-contracts",
+    "version": "v3.7.1",
+    "source_reference": "f3202fa1b5097b0af062dc978b32ecf63404e31d"
+  },
+  {
+    "name": "symfony/event-dispatcher",
+    "version": "v8.1.5",
+    "source_reference": "7458da64220376b2e0dc2d8451bf43382c1ad297"
+  },
+  {
+    "name": "symfony/event-dispatcher-contracts",
+    "version": "v3.7.1",
+    "source_reference": "c7de7a00ffb67842132da02ea92988a39ccd9f4e"
+  },
+  {
+    "name": "symfony/filesystem",
+    "version": "v8.1.6",
+    "source_reference": "7599ebb855fede59413ddb7f15198d67bfcae7ba"
+  },
+  {
+    "name": "symfony/finder",
+    "version": "v8.1.5",
+    "source_reference": "8d7acede2b2ae07605783d1c43e49b5767036474"
+  },
+  {
+    "name": "symfony/options-resolver",
+    "version": "v8.1.0",
+    "source_reference": "88f9c561f678a02d54b897014049fa839e33ff82"
+  },
+  {
+    "name": "symfony/polyfill-ctype",
+    "version": "v1.37.0",
+    "source_reference": "141046a8f9477948ff284fa65be2095baafb94f2"
+  },
+  {
+    "name": "symfony/polyfill-intl-grapheme",
+    "version": "v1.41.0",
+    "source_reference": "bb899c1db0aa8127dc3afe8cda4a67eb24915f8d"
+  },
+  {
+    "name": "symfony/polyfill-intl-normalizer",
+    "version": "v1.42.0",
+    "source_reference": "aa20edea75bd9c48cfecc8360922e5a6e5c44502"
+  },
+  {
+    "name": "symfony/polyfill-mbstring",
+    "version": "v1.38.2",
+    "source_reference": "d3d318bad5e7a1bfbd026009c8bfb8d8f99ae6b6"
+  },
+  {
+    "name": "symfony/polyfill-php80",
+    "version": "v1.37.0",
+    "source_reference": "dfb55726c3a76ea3b6459fcfda1ec2d80a682411"
+  },
+  {
+    "name": "symfony/polyfill-php81",
+    "version": "v1.38.1",
+    "source_reference": "6bfb9c766cacffbc8e118cb87217d08ed84e5cd7"
+  },
+  {
+    "name": "symfony/polyfill-php84",
+    "version": "v1.38.1",
+    "source_reference": "f4e1dfaee5b74aba5964fe1fd4dfc7ba5e3085fa"
+  },
+  {
+    "name": "symfony/polyfill-php85",
+    "version": "v1.41.0",
+    "source_reference": "255fab485aaa1006ed411040c42aecd7b5302d7a"
+  },
+  {
+    "name": "symfony/process",
+    "version": "v8.1.6",
+    "source_reference": "d863f5e70d7c87abb906ac11b61f83036093000b"
+  },
+  {
+    "name": "symfony/service-contracts",
+    "version": "v3.7.3",
+    "source_reference": "15e6a07ec2a2c75ceb1b21dd98105ee8456d2257"
+  },
+  {
+    "name": "symfony/stopwatch",
+    "version": "v8.1.0",
+    "source_reference": "21c07b026905d596e8379caeb115d87aa479499d"
+  },
+  {
+    "name": "symfony/string",
+    "version": "v8.1.2",
+    "source_reference": "286a76b7255e5cc4bf0101a0bc5388ecf1c38ccc"
+  },
+  {
+    "name": "symfony/yaml",
+    "version": "v8.1.6",
+    "source_reference": "0b4aa53a67f9fece88c665f1a1dadcfd25d93fe5"
+  }
+]

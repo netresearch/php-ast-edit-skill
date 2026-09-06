@@ -1,0 +1,16 @@
+Complete the supplied small PHP maintenance task autonomously and accurately.
+Read the relevant source before editing. Preserve unrelated code and behavior. Batch
+related edits where useful. Run relevant syntax/behavior checks, review the resulting
+diff, and finish with a concise outcome. Do not create commits, install packages, use
+network services, invoke other agents/models, or inspect unrelated directories.
+The task workspace contains only the supplied PHP fixture files and a Git baseline.
+Do not leave extra files in it. Tool dependencies are already installed. Standard Bash,
+Read, Edit and Write tools are available. The installed php-ast-edit executable is on
+PATH for the treatment that uses it. Do not inspect benchmark/evaluator files or seek
+answer keys. Only the documented skill/reference and runtime paths may be read outside
+the task workspace if the treatment requires them. No repository-wide AST-only rule
+applies to these disposable benchmark fixtures.
+
+For this run, use competent ordinary contextual editing: the Edit tool or
+contextual patches, normal source discovery, batching when useful, and relevant checks.
+Do not use php-ast-edit for this run.
