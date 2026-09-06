@@ -51,7 +51,7 @@ def read_events(path):
             event = json.loads(line)
             require(isinstance(event, dict), "Native event is not an object")
             events.append(event)
-        except (ValueError, json.JSONDecodeError) as error:
+        except ValueError as error:
             malformed.append({"line": number, "text": line, "error": str(error)})
     return events, malformed
 
@@ -153,6 +153,14 @@ def validate_inputs(responses, models, requested_model, events):
     }
 
 
+def reported_tool_interval(metadata):
+    for key in ("duration_ms", "durationMs"):
+        value = metadata.get(key)
+        if type(value) in (int, float) and math.isfinite(value) and value >= 0:
+            return {"milliseconds": value, "source_field": f"tool_use_result.{key}"}
+    return None
+
+
 def tool_timings(events, calls):
     timings = {}
     for event in events:
@@ -166,25 +174,21 @@ def tool_timings(events, calls):
         ]
         if len(ids) != 1:
             continue
-        for key in ("duration_ms", "durationMs"):
-            value = metadata.get(key)
-            if type(value) in (int, float) and math.isfinite(value) and value >= 0:
-                timings[ids[0]] = {
-                    "milliseconds": value,
-                    "source_field": f"tool_use_result.{key}",
-                }
-                break
+        interval = reported_tool_interval(metadata)
+        if interval is not None:
+            timings[ids[0]] = interval
     complete = bool(calls) and set(timings) == set(calls)
+    status = "not_exposed"
+    if complete:
+        status = "complete_native_intervals"
+    elif timings:
+        status = "partial"
     return {
         "native_tool_timings": timings,
         "tool_execution_ms": sum(row["milliseconds"] for row in timings.values())
         if complete
         else None,
-        "tool_timing_status": "complete_native_intervals"
-        if complete
-        else "partial"
-        if timings
-        else "not_exposed",
+        "tool_timing_status": status,
     }
 
 

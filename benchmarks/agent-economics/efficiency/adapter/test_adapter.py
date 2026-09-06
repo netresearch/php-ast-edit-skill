@@ -142,7 +142,8 @@ class AdapterTests(unittest.TestCase):
             "apply", payload={"files": [self.edit(first), bad]}, status=2
         )
         self.assertFalse(result["ok"])
-        self.assertEqual((self.first.read_bytes(), self.second.read_bytes()), before)
+        after = (self.first.read_bytes(), self.second.read_bytes())
+        self.assertEqual(after, before)
         # A rejected transaction leaves both read handles available for a corrected transaction.
         good = self.call(
             "apply", payload={"files": [self.edit(first), self.edit(second, "Second")]}

@@ -155,11 +155,11 @@ try {
     $autoload = getenv('PHP_AST_AGENT_AUTOLOAD');
 
     if ($autoload === false || !is_file($autoload)) {
-        throw new RuntimeException(
-            'PHP_AST_EDIT_BIN must point to a source runtime with vendor/autoload.php',
+        throw new InvalidArgumentException(
+            "PHP_AST_EDIT_BIN must point to a source runtime with vendor/autoload.php",
         );
     }
-    require $autoload;
+    require_once $autoload;
     $request = json_decode(stream_get_contents(STDIN), true, 512, JSON_THROW_ON_ERROR);
     $views = [];
 

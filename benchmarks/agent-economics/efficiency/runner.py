@@ -30,6 +30,7 @@ ORACLE = "oracle.json"
 INITIAL_HASHES = "initial-hashes.json"
 STATE = "state.json"
 BASELINE_COMMIT = "baseline-commit.txt"
+TASK_MANIFEST = "controller/benchmarks/tasks.json"
 ARMS = ("contextual_patch", "full_skill", "compact_full", "compact_focused")
 MODELS = {
     "sonnet": {"id": "claude-sonnet-4-6", "effort": "medium"},
@@ -112,8 +113,8 @@ def environment():
 
 
 def invoke(argv, cwd=None, timeout=90):
-    # Explicit trusted local operator/grader argv, never a shell. See PROTOCOL.md.
-    return subprocess.run(  # NOSONAR(S6350)
+    # Operator-selected executable and argv; no shell/sandbox promise. See benchmarks/TRUST.md.
+    return subprocess.run(  # NOSONAR(S6350, S8701, S8705)
         argv,
         cwd=cwd,
         env=environment(),
@@ -249,7 +250,7 @@ def exact_template(base, task, target):
             "task_id": task["id"],
             "work": str(work),
             "baseline": baseline,
-            "task_manifest_sha256": digest(base / "controller/benchmarks/tasks.json"),
+            "task_manifest_sha256": digest(base / TASK_MANIFEST),
         },
     )
     return {"prompt": task["prompt"], "workspace": str(work), "files": list(baseline)}
@@ -332,15 +333,26 @@ def freeze(base):
     )
 
 
+def create_campaign_directory(output):
+    base = output.absolute()
+    # Direct child of sticky Linux /tmp, atomically created owner-only; see TRUST.md.
+    require(
+        base.parent == Path("/tmp"),  # NOSONAR(S5443)
+        "Use a fresh direct child of Linux /tmp as the output directory",
+    )
+    try:
+        base.mkdir(mode=0o700)
+    except FileExistsError as error:
+        raise ValueError(
+            "Output already exists; refusing to replace evidence"
+        ) from error
+    return base
+
+
 def prepare(args):
     arms = tuple(args.arms.split(","))
     planned_order = balanced_order(args.tasks.split(","), args.seed, arms)
-    base = args.output.resolve()
-    require(
-        base.is_relative_to(Path("/tmp")), "Use a fresh Linux /tmp output directory"
-    )
-    require(not base.exists(), "Output already exists; refusing to replace evidence")
-    base.mkdir(parents=True)
+    base = create_campaign_directory(args.output)
     started = time.monotonic()
     commit, status = snapshot(args, base)
     task_ids = args.tasks.split(",")
@@ -349,7 +361,7 @@ def prepare(args):
         0 < args.campaign_budget_usd <= 8,
         "Campaign budget must be positive and at most USD 8",
     )
-    tasks = load(base / "controller/benchmarks/tasks.json")["tasks"]
+    tasks = load(base / TASK_MANIFEST)["tasks"]
     require(set(task_ids) <= {task["id"] for task in tasks}, "Unknown task IDs")
     instructions = {arm: text for arm, text in variants(base).items() if arm in arms}
     templates = make_templates(base, task_ids, tasks)
@@ -388,7 +400,7 @@ def prepare(args):
         "full_skill_words": len(
             (base / "runtime/skills/php-structured-edit/SKILL.md").read_text().split()
         ),
-        "task_manifest_sha256": digest(base / "controller/benchmarks/tasks.json"),
+        "task_manifest_sha256": digest(base / TASK_MANIFEST),
         "preparation_ms": (time.monotonic() - started) * 1000,
     }
     save(base / CONFIG, config)

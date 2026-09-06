@@ -71,8 +71,8 @@ def main():
     if args and args[0] == "apply":
         forwarded, captured = capture_input(args)
     append({"event": "engine_request", "id": identifier, "argv": args, **captured})
-    # Trusted local harness selects the real engine, while argv is its normal CLI input.
-    result = subprocess.run(  # NOSONAR(S6350)
+    # Passive capture preserves the engine's normal argv; no sandbox. See benchmarks/TRUST.md.
+    result = subprocess.run(  # NOSONAR(S6350, S8705)
         [os.environ["PHP_AST_REAL_BIN"], *args],
         input=forwarded,
         capture_output=True,

@@ -72,6 +72,14 @@ echo "::group::benchmarks/agent_benchmark.py (task oracles and evidence validati
 python3 benchmarks/agent_benchmark.py self-test || fail=1
 echo "::endgroup::"
 
+echo "::group::efficiency harness (private campaign directories and native timing)"
+python3 benchmarks/agent-economics/efficiency/test_harness.py || fail=1
+echo "::endgroup::"
+
+echo "::group::efficiency adapter (real-engine revision guards and source views)"
+python3 benchmarks/agent-economics/efficiency/adapter/test_adapter.py || fail=1
+echo "::endgroup::"
+
 if [[ "${1:-}" != --runtime-only ]]; then
   echo "::group::tests/distribution.sh (clean install and executable artifacts)"
   bash tests/distribution.sh || fail=1
