@@ -28,6 +28,7 @@ use PhpParser\Node\StaticVar;
 use PhpParser\Node\Stmt;
 use PhpParser\Node\UseItem;
 use PhpParser\Node\VarLikeIdentifier;
+use PhpParser\NodeFinder;
 use PhpParser\NodeTraverser;
 use PhpParser\NodeVisitor\CloningVisitor;
 use PhpParser\Parser;
@@ -344,12 +345,17 @@ final class Editor
                     ),
                 );
             }
+            $this->lastEffect = [];
             $this->applyOperation(
                 $entry['location'],
                 $entry['edit'],
                 $transaction->roots,
                 $snippets,
             );
+
+            if ($this->lastEffect !== []) {
+                $transaction->effects[$entry['index']] = $this->lastEffect + ['operation' => (string) $entry['edit']['operation']];
+            }
         }
     }
 
@@ -605,6 +611,16 @@ final class Editor
             'dryRun' => $dryRun,
         ];
 
+        if ($transaction->effects !== []) {
+            ksort($transaction->effects);
+            $result['effects'] = $transaction->effects;
+        }
+        $diff = $this->unifiedDiff($transaction);
+
+        if ($diff !== null) {
+            $result['diff'] = $diff;
+        }
+
         if ($transaction->formatter !== null) {
             $result['formatter'] = $transaction->formatter;
         }
@@ -749,11 +765,14 @@ final class Editor
                         'rename_variable targets the scope the variable lives in: a method, function, closure or arrow function.',
                     );
                 }
-                $this->renameVariable(
-                    $node,
-                    $this->requiredString($edit, 'from'),
-                    $this->requiredString($edit, 'to'),
-                );
+                $this->lastEffect = [
+                    'renamed' => $this->renameVariable(
+                        $node,
+                        $this->requiredString($edit, 'from'),
+                        $this->requiredString($edit, 'to'),
+                    ),
+                    'remainingInFile' => $this->remainingVariables($roots, $this->requiredString($edit, 'from')),
+                ];
 
                 return true;
                 // ---- Convenience shorthands over the primitives ------------------------------
@@ -1997,5 +2016,121 @@ final class Editor
     public static function operationArguments(): array
     {
         return self::OPERATION_ARGUMENTS;
+    }
+
+    /**
+     * What the operation now running has to report, or an empty array.
+     *
+     * Read by `mutate()` straight after the dispatcher and cleared before each edit, so an
+     * operation that counts something can say so without every handler in the chain having to
+     * carry a return value it does not use.
+     *
+     * @var array<string, int|string>
+     */
+    private array $lastEffect = [];
+
+    /**
+     * How often the old name still occurs in the file, outside the scope just renamed.
+     *
+     * A rename is scoped, and a caller cannot know from the request whether the name lives in
+     * other scopes too. Measured: told nothing, a model renamed two of three scopes, checked
+     * with a `grep`, then sent a second `apply` — and in an earlier run stopped after two and
+     * left the third alone. Counting what is left turns that into one number the write
+     * already has.
+     *
+     * @param list<Node\Stmt> $roots
+     */
+    private function remainingVariables(array $roots, string $name): int
+    {
+        $name = ltrim($name, '$');
+        $found = 0;
+
+        foreach ((new NodeFinder())->findInstanceOf($roots, Expr\Variable::class) as $variable) {
+            if (is_string($variable->name) && $variable->name === $name) {
+                ++$found;
+            }
+        }
+
+        return $found;
+    }
+
+    /** Above this many changed lines a diff stops being an answer and becomes the file again. */
+    private const DIFF_LINE_CAP = 200;
+
+    /**
+     * A unified diff of what this write did, or null when it is too large to be an answer.
+     *
+     * The point of returning it is that nobody has to read the file back. Measured on a
+     * controlled run: after a successful rename the model spent a `grep`, two `Read`s and a
+     * `tail` establishing what had happened — four calls the write could have answered.
+     *
+     * A first normalisation rewrites the whole file, and a diff of that is not an answer to
+     * anything; above the cap the caller is told the number instead.
+     */
+    private function unifiedDiff(FileTransaction $transaction): ?string
+    {
+        if ($transaction->source === null || $transaction->output === null) {
+            return null;
+        }
+
+        if (($transaction->changedLines ?? 0) > self::DIFF_LINE_CAP) {
+            return null;
+        }
+        $before = explode("\n", $transaction->source);
+        $after = explode("\n", $transaction->output);
+        $out = [];
+        $i = 0;
+        $j = 0;
+
+        while ($i < count($before) || $j < count($after)) {
+            if ($i < count($before) && $j < count($after) && $before[$i] === $after[$j]) {
+                ++$i;
+                ++$j;
+
+                continue;
+            }
+            $nextMatch = $this->nextCommonLine($before, $after, $i, $j);
+
+            for (; $i < $nextMatch['before']; ++$i) {
+                $out[] = '-' . $before[$i];
+            }
+
+            for (; $j < $nextMatch['after']; ++$j) {
+                $out[] = '+' . $after[$j];
+            }
+
+            if ($nextMatch['before'] >= count($before) && $nextMatch['after'] >= count($after)) {
+                break;
+            }
+        }
+
+        return $out === [] ? null : implode("\n", $out);
+    }
+
+    /**
+     * Where the two sides line up again, searched forward from a divergence.
+     *
+     * A whole diff algorithm is not the point here: the caller wants to see the lines that
+     * changed, and a bounded forward search finds them for the small edits this cap admits.
+     *
+     * @param  list<string> $before
+     * @param  list<string> $after
+     * @return array{before: int, after: int}
+     */
+    private function nextCommonLine(array $before, array $after, int $i, int $j): array
+    {
+        $limit = self::DIFF_LINE_CAP;
+
+        for ($ahead = 1; $ahead <= $limit; ++$ahead) {
+            for ($b = $i; $b <= min($i + $ahead, count($before) - 1); ++$b) {
+                for ($a = $j; $a <= min($j + $ahead, count($after) - 1); ++$a) {
+                    if ($before[$b] === $after[$a] && $b - $i + ($a - $j) === $ahead) {
+                        return ['before' => $b, 'after' => $a];
+                    }
+                }
+            }
+        }
+
+        return ['before' => count($before), 'after' => count($after)];
     }
 }

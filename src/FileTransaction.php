@@ -59,4 +59,15 @@ final class FileTransaction
      * was printed format-preserving and is therefore not the formatter's to touch.
      */
     public ?string $formatter = null;
+
+    /**
+     * What each edit did, keyed by its index in the request.
+     *
+     * A caller that cannot see the outcome reads the file back. Measured on a controlled run:
+     * after a successful rename the model ran a `grep`, two `Read`s and a `tail` to satisfy
+     * itself — four calls spent on a question the write already knew the answer to.
+     *
+     * @var array<int, array<string, int|string>>
+     */
+    public array $effects = [];
 }

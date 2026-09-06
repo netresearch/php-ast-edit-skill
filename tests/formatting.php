@@ -659,6 +659,72 @@ try {
 }
 removeTree($scopeDir);
 
+// A write that cannot be seen gets read back. Measured on a controlled run: after a
+// successful rename the model spent a `grep`, two `Read`s and a `tail` establishing what
+// had happened, and sent a second `apply` because nothing had told it a third scope still
+// held the name. The report answers all three.
+$reportDir = workspace();
+RepositoryConfig::write($reportDir, 120);
+$reportPath = $reportDir . '/r.php';
+file_put_contents(
+    $reportPath,
+    <<<'PHP'
+    <?php
+    
+    class R
+    {
+        public function a(string $item): string
+        {
+            return $item;
+        }
+    
+        public function b(string $item): string
+        {
+            return $item;
+        }
+    }
+    PHP . "\n",
+);
+$reported = (new Editor())->apply(
+    [
+        'files' => [
+            [
+                'path' => $reportPath,
+                'edits' => [
+                    [
+                        'target' => ['select' => 'method:R::a'],
+                        'operation' => 'rename_variable',
+                        'from' => 'item',
+                        'to' => 'value',
+                    ],
+                ],
+            ],
+        ],
+    ],
+    true,
+)['files'][0];
+check(
+    'the write says how much it renamed',
+    ($reported['effects'][0]['renamed'] ?? null) === 2,
+    json_encode($reported['effects'] ?? null),
+);
+check(
+    'and how much of the old name the file still holds',
+    ($reported['effects'][0]['remainingInFile'] ?? null) === 2,
+    json_encode($reported['effects'] ?? null),
+);
+check(
+    'and names the operation that did it',
+    ($reported['effects'][0]['operation'] ?? null) === 'rename_variable',
+    json_encode($reported['effects'] ?? null),
+);
+check(
+    'and shows the change, so nobody reads the file back',
+    str_contains((string) ($reported['diff'] ?? ''), '+        return $value;'),
+    (string) ($reported['diff'] ?? '(kein Diff)'),
+);
+removeTree($reportDir);
+
 // ---- The declaration decides the printer -----------------------------------------------
 $dir = workspace();
 file_put_contents(
