@@ -529,6 +529,9 @@ final class Editor
                 $this->atomicWrite($transaction->path, (string) $transaction->output);
             }
             $this->runFormatter($transactions);
+            // After the formatter and inside the same try: a check reads the file the
+            // caller will commit, not an intermediate.
+            $this->runVerify($transactions);
         } catch (\Throwable $failure) {
             $restoreErrors = [];
 
@@ -623,6 +626,16 @@ final class Editor
 
         if ($transaction->formatter !== null) {
             $result['formatter'] = $transaction->formatter;
+        }
+
+        if ($this->verifyResults !== []) {
+            $result['verify'] = $this->verifyResults;
+        }
+
+        if ($transaction->changed && $transaction->mode !== 'delete') {
+            // The write already parsed what it produced; saying so spares a `validate` call
+            // that asks the question again.
+            $result['valid'] = true;
         }
 
         if ($transaction->warning !== null) {
@@ -2132,5 +2145,110 @@ final class Editor
         }
 
         return ['before' => count($before), 'after' => count($after)];
+    }
+
+    /** How much of a failing check's output comes back before it stops being a summary. */
+    private const VERIFY_OUTPUT_CAP = 4000;
+
+    /**
+     * What the declared checks said about this write.
+     *
+     * @var list<array{command: string, ok: bool, output?: string}>
+     */
+    private array $verifyResults = [];
+
+    /**
+     * Run the checks the project declared, on the files this write produced.
+     *
+     * The same shape as `formatter`, for the same reason: the project owns the commands and
+     * this only executes them. Measured on a controlled run, a model that had just made a
+     * correct four-line edit then spent twelve calls on `validate`, PHPStan four times, the
+     * coding-standards check twice and a `git diff` — a quality gate nobody asked it for,
+     * assembled by reading `composer.json`. Declaring the checks turns that into one field.
+     *
+     * A failing check does not roll the write back. The code is written and it parses; what
+     * failed is an opinion about it, and the caller is the one who decides what to do with
+     * that. The output comes back so the decision does not need another call.
+     *
+     * @param list<FileTransaction> $transactions
+     */
+    private function runVerify(array $transactions): void
+    {
+        /** @var array<string, array{verify: list<list<string>>, paths: list<string>}> $groups */
+        $groups = [];
+
+        foreach ($transactions as $transaction) {
+            if (!$transaction->changed || $transaction->mode === 'delete') {
+                continue;
+            }
+            $config = RepositoryConfig::discover($transaction->path);
+
+            if ($config->verify === null || $config->path === null || $config->excludes($transaction->path)) {
+                continue;
+            }
+            $root = \dirname($config->path);
+            $groups[$root] ??= ['verify' => $config->verify, 'paths' => []];
+            $groups[$root]['paths'][] = realpath($transaction->path) ?: $transaction->path;
+        }
+
+        foreach ($groups as $root => $group) {
+            foreach ($group['verify'] as $command) {
+                $expanded = [];
+
+                foreach ($command as $argument) {
+                    if ($argument !== RepositoryConfig::FILES_PLACEHOLDER) {
+                        $expanded[] = $argument;
+
+                        continue;
+                    }
+
+                    foreach ($group['paths'] as $path) {
+                        $expanded[] = $path;
+                    }
+                }
+                $this->verifyResults[] = $this->captureCommand($expanded, $root);
+            }
+        }
+    }
+
+    /**
+     * Run one declared check and report how it went, without deciding anything.
+     *
+     * @param  list<string> $command
+     * @return array{command: string, ok: bool, output?: string}
+     */
+    private function captureCommand(array $command, string $root): array
+    {
+        $out = tempnam(sys_get_temp_dir(), 'php-ast-edit-verify-');
+        $err = tempnam(sys_get_temp_dir(), 'php-ast-edit-verify-');
+
+        if ($out === false || $err === false) {
+            throw new EditException('Cannot create a temporary file for the check output.');
+        }
+
+        try {
+            $pipes = [];
+            $process = proc_open($command, [1 => ['file', $out, 'w'], 2 => ['file', $err, 'w']], $pipes, $root);
+
+            if (!is_resource($process)) {
+                return [
+                    'command' => implode(' ', $command),
+                    'ok' => false,
+                    'output' => 'could not be started',
+                ];
+            }
+            $status = proc_close($process);
+            $said = trim((string) file_get_contents($out) . "\n" . (string) file_get_contents($err));
+            $result = ['command' => implode(' ', $command), 'ok' => $status === 0];
+
+            if ($status !== 0) {
+                $result['output'] = mb_substr($said, 0, self::VERIFY_OUTPUT_CAP);
+            }
+
+            return $result;
+        } finally {
+            @unlink($out);
+            @unlink($err);
+        }
     }
 }

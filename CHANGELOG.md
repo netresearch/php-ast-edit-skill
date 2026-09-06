@@ -8,6 +8,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Added
 
+- **A repository can declare the checks it wants run, and `apply` runs them.** `verify` is the same shape as `formatter`, a list of commands with `{files}`, executed after it on what will be committed. Measured on a controlled run: a model that had just made a correct four-line edit then spent twelve calls on `validate`, PHPStan four times, the coding-standards check twice and a `git diff` — a quality gate nobody asked for, assembled by reading `composer.json`. A failing check does not roll the write back; the code is written and it parses, and what failed is an opinion about it, so the output comes back and the caller decides. The report also carries `valid`, since the write already parsed what it produced.
+
 - **The write reports what it did, so nothing has to be read back.** `effects` carries a per-edit outcome — for `rename_variable`, how many occurrences moved and how many of the old name the file still holds — and `diff` shows the change itself, up to 200 lines. Measured on a controlled run: after a successful rename the model spent a `grep`, two `Read`s and a `tail` establishing what had happened, and sent a second `apply` because nothing had told it a third scope still carried the name. All three questions are now answered by the write. In the runs since, the model still reads the file once at the end out of habit, so the saving is in what it no longer has to work out rather than in the call count.
 
 ### Added

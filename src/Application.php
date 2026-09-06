@@ -331,6 +331,17 @@ final class Application
           element and expands to the files the edit wrote, never the tree. A non-zero exit
           rolls the write back and reports what the formatter said.
         
+          `verify` is the same shape, a list of commands, run after the formatter:
+        
+            "verify": [["php", ".Build/bin/phpstan", "analyse",
+                        "-c", "Build/phpstan.neon", "{files}"]]
+        
+          Those run on what will be committed and report `ok` with the output of anything
+          that failed. A failing check does not roll the write back: the code is written
+          and it parses, and what failed is an opinion about it. The report also carries
+          `valid`, `effects` — what each edit did — and `diff`, so the write does not have
+          to be read back to be understood.
+        
         PHP snippets are syntax, not formatting. Compact one-line snippets are preferred;
         the printer decides the layout.
         TEXT;

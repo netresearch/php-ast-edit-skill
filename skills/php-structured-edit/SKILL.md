@@ -60,7 +60,11 @@ for the printer to agree with, so every edit is a style decision nobody made.
 7. Where the repository declares a `formatter` in `.php-ast-edit.json`, `apply` runs it on
    the files it wrote and the write is finished — the report says `"formatter": "ran"` and
    `changedLines` describes the file that survives. Adding one 9-line method to a canonical
-   TYPO3 extension goes from 34 changed lines to 10 that way.
+   TYPO3 extension goes from 34 changed lines to 10 that way. A repository may declare
+   `verify` beside it — PHPStan, the coding-standards check — and those run on what will
+   be committed. The report then carries `valid`, `effects` (what each edit did, and for a
+   rename how much of the old name the file still holds), `diff`, and each check's result:
+   read it instead of running the checks again.
 
    Where it does not, close the transaction yourself, with the whole chain:
 
