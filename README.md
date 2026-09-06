@@ -112,7 +112,9 @@ Batching reduces CLI startups. Named selectors can eliminate an `inspect` call. 
 
 A contextual patch is a valid baseline and can also batch changes. Small edits may cost more through an AST tool. Full agent savings depend on instruction loading, model output, tool latency, retries, correctness, and caching. [Benchmarks](benchmarks/README.md) provides a reproducible local comparison and a separate protocol for measuring complete agent tasks. No general token or model-round reduction is claimed from a CLI microbenchmark.
 
-The [first native agent pilot](benchmarks/agent-economics/results/2026-09-06-native-pilot/REPORT.md) found **no token savings** on two small tasks: six runs supplied with the full skill used 195,701 input-plus-output tokens versus 111,385 for six contextual-edit runs (**75.7% more**), with 29 versus 24 tool calls and 30.4% more candidate wall time. Both variants passed all six runtime oracles and independent AI output review. All six skill-assigned runs omitted the instructed snapshot hashes; [instruction adherence](benchmarks/agent-economics/results/2026-09-06-native-pilot/adherence.json) is recorded separately. These are three paired repetitions per task with Claude Sonnet 4.6; input includes cache reads and writes, provider cache state was uncontrolled, and human acceptance remains pending. This pilot does not establish a general performance percentage.
+The [follow-up experiments](benchmarks/agent-economics/results/2026-09-06-efficiency/REPORT.md) test an **experimental compact adapter**, including mandatory read-bound revisions. On the two-file seed task, Sonnet used a median 14,449 versus 23,715 tokens (**39% fewer**) and two versus six tool calls. Small local renames used more tokens; a public TYPO3 rename also exposed costly recovery loops and four timeouts across the two public-task phases. Results depend on task and model. The report retains every failure and separates correct output from guarded AST workflow adherence. The adapter is benchmark tooling, not the installed skill's default interface.
+
+The [first native agent pilot](benchmarks/agent-economics/results/2026-09-06-native-pilot/REPORT.md) remains unchanged: the complete skill used **75.7% more tokens** than contextual edits across six runs per arm. All twelve outputs passed their task oracles, but all six skill runs omitted snapshot hashes. Both studies use three repetitions per task/model/arm, include cache reads and writes, and have unknown provider cache conditions. Independent AI review is recorded separately from pending human acceptance; neither study establishes a general savings percentage.
 
 ## Why this is a skill (model delta)
 
@@ -154,6 +156,6 @@ the corresponding release process.
 
 ## License
 
-Code (`src/`, `bin/`, `scripts/`, `benchmarks/*.py`, workflows, and executable tests): [MIT](LICENSE-MIT). Documentation and skill content: [CC-BY-SA-4.0](LICENSE-CC-BY-SA-4.0).
+Project code, including benchmark tooling, workflows and executable tests: [MIT](LICENSE-MIT). Documentation and skill content: [CC-BY-SA-4.0](LICENSE-CC-BY-SA-4.0). Public TYPO3 extension source and encoded reference source in the benchmark evidence retain **GPL-2.0-or-later**, with original notices and license copies in the evidence bundle.
 
 Developed and maintained by [Netresearch DTT GmbH](https://www.netresearch.de/).

@@ -31,13 +31,14 @@ class CampaignDirectoryTests(unittest.TestCase):
 
     def test_private_directory_exists_before_any_snapshot_or_command(self):
         output = self.fresh_output()
+        args = self.args(output)
         previous = os.umask(0)
         try:
             with (
                 patch.object(runner, "snapshot", side_effect=SnapshotReached),
                 self.assertRaises(SnapshotReached),
             ):
-                runner.prepare(self.args(output))
+                runner.prepare(args)
         finally:
             os.umask(previous)
         self.assertEqual(stat.S_IMODE(output.stat().st_mode), 0o700)
@@ -47,11 +48,12 @@ class CampaignDirectoryTests(unittest.TestCase):
         output.mkdir()
         sentinel = output / "sentinel"
         sentinel.write_text("retained")
+        args = self.args(output)
         with (
             patch.object(runner, "snapshot") as snapshot,
             self.assertRaises(ValueError),
         ):
-            runner.prepare(self.args(output))
+            runner.prepare(args)
         snapshot.assert_not_called()
         self.assertEqual(sentinel.read_text(), "retained")
 
@@ -59,11 +61,12 @@ class CampaignDirectoryTests(unittest.TestCase):
         output, target = self.fresh_output(), self.fresh_output()
         output.symlink_to(target, target_is_directory=True)
         self.addCleanup(output.unlink)
+        args = self.args(output)
         with (
             patch.object(runner, "snapshot", side_effect=SnapshotReached) as snapshot,
             self.assertRaises(ValueError),
         ):
-            runner.prepare(self.args(output))
+            runner.prepare(args)
         snapshot.assert_not_called()
         self.assertFalse(target.exists())
 
@@ -71,11 +74,12 @@ class CampaignDirectoryTests(unittest.TestCase):
         parent = self.fresh_output()
         parent.mkdir()
         output = parent / "nested"
+        args = self.args(output)
         with (
             patch.object(runner, "snapshot", side_effect=SnapshotReached) as snapshot,
             self.assertRaises(ValueError),
         ):
-            runner.prepare(self.args(output))
+            runner.prepare(args)
         snapshot.assert_not_called()
         self.assertFalse(output.exists())
 

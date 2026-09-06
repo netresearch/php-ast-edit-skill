@@ -2,7 +2,9 @@
 
 The CLI microbenchmark measures local processes. The agent harness measures whether a
 complete task passes its oracle and imports actual model usage. Neither substitutes for
-the other. The harness does not call a paid model API or invent usage data.
+the other. The offline task harness does not invoke models or invent usage data.
+The optional [native efficiency runner](agent-economics/efficiency/PROTOCOL.md) can
+invoke Claude Code only through an explicit `run --execute-models` command.
 Read the [execution and trust boundaries](TRUST.md) before grading candidate code or
 importing evidence; they also record the narrowly scoped static-analysis decisions.
 
@@ -180,6 +182,12 @@ review. The full skill used more tokens in every pair; the report keeps that neg
 result separate from the CLI timings. It is a small pilot, not the broader study described
 above. Cache state is unknown and human acceptance is pending, so its records are retained
 in a separate evidence format instead of inventing values required by the importer.
+
+The [compact-workflow follow-up](agent-economics/results/2026-09-06-efficiency/REPORT.md)
+adds Sonnet/Haiku comparisons, public TYPO3 maintenance tasks and a separate directed
+source-view experiment. It retains negative results, unknown terminal usage and
+instruction bypasses. The source/protocol and sanitized evidence allow independent
+reaggregation; the adapter remains experimental benchmark tooling.
 
 ## Historical development measurements
 

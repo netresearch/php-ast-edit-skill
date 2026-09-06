@@ -4,6 +4,13 @@ This prospective experiment separates a compact tool interface from a focused co
 view. Preparation and validation make no model calls. Historical pilot evidence is
 immutable and is not used as a new observation.
 
+The [completed 120-attempt report](../results/2026-09-06-efficiency/REPORT.md) and
+its evidence bundle retain the original protocol snapshots and every amendment.
+The limits below describe the initial plan: before Phase 3, a separately recorded
+operator amendment raised the shared planning allowance from USD 8 to USD 12.
+Four reviewed timeouts retain unknown token/cost totals and separate planning
+reservations; no failed attempt was rerun or removed.
+
 ## Phase 1 and treatments
 
 The initial phase is two original tasks (`local-variable`, `multi-file-members`),

@@ -650,7 +650,7 @@ def controller_provenance(base, folder=None):
     require(
         folder.parent == base
         and folder.resolve() == folder
-        and re.fullmatch(r"controller-amendment-v[1-9][0-9]*", folder.name),
+        and re.fullmatch(r"controller-amendment-v[1-9]\d*", folder.name, flags=re.ASCII),
         "Unrecognized controller location",
     )
     manifest = load(folder / AMENDMENT)
