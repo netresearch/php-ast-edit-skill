@@ -20,6 +20,10 @@ ENGINE = BASE / "runtime"
 SKILL = ENGINE / "skills/php-structured-edit"
 CONTROLLER = BASE / "controller"
 TASKS = ["local-variable", "multi-file-members"]
+SCHEDULE_FILE = "schedule.json"
+CONFIG_FILE = "config.json"
+RAW_TRACE_FILE = "raw.jsonl"
+ORACLE_FILE = "oracle.json"
 COMMON = """Complete the supplied small PHP maintenance task autonomously and accurately.
 Read the relevant source before editing. Preserve unrelated code and behavior. Batch
 related edits where useful. Run relevant syntax/behavior checks, review the resulting
@@ -67,7 +71,7 @@ def extract(paths, destination):
 
 
 def prepare():
-    if (BASE / "schedule.json").exists():
+    if (BASE / SCHEDULE_FILE).exists():
         raise RuntimeError("Already prepared; refusing to reset existing evidence")
     setup_start = time.monotonic()
     extract(["src", "bin", "skills/php-structured-edit"], ENGINE)
@@ -139,9 +143,10 @@ def prepare():
     }
     pairs = [(task, repetition) for task in TASKS for repetition in range(1, 4)]
     rng = random.Random(config["seed"])
-    rng.shuffle(pairs)
+    # A recorded seed orders benchmark samples; it produces no secrets. See README.md.
+    rng.shuffle(pairs)  # NOSONAR(S2245)
     first_variants = ["contextual_patch", "full_skill"] * 3
-    rng.shuffle(first_variants)
+    rng.shuffle(first_variants)  # NOSONAR(S2245)
     schedule = []
     for (task, repetition), first in zip(pairs, first_variants):
         second = "full_skill" if first == "contextual_patch" else "contextual_patch"
@@ -218,8 +223,8 @@ def prepare():
         if paired_hashes[0] != paired_hashes[1]:
             raise RuntimeError("Paired starting files differ")
     config["total_preparation_ms"] = (time.monotonic() - setup_start) * 1000
-    save(BASE / "config.json", config)
-    save(BASE / "schedule.json", schedule)
+    save(BASE / CONFIG_FILE, config)
+    save(BASE / SCHEDULE_FILE, schedule)
     print(
         json.dumps(
             {"prepared": len(schedule), "setup_ms": config["total_preparation_ms"]}
@@ -256,32 +261,28 @@ def usage_totals(model_usage):
     return totals
 
 
-def run_one(row, config):
-    artifact = Path(row["evidence"])
-    work = Path(row["work"])
-    if (artifact / "measurement.json").exists() or (artifact / "raw.jsonl").exists():
-        raise RuntimeError("Refusing to replace run evidence: " + row["run_id"])
-    argv = [
-        CLAUDE,
-        *config["cli_argv_common"],
-        "--append-system-prompt",
-        (artifact / "system-append.txt").read_text(),
-        (artifact / "prompt.txt").read_text(),
-    ]
-    save(artifact / "argv.json", argv)
+def execute_candidate(argv, work, artifact, timeout_seconds):
+    """Capture the operator-selected process, including timeout and startup costs."""
     env = os.environ.copy()
     env["PATH"] = str(ENGINE / "bin") + os.pathsep + env.get("PATH", "")
     started = time.monotonic()
     timed_out = False
     with (
-        (artifact / "raw.jsonl").open("wb") as output,
+        (artifact / RAW_TRACE_FILE).open("wb") as output,
         (artifact / "stderr.txt").open("wb") as error,
     ):
-        process = subprocess.Popen(
-            argv, cwd=work, env=env, stdout=output, stderr=error, start_new_session=True
+        # The local operator selects argv/config; candidate output never supplies it.
+        # This explicit process capability is not a service input. See README.md.
+        process = subprocess.Popen(  # NOSONAR(S6350)
+            argv,
+            cwd=work,
+            env=env,
+            stdout=output,
+            stderr=error,
+            start_new_session=True,
         )
         try:
-            process.wait(timeout=config["max_wall_seconds_per_run"])
+            process.wait(timeout=timeout_seconds)
         except subprocess.TimeoutExpired:
             timed_out = True
             os.killpg(process.pid, signal.SIGTERM)
@@ -291,18 +292,23 @@ def run_one(row, config):
                 os.killpg(process.pid, signal.SIGKILL)
                 process.wait()
     elapsed = (time.monotonic() - started) * 1000
+    return process.returncode, timed_out, elapsed
+
+
+def read_native_events(path):
+    """Keep valid JSON events and retain malformed lines as explicit evidence."""
     events = []
     malformed = []
-    for line in (artifact / "raw.jsonl").read_text().splitlines():
+    for line in path.read_text().splitlines():
         try:
             events.append(json.loads(line))
         except json.JSONDecodeError:
             malformed.append(line)
-    result = next((e for e in reversed(events) if e.get("type") == "result"), None)
-    init = next(
-        (e for e in events if e.get("type") == "system" and e.get("subtype") == "init"),
-        None,
-    )
+    return events, malformed
+
+
+def collect_message_events(events):
+    """Deduplicate streamed response and tool events by their native IDs."""
     tool_uses = {}
     tool_results = {}
     response_ids = set()
@@ -318,6 +324,39 @@ def run_one(row, config):
                 tool_uses[item["id"]] = item
             elif item.get("type") == "tool_result":
                 tool_results[item["tool_use_id"]] = item
+    return tool_uses, tool_results, response_ids
+
+
+def validate_native_init(init, requested_model):
+    if not init or any(init.get(k) for k in ["plugins", "skills", "mcp_servers"]):
+        raise RuntimeError("Isolation could not be verified; stop subsequent calls")
+    if init.get("model") != requested_model:
+        raise RuntimeError("Unexpected primary model; stop subsequent calls")
+
+
+def run_one(row, config):
+    artifact = Path(row["evidence"])
+    work = Path(row["work"])
+    if (artifact / "measurement.json").exists() or (artifact / RAW_TRACE_FILE).exists():
+        raise RuntimeError("Refusing to replace run evidence: " + row["run_id"])
+    argv = [
+        CLAUDE,
+        *config["cli_argv_common"],
+        "--append-system-prompt",
+        (artifact / "system-append.txt").read_text(),
+        (artifact / "prompt.txt").read_text(),
+    ]
+    save(artifact / "argv.json", argv)
+    exit_code, timed_out, elapsed = execute_candidate(
+        argv, work, artifact, config["max_wall_seconds_per_run"]
+    )
+    events, malformed = read_native_events(artifact / RAW_TRACE_FILE)
+    result = next((e for e in reversed(events) if e.get("type") == "result"), None)
+    init = next(
+        (e for e in events if e.get("type") == "system" and e.get("subtype") == "init"),
+        None,
+    )
+    tool_uses, tool_results, response_ids = collect_message_events(events)
     save(artifact / "tool-uses.json", list(tool_uses.values()))
     save(artifact / "tool-results.json", list(tool_results.values()))
     save(artifact / "native-result.json", result)
@@ -333,7 +372,7 @@ def run_one(row, config):
             "--state",
             str(artifact / "state.json"),
             "--output",
-            str(artifact / "oracle.json"),
+            str(artifact / ORACLE_FILE),
         ],
         text=True,
         capture_output=True,
@@ -358,18 +397,19 @@ def run_one(row, config):
         },
     )
     models = result.get("modelUsage", {}) if result else {}
+    reported_result = result or {}
     primary = {k: v for k, v in models.items() if k == config["requested_model"]}
     measurement = {
         **row,
         "source_commit": COMMIT,
-        "config_sha256": digest(BASE / "config.json"),
-        "process_exit_code": process.returncode,
+        "config_sha256": digest(BASE / CONFIG_FILE),
+        "process_exit_code": exit_code,
         "timed_out": timed_out,
         "candidate_wall_ms": elapsed,
         "external_grading_ms": grade_ms,
         "native_result_present": result is not None,
-        "native_is_error": result.get("is_error") if result else None,
-        "native_subtype": result.get("subtype") if result else None,
+        "native_is_error": reported_result.get("is_error"),
+        "native_subtype": reported_result.get("subtype"),
         "reported_model": init.get("model") if init else None,
         "isolation_init": {
             key: init.get(key) for key in ["tools", "plugins", "skills", "mcp_servers"]
@@ -379,10 +419,10 @@ def run_one(row, config):
         "all_model_usage": models,
         "primary_model_tokens": usage_totals(primary),
         "all_model_tokens": usage_totals(models),
-        "native_list_price_usd": result.get("total_cost_usd") if result else None,
-        "native_num_turns": result.get("num_turns") if result else None,
-        "native_duration_ms": result.get("duration_ms") if result else None,
-        "native_duration_api_ms": result.get("duration_api_ms") if result else None,
+        "native_list_price_usd": reported_result.get("total_cost_usd"),
+        "native_num_turns": reported_result.get("num_turns"),
+        "native_duration_ms": reported_result.get("duration_ms"),
+        "native_duration_api_ms": reported_result.get("duration_api_ms"),
         "primary_response_ids": sorted(response_ids),
         "primary_model_rounds": len(response_ids),
         "auxiliary_model_rounds": None,
@@ -392,8 +432,8 @@ def run_one(row, config):
         ),
         "tool_results_received": len(tool_results),
         "malformed_json_lines": malformed,
-        "oracle": json.loads((artifact / "oracle.json").read_text())
-        if (artifact / "oracle.json").exists()
+        "oracle": json.loads((artifact / ORACLE_FILE).read_text())
+        if (artifact / ORACLE_FILE).exists()
         else None,
         "review": {"human": "pending", "agent": "pending"},
     }
@@ -424,15 +464,12 @@ def run_one(row, config):
         ),
         flush=True,
     )
-    if not init or any(init.get(k) for k in ["plugins", "skills", "mcp_servers"]):
-        raise RuntimeError("Isolation could not be verified; stop subsequent calls")
-    if init.get("model") != config["requested_model"]:
-        raise RuntimeError("Unexpected primary model; stop subsequent calls")
+    validate_native_init(init, config["requested_model"])
 
 
 def run():
-    config = json.loads((BASE / "config.json").read_text())
-    for row in json.loads((BASE / "schedule.json").read_text()):
+    config = json.loads((BASE / CONFIG_FILE).read_text())
+    for row in json.loads((BASE / SCHEDULE_FILE).read_text()):
         run_one(row, config)
 
 

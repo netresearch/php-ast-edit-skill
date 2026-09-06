@@ -28,6 +28,10 @@ The portable derivative also rejects missing or invalid required input/output/ca
 counters, preserving raw evidence and stopping instead of filling them with zero.
 Optional thinking-token detail is omitted from normalized totals if unavailable.
 All twelve historical records contain the required fields; their numbers are unchanged.
+The derivative also names repeated evidence filenames and separates process capture,
+JSON parsing, streamed-message collection and native init validation into helpers.
+These changes preserve the original event normalization, process limits and prepared
+schedule.
 The original executed runner is archived as
 [runner-original.py.txt](runner-original.py.txt), with identifying path constants
 replaced. The original byte hash is in [source-provenance.json](source-provenance.json).
@@ -109,3 +113,14 @@ The runtime oracle executes trusted repository-owned PHP in disposable directori
 The verifier and runner accept operator-selected local paths and executable argv,
 not remote jobs. This follows the [existing evaluator trust boundary](../../../TRUST.md).
 Do not use these scripts as an adversarial sandbox or expose them as a service.
+
+The portable runner's rule-specific static-analysis annotations cover only these
+reviewed operations, consistent with the existing evaluator trust boundary:
+
+| Operation | Rule | Reviewed reason |
+| --- | --- | --- |
+| Two seeded `shuffle` calls | S2245 | The recorded seed orders task pairs and their starting variants reproducibly. It generates no secrets or security decisions. |
+| `Popen` argv | S6350 | The local operator selects the CLI and retained configuration; candidate output does not supply command arguments. The list is passed directly without a shell. This intentional process capability is not a remotely exposed input. |
+
+These annotations leave other checks enabled. Reassess them if the runner accepts
+remote jobs, configuration from another principal, or claims an execution sandbox.
