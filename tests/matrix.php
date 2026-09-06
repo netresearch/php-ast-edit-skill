@@ -354,6 +354,24 @@ $cases = [
         'edits' => [pick('class:Foo', 'add_member', [])],
         'error' => 'add_member takes its arguments beside "operation", not inside another field: {"target":"…","operation":"add_member","php":"…"}. Optional: position. This edit carries none of them.',
     ],
+    [
+        'name' => 'a method and the calls to it move in one edit',
+        'files' => src(
+            "<?php\nclass W\n{\n    public function run(): string\n    {\n        return \$this->old() . self::old();\n" . "    }\n\n    private function old(): string\n    {\n        return 'x';\n    }\n}\n",
+        ),
+        'edits' => [pick('method:W::old', 'rename_method', ['to' => 'fresh'])],
+        'contains' => inA('$this->fresh()', 'self::fresh()', 'private function fresh()'),
+    ],
+    [
+        // A call on another receiver may belong to a different class that shares the name.
+        // Counting it is the honest answer; renaming it would be a guess.
+        'name' => 'and a call on another receiver is counted, not touched',
+        'files' => src(
+            "<?php\nclass W\n{\n    public function run(\$other): string\n    {\n        return \$this->old() . \$other->old();\n" . "    }\n\n    private function old(): string\n    {\n        return 'x';\n    }\n}\n",
+        ),
+        'edits' => [pick('method:W::old', 'rename_method', ['to' => 'fresh'])],
+        'contains' => inA('$this->fresh()', '$other->old()'),
+    ],
     // ---- Signatures, types, modifiers ----------------------------------------------------
     [
         'name' => 'union return type replaces a scalar one',

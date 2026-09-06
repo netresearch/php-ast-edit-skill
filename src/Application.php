@@ -242,6 +242,7 @@ final class Application
                         'add_implements',
                         'set_extends',
                         'rename_variable',
+                        'rename_method',
                     ],
                 ],
                 'fileModes' => ['edit', 'create', 'delete'],
@@ -307,7 +308,7 @@ final class Application
           replace_argument, add_argument, remove_argument,
           add_member, add_parameter, add_attribute,
           set_return_type, set_type, set_visibility, add_implements, set_extends,
-          set_doc_comment, remove_doc_comment, rename_variable
+          set_doc_comment, remove_doc_comment, rename_variable, rename_method
         
         Run `php-ast-edit contexts` for the full parseAs and operation catalog.
         

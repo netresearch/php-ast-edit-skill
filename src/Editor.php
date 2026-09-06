@@ -772,6 +772,10 @@ final class Editor
         $node = $location->node;
 
         switch ($operation) {
+            case 'rename_method':
+                $this->lastEffect = $this->renameMethod($location, $this->requiredString($edit, 'to'), $roots);
+
+                return true;
             case 'rename_variable':
                 if (!$node instanceof Stmt\ClassMethod && !$node instanceof Stmt\Function_ && !$node instanceof Expr\Closure && !$node instanceof Expr\ArrowFunction) {
                     throw new EditException(
@@ -1966,6 +1970,7 @@ final class Editor
         'add_implements' => ['requires' => ['php'], 'optional' => []],
         'set_extends' => ['requires' => ['php'], 'optional' => []],
         'rename_variable' => ['requires' => ['from', 'to'], 'optional' => []],
+        'rename_method' => ['requires' => ['to'], 'optional' => []],
     ];
 
     /**
@@ -2250,5 +2255,87 @@ final class Editor
             @unlink($out);
             @unlink($err);
         }
+    }
+
+    /**
+     * Rename a method and the calls to it that this file can see.
+     *
+     * `method:` finds a declaration; renaming it leaves every `$this->old()` behind, so the
+     * caller goes hunting. Measured: told to rename a private method and its calls, a model
+     * spent four `inspect` calls locating the call sites before it could write anything.
+     *
+     * What counts as a call to *this* method is decided structurally, not by name alone: a
+     * call on `$this`, `self`, `static` or `parent` inside the class that declares it. A call
+     * on any other receiver may belong to a different class that happens to share the name,
+     * and renaming it would be a guess. Those are counted, not touched, and the count comes
+     * back so the caller knows whether anything is left.
+     *
+     * @param  list<Node\Stmt> $roots
+     * @return array{renamed: int, otherReceivers: int}
+     */
+    private function renameMethod(NodeLocation $location, string $to, array $roots): array
+    {
+        $method = $location->node;
+
+        if (!$method instanceof Stmt\ClassMethod) {
+            throw new EditException('rename_method targets a method declaration.');
+        }
+
+        if (!preg_match('/^[A-Za-z_\x80-\xff][A-Za-z0-9_\x80-\xff]*$/', $to)) {
+            throw new EditException('rename_method: "' . $to . '" is not a method name.');
+        }
+        $from = (string) $method->name;
+        $owner = $location->parent;
+
+        if (!$owner instanceof Stmt\ClassLike) {
+            throw new EditException('rename_method needs the class the method is declared in.');
+        }
+        $method->name = new Node\Identifier($to, $method->name->getAttributes());
+        $renamed = 1;
+
+        foreach ((new NodeFinder())->find($owner, static fn (Node $n): bool => true) as $node) {
+            if (self::callsOwnMethod($node, $from)) {
+                $node->name = new Node\Identifier($to, $node->name->getAttributes());
+                ++$renamed;
+            }
+        }
+        $others = 0;
+
+        foreach ((new NodeFinder())->find($roots, static fn (Node $n): bool => true) as $node) {
+            if (self::namesMethod($node, $from) && !self::callsOwnMethod($node, $from)) {
+                ++$others;
+            }
+        }
+
+        return ['renamed' => $renamed, 'otherReceivers' => $others];
+    }
+
+    /**
+     * Whether this node calls `$name` on the class that declares it.
+     *
+     * `$this`, `self`, `static` and `parent` are the receivers a rename inside one class may
+     * follow. Anything else could be another class with the same method name.
+     */
+    private static function callsOwnMethod(Node $node, string $name): bool
+    {
+        if (!self::namesMethod($node, $name)) {
+            return false;
+        }
+
+        if ($node instanceof Expr\MethodCall || $node instanceof Expr\NullsafeMethodCall) {
+            return $node->var instanceof Expr\Variable && $node->var->name === 'this';
+        }
+
+        return $node instanceof Expr\StaticCall && $node->class instanceof Node\Name && in_array($node->class->toLowerString(), ['self', 'static', 'parent'], true);
+    }
+
+    /** Whether this node is a call carrying the literal method name `$name`. */
+    private static function namesMethod(Node $node, string $name): bool
+    {
+        if (!$node instanceof Expr\MethodCall && !$node instanceof Expr\NullsafeMethodCall && !$node instanceof Expr\StaticCall) {
+            return false;
+        }
+
+        return $node->name instanceof Node\Identifier && $node->name->toString() === $name;
     }
 }
