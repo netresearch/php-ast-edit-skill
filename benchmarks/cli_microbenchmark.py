@@ -275,8 +275,8 @@ def main():
     if args.repetitions < 1 or args.warmups < 0 or args.files < 1:
         parser.error("repetitions/files must be positive and warmups nonnegative")
     result = benchmark(args)
-    args.output.parent.mkdir(parents=True, exist_ok=True)
     # Explicit local report destination; the evaluator does not impose a sandbox.
+    args.output.parent.mkdir(parents=True, exist_ok=True)  # NOSONAR(S8707)
     args.output.write_text(json.dumps(result, indent=2) + "\n")  # NOSONAR(S8707)
     print(json.dumps(result["summary"], indent=2))
 

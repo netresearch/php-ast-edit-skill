@@ -57,12 +57,12 @@ filesystem or command access.
 | --- | --- | --- |
 | `agent_benchmark.load` | S2083, S8707 | Reads repository evaluator files or explicit local evidence/state paths. There is no HTTP input or restricted-root promise. Retain intended reads with rule-specific annotations. |
 | `agent_benchmark.save` | S2083, S8707 | Creates the parent directory and writes the operator's selected state/report file. State deliberately lives outside the candidate workspace. Retain intended writes with rule-specific annotations. |
-| `agent_benchmark.import_run` | S8707 | Reads, creates the parent of, and appends to the selected `--results` ledger. Retain this explicit destination with rule-specific annotations. |
+| `agent_benchmark.import_run`, `agent_benchmark.summarize` | S8707 | Read the selected results ledger; import also creates its parent and appends records. Retain these explicit local destinations with rule-specific annotations. |
 | `agent_benchmark.invoke` | S6350 | Executes evaluator-controlled PHP arguments with `shell=False`; task PHP comes from the trusted manifest and the executable is an explicit operator choice. Retain intended execution with a rule-specific annotation. |
 | `agent_benchmark.validate_schema` | S2631 | Schema patterns previously came only from the repository. Now only literal compiled SHA-1/SHA-256 patterns are supported; unknown patterns fail. No dynamic regex is compiled or suppressed. |
 | `cli_microbenchmark.run` | S8701 | Runs the selected PHP/editor and fixed Git commands through argv without a shell. It does not claim to implement a shell sandbox. Retain intended execution with a rule-specific annotation. |
 | `cli_microbenchmark.benchmark` | S2245 | A recorded seeded PRNG shuffles trial order for reproducibility. It generates no secrets, credentials, or security decisions. Retain the seeded generator with a rule-specific annotation. |
-| `cli_microbenchmark.main` | S8707 | Writes the operator-selected `--output` report. Retain that destination with a rule-specific annotation. |
+| `cli_microbenchmark.main` | S8707 | Creates the parent directory and writes the operator-selected `--output` report. Retain those explicit destinations with rule-specific annotations. |
 
 Annotations name only the reviewed rule at each sink. They do not exclude entire files
 or disable other security checks. Sonar documents this Python syntax in its

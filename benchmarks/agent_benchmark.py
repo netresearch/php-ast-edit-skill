@@ -240,9 +240,9 @@ def import_run(record_path, destination):
         )
     ]
     # --results is the operator's chosen ledger, with no repository-root restriction.
-    existing_text = (
-        destination.read_text() if destination.exists() else ""
-    )  # NOSONAR(S8707)
+    existing_text = ""
+    if destination.exists():
+        existing_text = destination.read_text()  # NOSONAR(S8707)
     existing = [json.loads(line) for line in existing_text.splitlines()]
     for previous in existing:
         if identity == [
@@ -270,7 +270,9 @@ def import_run(record_path, destination):
 
 
 def summarize(path):
-    records = [json.loads(line) for line in path.read_text().splitlines()]
+    # Read the operator-selected results ledger, as documented in TRUST.md.
+    ledger_text = path.read_text()  # NOSONAR(S8707)
+    records = [json.loads(line) for line in ledger_text.splitlines()]
     groups = {}
     dimensions = (
         "source_commit",
