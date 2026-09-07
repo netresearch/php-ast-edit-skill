@@ -82,6 +82,92 @@ class OracleTests(unittest.TestCase):
                 all(value is None for value in fixture._junit(report).values())
             )
 
+    def test_junit_requires_all_leaf_counters_and_at_least_one_suite(self):
+        counters = {
+            "tests": 17,
+            "assertions": 20,
+            "errors": 0,
+            "failures": 0,
+            "skipped": 0,
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            report = Path(directory) / "junit.xml"
+            for missing in counters:
+                with self.subTest(missing=missing):
+                    attributes = " ".join(
+                        f'{key}="{value}"'
+                        for key, value in counters.items()
+                        if key != missing
+                    )
+                    report.write_text(
+                        f"<testsuites><testsuite {attributes}/></testsuites>"
+                    )
+                    self.assertEqual(dict.fromkeys(counters), fixture._junit(report))
+            report.write_text("<testsuites/>")
+            self.assertEqual(dict.fromkeys(counters), fixture._junit(report))
+            report.write_text(
+                '<testsuites><testsuite tests="17" assertions="20" errors="0" failures="0" skipped="0">'
+                '<testsuite tests="10" assertions="12" errors="0" failures="0" skipped="0"/>'
+                '<testsuite tests="7"/>'
+                "</testsuite></testsuites>"
+            )
+            self.assertEqual(dict.fromkeys(counters), fixture._junit(report))
+            report.write_text(
+                '<testsuites><testsuite tests="-1" assertions="0" errors="0" failures="0" skipped="0"/>'
+                '<testsuite tests="18" assertions="20" errors="0" failures="0" skipped="0"/></testsuites>'
+            )
+            self.assertEqual(dict.fromkeys(counters), fixture._junit(report))
+
+    def test_junit_sums_complete_nested_leaf_suites_once(self):
+        with tempfile.TemporaryDirectory() as directory:
+            report = Path(directory) / "junit.xml"
+            report.write_text(
+                '<testsuites><testsuite tests="17" assertions="20" errors="0" failures="0" skipped="0">'
+                '<testsuite tests="10" assertions="12" errors="0" failures="0" skipped="0"/>'
+                '<testsuite tests="7" assertions="8" errors="0" failures="0" skipped="0"/>'
+                "</testsuite></testsuites>"
+            )
+            self.assertEqual(
+                {
+                    "tests": 17,
+                    "assertions": 20,
+                    "errors": 0,
+                    "failures": 0,
+                    "skipped": 0,
+                },
+                fixture._junit(report),
+            )
+
+    def test_successful_process_with_partial_junit_cannot_certify_checks(self):
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            root = base / "fixture"
+            root.mkdir()
+            (root / "source.php").write_bytes(b"<?php // unchanged\n")
+            phar = base / "test.phar"
+            phar.write_bytes(b"unit test runner")
+
+            def incomplete_runner(argv, **kwargs):
+                junit = Path(argv[argv.index("--log-junit") + 1])
+                junit.write_text('<testsuites><testsuite tests="17"/></testsuites>')
+                return SimpleNamespace(returncode=0, stdout=b"tests passed", stderr=b"")
+
+            with (
+                patch.object(
+                    fixture, "PHPUNIT_SHA256", fixture.digest(phar.read_bytes())
+                ),
+                patch.object(fixture.subprocess, "run", side_effect=incomplete_runner),
+            ):
+                result = fixture.check(root, phar, receipt_dir=base / "receipts")
+            self.assertEqual(0, result["returncode"])
+            self.assertTrue(result["fixture_unchanged"])
+            self.assertFalse(result["ok"])
+            self.assertIsNone(result["tests"])
+            self.assertIsNone(result["assertions"])
+            receipt = json.loads(Path(result["receipt"]).read_text())
+            self.assertFalse(receipt["ok"])
+            self.assertTrue(all(value is None for value in receipt["junit"].values()))
+
     def test_command_exposes_behavior_check_without_oracle(self):
         command = fixture.command(
             Path("/work"), Path("/phpunit.phar"), receipt_dir=Path("/receipts")

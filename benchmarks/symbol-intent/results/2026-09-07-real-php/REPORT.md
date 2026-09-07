@@ -180,8 +180,15 @@ thirty candidate-verification outcomes, all final byte oracles and the complete
 summary. Recorded hidden PHPUnit outcomes are checked against final manifests;
 PHPUnit itself is not rerun without the excluded pinned PHAR. Floating-point cost
 totals use a 1e-12 tolerance for summation-order rounding. The measured campaign
-was never amended; subsequent repository changes simplify analysis, document
-unknown evidence and add a regression without changing the frozen experiment.
+was never amended; subsequent repository changes simplify analysis and harden
+unknown-evidence handling without changing the frozen experiment.
+
+The frozen checker defaulted missing JUnit counter attributes to zero; current
+code rejects incomplete counter metadata. All 33 candidate receipts and 30 hidden
+checks record 17 tests, 20 assertions and zero errors, failures and skips. Original
+temporary XML reports are not archived, so this is an audit of stored counts,
+not a retrospective XML reparse. The pinned PHPUnit integration also passes with
+the stricter parser.
 
 This is one selected small public-source task repeated ten times per arm, with
 provider caching conditions uncontrolled. It establishes neither a broad accuracy

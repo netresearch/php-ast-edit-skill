@@ -225,17 +225,19 @@ def _bootstrap(root):
 
 
 def _junit(path):
+    keys = ("tests", "assertions", "errors", "failures", "skipped")
+    unknown = dict.fromkeys(keys)
     try:
         document = ET.parse(path).getroot()
         suites = [
             node for node in document.iter("testsuite") if not node.findall("testsuite")
         ]
-        return {
-            key: sum(int(suite.get(key, "0")) for suite in suites)
-            for key in ("tests", "assertions", "errors", "failures", "skipped")
-        }
-    except (OSError, ET.ParseError, ValueError):
-        return dict.fromkeys(("tests", "assertions", "errors", "failures", "skipped"))
+        counts = [{key: int(suite.attrib[key]) for key in keys} for suite in suites]
+        if not counts or any(value < 0 for count in counts for value in count.values()):
+            return unknown
+        return {key: sum(count[key] for count in counts) for key in keys}
+    except (OSError, ET.ParseError, KeyError, ValueError):
+        return unknown
 
 
 def check(root, phpunit, *, receipt_dir=None, php="php", timeout=60):
