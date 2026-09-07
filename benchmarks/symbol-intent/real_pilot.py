@@ -139,6 +139,24 @@ def wrapper(path, argv, *, arguments=False):
     path.chmod(0o755)
 
 
+def rename_argv(output, run_dir, experiment, arm):
+    argv = [
+        "python3",
+        str(output / "source/benchmarks/symbol-intent/symbol_intent.py"),
+        "rename_method",
+        "--evidence",
+        "--root",
+        str(run_dir / "work"),
+        "--state",
+        str(run_dir / "state"),
+        "--phpactor",
+        str(output / pilot.PHAR_FILE),
+    ]
+    if experiment == GUIDANCE_EXPERIMENT and arm == "guidance":
+        argv.append("--guidance")
+    return argv
+
+
 def prepare(args):
     experiment = getattr(args, "experiment", EXPERIMENT)
     design = profile(experiment)
@@ -200,23 +218,7 @@ def prepare(args):
         if route != "text-manual":
             wrapper(
                 rename,
-                [
-                    "python3",
-                    str(source / "benchmarks/symbol-intent/symbol_intent.py"),
-                    "rename_method",
-                    "--evidence",
-                    "--root",
-                    str(work),
-                    "--state",
-                    str(run_dir / "state"),
-                    "--phpactor",
-                    str(output / pilot.PHAR_FILE),
-                ]
-                + (
-                    ["--guidance"]
-                    if experiment == GUIDANCE_EXPERIMENT and row["arm"] == "guidance"
-                    else []
-                ),
+                rename_argv(output, run_dir, experiment, row["arm"]),
                 arguments=True,
             )
         system, prompt = prompts(task, route, rename, checker)
@@ -661,27 +663,15 @@ def distributions(values, prefix=""):
 def paired_effect(records, before_arm, after_arm, experiment=EXPERIMENT):
     deltas, pairs = {key: [] for key in metrics({}, experiment)}, []
     planned = schedule(experiment)
+    candidates = [*records, *planned] if experiment == GUIDANCE_EXPERIMENT else records
+    indexed = {}
+    for record in candidates:
+        # Keep the first observed row; planned rows only fill unattempted pairs.
+        indexed.setdefault((record["arm"], record["repetition"]), record)
     for repeat in range(10):
-        pair = [
-            next(
-                (r for r in records if r["arm"] == arm and r["repetition"] == repeat),
-                None,
-            )
-            for arm in (before_arm, after_arm)
-        ]
+        pair = [indexed.get((arm, repeat)) for arm in (before_arm, after_arm)]
         if any(r is None for r in pair):
-            if experiment != GUIDANCE_EXPERIMENT:
-                continue
-            pair = [
-                record
-                if record is not None
-                else next(
-                    row
-                    for row in planned
-                    if row["arm"] == arm and row["repetition"] == repeat
-                )
-                for arm, record in zip((before_arm, after_arm), pair, strict=True)
-            ]
+            continue
         before, after = (metrics(r, experiment) for r in pair)
         values = {
             key: after[key] - before[key]

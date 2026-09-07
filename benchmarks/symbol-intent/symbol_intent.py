@@ -546,8 +546,9 @@ def add_result_guidance(result, record):
     exact = result["exact_edit_match"]["status"] == "passed"
     counts_match = result["planned_edits"] == result["edits_applied"]
     sites = record.get("resolved_sites")
+    site_status = "applied" if exact and counts_match else "planned"
     result["resolved_sites"] = (
-        {**sites, "status": "applied" if exact and counts_match else "planned"}
+        {**sites, "status": site_status}
         if sites is not None
         else {"declarations": None, "references": None, "status": "unknown"}
     )
