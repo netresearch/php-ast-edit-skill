@@ -11,6 +11,7 @@ from collections import Counter
 from pathlib import Path
 from unittest.mock import patch
 
+import entrypoint_trial
 import pilot
 import real_fixture
 import real_pilot as study
@@ -56,7 +57,7 @@ class RealPilotTests(unittest.TestCase):
     def test_profile_loading_rejects_unknown_or_incomplete_schedule(self):
         with tempfile.TemporaryDirectory() as directory:
             output = Path(directory)
-            for experiment in (study.EXPERIMENT, study.GUIDANCE_EXPERIMENT):
+            for experiment in study.PROFILES:
                 config = {
                     "experiment": experiment,
                     "schedule": study.schedule(experiment),
@@ -70,6 +71,45 @@ class RealPilotTests(unittest.TestCase):
             pilot.save(output / pilot.CONFIG_FILE, {"experiment": "unknown"})
             with self.assertRaisesRegex(IntentError, "experiment"):
                 study.load_config(output)
+
+    def test_entrypoint_pairing_and_only_capability_suffix_changes(self):
+        rows = study.schedule(study.ENTRYPOINT_EXPERIMENT)
+        self.assertEqual(20, len(rows))
+        self.assertEqual(20, len({r["id"] for r in rows}))
+        self.assertEqual(
+            Counter({"compact": 5, "intent-first": 5}),
+            Counter(r["arm"] for r in rows[::2]),
+        )
+        for index in range(0, 20, 2):
+            pair = rows[index : index + 2]
+            self.assertEqual(1, len({r["repetition"] for r in pair}))
+            self.assertEqual({"compact", "intent-first"}, {r["arm"] for r in pair})
+        task = {
+            "file": "Classes/Example.php",
+            "select": "method:Example::old",
+            "to": "newName",
+            "expected_edit_inventory": "hidden-answer",
+        }
+        rename, checker = Path("/run/rename-tool"), Path("/run/check-tests")
+        original = study.prompts(task, "ast-integrated", rename, checker)
+        compact = study.profile_prompts(
+            task, study.ENTRYPOINT_EXPERIMENT, "compact", rename, checker
+        )
+        treatment = study.profile_prompts(
+            task, study.ENTRYPOINT_EXPERIMENT, "intent-first", rename, checker
+        )
+        self.assertEqual(original, compact)
+        self.assertEqual(compact[0], treatment[0])
+        self.assertEqual(compact[1] + "\n\n" + entrypoint_trial.CONTRACT, treatment[1])
+        self.assertNotIn("hidden-answer", treatment[1])
+        self.assertIn("Reference completeness remains", entrypoint_trial.CONTRACT)
+        self.assertIn(
+            "verification requirements above still apply", entrypoint_trial.CONTRACT
+        )
+        with self.assertRaisesRegex(IntentError, "arm"):
+            study.profile_prompts(
+                task, study.ENTRYPOINT_EXPERIMENT, "guidance", rename, checker
+            )
 
     def test_all_prompts_require_same_final_byte_checks_without_oracle_answers(self):
         task = {
@@ -177,6 +217,9 @@ class RealPilotTests(unittest.TestCase):
     def test_guidance_freeze_changes_only_wrapper_flag_between_integrated_arms(self):
         self.assert_freeze(study.GUIDANCE_EXPERIMENT)
 
+    def test_entrypoint_freeze_changes_only_the_prospective_paragraph(self):
+        self.assert_freeze(study.ENTRYPOINT_EXPERIMENT)
+
     def assert_freeze(self, experiment=None):
         with tempfile.TemporaryDirectory() as directory:
             base = Path(directory)
@@ -247,8 +290,10 @@ class RealPilotTests(unittest.TestCase):
                 capture.assert_not_called()
                 config = json.loads((output / "config.json").read_text())
                 guidance = experiment == study.GUIDANCE_EXPERIMENT
-                self.assertEqual(20 if guidance else 30, len(config["schedule"]))
-                self.assertEqual(5.0 if guidance else 8.0, config["campaign_usd"])
+                entrypoint = experiment == study.ENTRYPOINT_EXPERIMENT
+                paired = guidance or entrypoint
+                self.assertEqual(20 if paired else 30, len(config["schedule"]))
+                self.assertEqual(5.0 if paired else 8.0, config["campaign_usd"])
                 self.assertEqual(0.5, config["max_run_usd"])
                 self.assertEqual(120, config["timeout_seconds"])
                 self.assertEqual(config, study.load_config(output))
@@ -258,14 +303,14 @@ class RealPilotTests(unittest.TestCase):
                     work = output / row["id"] / "work"
                     settings = json.loads((work / study.PROJECT_CONFIG).read_text())
                     self.assertEqual(
-                        guidance or row["arm"] == "ast-integrated",
+                        paired or row["arm"] == "ast-integrated",
                         bool(settings["verify"]),
                     )
                     self.assertEqual(
                         real_fixture.snapshot(work),
                         json.loads((work.parent / "initial.json").read_text()),
                     )
-                    if guidance:
+                    if paired:
                         run_dir = work.parent
                         rename = (run_dir / "rename-tool").read_text()
                         self.assertIn("'--evidence'", rename)
@@ -278,6 +323,7 @@ class RealPilotTests(unittest.TestCase):
                                 .read_text()
                                 .replace(str(run_dir), "/RUN")
                                 .replace(", '--guidance'", "")
+                                .replace("\n\n" + entrypoint_trial.CONTRACT, "")
                                 for name in (
                                     pilot.SYSTEM_FILE,
                                     pilot.PROMPT_FILE,
@@ -287,7 +333,7 @@ class RealPilotTests(unittest.TestCase):
                                 )
                             ]
                         )
-                if guidance:
+                if paired:
                     self.assertTrue(
                         all(
                             value == normalized_inputs[0] for value in normalized_inputs
@@ -301,6 +347,34 @@ class RealPilotTests(unittest.TestCase):
                 (output / study.PHPUNIT_FILE).write_bytes(b"modified PHAR")
                 with self.assertRaisesRegex(IntentError, "PHPUnit drift"):
                     study.validate(output, config, check_cli=False)
+
+    def test_entrypoint_incomplete_pairs_preserve_unknown_primary_values(self):
+        experiment = study.ENTRYPOINT_EXPERIMENT
+        planned = study.schedule(experiment)
+        empty = study.summarize_records([], experiment)
+        self.assertEqual(20, len(empty["planned_rows"]))
+        self.assertEqual(10, len(empty["paired_effects"][0]["pairs"]))
+        for cell in empty["cells"]:
+            self.assertEqual(0, cell["known_pre_calls"])
+            self.assertIsNone(cell["median_pre_calls"])
+        record = {
+            **planned[0],
+            "precheck": {"preceding_tool_calls": 0, "peer_tool_calls": 1},
+        }
+        summary = study.summarize_records([record], experiment)
+        arm = next(c for c in summary["cells"] if c["arm"] == record["arm"])
+        self.assertEqual(1, arm["known_pre_calls"])
+        self.assertEqual(0, arm["median_pre_calls"])
+        self.assertEqual(1, arm["median_peer_calls"])
+        self.assertEqual(19, len(summary["unattempted_ids"]))
+        self.assertTrue(
+            all(
+                p["deltas"]["pre_calls"] is None
+                for p in summary["paired_effects"][0]["pairs"]
+            )
+        )
+        with self.assertRaisesRegex(IntentError, "Duplicate"):
+            study.summarize_records([record, record], experiment)
 
     def test_replay_refused_before_model_capture(self):
         with tempfile.TemporaryDirectory() as directory:

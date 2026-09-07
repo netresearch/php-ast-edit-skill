@@ -27,6 +27,13 @@ three later calls, while observed token and time medians were higher with guidan
 All twenty candidates made the correct change and ran the original tests on final
 bytes. This result does not measure the revised skill, which was not loaded.
 
+The [prospective intent-entrypoint trial](ENTRYPOINT_PROTOCOL.md) changes only a
+short capability paragraph visible before editing. It tests whether an explicitly
+named rename can proceed without the agent reconstructing call-site coordinates,
+while keeping the compact output, source access and final-byte tests identical.
+Use `real_pilot.py prepare --experiment real-php-entrypoint-v1` for this separate
+twenty-candidate profile. Existing profiles and completed campaigns stay separate.
+
 The AST alone does not resolve project symbols. This prototype composes the pinned
 [Phpactor 2026.07.22.0](https://github.com/phpactor/phpactor/releases/tag/2026.07.22.0)
 language server with `php-ast-edit`. Each invocation builds a fresh index. It rejects
