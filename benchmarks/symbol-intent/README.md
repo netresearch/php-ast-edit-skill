@@ -39,6 +39,8 @@ Pass `--evidence` to `rename_method` or `apply_plan` for a more compact, evidenc
 result. It echoes the request, shows planned/applied edit totals, and replaces repeated
 `file_issues` with `issue_groups` containing identical validation/warnings and all their
 paths. The default response remains unchanged.
+Within evidence groups, lint's PHP version is named `php_version` to distinguish
+the interpreter version from elapsed time; the engine report retains its own schema.
 
 `exact_edit_match.status: passed` means the tool read the workspace again **after**
 engine apply and configured verification, and every non-Git file matched the expected

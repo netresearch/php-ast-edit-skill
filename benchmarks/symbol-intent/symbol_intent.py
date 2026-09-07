@@ -462,6 +462,10 @@ def add_result_evidence(result, record, root, result_path):
     groups = {}
     for issue in result.pop("file_issues"):
         detail = {key: value for key, value in issue.items() if key != "path"}
+        lint = dict(detail["validation"]["lint"])
+        if "runtime" in lint:
+            lint["php_version"] = lint.pop("runtime")
+        detail["validation"] = {**detail["validation"], "lint": lint}
         key = encode(detail)
         groups.setdefault(key, {**detail, "paths": []})["paths"].append(issue["path"])
     result["issue_groups"] = list(groups.values())

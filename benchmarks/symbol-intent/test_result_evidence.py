@@ -103,6 +103,9 @@ class EvidenceTests(unittest.TestCase):
         self.assertEqual("loadLonger", result["request"]["to"])
         self.assertNotIn("file_issues", result)
         self.assertEqual(1, len(result["issue_groups"]))
+        lint = result["issue_groups"][0]["validation"]["lint"]
+        self.assertIn("php_version", lint)
+        self.assertNotIn("runtime", lint)
         self.assertCountEqual(
             ["Provider.php", "Caller0.php"], result["issue_groups"][0]["paths"]
         )
@@ -309,6 +312,7 @@ class EvidenceTests(unittest.TestCase):
         args.evidence = False
         result, _ = intent.apply_plan(args, self.state)
         self.assertIn("file_issues", result)
+        self.assertIn("runtime", result["file_issues"][0]["validation"]["lint"])
         self.assertNotIn("exact_edit_match", result)
 
 
