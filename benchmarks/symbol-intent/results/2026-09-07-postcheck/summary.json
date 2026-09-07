@@ -1,0 +1,1005 @@
+{
+  "experiment": "postcheck-2x2-v1",
+  "planned_attempts": 24,
+  "attempts": 24,
+  "known_usage": 24,
+  "known_native_list_price_usd": 0.7864029,
+  "cells": [
+    {
+      "size": 10,
+      "evidence": false,
+      "guidance": "current",
+      "attempts": 3,
+      "successes": 3,
+      "unknown_oracle": 0,
+      "known_usage": 3,
+      "tokens": [
+        38100,
+        50886,
+        74105
+      ],
+      "median_tokens": 50886,
+      "calls": [
+        8,
+        7,
+        10
+      ],
+      "median_calls": 8,
+      "rounds": [
+        6,
+        8,
+        11
+      ],
+      "median_rounds": 8,
+      "wall_ms": [
+        20622.776546981186,
+        23028.18260109052,
+        31352.761959889904
+      ],
+      "median_wall_ms": 23028.18260109052,
+      "usd": [
+        0.027077100000000003,
+        0.029297,
+        0.03635530000000001
+      ],
+      "median_usd": 0.029297,
+      "post_calls": [
+        4,
+        3,
+        4
+      ],
+      "median_post_calls": 4
+    },
+    {
+      "size": 10,
+      "evidence": true,
+      "guidance": "current",
+      "attempts": 3,
+      "successes": 3,
+      "unknown_oracle": 0,
+      "known_usage": 3,
+      "tokens": [
+        69524,
+        57518,
+        55926
+      ],
+      "median_tokens": 57518,
+      "calls": [
+        10,
+        8,
+        8
+      ],
+      "median_calls": 8,
+      "rounds": [
+        11,
+        9,
+        9
+      ],
+      "median_rounds": 9,
+      "wall_ms": [
+        31753.432985162362,
+        28946.591537911445,
+        25488.05107595399
+      ],
+      "median_wall_ms": 28946.591537911445,
+      "usd": [
+        0.0347306,
+        0.03278180000000001,
+        0.0296797
+      ],
+      "median_usd": 0.03278180000000001,
+      "post_calls": [
+        5,
+        4,
+        4
+      ],
+      "median_post_calls": 4
+    },
+    {
+      "size": 10,
+      "evidence": false,
+      "guidance": "scoped",
+      "attempts": 3,
+      "successes": 3,
+      "unknown_oracle": 0,
+      "known_usage": 3,
+      "tokens": [
+        87497,
+        43351,
+        19114
+      ],
+      "median_tokens": 43351,
+      "calls": [
+        11,
+        7,
+        4
+      ],
+      "median_calls": 7,
+      "rounds": [
+        12,
+        6,
+        3
+      ],
+      "median_rounds": 6,
+      "wall_ms": [
+        34360.66291294992,
+        23981.85200500302,
+        16811.770512955263
+      ],
+      "median_wall_ms": 23981.85200500302,
+      "usd": [
+        0.040898800000000006,
+        0.0308702,
+        0.0220769
+      ],
+      "median_usd": 0.0308702,
+      "post_calls": [
+        7,
+        6,
+        3
+      ],
+      "median_post_calls": 6
+    },
+    {
+      "size": 10,
+      "evidence": true,
+      "guidance": "scoped",
+      "attempts": 3,
+      "successes": 3,
+      "unknown_oracle": 0,
+      "known_usage": 3,
+      "tokens": [
+        25494,
+        11617,
+        59394
+      ],
+      "median_tokens": 25494,
+      "calls": [
+        6,
+        1,
+        8
+      ],
+      "median_calls": 6,
+      "rounds": [
+        4,
+        2,
+        9
+      ],
+      "median_rounds": 4,
+      "wall_ms": [
+        19167.913384037092,
+        13853.051309939474,
+        28593.50109891966
+      ],
+      "median_wall_ms": 19167.913384037092,
+      "usd": [
+        0.025303400000000004,
+        0.0172094,
+        0.0322014
+      ],
+      "median_usd": 0.025303400000000004,
+      "post_calls": [
+        5,
+        0,
+        4
+      ],
+      "median_post_calls": 4
+    },
+    {
+      "size": 50,
+      "evidence": false,
+      "guidance": "current",
+      "attempts": 3,
+      "successes": 3,
+      "unknown_oracle": 0,
+      "known_usage": 3,
+      "tokens": [
+        92248,
+        199976,
+        64266
+      ],
+      "median_tokens": 92248,
+      "calls": [
+        10,
+        19,
+        9
+      ],
+      "median_calls": 10,
+      "rounds": [
+        11,
+        17,
+        7
+      ],
+      "median_rounds": 11,
+      "wall_ms": [
+        30849.700886989012,
+        46042.756920913234,
+        27189.874520059675
+      ],
+      "median_wall_ms": 30849.700886989012,
+      "usd": [
+        0.0435683,
+        0.0669301,
+        0.042193
+      ],
+      "median_usd": 0.0435683,
+      "post_calls": [
+        5,
+        15,
+        4
+      ],
+      "median_post_calls": 5
+    },
+    {
+      "size": 50,
+      "evidence": true,
+      "guidance": "current",
+      "attempts": 3,
+      "successes": 3,
+      "unknown_oracle": 0,
+      "known_usage": 3,
+      "tokens": [
+        18266,
+        44438,
+        39561
+      ],
+      "median_tokens": 39561,
+      "calls": [
+        3,
+        9,
+        8
+      ],
+      "median_calls": 8,
+      "rounds": [
+        3,
+        7,
+        6
+      ],
+      "median_rounds": 6,
+      "wall_ms": [
+        16810.35816296935,
+        26787.417226005346,
+        25135.42892294936
+      ],
+      "median_wall_ms": 25135.42892294936,
+      "usd": [
+        0.0210286,
+        0.031126800000000003,
+        0.0301022
+      ],
+      "median_usd": 0.0301022,
+      "post_calls": [
+        2,
+        4,
+        3
+      ],
+      "median_post_calls": 3
+    },
+    {
+      "size": 50,
+      "evidence": false,
+      "guidance": "scoped",
+      "attempts": 3,
+      "successes": 3,
+      "unknown_oracle": 0,
+      "known_usage": 3,
+      "tokens": [
+        49580,
+        36553,
+        67730
+      ],
+      "median_tokens": 49580,
+      "calls": [
+        7,
+        6,
+        7
+      ],
+      "median_calls": 7,
+      "rounds": [
+        5,
+        4,
+        8
+      ],
+      "median_rounds": 5,
+      "wall_ms": [
+        24780.890946043655,
+        18515.88200684637,
+        23331.585523905233
+      ],
+      "median_wall_ms": 23331.585523905233,
+      "usd": [
+        0.0385596,
+        0.032247700000000004,
+        0.036562
+      ],
+      "median_usd": 0.036562,
+      "post_calls": [
+        6,
+        5,
+        4
+      ],
+      "median_post_calls": 5
+    },
+    {
+      "size": 50,
+      "evidence": true,
+      "guidance": "scoped",
+      "attempts": 3,
+      "successes": 3,
+      "unknown_oracle": 0,
+      "known_usage": 3,
+      "tokens": [
+        31834,
+        46518,
+        24612
+      ],
+      "median_tokens": 31834,
+      "calls": [
+        6,
+        9,
+        5
+      ],
+      "median_calls": 6,
+      "rounds": [
+        5,
+        6,
+        4
+      ],
+      "median_rounds": 5,
+      "wall_ms": [
+        21824.21778794378,
+        27642.419598065317,
+        20420.911052031443
+      ],
+      "median_wall_ms": 21824.21778794378,
+      "usd": [
+        0.0264712,
+        0.034466,
+        0.0246658
+      ],
+      "median_usd": 0.0264712,
+      "post_calls": [
+        4,
+        8,
+        3
+      ],
+      "median_post_calls": 4
+    }
+  ],
+  "paired_effects": [
+    {
+      "size": 10,
+      "factor": "evidence",
+      "held_constant": "current",
+      "pairs": [
+        {
+          "ids": [
+            "run011",
+            "run012"
+          ],
+          "delta_tokens": 31424,
+          "delta_calls": 2,
+          "delta_rounds": 5,
+          "delta_wall_ms": 11130.656438181177,
+          "delta_usd": 0.007653499999999997,
+          "delta_post_calls": 1
+        },
+        {
+          "ids": [
+            "run024",
+            "run021"
+          ],
+          "delta_tokens": -18179,
+          "delta_calls": -2,
+          "delta_rounds": -2,
+          "delta_wall_ms": -5864.710883935913,
+          "delta_usd": -0.006675600000000007,
+          "delta_post_calls": 0
+        },
+        {
+          "ids": [
+            "run014",
+            "run015"
+          ],
+          "delta_tokens": 6632,
+          "delta_calls": 1,
+          "delta_rounds": 1,
+          "delta_wall_ms": 5918.408936820924,
+          "delta_usd": 0.0034848000000000066,
+          "delta_post_calls": 1
+        }
+      ],
+      "delta_tokens": [
+        31424,
+        -18179,
+        6632
+      ],
+      "median_delta_tokens": 6632,
+      "delta_calls": [
+        2,
+        -2,
+        1
+      ],
+      "median_delta_calls": 1,
+      "delta_rounds": [
+        5,
+        -2,
+        1
+      ],
+      "median_delta_rounds": 1,
+      "delta_wall_ms": [
+        11130.656438181177,
+        -5864.710883935913,
+        5918.408936820924
+      ],
+      "median_delta_wall_ms": 5918.408936820924,
+      "delta_usd": [
+        0.007653499999999997,
+        -0.006675600000000007,
+        0.0034848000000000066
+      ],
+      "median_delta_usd": 0.0034848000000000066,
+      "delta_post_calls": [
+        1,
+        0,
+        1
+      ],
+      "median_delta_post_calls": 1
+    },
+    {
+      "size": 10,
+      "factor": "evidence",
+      "held_constant": "scoped",
+      "pairs": [
+        {
+          "ids": [
+            "run009",
+            "run010"
+          ],
+          "delta_tokens": -62003,
+          "delta_calls": -5,
+          "delta_rounds": -8,
+          "delta_wall_ms": -15192.749528912827,
+          "delta_usd": -0.015595400000000002,
+          "delta_post_calls": -2
+        },
+        {
+          "ids": [
+            "run022",
+            "run023"
+          ],
+          "delta_tokens": 40280,
+          "delta_calls": 4,
+          "delta_rounds": 6,
+          "delta_wall_ms": 11781.730585964397,
+          "delta_usd": 0.010124499999999998,
+          "delta_post_calls": 1
+        },
+        {
+          "ids": [
+            "run016",
+            "run013"
+          ],
+          "delta_tokens": -31734,
+          "delta_calls": -6,
+          "delta_rounds": -4,
+          "delta_wall_ms": -10128.800695063546,
+          "delta_usd": -0.0136608,
+          "delta_post_calls": -6
+        }
+      ],
+      "delta_tokens": [
+        -62003,
+        40280,
+        -31734
+      ],
+      "median_delta_tokens": -31734,
+      "delta_calls": [
+        -5,
+        4,
+        -6
+      ],
+      "median_delta_calls": -5,
+      "delta_rounds": [
+        -8,
+        6,
+        -4
+      ],
+      "median_delta_rounds": -4,
+      "delta_wall_ms": [
+        -15192.749528912827,
+        11781.730585964397,
+        -10128.800695063546
+      ],
+      "median_delta_wall_ms": -10128.800695063546,
+      "delta_usd": [
+        -0.015595400000000002,
+        0.010124499999999998,
+        -0.0136608
+      ],
+      "median_delta_usd": -0.0136608,
+      "delta_post_calls": [
+        -2,
+        1,
+        -6
+      ],
+      "median_delta_post_calls": -2
+    },
+    {
+      "size": 10,
+      "factor": "guidance",
+      "held_constant": false,
+      "pairs": [
+        {
+          "ids": [
+            "run011",
+            "run009"
+          ],
+          "delta_tokens": 49397,
+          "delta_calls": 3,
+          "delta_rounds": 6,
+          "delta_wall_ms": 13737.886365968734,
+          "delta_usd": 0.013821700000000003,
+          "delta_post_calls": 3
+        },
+        {
+          "ids": [
+            "run024",
+            "run022"
+          ],
+          "delta_tokens": -54991,
+          "delta_calls": -6,
+          "delta_rounds": -8,
+          "delta_wall_ms": -14540.99144693464,
+          "delta_usd": -0.014278400000000007,
+          "delta_post_calls": -1
+        },
+        {
+          "ids": [
+            "run014",
+            "run016"
+          ],
+          "delta_tokens": -7535,
+          "delta_calls": 0,
+          "delta_rounds": -2,
+          "delta_wall_ms": 953.6694039124995,
+          "delta_usd": 0.0015732000000000003,
+          "delta_post_calls": 3
+        }
+      ],
+      "delta_tokens": [
+        49397,
+        -54991,
+        -7535
+      ],
+      "median_delta_tokens": -7535,
+      "delta_calls": [
+        3,
+        -6,
+        0
+      ],
+      "median_delta_calls": 0,
+      "delta_rounds": [
+        6,
+        -8,
+        -2
+      ],
+      "median_delta_rounds": -2,
+      "delta_wall_ms": [
+        13737.886365968734,
+        -14540.99144693464,
+        953.6694039124995
+      ],
+      "median_delta_wall_ms": 953.6694039124995,
+      "delta_usd": [
+        0.013821700000000003,
+        -0.014278400000000007,
+        0.0015732000000000003
+      ],
+      "median_delta_usd": 0.0015732000000000003,
+      "delta_post_calls": [
+        3,
+        -1,
+        3
+      ],
+      "median_delta_post_calls": 3
+    },
+    {
+      "size": 10,
+      "factor": "guidance",
+      "held_constant": true,
+      "pairs": [
+        {
+          "ids": [
+            "run012",
+            "run010"
+          ],
+          "delta_tokens": -44030,
+          "delta_calls": -4,
+          "delta_rounds": -7,
+          "delta_wall_ms": -12585.51960112527,
+          "delta_usd": -0.009427199999999997,
+          "delta_post_calls": 0
+        },
+        {
+          "ids": [
+            "run021",
+            "run023"
+          ],
+          "delta_tokens": 3468,
+          "delta_calls": 0,
+          "delta_rounds": 0,
+          "delta_wall_ms": 3105.4500229656696,
+          "delta_usd": 0.0025216999999999982,
+          "delta_post_calls": 0
+        },
+        {
+          "ids": [
+            "run015",
+            "run013"
+          ],
+          "delta_tokens": -45901,
+          "delta_calls": -7,
+          "delta_rounds": -7,
+          "delta_wall_ms": -15093.540227971971,
+          "delta_usd": -0.015572400000000007,
+          "delta_post_calls": -4
+        }
+      ],
+      "delta_tokens": [
+        -44030,
+        3468,
+        -45901
+      ],
+      "median_delta_tokens": -44030,
+      "delta_calls": [
+        -4,
+        0,
+        -7
+      ],
+      "median_delta_calls": -4,
+      "delta_rounds": [
+        -7,
+        0,
+        -7
+      ],
+      "median_delta_rounds": -7,
+      "delta_wall_ms": [
+        -12585.51960112527,
+        3105.4500229656696,
+        -15093.540227971971
+      ],
+      "median_delta_wall_ms": -12585.51960112527,
+      "delta_usd": [
+        -0.009427199999999997,
+        0.0025216999999999982,
+        -0.015572400000000007
+      ],
+      "median_delta_usd": -0.009427199999999997,
+      "delta_post_calls": [
+        0,
+        0,
+        -4
+      ],
+      "median_delta_post_calls": 0
+    },
+    {
+      "size": 50,
+      "factor": "evidence",
+      "held_constant": "current",
+      "pairs": [
+        {
+          "ids": [
+            "run008",
+            "run005"
+          ],
+          "delta_tokens": -155538,
+          "delta_calls": -10,
+          "delta_rounds": -10,
+          "delta_wall_ms": -19255.33969490789,
+          "delta_usd": -0.0358033,
+          "delta_post_calls": -11
+        },
+        {
+          "ids": [
+            "run001",
+            "run002"
+          ],
+          "delta_tokens": -73982,
+          "delta_calls": -7,
+          "delta_rounds": -8,
+          "delta_wall_ms": -14039.342724019662,
+          "delta_usd": -0.022539699999999996,
+          "delta_post_calls": -3
+        },
+        {
+          "ids": [
+            "run017",
+            "run018"
+          ],
+          "delta_tokens": -24705,
+          "delta_calls": -1,
+          "delta_rounds": -1,
+          "delta_wall_ms": -2054.445597110316,
+          "delta_usd": -0.012090800000000002,
+          "delta_post_calls": -1
+        }
+      ],
+      "delta_tokens": [
+        -155538,
+        -73982,
+        -24705
+      ],
+      "median_delta_tokens": -73982,
+      "delta_calls": [
+        -10,
+        -7,
+        -1
+      ],
+      "median_delta_calls": -7,
+      "delta_rounds": [
+        -10,
+        -8,
+        -1
+      ],
+      "median_delta_rounds": -8,
+      "delta_wall_ms": [
+        -19255.33969490789,
+        -14039.342724019662,
+        -2054.445597110316
+      ],
+      "median_delta_wall_ms": -14039.342724019662,
+      "delta_usd": [
+        -0.0358033,
+        -0.022539699999999996,
+        -0.012090800000000002
+      ],
+      "median_delta_usd": -0.022539699999999996,
+      "delta_post_calls": [
+        -11,
+        -3,
+        -1
+      ],
+      "median_delta_post_calls": -3
+    },
+    {
+      "size": 50,
+      "factor": "evidence",
+      "held_constant": "scoped",
+      "pairs": [
+        {
+          "ids": [
+            "run006",
+            "run007"
+          ],
+          "delta_tokens": 9965,
+          "delta_calls": 3,
+          "delta_rounds": 2,
+          "delta_wall_ms": 9126.537591218948,
+          "delta_usd": 0.0022182999999999925,
+          "delta_post_calls": 3
+        },
+        {
+          "ids": [
+            "run003",
+            "run004"
+          ],
+          "delta_tokens": -17746,
+          "delta_calls": -1,
+          "delta_rounds": 0,
+          "delta_wall_ms": -2956.673158099875,
+          "delta_usd": -0.0120884,
+          "delta_post_calls": -2
+        },
+        {
+          "ids": [
+            "run019",
+            "run020"
+          ],
+          "delta_tokens": -43118,
+          "delta_calls": -2,
+          "delta_rounds": -4,
+          "delta_wall_ms": -2910.67447187379,
+          "delta_usd": -0.011896199999999996,
+          "delta_post_calls": -1
+        }
+      ],
+      "delta_tokens": [
+        9965,
+        -17746,
+        -43118
+      ],
+      "median_delta_tokens": -17746,
+      "delta_calls": [
+        3,
+        -1,
+        -2
+      ],
+      "median_delta_calls": -1,
+      "delta_rounds": [
+        2,
+        0,
+        -4
+      ],
+      "median_delta_rounds": 0,
+      "delta_wall_ms": [
+        9126.537591218948,
+        -2956.673158099875,
+        -2910.67447187379
+      ],
+      "median_delta_wall_ms": -2910.67447187379,
+      "delta_usd": [
+        0.0022182999999999925,
+        -0.0120884,
+        -0.011896199999999996
+      ],
+      "median_delta_usd": -0.011896199999999996,
+      "delta_post_calls": [
+        3,
+        -2,
+        -1
+      ],
+      "median_delta_post_calls": -1
+    },
+    {
+      "size": 50,
+      "factor": "guidance",
+      "held_constant": false,
+      "pairs": [
+        {
+          "ids": [
+            "run008",
+            "run006"
+          ],
+          "delta_tokens": -163423,
+          "delta_calls": -13,
+          "delta_rounds": -13,
+          "delta_wall_ms": -27526.874914066866,
+          "delta_usd": -0.0346824,
+          "delta_post_calls": -10
+        },
+        {
+          "ids": [
+            "run001",
+            "run003"
+          ],
+          "delta_tokens": -42668,
+          "delta_calls": -3,
+          "delta_rounds": -6,
+          "delta_wall_ms": -6068.809940945357,
+          "delta_usd": -0.005008699999999998,
+          "delta_post_calls": 1
+        },
+        {
+          "ids": [
+            "run017",
+            "run019"
+          ],
+          "delta_tokens": 3464,
+          "delta_calls": -2,
+          "delta_rounds": 1,
+          "delta_wall_ms": -3858.2889961544424,
+          "delta_usd": -0.005631000000000004,
+          "delta_post_calls": 0
+        }
+      ],
+      "delta_tokens": [
+        -163423,
+        -42668,
+        3464
+      ],
+      "median_delta_tokens": -42668,
+      "delta_calls": [
+        -13,
+        -3,
+        -2
+      ],
+      "median_delta_calls": -3,
+      "delta_rounds": [
+        -13,
+        -6,
+        1
+      ],
+      "median_delta_rounds": -6,
+      "delta_wall_ms": [
+        -27526.874914066866,
+        -6068.809940945357,
+        -3858.2889961544424
+      ],
+      "median_delta_wall_ms": -6068.809940945357,
+      "delta_usd": [
+        -0.0346824,
+        -0.005008699999999998,
+        -0.005631000000000004
+      ],
+      "median_delta_usd": -0.005631000000000004,
+      "delta_post_calls": [
+        -10,
+        1,
+        0
+      ],
+      "median_delta_post_calls": 0
+    },
+    {
+      "size": 50,
+      "factor": "guidance",
+      "held_constant": true,
+      "pairs": [
+        {
+          "ids": [
+            "run005",
+            "run007"
+          ],
+          "delta_tokens": 2080,
+          "delta_calls": 0,
+          "delta_rounds": -1,
+          "delta_wall_ms": 855.0023720599711,
+          "delta_usd": 0.0033391999999999936,
+          "delta_post_calls": 4
+        },
+        {
+          "ids": [
+            "run002",
+            "run004"
+          ],
+          "delta_tokens": 13568,
+          "delta_calls": 3,
+          "delta_rounds": 2,
+          "delta_wall_ms": 5013.85962497443,
+          "delta_usd": 0.005442599999999999,
+          "delta_post_calls": 2
+        },
+        {
+          "ids": [
+            "run018",
+            "run020"
+          ],
+          "delta_tokens": -14949,
+          "delta_calls": -3,
+          "delta_rounds": -2,
+          "delta_wall_ms": -4714.517870917916,
+          "delta_usd": -0.0054363999999999975,
+          "delta_post_calls": 0
+        }
+      ],
+      "delta_tokens": [
+        2080,
+        13568,
+        -14949
+      ],
+      "median_delta_tokens": 2080,
+      "delta_calls": [
+        0,
+        3,
+        -3
+      ],
+      "median_delta_calls": 0,
+      "delta_rounds": [
+        -1,
+        2,
+        -2
+      ],
+      "median_delta_rounds": -1,
+      "delta_wall_ms": [
+        855.0023720599711,
+        5013.85962497443,
+        -4714.517870917916
+      ],
+      "median_delta_wall_ms": 855.0023720599711,
+      "delta_usd": [
+        0.0033391999999999936,
+        0.005442599999999999,
+        -0.0054363999999999975
+      ],
+      "median_delta_usd": 0.0033391999999999936,
+      "delta_post_calls": [
+        4,
+        2,
+        0
+      ],
+      "median_delta_post_calls": 2
+    }
+  ],
+  "interpretation": "Only this 2x2 experiment is compared. Deltas are evidence-minus-legacy or scoped-minus-current. Subsequent calls can include necessary semantic checks; manual trace review is required. Three repetitions per cell do not establish general effects.",
+  "config_sha256": "bac12a4c9a05cbaf1e67f4b8777b12f388fcae89f8941a88d4dee24efc9f1ea0"
+}

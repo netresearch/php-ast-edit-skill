@@ -190,6 +190,7 @@ def translate(workspace_edit, root, inventory, anchor_path, anchor, new_name):
     documents = workspace_edit["documentChanges"]
     require(isinstance(documents, list) and documents, "Rename returned no edits")
     files = []
+    expected_inventory = dict(inventory)
     seen = set()
     anchor_found = False
     for document in documents:
@@ -236,8 +237,17 @@ def translate(workspace_edit, root, inventory, anchor_path, anchor, new_name):
         files.append(
             {"path": str(path), "sha256": inventory[relative], "ranges": ranges}
         )
+        # Read-only expected result: the engine remains the only source writer.
+        expected = source
+        for interval in reversed(ranges):
+            expected = (
+                expected[: interval["start"]]
+                + new_name.encode("utf-8")
+                + expected[interval["end"] :]
+            )
+        expected_inventory[relative] = digest(expected)
     require(anchor_found, "Rename did not include its selected declaration")
-    return ast(
+    document = ast(
         {
             "mode": "translate",
             "to": new_name,
@@ -246,6 +256,7 @@ def translate(workspace_edit, root, inventory, anchor_path, anchor, new_name):
         },
         root,
     )
+    return document, expected_inventory
 
 
 def plan(args, state):
@@ -291,7 +302,7 @@ def plan(args, state):
         args.to,
         sum(name.endswith(".php") for name in inventory),
     )
-    document = translate(
+    document, expected_inventory = translate(
         resolved["workspace_edit"], root, inventory, file, anchor, args.to
     )
     require(snapshot(root) == inventory, "Workspace changed during planning")
@@ -303,6 +314,7 @@ def plan(args, state):
         "resolver": {"release": RELEASE, "sha256": PHAR_SHA256},
         "request": {"file": relative, "select": args.select, "to": args.to},
         "document": document,
+        "expected_inventory": expected_inventory,
         "resolver_result": resolved,
         "elapsed_ms": (time.monotonic() - started) * 1000,
     }
@@ -361,6 +373,17 @@ def load_plan(args, state):
         and record["document"]["files"],
         "Plan has no file operations",
     )
+    expected = record.get("expected_inventory")
+    if expected is not None:
+        require(
+            isinstance(expected, dict)
+            and expected.keys() == record["inventory"].keys()
+            and all(
+                isinstance(value, str) and PLAN_ID.fullmatch(value) is not None
+                for value in expected.values()
+            ),
+            "Invalid expected byte inventory",
+        )
     return record
 
 
@@ -412,7 +435,7 @@ def apply_plan(args, state):
         or file["validation"]["lint"]["status"] != "passed"
         or file["validation"]["checks"] == "failed"
     ]
-    return {
+    result = {
         "ok": status == 0,
         "plan": args.plan,
         "changed_files": [
@@ -428,7 +451,62 @@ def apply_plan(args, state):
         "completeness": "unknown",
         "warnings": [LIMIT_WARNING],
         "full_report": str(result_path),
-    }, status
+    }
+    if getattr(args, "evidence", False):
+        add_result_evidence(result, record, root, result_path)
+    return result, status
+
+
+def add_result_evidence(result, record, root, result_path):
+    """Report observed disk bytes, independently of the engine's in-memory output."""
+    groups = {}
+    for issue in result.pop("file_issues"):
+        detail = {key: value for key, value in issue.items() if key != "path"}
+        lint = dict(detail["validation"]["lint"])
+        if "runtime" in lint:
+            lint["php_version"] = lint.pop("runtime")
+        detail["validation"] = {**detail["validation"], "lint": lint}
+        key = encode(detail)
+        groups.setdefault(key, {**detail, "paths": []})["paths"].append(issue["path"])
+    result["issue_groups"] = list(groups.values())
+    result["request"] = record["request"]
+    result["planned_edits"] = sum(
+        len(file["edits"]) for file in record["document"]["files"]
+    )
+    evidence = {
+        "status": "not_established",
+        "scope": "non-Git workspace bytes equal only the resolved, AST-validated name replacements",
+    }
+    observed = None
+    expected = record.get("expected_inventory")
+    try:
+        if expected is None:
+            evidence["reason"] = "Plan has no expected byte inventory"
+        else:
+            observed = snapshot(root)
+            mismatches = sorted(
+                name
+                for name in expected.keys() | observed.keys()
+                if expected.get(name) != observed.get(name)
+            )
+            evidence.update(
+                status="not_established" if mismatches else "passed",
+                checked_files=len(observed),
+                mismatched_files=mismatches,
+            )
+            if mismatches:
+                evidence["reason"] = (
+                    "Disk bytes differ; formatting or other changes require inspection"
+                )
+    except (OSError, ValueError) as error:
+        evidence["reason"] = "Cannot establish disk inventory: " + str(error)
+    result["exact_edit_match"] = evidence
+    # Separate immutable readback artifact; the original engine report stays intact.
+    try:
+        with result_path.with_suffix(".readback.json").open("x") as output:
+            json.dump({"evidence": evidence, "observed_inventory": observed}, output)
+    except OSError as error:
+        result["warnings"].append("READBACK_NOT_SAVED: " + str(error))
 
 
 def main():
@@ -445,6 +523,8 @@ def main():
             command.add_argument("--to", required=True)
         else:
             command.add_argument("--plan", required=True)
+        if name in ("rename_method", "apply_plan"):
+            command.add_argument("--evidence", action="store_true")
     args = parser.parse_args()
     try:
         require(

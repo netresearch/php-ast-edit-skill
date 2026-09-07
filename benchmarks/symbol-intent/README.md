@@ -8,6 +8,9 @@ transaction. This is a benchmark prototype, not a shipped engine operation.
 The [completed 27-run Haiku pilot](results/2026-09-07-haiku/REPORT.md) shows the
 strongest savings at 50 files, much smaller token gains at 2/10 files, and a strong
 existing-Phpactor control. All raw observations and accounting amendments are public.
+The separate [24-run post-rename study](results/2026-09-07-postcheck/REPORT.md)
+reports scope-dependent savings from compact evidence and remaining verification
+and reporting failures, including a worse ten-file result for evidence alone.
 
 The AST alone does not resolve project symbols. This prototype composes the pinned
 [Phpactor 2026.07.22.0](https://github.com/phpactor/phpactor/releases/tag/2026.07.22.0)
@@ -34,6 +37,32 @@ ID with `show_plan --state ... --plan ID` or `apply_plan --state ... --plan ID`.
 round trip between them. Full plans, resolver messages and engine reports remain
 in the external state directory. The concise result aggregates passed validations
 and preserves warnings, failed checks, skipped lint and affected file paths.
+
+Pass `--evidence` to `rename_method` or `apply_plan` for a more compact, evidence-bearing
+result. It echoes the request, shows planned/applied edit totals, and replaces repeated
+`file_issues` with `issue_groups` containing identical validation/warnings and all their
+paths. The default response remains unchanged.
+Within evidence groups, lint's PHP version is named `php_version` to distinguish
+the interpreter version from elapsed time; the engine report retains its own schema.
+
+`exact_edit_match.status: passed` means the tool read the workspace again **after**
+engine apply and configured verification, and every non-Git file matched the expected
+SHA-256 inventory for exactly the resolved, AST-validated identifier replacements.
+Thus all other bytes, including unrelated identifiers, comments and strings, stayed
+unchanged. Expected bytes are computed only for verification; the engine is still the
+only PHP writer. The hashed plan stores the expected inventory; a `.readback.json`
+sidecar beside `full_report` stores the observed inventory.
+If that sidecar cannot be saved, `READBACK_NOT_SAVED` preserves the engine outcome
+and inline evidence while reporting that the durable readback artifact is unavailable.
+
+This evidence does **not** verify the resolver's binding choices or completeness.
+An omitted reference can coexist with a passing exact-edit check. Behavior checks
+and `completeness: unknown` therefore remain separate. Formatters or verifier side
+effects can make exact byte preservation `not_established` even when engine apply
+succeeds; inspect the mismatched files. An unreadable or unsupported final workspace
+also yields `not_established`. Failed or skipped checks remain visible and never
+become passes because the bytes matched. The evidence describes the readback instant,
+not protection against a malicious concurrent writer.
 
 Plans bind the complete workspace file inventory and tool/dependency bytes. Added,
 removed or changed files invalidate a plan. Name edits carry AST references, node
@@ -74,6 +103,8 @@ These are functional tests, not evidence of LLM token savings.
 The prospective [economics protocol](PROTOCOL.md) compares this API with batched
 text changes and an existing Phpactor CLI route. It distinguishes the benefit of
 delegating symbol work from any additional benefit of the AST write transaction.
+The separate [post-rename ablation](POSTCHECK_PROTOCOL.md) crosses result evidence
+with scoped verification guidance to test their effects without changing that pilot.
 
 From a clean committed checkout, prepare without model calls, then execute the
 already authorized pilot explicitly using its frozen controller:

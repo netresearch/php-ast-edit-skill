@@ -163,7 +163,10 @@ class PureTests(unittest.TestCase):
                     }
                 ]
             }
-            translated = intent.translate(valid, root, inventory, path, anchor, "load")
+            translated, expected = intent.translate(
+                valid, root, inventory, path, anchor, "load"
+            )
+            self.assertEqual(inventory["Caller0.php"], expected["Caller0.php"])
             self.assertEqual(
                 "set_name", translated["files"][0]["edits"][0]["operation"]
             )
