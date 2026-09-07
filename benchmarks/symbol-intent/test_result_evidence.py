@@ -125,7 +125,9 @@ class EvidenceTests(unittest.TestCase):
         self.assertEqual("unknown", result["completeness"])
         self.assertIn("$first->fetch()", (self.root / "Caller0.php").read_text())
 
-    def test_multiple_longer_replacements_use_original_offsets_in_reverse_lsp_order(self):
+    def test_multiple_longer_replacements_use_original_offsets_in_reverse_lsp_order(
+        self,
+    ):
         caller = self.root / "Caller0.php"
         source = (
             "<?php\nnamespace Example;\n"
@@ -162,9 +164,11 @@ class EvidenceTests(unittest.TestCase):
                             "command": [
                                 "php",
                                 "-r",
-                                "file_put_contents('added.txt', 'new'); "
-                                "unlink('removed.txt'); "
-                                "file_put_contents('changed.bin', 'changed');",
+                                (
+                                    "file_put_contents('added.txt', 'new'); "
+                                    "unlink('removed.txt'); "
+                                    "file_put_contents('changed.bin', 'changed');"
+                                ),
                             ],
                         }
                     ]
@@ -225,7 +229,9 @@ class EvidenceTests(unittest.TestCase):
             ]
         }
         record = {"request": {}, "document": {"files": []}}
-        intent.add_result_evidence(result, record, self.root, self.state / "report.json")
+        intent.add_result_evidence(
+            result, record, self.root, self.state / "report.json"
+        )
         self.assertEqual(3, len(result["issue_groups"]))
         groups = {tuple(group["paths"]): group for group in result["issue_groups"]}
         self.assertEqual(passed, groups[("First.php", "Second.php")]["validation"])
@@ -292,7 +298,9 @@ class EvidenceTests(unittest.TestCase):
         self.assertFalse(result["checksPassed"])
         self.assertEqual("passed", result["exact_edit_match"]["status"])
         self.assertEqual("failed", result["issue_groups"][0]["validation"]["checks"])
-        self.assertTrue(any("READBACK_NOT_SAVED" in item for item in result["warnings"]))
+        self.assertTrue(
+            any("READBACK_NOT_SAVED" in item for item in result["warnings"])
+        )
         self.assertTrue(Path(result["full_report"]).is_file())
         self.assertIn("function loadLonger", (self.root / "Provider.php").read_text())
 
