@@ -1,0 +1,4299 @@
+[
+  {
+    "id": "run001",
+    "size": 50,
+    "repetition": 1,
+    "evidence": false,
+    "guidance": "current",
+    "arm": "legacy-current",
+    "frozen": {
+      "expected.json": "c54a1408afaffe5d885138a329ad1e8189d6efb53f2a1984a21cb429302f7351",
+      "initial.json": "e26f4cab6c2761f67ad0106b8738082d03a6fd5974858b0000dc787d2bde5830",
+      "system.txt": "aea094bd5a1bb04a7da9aad970275488cd749360842b878d548fe930c3442682",
+      "prompt.txt": "0e48ed86403582ab0c9f5024ed17756b320778d9388930268c593d7ac9480b29",
+      "rename-tool": "5bfa5195b3647b3eadff17bb27f9ec4b95ae9d6b715e6aab5e49ff899d64db8e"
+    },
+    "oracle": {
+      "file_scope": true,
+      "exact_bytes": true,
+      "structural_correct": true,
+      "runtime_correct": true,
+      "success": true
+    },
+    "postcheck": {
+      "subsequent_tool_calls": 5,
+      "subsequent_tools": {
+        "Read": 4,
+        "Bash": 1
+      },
+      "boundary": "First parseable successful rename-tool result; work batched inside a shell call is not separated"
+    },
+    "config_sha256": "bac12a4c9a05cbaf1e67f4b8777b12f388fcae89f8941a88d4dee24efc9f1ea0",
+    "process_exit": 0,
+    "timed_out": false,
+    "wall_time_ms": 30849.700886989012,
+    "native": {
+      "response_input_coverage": "complete",
+      "visible_response_input_remainder": {
+        "input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation_input_tokens": 0
+      },
+      "primary_model_rounds_exact": true,
+      "native_empty_response_retry_event_indexes": [],
+      "native_tool_timings": {},
+      "tool_execution_ms": null,
+      "tool_timing_status": "not_exposed",
+      "reported_model": "claude-haiku-4-5-20251001",
+      "isolation_init": {
+        "tools": [
+          "Bash",
+          "Edit",
+          "Read",
+          "Write"
+        ],
+        "plugins": [],
+        "skills": [],
+        "mcp_servers": []
+      },
+      "all_model_usage": {
+        "claude-haiku-4-5-20251001": {
+          "inputTokens": 1110,
+          "outputTokens": 2283,
+          "cacheReadInputTokens": 77193,
+          "cacheCreationInputTokens": 11662,
+          "webSearchRequests": 0,
+          "costUSD": 0.0435683,
+          "contextWindow": 200000,
+          "maxOutputTokens": 32000,
+          "thinkingTokens": 1245,
+          "canonicalModel": "claude-haiku-4-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "all_model_tokens": {
+        "inputTokens": 1110,
+        "outputTokens": 2283,
+        "cacheReadInputTokens": 77193,
+        "cacheCreationInputTokens": 11662,
+        "thinkingTokens": 1245,
+        "totalInputTokens": 89965,
+        "totalTokens": 92248
+      },
+      "primary_model_tokens": {
+        "inputTokens": 1110,
+        "outputTokens": 2283,
+        "cacheReadInputTokens": 77193,
+        "cacheCreationInputTokens": 11662,
+        "thinkingTokens": 1245,
+        "totalInputTokens": 89965,
+        "totalTokens": 92248
+      },
+      "main_loop_tokens": {
+        "inputTokens": 90,
+        "outputTokens": 2269,
+        "cacheReadInputTokens": 77193,
+        "cacheCreationInputTokens": 11662,
+        "totalInputTokens": 88945,
+        "totalTokens": 91214
+      },
+      "whole_call_minus_main_loop": {
+        "inputTokens": 1020,
+        "outputTokens": 14,
+        "cacheReadInputTokens": 0,
+        "cacheCreationInputTokens": 0
+      },
+      "auxiliary_work_attribution": "Not identified by the trace; no response count is inferred",
+      "native_list_price_usd": 0.0435683,
+      "native_subtype": "success",
+      "native_is_error": false,
+      "native_num_turns": 11,
+      "native_duration_ms": 29245,
+      "native_duration_api_ms": 29075,
+      "per_response_inputs": {
+        "msg_011Ceojdd7s3prD5sX5PHfpR": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 10,
+            "cache_read_input_tokens": 0,
+            "cache_creation_input_tokens": 4106
+          }
+        },
+        "msg_011CeojdrwKgBVgSFWrFV7mL": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 4106,
+            "cache_creation_input_tokens": 391
+          }
+        },
+        "msg_011CeojdyEb72Zo19aqSFMF5": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 4497,
+            "cache_creation_input_tokens": 222
+          }
+        },
+        "msg_011Ceoje5QAMRjoXtbFsQB5Z": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 4719,
+            "cache_creation_input_tokens": 237
+          }
+        },
+        "msg_011CeojeFabGUCQQLCuRNxkZ": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 4956,
+            "cache_creation_input_tokens": 343
+          }
+        },
+        "msg_011CeojeUK4YcGCQRtDgPZFR": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 5299,
+            "cache_creation_input_tokens": 4697
+          }
+        },
+        "msg_011CeojemuEw57pitoFkK5m1": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 9996,
+            "cache_creation_input_tokens": 463
+          }
+        },
+        "msg_011CeojeuNhHfTqgR6pmFUJW": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 10459,
+            "cache_creation_input_tokens": 283
+          }
+        },
+        "msg_011Ceojf4JiDFeXY8Rqyc5P5": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 10742,
+            "cache_creation_input_tokens": 305
+          }
+        },
+        "msg_011CeojfHWDTAbKnMFfyE59o": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 11047,
+            "cache_creation_input_tokens": 325
+          }
+        },
+        "msg_011CeojfS8sahsMA7oXdrg8x": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 11372,
+            "cache_creation_input_tokens": 290
+          }
+        }
+      },
+      "initial_input_tokens": 4116,
+      "primary_model_rounds": 11,
+      "tool_calls": 10,
+      "failed_tool_calls": 1,
+      "output_accounting": "Native result scopes: modelUsage for whole call; usage for main loop"
+    },
+    "trace_sha256": "d8d82b10550e94a19083c39bc0719c7ecd18c2ab43c99de98c9e9082ee746b7f"
+  },
+  {
+    "id": "run002",
+    "size": 50,
+    "repetition": 1,
+    "evidence": true,
+    "guidance": "current",
+    "arm": "evidence-current",
+    "frozen": {
+      "expected.json": "c54a1408afaffe5d885138a329ad1e8189d6efb53f2a1984a21cb429302f7351",
+      "initial.json": "e26f4cab6c2761f67ad0106b8738082d03a6fd5974858b0000dc787d2bde5830",
+      "system.txt": "aea094bd5a1bb04a7da9aad970275488cd749360842b878d548fe930c3442682",
+      "prompt.txt": "4ee8f72e6fe97a8189261b08952a1eace432aa0990fd0117864adbe268254a54",
+      "rename-tool": "d7604e0d0eb95146b5d9b913c930deff6638d7a7193376d8b25ea29057bee10e"
+    },
+    "oracle": {
+      "file_scope": true,
+      "exact_bytes": true,
+      "structural_correct": true,
+      "runtime_correct": true,
+      "success": true
+    },
+    "postcheck": {
+      "subsequent_tool_calls": 2,
+      "subsequent_tools": {
+        "Read": 2
+      },
+      "boundary": "First parseable successful rename-tool result; work batched inside a shell call is not separated"
+    },
+    "config_sha256": "bac12a4c9a05cbaf1e67f4b8777b12f388fcae89f8941a88d4dee24efc9f1ea0",
+    "process_exit": 0,
+    "timed_out": false,
+    "wall_time_ms": 16810.35816296935,
+    "native": {
+      "response_input_coverage": "complete",
+      "visible_response_input_remainder": {
+        "input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation_input_tokens": 0
+      },
+      "primary_model_rounds_exact": true,
+      "native_empty_response_retry_event_indexes": [],
+      "native_tool_timings": {},
+      "tool_execution_ms": null,
+      "tool_timing_status": "not_exposed",
+      "reported_model": "claude-haiku-4-5-20251001",
+      "isolation_init": {
+        "tools": [
+          "Bash",
+          "Edit",
+          "Read",
+          "Write"
+        ],
+        "plugins": [],
+        "skills": [],
+        "mcp_servers": []
+      },
+      "all_model_usage": {
+        "claude-haiku-4-5-20251001": {
+          "inputTokens": 1046,
+          "outputTokens": 1309,
+          "cacheReadInputTokens": 9676,
+          "cacheCreationInputTokens": 6235,
+          "webSearchRequests": 0,
+          "costUSD": 0.0210286,
+          "contextWindow": 200000,
+          "maxOutputTokens": 32000,
+          "thinkingTokens": 718,
+          "canonicalModel": "claude-haiku-4-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "all_model_tokens": {
+        "inputTokens": 1046,
+        "outputTokens": 1309,
+        "cacheReadInputTokens": 9676,
+        "cacheCreationInputTokens": 6235,
+        "thinkingTokens": 718,
+        "totalInputTokens": 16957,
+        "totalTokens": 18266
+      },
+      "primary_model_tokens": {
+        "inputTokens": 1046,
+        "outputTokens": 1309,
+        "cacheReadInputTokens": 9676,
+        "cacheCreationInputTokens": 6235,
+        "thinkingTokens": 718,
+        "totalInputTokens": 16957,
+        "totalTokens": 18266
+      },
+      "main_loop_tokens": {
+        "inputTokens": 26,
+        "outputTokens": 1295,
+        "cacheReadInputTokens": 9676,
+        "cacheCreationInputTokens": 6235,
+        "totalInputTokens": 15937,
+        "totalTokens": 17232
+      },
+      "whole_call_minus_main_loop": {
+        "inputTokens": 1020,
+        "outputTokens": 14,
+        "cacheReadInputTokens": 0,
+        "cacheCreationInputTokens": 0
+      },
+      "auxiliary_work_attribution": "Not identified by the trace; no response count is inferred",
+      "native_list_price_usd": 0.0210286,
+      "native_subtype": "success",
+      "native_is_error": false,
+      "native_num_turns": 4,
+      "native_duration_ms": 15570,
+      "native_duration_api_ms": 15369,
+      "per_response_inputs": {
+        "msg_011CeojfuA4zwWUTGJFU2gcD": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 10,
+            "cache_read_input_tokens": 0,
+            "cache_creation_input_tokens": 4106
+          }
+        },
+        "msg_011CeojgEiZKEVgSBtLwZWxy": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 4106,
+            "cache_creation_input_tokens": 1464
+          }
+        },
+        "msg_011CeojgZyC6ud45dAKi4V4W": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 5570,
+            "cache_creation_input_tokens": 665
+          }
+        }
+      },
+      "initial_input_tokens": 4116,
+      "primary_model_rounds": 3,
+      "tool_calls": 3,
+      "failed_tool_calls": 0,
+      "output_accounting": "Native result scopes: modelUsage for whole call; usage for main loop"
+    },
+    "trace_sha256": "dc2ed704d04196e292638b71f0ac913a4696ebba9c6163a1d56c348a0ab8edba"
+  },
+  {
+    "id": "run003",
+    "size": 50,
+    "repetition": 1,
+    "evidence": false,
+    "guidance": "scoped",
+    "arm": "legacy-scoped",
+    "frozen": {
+      "expected.json": "c54a1408afaffe5d885138a329ad1e8189d6efb53f2a1984a21cb429302f7351",
+      "initial.json": "e26f4cab6c2761f67ad0106b8738082d03a6fd5974858b0000dc787d2bde5830",
+      "system.txt": "cc5db054a8f0bd224d59cc6daa60c527c15acfd08e9231e65051385b359b82b9",
+      "prompt.txt": "1965b9e8e10f366269dc58febef5697f2c85876432b0adc81b74e1b269a50d9c",
+      "rename-tool": "e1a8076d0713faa39b2bd734248d752caab33a9fe7e04b13724ef55b480d1cff"
+    },
+    "oracle": {
+      "file_scope": true,
+      "exact_bytes": true,
+      "structural_correct": true,
+      "runtime_correct": true,
+      "success": true
+    },
+    "postcheck": {
+      "subsequent_tool_calls": 6,
+      "subsequent_tools": {
+        "Read": 3,
+        "Bash": 3
+      },
+      "boundary": "First parseable successful rename-tool result; work batched inside a shell call is not separated"
+    },
+    "config_sha256": "bac12a4c9a05cbaf1e67f4b8777b12f388fcae89f8941a88d4dee24efc9f1ea0",
+    "process_exit": 0,
+    "timed_out": false,
+    "wall_time_ms": 24780.890946043655,
+    "native": {
+      "response_input_coverage": "complete",
+      "visible_response_input_remainder": {
+        "input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation_input_tokens": 0
+      },
+      "primary_model_rounds_exact": true,
+      "native_empty_response_retry_event_indexes": [],
+      "native_tool_timings": {},
+      "tool_execution_ms": null,
+      "tool_timing_status": "not_exposed",
+      "reported_model": "claude-haiku-4-5-20251001",
+      "isolation_init": {
+        "tools": [
+          "Bash",
+          "Edit",
+          "Read",
+          "Write"
+        ],
+        "plugins": [],
+        "skills": [],
+        "mcp_servers": []
+      },
+      "all_model_usage": {
+        "claude-haiku-4-5-20251001": {
+          "inputTokens": 1062,
+          "outputTokens": 1919,
+          "cacheReadInputTokens": 34366,
+          "cacheCreationInputTokens": 12233,
+          "webSearchRequests": 0,
+          "costUSD": 0.0385596,
+          "contextWindow": 200000,
+          "maxOutputTokens": 32000,
+          "thinkingTokens": 825,
+          "canonicalModel": "claude-haiku-4-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "all_model_tokens": {
+        "inputTokens": 1062,
+        "outputTokens": 1919,
+        "cacheReadInputTokens": 34366,
+        "cacheCreationInputTokens": 12233,
+        "thinkingTokens": 825,
+        "totalInputTokens": 47661,
+        "totalTokens": 49580
+      },
+      "primary_model_tokens": {
+        "inputTokens": 1062,
+        "outputTokens": 1919,
+        "cacheReadInputTokens": 34366,
+        "cacheCreationInputTokens": 12233,
+        "thinkingTokens": 825,
+        "totalInputTokens": 47661,
+        "totalTokens": 49580
+      },
+      "main_loop_tokens": {
+        "inputTokens": 42,
+        "outputTokens": 1905,
+        "cacheReadInputTokens": 34366,
+        "cacheCreationInputTokens": 12233,
+        "totalInputTokens": 46641,
+        "totalTokens": 48546
+      },
+      "whole_call_minus_main_loop": {
+        "inputTokens": 1020,
+        "outputTokens": 14,
+        "cacheReadInputTokens": 0,
+        "cacheCreationInputTokens": 0
+      },
+      "auxiliary_work_attribution": "Not identified by the trace; no response count is inferred",
+      "native_list_price_usd": 0.0385596,
+      "native_subtype": "success",
+      "native_is_error": false,
+      "native_num_turns": 8,
+      "native_duration_ms": 23396,
+      "native_duration_api_ms": 22924,
+      "per_response_inputs": {
+        "msg_011CeojhAiiyfP7sYgyViHuU": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 10,
+            "cache_read_input_tokens": 0,
+            "cache_creation_input_tokens": 4283
+          }
+        },
+        "msg_011CeojhXaMPwoMRcbkxMm3Y": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 4283,
+            "cache_creation_input_tokens": 4920
+          }
+        },
+        "msg_011CeojhwHci35Pr4kMuyTtK": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 9203,
+            "cache_creation_input_tokens": 879
+          }
+        },
+        "msg_011CeojiCj4EZ5er7VG1FT8W": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 10082,
+            "cache_creation_input_tokens": 716
+          }
+        },
+        "msg_011CeojiVvQv8uijAz9CZ7Wk": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 10798,
+            "cache_creation_input_tokens": 1435
+          }
+        }
+      },
+      "initial_input_tokens": 4293,
+      "primary_model_rounds": 5,
+      "tool_calls": 7,
+      "failed_tool_calls": 0,
+      "output_accounting": "Native result scopes: modelUsage for whole call; usage for main loop"
+    },
+    "trace_sha256": "f0982023dd4b4f6996953245014427be0c02342f2134ec9093f076f08087e70c"
+  },
+  {
+    "id": "run004",
+    "size": 50,
+    "repetition": 1,
+    "evidence": true,
+    "guidance": "scoped",
+    "arm": "evidence-scoped",
+    "frozen": {
+      "expected.json": "c54a1408afaffe5d885138a329ad1e8189d6efb53f2a1984a21cb429302f7351",
+      "initial.json": "e26f4cab6c2761f67ad0106b8738082d03a6fd5974858b0000dc787d2bde5830",
+      "system.txt": "cc5db054a8f0bd224d59cc6daa60c527c15acfd08e9231e65051385b359b82b9",
+      "prompt.txt": "d6c94d70f50b7749652b7b0e9acb2f4214d61e33861cb2ba0642caa88343f04a",
+      "rename-tool": "39e122451586317aba910f60e7f7760e1dee287a421574681c1b546c980051e8"
+    },
+    "oracle": {
+      "file_scope": true,
+      "exact_bytes": true,
+      "structural_correct": true,
+      "runtime_correct": true,
+      "success": true
+    },
+    "postcheck": {
+      "subsequent_tool_calls": 4,
+      "subsequent_tools": {
+        "Read": 4
+      },
+      "boundary": "First parseable successful rename-tool result; work batched inside a shell call is not separated"
+    },
+    "config_sha256": "bac12a4c9a05cbaf1e67f4b8777b12f388fcae89f8941a88d4dee24efc9f1ea0",
+    "process_exit": 0,
+    "timed_out": false,
+    "wall_time_ms": 21824.21778794378,
+    "native": {
+      "response_input_coverage": "complete",
+      "visible_response_input_remainder": {
+        "input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation_input_tokens": 0
+      },
+      "primary_model_rounds_exact": true,
+      "native_empty_response_retry_event_indexes": [],
+      "native_tool_timings": {},
+      "tool_execution_ms": null,
+      "tool_timing_status": "not_exposed",
+      "reported_model": "claude-haiku-4-5-20251001",
+      "isolation_init": {
+        "tools": [
+          "Bash",
+          "Edit",
+          "Read",
+          "Write"
+        ],
+        "plugins": [],
+        "skills": [],
+        "mcp_servers": []
+      },
+      "all_model_usage": {
+        "claude-haiku-4-5-20251001": {
+          "inputTokens": 1062,
+          "outputTokens": 1744,
+          "cacheReadInputTokens": 21772,
+          "cacheCreationInputTokens": 7256,
+          "webSearchRequests": 0,
+          "costUSD": 0.0264712,
+          "contextWindow": 200000,
+          "maxOutputTokens": 32000,
+          "thinkingTokens": 881,
+          "canonicalModel": "claude-haiku-4-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "all_model_tokens": {
+        "inputTokens": 1062,
+        "outputTokens": 1744,
+        "cacheReadInputTokens": 21772,
+        "cacheCreationInputTokens": 7256,
+        "thinkingTokens": 881,
+        "totalInputTokens": 30090,
+        "totalTokens": 31834
+      },
+      "primary_model_tokens": {
+        "inputTokens": 1062,
+        "outputTokens": 1744,
+        "cacheReadInputTokens": 21772,
+        "cacheCreationInputTokens": 7256,
+        "thinkingTokens": 881,
+        "totalInputTokens": 30090,
+        "totalTokens": 31834
+      },
+      "main_loop_tokens": {
+        "inputTokens": 42,
+        "outputTokens": 1730,
+        "cacheReadInputTokens": 21772,
+        "cacheCreationInputTokens": 7256,
+        "totalInputTokens": 29070,
+        "totalTokens": 30800
+      },
+      "whole_call_minus_main_loop": {
+        "inputTokens": 1020,
+        "outputTokens": 14,
+        "cacheReadInputTokens": 0,
+        "cacheCreationInputTokens": 0
+      },
+      "auxiliary_work_attribution": "Not identified by the trace; no response count is inferred",
+      "native_list_price_usd": 0.0264712,
+      "native_subtype": "success",
+      "native_is_error": false,
+      "native_num_turns": 7,
+      "native_duration_ms": 20451,
+      "native_duration_api_ms": 20174,
+      "per_response_inputs": {
+        "msg_011Ceojj1jY74Aq1MJuGBcUk": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 10,
+            "cache_read_input_tokens": 0,
+            "cache_creation_input_tokens": 4283
+          }
+        },
+        "msg_011CeojjJCjf6d2LfpsvVB5f": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 4283,
+            "cache_creation_input_tokens": 463
+          }
+        },
+        "msg_011CeojjWUBMPnrHNyVcEp4j": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 4746,
+            "cache_creation_input_tokens": 1342
+          }
+        },
+        "msg_011CeojjtFcHnYwbzEQGzh1d": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 6088,
+            "cache_creation_input_tokens": 567
+          }
+        },
+        "msg_011Ceojk66kM5eebn1Ygq2Ui": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 6655,
+            "cache_creation_input_tokens": 601
+          }
+        }
+      },
+      "initial_input_tokens": 4293,
+      "primary_model_rounds": 5,
+      "tool_calls": 6,
+      "failed_tool_calls": 0,
+      "output_accounting": "Native result scopes: modelUsage for whole call; usage for main loop"
+    },
+    "trace_sha256": "239630c10c439c804b87e3df902aaba1b55892a47fd54ed3ae7713fcc3322784"
+  },
+  {
+    "id": "run005",
+    "size": 50,
+    "repetition": 0,
+    "evidence": true,
+    "guidance": "current",
+    "arm": "evidence-current",
+    "frozen": {
+      "expected.json": "c54a1408afaffe5d885138a329ad1e8189d6efb53f2a1984a21cb429302f7351",
+      "initial.json": "e26f4cab6c2761f67ad0106b8738082d03a6fd5974858b0000dc787d2bde5830",
+      "system.txt": "aea094bd5a1bb04a7da9aad970275488cd749360842b878d548fe930c3442682",
+      "prompt.txt": "7dd3647ed6800e3b1ca6993dabde4f81d87be464ff6a6894f868d8bf3604cc96",
+      "rename-tool": "d29fd8a1b1cd6ba6d47eec02f7b8f5d65ac6197293f54faefbb36a57f8f4e1d5"
+    },
+    "oracle": {
+      "file_scope": true,
+      "exact_bytes": true,
+      "structural_correct": true,
+      "runtime_correct": true,
+      "success": true
+    },
+    "postcheck": {
+      "subsequent_tool_calls": 4,
+      "subsequent_tools": {
+        "Read": 3,
+        "Bash": 1
+      },
+      "boundary": "First parseable successful rename-tool result; work batched inside a shell call is not separated"
+    },
+    "config_sha256": "bac12a4c9a05cbaf1e67f4b8777b12f388fcae89f8941a88d4dee24efc9f1ea0",
+    "process_exit": 0,
+    "timed_out": false,
+    "wall_time_ms": 26787.417226005346,
+    "native": {
+      "response_input_coverage": "complete",
+      "visible_response_input_remainder": {
+        "input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation_input_tokens": 0
+      },
+      "primary_model_rounds_exact": true,
+      "native_empty_response_retry_event_indexes": [],
+      "native_tool_timings": {},
+      "tool_execution_ms": null,
+      "tool_timing_status": "not_exposed",
+      "reported_model": "claude-haiku-4-5-20251001",
+      "isolation_init": {
+        "tools": [
+          "Bash",
+          "Edit",
+          "Read",
+          "Write"
+        ],
+        "plugins": [],
+        "skills": [],
+        "mcp_servers": []
+      },
+      "all_model_usage": {
+        "claude-haiku-4-5-20251001": {
+          "inputTokens": 1078,
+          "outputTokens": 2116,
+          "cacheReadInputTokens": 33168,
+          "cacheCreationInputTokens": 8076,
+          "webSearchRequests": 0,
+          "costUSD": 0.031126800000000003,
+          "contextWindow": 200000,
+          "maxOutputTokens": 32000,
+          "thinkingTokens": 1001,
+          "canonicalModel": "claude-haiku-4-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "all_model_tokens": {
+        "inputTokens": 1078,
+        "outputTokens": 2116,
+        "cacheReadInputTokens": 33168,
+        "cacheCreationInputTokens": 8076,
+        "thinkingTokens": 1001,
+        "totalInputTokens": 42322,
+        "totalTokens": 44438
+      },
+      "primary_model_tokens": {
+        "inputTokens": 1078,
+        "outputTokens": 2116,
+        "cacheReadInputTokens": 33168,
+        "cacheCreationInputTokens": 8076,
+        "thinkingTokens": 1001,
+        "totalInputTokens": 42322,
+        "totalTokens": 44438
+      },
+      "main_loop_tokens": {
+        "inputTokens": 58,
+        "outputTokens": 2102,
+        "cacheReadInputTokens": 33168,
+        "cacheCreationInputTokens": 8076,
+        "totalInputTokens": 41302,
+        "totalTokens": 43404
+      },
+      "whole_call_minus_main_loop": {
+        "inputTokens": 1020,
+        "outputTokens": 14,
+        "cacheReadInputTokens": 0,
+        "cacheCreationInputTokens": 0
+      },
+      "auxiliary_work_attribution": "Not identified by the trace; no response count is inferred",
+      "native_list_price_usd": 0.031126800000000003,
+      "native_subtype": "success",
+      "native_is_error": false,
+      "native_num_turns": 10,
+      "native_duration_ms": 25460,
+      "native_duration_api_ms": 25200,
+      "per_response_inputs": {
+        "msg_011CeojkdzePaU5uzkJci9Je": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 10,
+            "cache_read_input_tokens": 0,
+            "cache_creation_input_tokens": 4106
+          }
+        },
+        "msg_011CeojkuRLTmmRfCdSuF3po": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 4106,
+            "cache_creation_input_tokens": 651
+          }
+        },
+        "msg_011Ceojm3FdNyG7f6c87iG1d": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 4757,
+            "cache_creation_input_tokens": 240
+          }
+        },
+        "msg_011CeojmACLVRXGJKrW21CJw": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 4997,
+            "cache_creation_input_tokens": 235
+          }
+        },
+        "msg_011CeojmUBKgu1MudAViRwWV": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 5232,
+            "cache_creation_input_tokens": 1407
+          }
+        },
+        "msg_011CeojmqxkgLwReCTsvCrg6": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 6639,
+            "cache_creation_input_tokens": 798
+          }
+        },
+        "msg_011Ceojn9ZQyKmEAevt9SCXg": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 7437,
+            "cache_creation_input_tokens": 639
+          }
+        }
+      },
+      "initial_input_tokens": 4116,
+      "primary_model_rounds": 7,
+      "tool_calls": 9,
+      "failed_tool_calls": 1,
+      "output_accounting": "Native result scopes: modelUsage for whole call; usage for main loop"
+    },
+    "trace_sha256": "2090aa01a09aaab463da2ce4990f2b989eb96ebb68374b906b173b0aaabe20fa"
+  },
+  {
+    "id": "run006",
+    "size": 50,
+    "repetition": 0,
+    "evidence": false,
+    "guidance": "scoped",
+    "arm": "legacy-scoped",
+    "frozen": {
+      "expected.json": "c54a1408afaffe5d885138a329ad1e8189d6efb53f2a1984a21cb429302f7351",
+      "initial.json": "e26f4cab6c2761f67ad0106b8738082d03a6fd5974858b0000dc787d2bde5830",
+      "system.txt": "cc5db054a8f0bd224d59cc6daa60c527c15acfd08e9231e65051385b359b82b9",
+      "prompt.txt": "9d39142e44b72dc8e58fb4a4d37e0184a3f221643ddf62cfd5523e7958986afc",
+      "rename-tool": "092469d2a9fc28aa759a34ea09a7beb4ad80ad1e4ceab0608bfa05672dadab33"
+    },
+    "oracle": {
+      "file_scope": true,
+      "exact_bytes": true,
+      "structural_correct": true,
+      "runtime_correct": true,
+      "success": true
+    },
+    "postcheck": {
+      "subsequent_tool_calls": 5,
+      "subsequent_tools": {
+        "Read": 5
+      },
+      "boundary": "First parseable successful rename-tool result; work batched inside a shell call is not separated"
+    },
+    "config_sha256": "bac12a4c9a05cbaf1e67f4b8777b12f388fcae89f8941a88d4dee24efc9f1ea0",
+    "process_exit": 0,
+    "timed_out": false,
+    "wall_time_ms": 18515.88200684637,
+    "native": {
+      "response_input_coverage": "complete",
+      "visible_response_input_remainder": {
+        "input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation_input_tokens": 0
+      },
+      "primary_model_rounds_exact": true,
+      "native_empty_response_retry_event_indexes": [],
+      "native_tool_timings": {},
+      "tool_execution_ms": null,
+      "tool_timing_status": "not_exposed",
+      "reported_model": "claude-haiku-4-5-20251001",
+      "isolation_init": {
+        "tools": [
+          "Bash",
+          "Edit",
+          "Read",
+          "Write"
+        ],
+        "plugins": [],
+        "skills": [],
+        "mcp_servers": []
+      },
+      "all_model_usage": {
+        "claude-haiku-4-5-20251001": {
+          "inputTokens": 1054,
+          "outputTokens": 1550,
+          "cacheReadInputTokens": 23397,
+          "cacheCreationInputTokens": 10552,
+          "webSearchRequests": 0,
+          "costUSD": 0.032247700000000004,
+          "contextWindow": 200000,
+          "maxOutputTokens": 32000,
+          "thinkingTokens": 926,
+          "canonicalModel": "claude-haiku-4-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "all_model_tokens": {
+        "inputTokens": 1054,
+        "outputTokens": 1550,
+        "cacheReadInputTokens": 23397,
+        "cacheCreationInputTokens": 10552,
+        "thinkingTokens": 926,
+        "totalInputTokens": 35003,
+        "totalTokens": 36553
+      },
+      "primary_model_tokens": {
+        "inputTokens": 1054,
+        "outputTokens": 1550,
+        "cacheReadInputTokens": 23397,
+        "cacheCreationInputTokens": 10552,
+        "thinkingTokens": 926,
+        "totalInputTokens": 35003,
+        "totalTokens": 36553
+      },
+      "main_loop_tokens": {
+        "inputTokens": 34,
+        "outputTokens": 1536,
+        "cacheReadInputTokens": 23397,
+        "cacheCreationInputTokens": 10552,
+        "totalInputTokens": 33983,
+        "totalTokens": 35519
+      },
+      "whole_call_minus_main_loop": {
+        "inputTokens": 1020,
+        "outputTokens": 14,
+        "cacheReadInputTokens": 0,
+        "cacheCreationInputTokens": 0
+      },
+      "auxiliary_work_attribution": "Not identified by the trace; no response count is inferred",
+      "native_list_price_usd": 0.032247700000000004,
+      "native_subtype": "success",
+      "native_is_error": false,
+      "native_num_turns": 7,
+      "native_duration_ms": 17243,
+      "native_duration_api_ms": 16985,
+      "per_response_inputs": {
+        "msg_011Ceojndm4kxZBmbhjnLEqL": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 10,
+            "cache_read_input_tokens": 0,
+            "cache_creation_input_tokens": 4283
+          }
+        },
+        "msg_011CeojnuCFUKjjnDKLo1Y2F": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 4283,
+            "cache_creation_input_tokens": 4871
+          }
+        },
+        "msg_011CeojoFUtq4wv9z1TSCZ7r": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 9154,
+            "cache_creation_input_tokens": 806
+          }
+        },
+        "msg_011CeojoVdgkCHcob1p2eyQQ": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 9960,
+            "cache_creation_input_tokens": 592
+          }
+        }
+      },
+      "initial_input_tokens": 4293,
+      "primary_model_rounds": 4,
+      "tool_calls": 6,
+      "failed_tool_calls": 1,
+      "output_accounting": "Native result scopes: modelUsage for whole call; usage for main loop"
+    },
+    "trace_sha256": "e717edfc5f9e17f36a6104308680d1ddba53bbdc4484b8ce5a2117584816d7eb"
+  },
+  {
+    "id": "run007",
+    "size": 50,
+    "repetition": 0,
+    "evidence": true,
+    "guidance": "scoped",
+    "arm": "evidence-scoped",
+    "frozen": {
+      "expected.json": "c54a1408afaffe5d885138a329ad1e8189d6efb53f2a1984a21cb429302f7351",
+      "initial.json": "e26f4cab6c2761f67ad0106b8738082d03a6fd5974858b0000dc787d2bde5830",
+      "system.txt": "cc5db054a8f0bd224d59cc6daa60c527c15acfd08e9231e65051385b359b82b9",
+      "prompt.txt": "13b7ed337a232b5a7540469d38b137764df8a4a59e3523fead052e7e9d216d60",
+      "rename-tool": "e346585d875b789caf7bd709b91b5b4340434f478ae5bcf0391ed3d5f65a739f"
+    },
+    "oracle": {
+      "file_scope": true,
+      "exact_bytes": true,
+      "structural_correct": true,
+      "runtime_correct": true,
+      "success": true
+    },
+    "postcheck": {
+      "subsequent_tool_calls": 8,
+      "subsequent_tools": {
+        "Read": 4,
+        "Bash": 4
+      },
+      "boundary": "First parseable successful rename-tool result; work batched inside a shell call is not separated"
+    },
+    "config_sha256": "bac12a4c9a05cbaf1e67f4b8777b12f388fcae89f8941a88d4dee24efc9f1ea0",
+    "process_exit": 0,
+    "timed_out": false,
+    "wall_time_ms": 27642.419598065317,
+    "native": {
+      "response_input_coverage": "complete",
+      "visible_response_input_remainder": {
+        "input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation_input_tokens": 0
+      },
+      "primary_model_rounds_exact": true,
+      "native_empty_response_retry_event_indexes": [],
+      "native_tool_timings": {},
+      "tool_execution_ms": null,
+      "tool_timing_status": "not_exposed",
+      "reported_model": "claude-haiku-4-5-20251001",
+      "isolation_init": {
+        "tools": [
+          "Bash",
+          "Edit",
+          "Read",
+          "Write"
+        ],
+        "plugins": [],
+        "skills": [],
+        "mcp_servers": []
+      },
+      "all_model_usage": {
+        "claude-haiku-4-5-20251001": {
+          "inputTokens": 1070,
+          "outputTokens": 2126,
+          "cacheReadInputTokens": 33620,
+          "cacheCreationInputTokens": 9702,
+          "webSearchRequests": 0,
+          "costUSD": 0.034466,
+          "contextWindow": 200000,
+          "maxOutputTokens": 32000,
+          "thinkingTokens": 1045,
+          "canonicalModel": "claude-haiku-4-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "all_model_tokens": {
+        "inputTokens": 1070,
+        "outputTokens": 2126,
+        "cacheReadInputTokens": 33620,
+        "cacheCreationInputTokens": 9702,
+        "thinkingTokens": 1045,
+        "totalInputTokens": 44392,
+        "totalTokens": 46518
+      },
+      "primary_model_tokens": {
+        "inputTokens": 1070,
+        "outputTokens": 2126,
+        "cacheReadInputTokens": 33620,
+        "cacheCreationInputTokens": 9702,
+        "thinkingTokens": 1045,
+        "totalInputTokens": 44392,
+        "totalTokens": 46518
+      },
+      "main_loop_tokens": {
+        "inputTokens": 50,
+        "outputTokens": 2110,
+        "cacheReadInputTokens": 33620,
+        "cacheCreationInputTokens": 9702,
+        "totalInputTokens": 43372,
+        "totalTokens": 45482
+      },
+      "whole_call_minus_main_loop": {
+        "inputTokens": 1020,
+        "outputTokens": 16,
+        "cacheReadInputTokens": 0,
+        "cacheCreationInputTokens": 0
+      },
+      "auxiliary_work_attribution": "Not identified by the trace; no response count is inferred",
+      "native_list_price_usd": 0.034466,
+      "native_subtype": "success",
+      "native_is_error": false,
+      "native_num_turns": 10,
+      "native_duration_ms": 26231,
+      "native_duration_api_ms": 25981,
+      "per_response_inputs": {
+        "msg_011Ceojp2d1TcrTdCJekXemS": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 10,
+            "cache_read_input_tokens": 0,
+            "cache_creation_input_tokens": 4283
+          }
+        },
+        "msg_011CeojpTtYRd2YB3GCKyZ6r": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 4283,
+            "cache_creation_input_tokens": 1610
+          }
+        },
+        "msg_011CeojptVPGqSBUDzhyCGC2": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 5893,
+            "cache_creation_input_tokens": 785
+          }
+        },
+        "msg_011CeojqFBLbS65K9kyF37qR": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 6678,
+            "cache_creation_input_tokens": 747
+          }
+        },
+        "msg_011CeojqNQun8TpFeWoVKtop": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 7425,
+            "cache_creation_input_tokens": 1916
+          }
+        },
+        "msg_011CeojqcQn4YoLiCfAC742a": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 9341,
+            "cache_creation_input_tokens": 361
+          }
+        }
+      },
+      "initial_input_tokens": 4293,
+      "primary_model_rounds": 6,
+      "tool_calls": 9,
+      "failed_tool_calls": 0,
+      "output_accounting": "Native result scopes: modelUsage for whole call; usage for main loop"
+    },
+    "trace_sha256": "41aba0cacd548f926da70294dac1674b0de360379152ad0a85225a04deeda5da"
+  },
+  {
+    "id": "run008",
+    "size": 50,
+    "repetition": 0,
+    "evidence": false,
+    "guidance": "current",
+    "arm": "legacy-current",
+    "frozen": {
+      "expected.json": "c54a1408afaffe5d885138a329ad1e8189d6efb53f2a1984a21cb429302f7351",
+      "initial.json": "e26f4cab6c2761f67ad0106b8738082d03a6fd5974858b0000dc787d2bde5830",
+      "system.txt": "aea094bd5a1bb04a7da9aad970275488cd749360842b878d548fe930c3442682",
+      "prompt.txt": "2469820e947fdabfe190b71d4dda91993a1eaa83c7d3a96da284ed70422cfdbb",
+      "rename-tool": "e8d9ed8ffe0ae1d50c2466c8cfa66dcdb906756c8bc79c979099afa35121b701"
+    },
+    "oracle": {
+      "file_scope": true,
+      "exact_bytes": true,
+      "structural_correct": true,
+      "runtime_correct": true,
+      "success": true
+    },
+    "postcheck": {
+      "subsequent_tool_calls": 15,
+      "subsequent_tools": {
+        "Read": 5,
+        "Bash": 10
+      },
+      "boundary": "First parseable successful rename-tool result; work batched inside a shell call is not separated"
+    },
+    "config_sha256": "bac12a4c9a05cbaf1e67f4b8777b12f388fcae89f8941a88d4dee24efc9f1ea0",
+    "process_exit": 0,
+    "timed_out": false,
+    "wall_time_ms": 46042.756920913234,
+    "native": {
+      "response_input_coverage": "complete",
+      "visible_response_input_remainder": {
+        "input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation_input_tokens": 0
+      },
+      "primary_model_rounds_exact": true,
+      "native_empty_response_retry_event_indexes": [],
+      "native_tool_timings": {},
+      "tool_execution_ms": null,
+      "tool_timing_status": "not_exposed",
+      "reported_model": "claude-haiku-4-5-20251001",
+      "isolation_init": {
+        "tools": [
+          "Bash",
+          "Edit",
+          "Read",
+          "Write"
+        ],
+        "plugins": [],
+        "skills": [],
+        "mcp_servers": []
+      },
+      "all_model_usage": {
+        "claude-haiku-4-5-20251001": {
+          "inputTokens": 1158,
+          "outputTokens": 3335,
+          "cacheReadInputTokens": 179931,
+          "cacheCreationInputTokens": 15552,
+          "webSearchRequests": 0,
+          "costUSD": 0.0669301,
+          "contextWindow": 200000,
+          "maxOutputTokens": 32000,
+          "thinkingTokens": 1410,
+          "canonicalModel": "claude-haiku-4-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "all_model_tokens": {
+        "inputTokens": 1158,
+        "outputTokens": 3335,
+        "cacheReadInputTokens": 179931,
+        "cacheCreationInputTokens": 15552,
+        "thinkingTokens": 1410,
+        "totalInputTokens": 196641,
+        "totalTokens": 199976
+      },
+      "primary_model_tokens": {
+        "inputTokens": 1158,
+        "outputTokens": 3335,
+        "cacheReadInputTokens": 179931,
+        "cacheCreationInputTokens": 15552,
+        "thinkingTokens": 1410,
+        "totalInputTokens": 196641,
+        "totalTokens": 199976
+      },
+      "main_loop_tokens": {
+        "inputTokens": 138,
+        "outputTokens": 3321,
+        "cacheReadInputTokens": 179931,
+        "cacheCreationInputTokens": 15552,
+        "totalInputTokens": 195621,
+        "totalTokens": 198942
+      },
+      "whole_call_minus_main_loop": {
+        "inputTokens": 1020,
+        "outputTokens": 14,
+        "cacheReadInputTokens": 0,
+        "cacheCreationInputTokens": 0
+      },
+      "auxiliary_work_attribution": "Not identified by the trace; no response count is inferred",
+      "native_list_price_usd": 0.0669301,
+      "native_subtype": "success",
+      "native_is_error": false,
+      "native_num_turns": 20,
+      "native_duration_ms": 44639,
+      "native_duration_api_ms": 43948,
+      "per_response_inputs": {
+        "msg_011Ceojr5rHGSZpctgyKSbZD": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 10,
+            "cache_read_input_tokens": 0,
+            "cache_creation_input_tokens": 4106
+          }
+        },
+        "msg_011CeojrHvZxqxV95MGL1yg9": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 4106,
+            "cache_creation_input_tokens": 852
+          }
+        },
+        "msg_011CeojrR4BodtKMFPJZVKGt": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 4958,
+            "cache_creation_input_tokens": 242
+          }
+        },
+        "msg_011CeojraXx19XPtJ6Fm5b3Y": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 5200,
+            "cache_creation_input_tokens": 314
+          }
+        },
+        "msg_011Ceojrw2k1zW56G6peDoyn": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 5514,
+            "cache_creation_input_tokens": 4864
+          }
+        },
+        "msg_011CeojsEWxGXmvFeR9fXu2t": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 10378,
+            "cache_creation_input_tokens": 679
+          }
+        },
+        "msg_011CeojsYDZzqyKt4i8TrXNq": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 11057,
+            "cache_creation_input_tokens": 636
+          }
+        },
+        "msg_011CeojsiZRX9vnZnhKRBph4": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 11693,
+            "cache_creation_input_tokens": 290
+          }
+        },
+        "msg_011CeojsqNwwvHroSKnoC1W7": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 11983,
+            "cache_creation_input_tokens": 202
+          }
+        },
+        "msg_011CeojsxjDCUDHmnsbZxrUW": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 12185,
+            "cache_creation_input_tokens": 1941
+          }
+        },
+        "msg_011Ceojt7u8VyPhBsAGSLvF2": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 14126,
+            "cache_creation_input_tokens": 178
+          }
+        },
+        "msg_011CeojtFmPzr2jykPVzXTTC": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 14304,
+            "cache_creation_input_tokens": 195
+          }
+        },
+        "msg_011CeojtP8QZawCZbFFUqUZA": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 14499,
+            "cache_creation_input_tokens": 190
+          }
+        },
+        "msg_011CeojtWK1D8CQp2pDCNpj2": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 14689,
+            "cache_creation_input_tokens": 200
+          }
+        },
+        "msg_011Ceojtd6Hmvn6Z1C8K8zG5": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 14889,
+            "cache_creation_input_tokens": 186
+          }
+        },
+        "msg_011Ceojtkz44DtUDkBAatwtC": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 15075,
+            "cache_creation_input_tokens": 200
+          }
+        },
+        "msg_011Ceojty5aWhBJrVriBZZ2R": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 15275,
+            "cache_creation_input_tokens": 277
+          }
+        }
+      },
+      "initial_input_tokens": 4116,
+      "primary_model_rounds": 17,
+      "tool_calls": 19,
+      "failed_tool_calls": 0,
+      "output_accounting": "Native result scopes: modelUsage for whole call; usage for main loop"
+    },
+    "trace_sha256": "30b779b876dfd259189d7e857df0c1fa06b5e1ef90f7013dffc6fc975fc1f296"
+  },
+  {
+    "id": "run009",
+    "size": 10,
+    "repetition": 0,
+    "evidence": false,
+    "guidance": "scoped",
+    "arm": "legacy-scoped",
+    "frozen": {
+      "expected.json": "03559312d470d41192ba3c84333f45b4b3e9b069613cf78f41f13125974881e4",
+      "initial.json": "77a0c97bc1b460d78a4c2e8091b83724c8bdbb185f6e0d9611bee9d51cbc2ddd",
+      "system.txt": "cc5db054a8f0bd224d59cc6daa60c527c15acfd08e9231e65051385b359b82b9",
+      "prompt.txt": "1fff5cfe9ab3f6c80627a6f1e5be7b79988bc03b6ba684eb2a4e79b30d382831",
+      "rename-tool": "d9129c8ba25afcc68cac5cd4c3c05570b82ae26863785d6bed9e708a6bab63b2"
+    },
+    "oracle": {
+      "file_scope": true,
+      "exact_bytes": true,
+      "structural_correct": true,
+      "runtime_correct": true,
+      "success": true
+    },
+    "postcheck": {
+      "subsequent_tool_calls": 7,
+      "subsequent_tools": {
+        "Read": 4,
+        "Bash": 3
+      },
+      "boundary": "First parseable successful rename-tool result; work batched inside a shell call is not separated"
+    },
+    "config_sha256": "bac12a4c9a05cbaf1e67f4b8777b12f388fcae89f8941a88d4dee24efc9f1ea0",
+    "process_exit": 0,
+    "timed_out": false,
+    "wall_time_ms": 34360.66291294992,
+    "native": {
+      "response_input_coverage": "complete",
+      "visible_response_input_remainder": {
+        "input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation_input_tokens": 0
+      },
+      "primary_model_rounds_exact": true,
+      "native_empty_response_retry_event_indexes": [],
+      "native_tool_timings": {},
+      "tool_execution_ms": null,
+      "tool_timing_status": "not_exposed",
+      "reported_model": "claude-haiku-4-5-20251001",
+      "isolation_init": {
+        "tools": [
+          "Bash",
+          "Edit",
+          "Read",
+          "Write"
+        ],
+        "plugins": [],
+        "skills": [],
+        "mcp_servers": []
+      },
+      "all_model_usage": {
+        "claude-haiku-4-5-20251001": {
+          "inputTokens": 1118,
+          "outputTokens": 2622,
+          "cacheReadInputTokens": 74128,
+          "cacheCreationInputTokens": 9629,
+          "webSearchRequests": 0,
+          "costUSD": 0.040898800000000006,
+          "contextWindow": 200000,
+          "maxOutputTokens": 32000,
+          "thinkingTokens": 1245,
+          "canonicalModel": "claude-haiku-4-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "all_model_tokens": {
+        "inputTokens": 1118,
+        "outputTokens": 2622,
+        "cacheReadInputTokens": 74128,
+        "cacheCreationInputTokens": 9629,
+        "thinkingTokens": 1245,
+        "totalInputTokens": 84875,
+        "totalTokens": 87497
+      },
+      "primary_model_tokens": {
+        "inputTokens": 1118,
+        "outputTokens": 2622,
+        "cacheReadInputTokens": 74128,
+        "cacheCreationInputTokens": 9629,
+        "thinkingTokens": 1245,
+        "totalInputTokens": 84875,
+        "totalTokens": 87497
+      },
+      "main_loop_tokens": {
+        "inputTokens": 98,
+        "outputTokens": 2608,
+        "cacheReadInputTokens": 74128,
+        "cacheCreationInputTokens": 9629,
+        "totalInputTokens": 83855,
+        "totalTokens": 86463
+      },
+      "whole_call_minus_main_loop": {
+        "inputTokens": 1020,
+        "outputTokens": 14,
+        "cacheReadInputTokens": 0,
+        "cacheCreationInputTokens": 0
+      },
+      "auxiliary_work_attribution": "Not identified by the trace; no response count is inferred",
+      "native_list_price_usd": 0.040898800000000006,
+      "native_subtype": "success",
+      "native_is_error": false,
+      "native_num_turns": 12,
+      "native_duration_ms": 32975,
+      "native_duration_api_ms": 33098,
+      "per_response_inputs": {
+        "msg_011CeojuVr1B9YYNa2mcJgP1": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 10,
+            "cache_read_input_tokens": 0,
+            "cache_creation_input_tokens": 4284
+          }
+        },
+        "msg_011CeojunmyqwWQX2EBZ7SgX": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 4284,
+            "cache_creation_input_tokens": 510
+          }
+        },
+        "msg_011CeojuvkDWKv2Lu5h4eivY": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 4794,
+            "cache_creation_input_tokens": 283
+          }
+        },
+        "msg_011Ceojv4ACAJrTB9iqY1rns": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 5077,
+            "cache_creation_input_tokens": 276
+          }
+        },
+        "msg_011CeojvK7s2GBXieA8wP1Bw": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 5353,
+            "cache_creation_input_tokens": 1376
+          }
+        },
+        "msg_011CeojvZQbK8e6idCuLFmgn": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 6729,
+            "cache_creation_input_tokens": 377
+          }
+        },
+        "msg_011Ceojvh4U2ozmmwYXcfKDw": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 7106,
+            "cache_creation_input_tokens": 276
+          }
+        },
+        "msg_011CeojvqkrRZgMc5JUzGtFX": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 7382,
+            "cache_creation_input_tokens": 314
+          }
+        },
+        "msg_011CeojvyzwfYxtxVJXq7H7e": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 7696,
+            "cache_creation_input_tokens": 322
+          }
+        },
+        "msg_011CeojwBspGhamDQMBvJrTy": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 8018,
+            "cache_creation_input_tokens": 365
+          }
+        },
+        "msg_011CeojwKyjGWMQm9V2HzJHR": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 8383,
+            "cache_creation_input_tokens": 923
+          }
+        },
+        "msg_011CeojwY9xmrGGpCtFLrw1c": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 9306,
+            "cache_creation_input_tokens": 323
+          }
+        }
+      },
+      "initial_input_tokens": 4294,
+      "primary_model_rounds": 12,
+      "tool_calls": 11,
+      "failed_tool_calls": 0,
+      "output_accounting": "Native result scopes: modelUsage for whole call; usage for main loop"
+    },
+    "trace_sha256": "286abd11ebe40004c25c40fb5d6b68a2db7b86aee89bd3c2b113858f7c626d53"
+  },
+  {
+    "id": "run010",
+    "size": 10,
+    "repetition": 0,
+    "evidence": true,
+    "guidance": "scoped",
+    "arm": "evidence-scoped",
+    "frozen": {
+      "expected.json": "03559312d470d41192ba3c84333f45b4b3e9b069613cf78f41f13125974881e4",
+      "initial.json": "77a0c97bc1b460d78a4c2e8091b83724c8bdbb185f6e0d9611bee9d51cbc2ddd",
+      "system.txt": "cc5db054a8f0bd224d59cc6daa60c527c15acfd08e9231e65051385b359b82b9",
+      "prompt.txt": "14eb3464086eb86b99ba7360d22b7e2666cf45de0c96bcc157b4f538c817a0ac",
+      "rename-tool": "b2fc5378b0e4c395460e2f99d8a2b1185afa3abaed929fb561003ffdfd4a535e"
+    },
+    "oracle": {
+      "file_scope": true,
+      "exact_bytes": true,
+      "structural_correct": true,
+      "runtime_correct": true,
+      "success": true
+    },
+    "postcheck": {
+      "subsequent_tool_calls": 5,
+      "subsequent_tools": {
+        "Read": 4,
+        "Bash": 1
+      },
+      "boundary": "First parseable successful rename-tool result; work batched inside a shell call is not separated"
+    },
+    "config_sha256": "bac12a4c9a05cbaf1e67f4b8777b12f388fcae89f8941a88d4dee24efc9f1ea0",
+    "process_exit": 0,
+    "timed_out": false,
+    "wall_time_ms": 19167.913384037092,
+    "native": {
+      "response_input_coverage": "complete",
+      "visible_response_input_remainder": {
+        "input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation_input_tokens": 0
+      },
+      "primary_model_rounds_exact": true,
+      "native_empty_response_retry_event_indexes": [],
+      "native_tool_timings": {},
+      "tool_execution_ms": null,
+      "tool_timing_status": "not_exposed",
+      "reported_model": "claude-haiku-4-5-20251001",
+      "isolation_init": {
+        "tools": [
+          "Bash",
+          "Edit",
+          "Read",
+          "Write"
+        ],
+        "plugins": [],
+        "skills": [],
+        "mcp_servers": []
+      },
+      "all_model_usage": {
+        "claude-haiku-4-5-20251001": {
+          "inputTokens": 1054,
+          "outputTokens": 1571,
+          "cacheReadInputTokens": 15444,
+          "cacheCreationInputTokens": 7425,
+          "webSearchRequests": 0,
+          "costUSD": 0.025303400000000004,
+          "contextWindow": 200000,
+          "maxOutputTokens": 32000,
+          "thinkingTokens": 716,
+          "canonicalModel": "claude-haiku-4-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "all_model_tokens": {
+        "inputTokens": 1054,
+        "outputTokens": 1571,
+        "cacheReadInputTokens": 15444,
+        "cacheCreationInputTokens": 7425,
+        "thinkingTokens": 716,
+        "totalInputTokens": 23923,
+        "totalTokens": 25494
+      },
+      "primary_model_tokens": {
+        "inputTokens": 1054,
+        "outputTokens": 1571,
+        "cacheReadInputTokens": 15444,
+        "cacheCreationInputTokens": 7425,
+        "thinkingTokens": 716,
+        "totalInputTokens": 23923,
+        "totalTokens": 25494
+      },
+      "main_loop_tokens": {
+        "inputTokens": 34,
+        "outputTokens": 1557,
+        "cacheReadInputTokens": 15444,
+        "cacheCreationInputTokens": 7425,
+        "totalInputTokens": 22903,
+        "totalTokens": 24460
+      },
+      "whole_call_minus_main_loop": {
+        "inputTokens": 1020,
+        "outputTokens": 14,
+        "cacheReadInputTokens": 0,
+        "cacheCreationInputTokens": 0
+      },
+      "auxiliary_work_attribution": "Not identified by the trace; no response count is inferred",
+      "native_list_price_usd": 0.025303400000000004,
+      "native_subtype": "success",
+      "native_is_error": false,
+      "native_num_turns": 7,
+      "native_duration_ms": 17816,
+      "native_duration_api_ms": 17907,
+      "per_response_inputs": {
+        "msg_011Ceojx3mC1N32fuuCUmJTt": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 10,
+            "cache_read_input_tokens": 0,
+            "cache_creation_input_tokens": 4284
+          }
+        },
+        "msg_011CeojxKVF3zbq2jVn6ZVh3": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 4284,
+            "cache_creation_input_tokens": 899
+          }
+        },
+        "msg_011Ceojxh149ZYcucV7pSAss": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 5183,
+            "cache_creation_input_tokens": 794
+          }
+        },
+        "msg_011Ceojxx6ep8NZGTyLkqW3s": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 5977,
+            "cache_creation_input_tokens": 1448
+          }
+        }
+      },
+      "initial_input_tokens": 4294,
+      "primary_model_rounds": 4,
+      "tool_calls": 6,
+      "failed_tool_calls": 1,
+      "output_accounting": "Native result scopes: modelUsage for whole call; usage for main loop"
+    },
+    "trace_sha256": "0f99b3c42bfa3a928aae260a7b93dba58ecb0b15cfa8333c62e5da8eeb99924f"
+  },
+  {
+    "id": "run011",
+    "size": 10,
+    "repetition": 0,
+    "evidence": false,
+    "guidance": "current",
+    "arm": "legacy-current",
+    "frozen": {
+      "expected.json": "03559312d470d41192ba3c84333f45b4b3e9b069613cf78f41f13125974881e4",
+      "initial.json": "77a0c97bc1b460d78a4c2e8091b83724c8bdbb185f6e0d9611bee9d51cbc2ddd",
+      "system.txt": "aea094bd5a1bb04a7da9aad970275488cd749360842b878d548fe930c3442682",
+      "prompt.txt": "83446971033b75510f8b4f4184084d495189329f8584aff01cda76b9c6ac8539",
+      "rename-tool": "e00b02815dc920eb629f78890695749a08e74f2876a6a5277db0d87d8c4fa048"
+    },
+    "oracle": {
+      "file_scope": true,
+      "exact_bytes": true,
+      "structural_correct": true,
+      "runtime_correct": true,
+      "success": true
+    },
+    "postcheck": {
+      "subsequent_tool_calls": 4,
+      "subsequent_tools": {
+        "Read": 4
+      },
+      "boundary": "First parseable successful rename-tool result; work batched inside a shell call is not separated"
+    },
+    "config_sha256": "bac12a4c9a05cbaf1e67f4b8777b12f388fcae89f8941a88d4dee24efc9f1ea0",
+    "process_exit": 0,
+    "timed_out": false,
+    "wall_time_ms": 20622.776546981186,
+    "native": {
+      "response_input_coverage": "complete",
+      "visible_response_input_remainder": {
+        "input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation_input_tokens": 0
+      },
+      "primary_model_rounds_exact": true,
+      "native_empty_response_retry_event_indexes": [],
+      "native_tool_timings": {},
+      "tool_execution_ms": null,
+      "tool_timing_status": "not_exposed",
+      "reported_model": "claude-haiku-4-5-20251001",
+      "isolation_init": {
+        "tools": [
+          "Bash",
+          "Edit",
+          "Read",
+          "Write"
+        ],
+        "plugins": [],
+        "skills": [],
+        "mcp_servers": []
+      },
+      "all_model_usage": {
+        "claude-haiku-4-5-20251001": {
+          "inputTokens": 1070,
+          "outputTokens": 1615,
+          "cacheReadInputTokens": 27841,
+          "cacheCreationInputTokens": 7574,
+          "webSearchRequests": 0,
+          "costUSD": 0.027077100000000003,
+          "contextWindow": 200000,
+          "maxOutputTokens": 32000,
+          "thinkingTokens": 703,
+          "canonicalModel": "claude-haiku-4-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "all_model_tokens": {
+        "inputTokens": 1070,
+        "outputTokens": 1615,
+        "cacheReadInputTokens": 27841,
+        "cacheCreationInputTokens": 7574,
+        "thinkingTokens": 703,
+        "totalInputTokens": 36485,
+        "totalTokens": 38100
+      },
+      "primary_model_tokens": {
+        "inputTokens": 1070,
+        "outputTokens": 1615,
+        "cacheReadInputTokens": 27841,
+        "cacheCreationInputTokens": 7574,
+        "thinkingTokens": 703,
+        "totalInputTokens": 36485,
+        "totalTokens": 38100
+      },
+      "main_loop_tokens": {
+        "inputTokens": 50,
+        "outputTokens": 1600,
+        "cacheReadInputTokens": 27841,
+        "cacheCreationInputTokens": 7574,
+        "totalInputTokens": 35465,
+        "totalTokens": 37065
+      },
+      "whole_call_minus_main_loop": {
+        "inputTokens": 1020,
+        "outputTokens": 15,
+        "cacheReadInputTokens": 0,
+        "cacheCreationInputTokens": 0
+      },
+      "auxiliary_work_attribution": "Not identified by the trace; no response count is inferred",
+      "native_list_price_usd": 0.027077100000000003,
+      "native_subtype": "success",
+      "native_is_error": false,
+      "native_num_turns": 9,
+      "native_duration_ms": 19044,
+      "native_duration_api_ms": 19279,
+      "per_response_inputs": {
+        "msg_011CeojyVUYBPv9RJcW1isrN": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 10,
+            "cache_read_input_tokens": 0,
+            "cache_creation_input_tokens": 4107
+          }
+        },
+        "msg_011CeojykiafQWzqrGwC6fKE": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 4107,
+            "cache_creation_input_tokens": 774
+          }
+        },
+        "msg_011Ceojyt756z9JnKjLwykde": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 4881,
+            "cache_creation_input_tokens": 258
+          }
+        },
+        "msg_011Ceojz71xA3nkGsRCAyCx4": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 5139,
+            "cache_creation_input_tokens": 1362
+          }
+        },
+        "msg_011CeojzQA5xUdMWyoRfePZV": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 6501,
+            "cache_creation_input_tokens": 712
+          }
+        },
+        "msg_011Ceojzc3D6538vAcNTGM6X": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 7213,
+            "cache_creation_input_tokens": 361
+          }
+        }
+      },
+      "initial_input_tokens": 4117,
+      "primary_model_rounds": 6,
+      "tool_calls": 8,
+      "failed_tool_calls": 1,
+      "output_accounting": "Native result scopes: modelUsage for whole call; usage for main loop"
+    },
+    "trace_sha256": "56b86d24a3115e63d9ab0b04f60f970c856af9e0f0c6106f79515a3d2479d18a"
+  },
+  {
+    "id": "run012",
+    "size": 10,
+    "repetition": 0,
+    "evidence": true,
+    "guidance": "current",
+    "arm": "evidence-current",
+    "frozen": {
+      "expected.json": "03559312d470d41192ba3c84333f45b4b3e9b069613cf78f41f13125974881e4",
+      "initial.json": "77a0c97bc1b460d78a4c2e8091b83724c8bdbb185f6e0d9611bee9d51cbc2ddd",
+      "system.txt": "aea094bd5a1bb04a7da9aad970275488cd749360842b878d548fe930c3442682",
+      "prompt.txt": "4251db11fe7da372ac686db6e606673f88c176c3af5890f0e26448ac30aff98c",
+      "rename-tool": "cd85635af3522fd3c148666958b2247e2b5e77624ffa4d20ad4b7890e294597b"
+    },
+    "oracle": {
+      "file_scope": true,
+      "exact_bytes": true,
+      "structural_correct": true,
+      "runtime_correct": true,
+      "success": true
+    },
+    "postcheck": {
+      "subsequent_tool_calls": 5,
+      "subsequent_tools": {
+        "Read": 3,
+        "Bash": 2
+      },
+      "boundary": "First parseable successful rename-tool result; work batched inside a shell call is not separated"
+    },
+    "config_sha256": "bac12a4c9a05cbaf1e67f4b8777b12f388fcae89f8941a88d4dee24efc9f1ea0",
+    "process_exit": 0,
+    "timed_out": false,
+    "wall_time_ms": 31753.432985162362,
+    "native": {
+      "response_input_coverage": "complete",
+      "visible_response_input_remainder": {
+        "input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation_input_tokens": 0
+      },
+      "primary_model_rounds_exact": true,
+      "native_empty_response_retry_event_indexes": [],
+      "native_tool_timings": {},
+      "tool_execution_ms": null,
+      "tool_timing_status": "not_exposed",
+      "reported_model": "claude-haiku-4-5-20251001",
+      "isolation_init": {
+        "tools": [
+          "Bash",
+          "Edit",
+          "Read",
+          "Write"
+        ],
+        "plugins": [],
+        "skills": [],
+        "mcp_servers": []
+      },
+      "all_model_usage": {
+        "claude-haiku-4-5-20251001": {
+          "inputTokens": 1110,
+          "outputTokens": 2360,
+          "cacheReadInputTokens": 58046,
+          "cacheCreationInputTokens": 8008,
+          "webSearchRequests": 0,
+          "costUSD": 0.0347306,
+          "contextWindow": 200000,
+          "maxOutputTokens": 32000,
+          "thinkingTokens": 1113,
+          "canonicalModel": "claude-haiku-4-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "all_model_tokens": {
+        "inputTokens": 1110,
+        "outputTokens": 2360,
+        "cacheReadInputTokens": 58046,
+        "cacheCreationInputTokens": 8008,
+        "thinkingTokens": 1113,
+        "totalInputTokens": 67164,
+        "totalTokens": 69524
+      },
+      "primary_model_tokens": {
+        "inputTokens": 1110,
+        "outputTokens": 2360,
+        "cacheReadInputTokens": 58046,
+        "cacheCreationInputTokens": 8008,
+        "thinkingTokens": 1113,
+        "totalInputTokens": 67164,
+        "totalTokens": 69524
+      },
+      "main_loop_tokens": {
+        "inputTokens": 90,
+        "outputTokens": 2346,
+        "cacheReadInputTokens": 58046,
+        "cacheCreationInputTokens": 8008,
+        "totalInputTokens": 66144,
+        "totalTokens": 68490
+      },
+      "whole_call_minus_main_loop": {
+        "inputTokens": 1020,
+        "outputTokens": 14,
+        "cacheReadInputTokens": 0,
+        "cacheCreationInputTokens": 0
+      },
+      "auxiliary_work_attribution": "Not identified by the trace; no response count is inferred",
+      "native_list_price_usd": 0.0347306,
+      "native_subtype": "success",
+      "native_is_error": false,
+      "native_num_turns": 11,
+      "native_duration_ms": 30458,
+      "native_duration_api_ms": 30631,
+      "per_response_inputs": {
+        "msg_011Ceok11rvefjVsjo51XNw7": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 10,
+            "cache_read_input_tokens": 0,
+            "cache_creation_input_tokens": 4107
+          }
+        },
+        "msg_011Ceok1GAf8VKC5oYhHZjnU": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 4107,
+            "cache_creation_input_tokens": 450
+          }
+        },
+        "msg_011Ceok1QjLufzLTFXnLF3R2": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 4557,
+            "cache_creation_input_tokens": 255
+          }
+        },
+        "msg_011Ceok1WhX3FfZruFpD3cXQ": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 4812,
+            "cache_creation_input_tokens": 225
+          }
+        },
+        "msg_011Ceok1fXqZjUD54nqvBFZS": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 5037,
+            "cache_creation_input_tokens": 299
+          }
+        },
+        "msg_011Ceok1vm7jge53GyadZbJj": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 5336,
+            "cache_creation_input_tokens": 815
+          }
+        },
+        "msg_011Ceok2AGxrcoWtSN7qmtfu": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 6151,
+            "cache_creation_input_tokens": 397
+          }
+        },
+        "msg_011Ceok2JogBkpV4Ghc6kimt": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 6548,
+            "cache_creation_input_tokens": 285
+          }
+        },
+        "msg_011Ceok2UvPRZXKKG7AxNxzF": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 6833,
+            "cache_creation_input_tokens": 312
+          }
+        },
+        "msg_011Ceok2eysWqUwoYZ1uwJjZ": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 7145,
+            "cache_creation_input_tokens": 375
+          }
+        },
+        "msg_011Ceok2p7J823u3HNh7nt2a": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 7520,
+            "cache_creation_input_tokens": 488
+          }
+        }
+      },
+      "initial_input_tokens": 4117,
+      "primary_model_rounds": 11,
+      "tool_calls": 10,
+      "failed_tool_calls": 1,
+      "output_accounting": "Native result scopes: modelUsage for whole call; usage for main loop"
+    },
+    "trace_sha256": "0dea9a3ab0bbe3ee0f3a27e79416f72951e0b27dbfb4298593744c88826d4acd"
+  },
+  {
+    "id": "run013",
+    "size": 10,
+    "repetition": 2,
+    "evidence": true,
+    "guidance": "scoped",
+    "arm": "evidence-scoped",
+    "frozen": {
+      "expected.json": "03559312d470d41192ba3c84333f45b4b3e9b069613cf78f41f13125974881e4",
+      "initial.json": "77a0c97bc1b460d78a4c2e8091b83724c8bdbb185f6e0d9611bee9d51cbc2ddd",
+      "system.txt": "cc5db054a8f0bd224d59cc6daa60c527c15acfd08e9231e65051385b359b82b9",
+      "prompt.txt": "8c23f32d48334e76e576cbdb8bb6e27ae8bcda343f07e93f7a3ea4c1454e0f85",
+      "rename-tool": "1137451529ec849b3313663639a616e71b8cb65199c9d794b966a6e60a23beca"
+    },
+    "oracle": {
+      "file_scope": true,
+      "exact_bytes": true,
+      "structural_correct": true,
+      "runtime_correct": true,
+      "success": true
+    },
+    "postcheck": {
+      "subsequent_tool_calls": 0,
+      "subsequent_tools": {},
+      "boundary": "First parseable successful rename-tool result; work batched inside a shell call is not separated"
+    },
+    "config_sha256": "bac12a4c9a05cbaf1e67f4b8777b12f388fcae89f8941a88d4dee24efc9f1ea0",
+    "process_exit": 0,
+    "timed_out": false,
+    "wall_time_ms": 13853.051309939474,
+    "native": {
+      "response_input_coverage": "complete",
+      "visible_response_input_remainder": {
+        "input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation_input_tokens": 0
+      },
+      "primary_model_rounds_exact": true,
+      "native_empty_response_retry_event_indexes": [],
+      "native_tool_timings": {},
+      "tool_execution_ms": null,
+      "tool_timing_status": "not_exposed",
+      "reported_model": "claude-haiku-4-5-20251001",
+      "isolation_init": {
+        "tools": [
+          "Bash",
+          "Edit",
+          "Read",
+          "Write"
+        ],
+        "plugins": [],
+        "skills": [],
+        "mcp_servers": []
+      },
+      "all_model_usage": {
+        "claude-haiku-4-5-20251001": {
+          "inputTokens": 1038,
+          "outputTokens": 1051,
+          "cacheReadInputTokens": 4284,
+          "cacheCreationInputTokens": 5244,
+          "webSearchRequests": 0,
+          "costUSD": 0.0172094,
+          "contextWindow": 200000,
+          "maxOutputTokens": 32000,
+          "thinkingTokens": 635,
+          "canonicalModel": "claude-haiku-4-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "all_model_tokens": {
+        "inputTokens": 1038,
+        "outputTokens": 1051,
+        "cacheReadInputTokens": 4284,
+        "cacheCreationInputTokens": 5244,
+        "thinkingTokens": 635,
+        "totalInputTokens": 10566,
+        "totalTokens": 11617
+      },
+      "primary_model_tokens": {
+        "inputTokens": 1038,
+        "outputTokens": 1051,
+        "cacheReadInputTokens": 4284,
+        "cacheCreationInputTokens": 5244,
+        "thinkingTokens": 635,
+        "totalInputTokens": 10566,
+        "totalTokens": 11617
+      },
+      "main_loop_tokens": {
+        "inputTokens": 18,
+        "outputTokens": 1037,
+        "cacheReadInputTokens": 4284,
+        "cacheCreationInputTokens": 5244,
+        "totalInputTokens": 9546,
+        "totalTokens": 10583
+      },
+      "whole_call_minus_main_loop": {
+        "inputTokens": 1020,
+        "outputTokens": 14,
+        "cacheReadInputTokens": 0,
+        "cacheCreationInputTokens": 0
+      },
+      "auxiliary_work_attribution": "Not identified by the trace; no response count is inferred",
+      "native_list_price_usd": 0.0172094,
+      "native_subtype": "success",
+      "native_is_error": false,
+      "native_num_turns": 2,
+      "native_duration_ms": 12333,
+      "native_duration_api_ms": 12353,
+      "per_response_inputs": {
+        "msg_011Ceok3Njr9Ub3MpG8i2FvH": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 10,
+            "cache_read_input_tokens": 0,
+            "cache_creation_input_tokens": 4284
+          }
+        },
+        "msg_011Ceok3hsH3XjD56U719U4V": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 4284,
+            "cache_creation_input_tokens": 960
+          }
+        }
+      },
+      "initial_input_tokens": 4294,
+      "primary_model_rounds": 2,
+      "tool_calls": 1,
+      "failed_tool_calls": 0,
+      "output_accounting": "Native result scopes: modelUsage for whole call; usage for main loop"
+    },
+    "trace_sha256": "0f93a81d4bcf21c8393076f758b5732d9b0d26c8ebb83a696ce6a7adc6abab96"
+  },
+  {
+    "id": "run014",
+    "size": 10,
+    "repetition": 2,
+    "evidence": false,
+    "guidance": "current",
+    "arm": "legacy-current",
+    "frozen": {
+      "expected.json": "03559312d470d41192ba3c84333f45b4b3e9b069613cf78f41f13125974881e4",
+      "initial.json": "77a0c97bc1b460d78a4c2e8091b83724c8bdbb185f6e0d9611bee9d51cbc2ddd",
+      "system.txt": "aea094bd5a1bb04a7da9aad970275488cd749360842b878d548fe930c3442682",
+      "prompt.txt": "a9d662c2f646c1ab4f3d488f632da13eeb01424bc164547b9cb5fff16368681d",
+      "rename-tool": "4b06892cbb469fabd6eb991ec566c473aa280dd2c386509a754b56991e78bde9"
+    },
+    "oracle": {
+      "file_scope": true,
+      "exact_bytes": true,
+      "structural_correct": true,
+      "runtime_correct": true,
+      "success": true
+    },
+    "postcheck": {
+      "subsequent_tool_calls": 3,
+      "subsequent_tools": {
+        "Read": 2,
+        "Bash": 1
+      },
+      "boundary": "First parseable successful rename-tool result; work batched inside a shell call is not separated"
+    },
+    "config_sha256": "bac12a4c9a05cbaf1e67f4b8777b12f388fcae89f8941a88d4dee24efc9f1ea0",
+    "process_exit": 0,
+    "timed_out": false,
+    "wall_time_ms": 23028.18260109052,
+    "native": {
+      "response_input_coverage": "complete",
+      "visible_response_input_remainder": {
+        "input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation_input_tokens": 0
+      },
+      "primary_model_rounds_exact": true,
+      "native_empty_response_retry_event_indexes": [],
+      "native_tool_timings": {},
+      "tool_execution_ms": null,
+      "tool_timing_status": "not_exposed",
+      "reported_model": "claude-haiku-4-5-20251001",
+      "isolation_init": {
+        "tools": [
+          "Bash",
+          "Edit",
+          "Read",
+          "Write"
+        ],
+        "plugins": [],
+        "skills": [],
+        "mcp_servers": []
+      },
+      "all_model_usage": {
+        "claude-haiku-4-5-20251001": {
+          "inputTokens": 1086,
+          "outputTokens": 1632,
+          "cacheReadInputTokens": 40150,
+          "cacheCreationInputTokens": 8018,
+          "webSearchRequests": 0,
+          "costUSD": 0.029297,
+          "contextWindow": 200000,
+          "maxOutputTokens": 32000,
+          "thinkingTokens": 735,
+          "canonicalModel": "claude-haiku-4-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "all_model_tokens": {
+        "inputTokens": 1086,
+        "outputTokens": 1632,
+        "cacheReadInputTokens": 40150,
+        "cacheCreationInputTokens": 8018,
+        "thinkingTokens": 735,
+        "totalInputTokens": 49254,
+        "totalTokens": 50886
+      },
+      "primary_model_tokens": {
+        "inputTokens": 1086,
+        "outputTokens": 1632,
+        "cacheReadInputTokens": 40150,
+        "cacheCreationInputTokens": 8018,
+        "thinkingTokens": 735,
+        "totalInputTokens": 49254,
+        "totalTokens": 50886
+      },
+      "main_loop_tokens": {
+        "inputTokens": 66,
+        "outputTokens": 1618,
+        "cacheReadInputTokens": 40150,
+        "cacheCreationInputTokens": 8018,
+        "totalInputTokens": 48234,
+        "totalTokens": 49852
+      },
+      "whole_call_minus_main_loop": {
+        "inputTokens": 1020,
+        "outputTokens": 14,
+        "cacheReadInputTokens": 0,
+        "cacheCreationInputTokens": 0
+      },
+      "auxiliary_work_attribution": "Not identified by the trace; no response count is inferred",
+      "native_list_price_usd": 0.029297,
+      "native_subtype": "success",
+      "native_is_error": false,
+      "native_num_turns": 8,
+      "native_duration_ms": 21671,
+      "native_duration_api_ms": 21797,
+      "per_response_inputs": {
+        "msg_011Ceok4R9jM5C1StsuhPEfy": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 10,
+            "cache_read_input_tokens": 0,
+            "cache_creation_input_tokens": 4107
+          }
+        },
+        "msg_011Ceok4eKzHNCZrwdfRaTRY": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 4107,
+            "cache_creation_input_tokens": 603
+          }
+        },
+        "msg_011Ceok4nPus6swhNJFBcSZj": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 4710,
+            "cache_creation_input_tokens": 272
+          }
+        },
+        "msg_011Ceok4vQckRVsAGTMs26UJ": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 4982,
+            "cache_creation_input_tokens": 297
+          }
+        },
+        "msg_011Ceok5CeRoLKPALgrbG5H4": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 5279,
+            "cache_creation_input_tokens": 1409
+          }
+        },
+        "msg_011Ceok5TZrgK5hdLzYeoHzU": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 6688,
+            "cache_creation_input_tokens": 375
+          }
+        },
+        "msg_011Ceok5aWKeDo7HfKDjhUfz": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 7063,
+            "cache_creation_input_tokens": 258
+          }
+        },
+        "msg_011Ceok5jFgdN9cQzXFzTnwK": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 7321,
+            "cache_creation_input_tokens": 697
+          }
+        }
+      },
+      "initial_input_tokens": 4117,
+      "primary_model_rounds": 8,
+      "tool_calls": 7,
+      "failed_tool_calls": 0,
+      "output_accounting": "Native result scopes: modelUsage for whole call; usage for main loop"
+    },
+    "trace_sha256": "0aba6517975ef3dcf9fdcd4d8dc448d9c8976b33be66e87a443e379527663ded"
+  },
+  {
+    "id": "run015",
+    "size": 10,
+    "repetition": 2,
+    "evidence": true,
+    "guidance": "current",
+    "arm": "evidence-current",
+    "frozen": {
+      "expected.json": "03559312d470d41192ba3c84333f45b4b3e9b069613cf78f41f13125974881e4",
+      "initial.json": "77a0c97bc1b460d78a4c2e8091b83724c8bdbb185f6e0d9611bee9d51cbc2ddd",
+      "system.txt": "aea094bd5a1bb04a7da9aad970275488cd749360842b878d548fe930c3442682",
+      "prompt.txt": "ea128d10612fa9205d35b8f4b06f7ad4d7e2b6ceab7fa80e3b43c1f51e592972",
+      "rename-tool": "e213cad1bb34459ad24b96f3752615dbeda0c9437c1712e16ebb39256ff3c5ad"
+    },
+    "oracle": {
+      "file_scope": true,
+      "exact_bytes": true,
+      "structural_correct": true,
+      "runtime_correct": true,
+      "success": true
+    },
+    "postcheck": {
+      "subsequent_tool_calls": 4,
+      "subsequent_tools": {
+        "Read": 3,
+        "Bash": 1
+      },
+      "boundary": "First parseable successful rename-tool result; work batched inside a shell call is not separated"
+    },
+    "config_sha256": "bac12a4c9a05cbaf1e67f4b8777b12f388fcae89f8941a88d4dee24efc9f1ea0",
+    "process_exit": 0,
+    "timed_out": false,
+    "wall_time_ms": 28946.591537911445,
+    "native": {
+      "response_input_coverage": "complete",
+      "visible_response_input_remainder": {
+        "input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation_input_tokens": 0
+      },
+      "primary_model_rounds_exact": true,
+      "native_empty_response_retry_event_indexes": [],
+      "native_tool_timings": {},
+      "tool_execution_ms": null,
+      "tool_timing_status": "not_exposed",
+      "reported_model": "claude-haiku-4-5-20251001",
+      "isolation_init": {
+        "tools": [
+          "Bash",
+          "Edit",
+          "Read",
+          "Write"
+        ],
+        "plugins": [],
+        "skills": [],
+        "mcp_servers": []
+      },
+      "all_model_usage": {
+        "claude-haiku-4-5-20251001": {
+          "inputTokens": 1094,
+          "outputTokens": 2218,
+          "cacheReadInputTokens": 46218,
+          "cacheCreationInputTokens": 7988,
+          "webSearchRequests": 0,
+          "costUSD": 0.03278180000000001,
+          "contextWindow": 200000,
+          "maxOutputTokens": 32000,
+          "thinkingTokens": 1177,
+          "canonicalModel": "claude-haiku-4-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "all_model_tokens": {
+        "inputTokens": 1094,
+        "outputTokens": 2218,
+        "cacheReadInputTokens": 46218,
+        "cacheCreationInputTokens": 7988,
+        "thinkingTokens": 1177,
+        "totalInputTokens": 55300,
+        "totalTokens": 57518
+      },
+      "primary_model_tokens": {
+        "inputTokens": 1094,
+        "outputTokens": 2218,
+        "cacheReadInputTokens": 46218,
+        "cacheCreationInputTokens": 7988,
+        "thinkingTokens": 1177,
+        "totalInputTokens": 55300,
+        "totalTokens": 57518
+      },
+      "main_loop_tokens": {
+        "inputTokens": 74,
+        "outputTokens": 2204,
+        "cacheReadInputTokens": 46218,
+        "cacheCreationInputTokens": 7988,
+        "totalInputTokens": 54280,
+        "totalTokens": 56484
+      },
+      "whole_call_minus_main_loop": {
+        "inputTokens": 1020,
+        "outputTokens": 14,
+        "cacheReadInputTokens": 0,
+        "cacheCreationInputTokens": 0
+      },
+      "auxiliary_work_attribution": "Not identified by the trace; no response count is inferred",
+      "native_list_price_usd": 0.03278180000000001,
+      "native_subtype": "success",
+      "native_is_error": false,
+      "native_num_turns": 9,
+      "native_duration_ms": 27537,
+      "native_duration_api_ms": 27644,
+      "per_response_inputs": {
+        "msg_011Ceok68wTe9txy3xdWMfWm": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 10,
+            "cache_read_input_tokens": 0,
+            "cache_creation_input_tokens": 4107
+          }
+        },
+        "msg_011Ceok6RGyGmxg9wAvUkdp8": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 4107,
+            "cache_creation_input_tokens": 653
+          }
+        },
+        "msg_011Ceok6ZdmX312r5nDxWrnu": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 4760,
+            "cache_creation_input_tokens": 293
+          }
+        },
+        "msg_011Ceok6hvLjsfg5LQn9AKZA": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 5053,
+            "cache_creation_input_tokens": 299
+          }
+        },
+        "msg_011Ceok6yFKyjJsTTfD5inAG": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 5352,
+            "cache_creation_input_tokens": 813
+          }
+        },
+        "msg_011Ceok7GLygsKYLk8jj9rdT": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 6165,
+            "cache_creation_input_tokens": 480
+          }
+        },
+        "msg_011Ceok7PBk2HtWpB6ZpUqdM": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 6645,
+            "cache_creation_input_tokens": 268
+          }
+        },
+        "msg_011Ceok7XhxAgwm4HXsL6aC4": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 6913,
+            "cache_creation_input_tokens": 310
+          }
+        },
+        "msg_011Ceok7hSMDGdkd1jRZuTVH": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 7223,
+            "cache_creation_input_tokens": 765
+          }
+        }
+      },
+      "initial_input_tokens": 4117,
+      "primary_model_rounds": 9,
+      "tool_calls": 8,
+      "failed_tool_calls": 0,
+      "output_accounting": "Native result scopes: modelUsage for whole call; usage for main loop"
+    },
+    "trace_sha256": "414c68ca875e367b991ee1c3839aec7a02065ff9d324510c3bb9c37ff495bf14"
+  },
+  {
+    "id": "run016",
+    "size": 10,
+    "repetition": 2,
+    "evidence": false,
+    "guidance": "scoped",
+    "arm": "legacy-scoped",
+    "frozen": {
+      "expected.json": "03559312d470d41192ba3c84333f45b4b3e9b069613cf78f41f13125974881e4",
+      "initial.json": "77a0c97bc1b460d78a4c2e8091b83724c8bdbb185f6e0d9611bee9d51cbc2ddd",
+      "system.txt": "cc5db054a8f0bd224d59cc6daa60c527c15acfd08e9231e65051385b359b82b9",
+      "prompt.txt": "dbbaa3e022304c124d79caab92ad70f9fed8947b8590642b6aa00521effcf42a",
+      "rename-tool": "5622e06082d939fae06706d611b741b41bca03fc8dd33136f827db238fb8d895"
+    },
+    "oracle": {
+      "file_scope": true,
+      "exact_bytes": true,
+      "structural_correct": true,
+      "runtime_correct": true,
+      "success": true
+    },
+    "postcheck": {
+      "subsequent_tool_calls": 6,
+      "subsequent_tools": {
+        "Read": 3,
+        "Bash": 3
+      },
+      "boundary": "First parseable successful rename-tool result; work batched inside a shell call is not separated"
+    },
+    "config_sha256": "bac12a4c9a05cbaf1e67f4b8777b12f388fcae89f8941a88d4dee24efc9f1ea0",
+    "process_exit": 0,
+    "timed_out": false,
+    "wall_time_ms": 23981.85200500302,
+    "native": {
+      "response_input_coverage": "complete",
+      "visible_response_input_remainder": {
+        "input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation_input_tokens": 0
+      },
+      "primary_model_rounds_exact": true,
+      "native_empty_response_retry_event_indexes": [],
+      "native_tool_timings": {},
+      "tool_execution_ms": null,
+      "tool_timing_status": "not_exposed",
+      "reported_model": "claude-haiku-4-5-20251001",
+      "isolation_init": {
+        "tools": [
+          "Bash",
+          "Edit",
+          "Read",
+          "Write"
+        ],
+        "plugins": [],
+        "skills": [],
+        "mcp_servers": []
+      },
+      "all_model_usage": {
+        "claude-haiku-4-5-20251001": {
+          "inputTokens": 1070,
+          "outputTokens": 1881,
+          "cacheReadInputTokens": 31792,
+          "cacheCreationInputTokens": 8608,
+          "webSearchRequests": 0,
+          "costUSD": 0.0308702,
+          "contextWindow": 200000,
+          "maxOutputTokens": 32000,
+          "thinkingTokens": 944,
+          "canonicalModel": "claude-haiku-4-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "all_model_tokens": {
+        "inputTokens": 1070,
+        "outputTokens": 1881,
+        "cacheReadInputTokens": 31792,
+        "cacheCreationInputTokens": 8608,
+        "thinkingTokens": 944,
+        "totalInputTokens": 41470,
+        "totalTokens": 43351
+      },
+      "primary_model_tokens": {
+        "inputTokens": 1070,
+        "outputTokens": 1881,
+        "cacheReadInputTokens": 31792,
+        "cacheCreationInputTokens": 8608,
+        "thinkingTokens": 944,
+        "totalInputTokens": 41470,
+        "totalTokens": 43351
+      },
+      "main_loop_tokens": {
+        "inputTokens": 50,
+        "outputTokens": 1866,
+        "cacheReadInputTokens": 31792,
+        "cacheCreationInputTokens": 8608,
+        "totalInputTokens": 40450,
+        "totalTokens": 42316
+      },
+      "whole_call_minus_main_loop": {
+        "inputTokens": 1020,
+        "outputTokens": 15,
+        "cacheReadInputTokens": 0,
+        "cacheCreationInputTokens": 0
+      },
+      "auxiliary_work_attribution": "Not identified by the trace; no response count is inferred",
+      "native_list_price_usd": 0.0308702,
+      "native_subtype": "success",
+      "native_is_error": false,
+      "native_num_turns": 8,
+      "native_duration_ms": 22589,
+      "native_duration_api_ms": 22607,
+      "per_response_inputs": {
+        "msg_011Ceok8HPXNVg5tb2akADB1": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 10,
+            "cache_read_input_tokens": 0,
+            "cache_creation_input_tokens": 4284
+          }
+        },
+        "msg_011Ceok8btzyGv2ToHLuBHST": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 4284,
+            "cache_creation_input_tokens": 1497
+          }
+        },
+        "msg_011Ceok92jjtg3imSuZNn9P2": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 5781,
+            "cache_creation_input_tokens": 817
+          }
+        },
+        "msg_011Ceok9AYHkP9qGvCME9JXE": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 6598,
+            "cache_creation_input_tokens": 716
+          }
+        },
+        "msg_011Ceok9LkT9bvzidJ4sr23F": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 7314,
+            "cache_creation_input_tokens": 501
+          }
+        },
+        "msg_011Ceok9hQv5yAhw6ZEK18MD": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 7815,
+            "cache_creation_input_tokens": 793
+          }
+        }
+      },
+      "initial_input_tokens": 4294,
+      "primary_model_rounds": 6,
+      "tool_calls": 7,
+      "failed_tool_calls": 1,
+      "output_accounting": "Native result scopes: modelUsage for whole call; usage for main loop"
+    },
+    "trace_sha256": "60ef9f52380d2602968028ca5251d39088f36ed824659a687c12cbce913a79e7"
+  },
+  {
+    "id": "run017",
+    "size": 50,
+    "repetition": 2,
+    "evidence": false,
+    "guidance": "current",
+    "arm": "legacy-current",
+    "frozen": {
+      "expected.json": "c54a1408afaffe5d885138a329ad1e8189d6efb53f2a1984a21cb429302f7351",
+      "initial.json": "e26f4cab6c2761f67ad0106b8738082d03a6fd5974858b0000dc787d2bde5830",
+      "system.txt": "aea094bd5a1bb04a7da9aad970275488cd749360842b878d548fe930c3442682",
+      "prompt.txt": "8f681d8de3814444e8ccdd3161091f6ce1d051b6f2f71a0d5ce0cda1dcb253b6",
+      "rename-tool": "9f8c54917fcbb040f9760603a01e560271db2cb59520f66524a62aed8d2fcea6"
+    },
+    "oracle": {
+      "file_scope": true,
+      "exact_bytes": true,
+      "structural_correct": true,
+      "runtime_correct": true,
+      "success": true
+    },
+    "postcheck": {
+      "subsequent_tool_calls": 4,
+      "subsequent_tools": {
+        "Read": 4
+      },
+      "boundary": "First parseable successful rename-tool result; work batched inside a shell call is not separated"
+    },
+    "config_sha256": "bac12a4c9a05cbaf1e67f4b8777b12f388fcae89f8941a88d4dee24efc9f1ea0",
+    "process_exit": 0,
+    "timed_out": false,
+    "wall_time_ms": 27189.874520059675,
+    "native": {
+      "response_input_coverage": "complete",
+      "visible_response_input_remainder": {
+        "input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation_input_tokens": 0
+      },
+      "primary_model_rounds_exact": true,
+      "native_empty_response_retry_event_indexes": [],
+      "native_tool_timings": {},
+      "tool_execution_ms": null,
+      "tool_timing_status": "not_exposed",
+      "reported_model": "claude-haiku-4-5-20251001",
+      "isolation_init": {
+        "tools": [
+          "Bash",
+          "Edit",
+          "Read",
+          "Write"
+        ],
+        "plugins": [],
+        "skills": [],
+        "mcp_servers": []
+      },
+      "all_model_usage": {
+        "claude-haiku-4-5-20251001": {
+          "inputTokens": 1078,
+          "outputTokens": 2081,
+          "cacheReadInputTokens": 48160,
+          "cacheCreationInputTokens": 12947,
+          "webSearchRequests": 0,
+          "costUSD": 0.042193,
+          "contextWindow": 200000,
+          "maxOutputTokens": 32000,
+          "thinkingTokens": 974,
+          "canonicalModel": "claude-haiku-4-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "all_model_tokens": {
+        "inputTokens": 1078,
+        "outputTokens": 2081,
+        "cacheReadInputTokens": 48160,
+        "cacheCreationInputTokens": 12947,
+        "thinkingTokens": 974,
+        "totalInputTokens": 62185,
+        "totalTokens": 64266
+      },
+      "primary_model_tokens": {
+        "inputTokens": 1078,
+        "outputTokens": 2081,
+        "cacheReadInputTokens": 48160,
+        "cacheCreationInputTokens": 12947,
+        "thinkingTokens": 974,
+        "totalInputTokens": 62185,
+        "totalTokens": 64266
+      },
+      "main_loop_tokens": {
+        "inputTokens": 58,
+        "outputTokens": 2068,
+        "cacheReadInputTokens": 48160,
+        "cacheCreationInputTokens": 12947,
+        "totalInputTokens": 61165,
+        "totalTokens": 63233
+      },
+      "whole_call_minus_main_loop": {
+        "inputTokens": 1020,
+        "outputTokens": 13,
+        "cacheReadInputTokens": 0,
+        "cacheCreationInputTokens": 0
+      },
+      "auxiliary_work_attribution": "Not identified by the trace; no response count is inferred",
+      "native_list_price_usd": 0.042193,
+      "native_subtype": "success",
+      "native_is_error": false,
+      "native_num_turns": 10,
+      "native_duration_ms": 25872,
+      "native_duration_api_ms": 25796,
+      "per_response_inputs": {
+        "msg_011CeokA4zwwCSDutNR4K2Um": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 10,
+            "cache_read_input_tokens": 0,
+            "cache_creation_input_tokens": 4107
+          }
+        },
+        "msg_011CeokANTfjXVEs1oFXzg6o": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 4107,
+            "cache_creation_input_tokens": 2210
+          }
+        },
+        "msg_011CeokAYqWPXMDHjPh1jKWN": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 6317,
+            "cache_creation_input_tokens": 285
+          }
+        },
+        "msg_011CeokAi4dbHUFSoqZb9mpe": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 6602,
+            "cache_creation_input_tokens": 306
+          }
+        },
+        "msg_011CeokB3c88eWzirGibAGHX": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 6908,
+            "cache_creation_input_tokens": 4847
+          }
+        },
+        "msg_011CeokBPFpxqDWp3tJ3Uf3u": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 11755,
+            "cache_creation_input_tokens": 716
+          }
+        },
+        "msg_011CeokBfKxgp638MwtcSDNK": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 12471,
+            "cache_creation_input_tokens": 476
+          }
+        }
+      },
+      "initial_input_tokens": 4117,
+      "primary_model_rounds": 7,
+      "tool_calls": 9,
+      "failed_tool_calls": 0,
+      "output_accounting": "Native result scopes: modelUsage for whole call; usage for main loop"
+    },
+    "trace_sha256": "c91598497f3f4bede8824598bcb49fdd33188d81d1a7c1a985973fd60d13f311"
+  },
+  {
+    "id": "run018",
+    "size": 50,
+    "repetition": 2,
+    "evidence": true,
+    "guidance": "current",
+    "arm": "evidence-current",
+    "frozen": {
+      "expected.json": "c54a1408afaffe5d885138a329ad1e8189d6efb53f2a1984a21cb429302f7351",
+      "initial.json": "e26f4cab6c2761f67ad0106b8738082d03a6fd5974858b0000dc787d2bde5830",
+      "system.txt": "aea094bd5a1bb04a7da9aad970275488cd749360842b878d548fe930c3442682",
+      "prompt.txt": "26f57bef57c5a0068d5d4536245a0dedcbe77bfd97dd51fc1d51f694895bdf00",
+      "rename-tool": "218b035b68282c3a31b6e233b4739686b07261e9c57039b6af0fca2fbee00bc1"
+    },
+    "oracle": {
+      "file_scope": true,
+      "exact_bytes": true,
+      "structural_correct": true,
+      "runtime_correct": true,
+      "success": true
+    },
+    "postcheck": {
+      "subsequent_tool_calls": 3,
+      "subsequent_tools": {
+        "Read": 3
+      },
+      "boundary": "First parseable successful rename-tool result; work batched inside a shell call is not separated"
+    },
+    "config_sha256": "bac12a4c9a05cbaf1e67f4b8777b12f388fcae89f8941a88d4dee24efc9f1ea0",
+    "process_exit": 0,
+    "timed_out": false,
+    "wall_time_ms": 25135.42892294936,
+    "native": {
+      "response_input_coverage": "complete",
+      "visible_response_input_remainder": {
+        "input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation_input_tokens": 0
+      },
+      "primary_model_rounds_exact": true,
+      "native_empty_response_retry_event_indexes": [],
+      "native_tool_timings": {},
+      "tool_execution_ms": null,
+      "tool_timing_status": "not_exposed",
+      "reported_model": "claude-haiku-4-5-20251001",
+      "isolation_init": {
+        "tools": [
+          "Bash",
+          "Edit",
+          "Read",
+          "Write"
+        ],
+        "plugins": [],
+        "skills": [],
+        "mcp_servers": []
+      },
+      "all_model_usage": {
+        "claude-haiku-4-5-20251001": {
+          "inputTokens": 1070,
+          "outputTokens": 1992,
+          "cacheReadInputTokens": 28382,
+          "cacheCreationInputTokens": 8117,
+          "webSearchRequests": 0,
+          "costUSD": 0.0301022,
+          "contextWindow": 200000,
+          "maxOutputTokens": 32000,
+          "thinkingTokens": 896,
+          "canonicalModel": "claude-haiku-4-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "all_model_tokens": {
+        "inputTokens": 1070,
+        "outputTokens": 1992,
+        "cacheReadInputTokens": 28382,
+        "cacheCreationInputTokens": 8117,
+        "thinkingTokens": 896,
+        "totalInputTokens": 37569,
+        "totalTokens": 39561
+      },
+      "primary_model_tokens": {
+        "inputTokens": 1070,
+        "outputTokens": 1992,
+        "cacheReadInputTokens": 28382,
+        "cacheCreationInputTokens": 8117,
+        "thinkingTokens": 896,
+        "totalInputTokens": 37569,
+        "totalTokens": 39561
+      },
+      "main_loop_tokens": {
+        "inputTokens": 50,
+        "outputTokens": 1979,
+        "cacheReadInputTokens": 28382,
+        "cacheCreationInputTokens": 8117,
+        "totalInputTokens": 36549,
+        "totalTokens": 38528
+      },
+      "whole_call_minus_main_loop": {
+        "inputTokens": 1020,
+        "outputTokens": 13,
+        "cacheReadInputTokens": 0,
+        "cacheCreationInputTokens": 0
+      },
+      "auxiliary_work_attribution": "Not identified by the trace; no response count is inferred",
+      "native_list_price_usd": 0.0301022,
+      "native_subtype": "success",
+      "native_is_error": false,
+      "native_num_turns": 9,
+      "native_duration_ms": 23813,
+      "native_duration_api_ms": 23712,
+      "per_response_inputs": {
+        "msg_011CeokC6RaAgaKf7K4E8dvM": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 10,
+            "cache_read_input_tokens": 0,
+            "cache_creation_input_tokens": 4107
+          }
+        },
+        "msg_011CeokCRQ5cWqb66oYdEwYj": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 4107,
+            "cache_creation_input_tokens": 1297
+          }
+        },
+        "msg_011CeokCZpLs1aJEY3NeYSQG": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 5404,
+            "cache_creation_input_tokens": 236
+          }
+        },
+        "msg_011CeokChuWe5Tp5D79eXWDU": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 5640,
+            "cache_creation_input_tokens": 280
+          }
+        },
+        "msg_011CeokCzZ8Rv37WExYf5Qim": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 5920,
+            "cache_creation_input_tokens": 1391
+          }
+        },
+        "msg_011CeokDNZhd9BsHpAt29TEF": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 7311,
+            "cache_creation_input_tokens": 806
+          }
+        }
+      },
+      "initial_input_tokens": 4117,
+      "primary_model_rounds": 6,
+      "tool_calls": 8,
+      "failed_tool_calls": 1,
+      "output_accounting": "Native result scopes: modelUsage for whole call; usage for main loop"
+    },
+    "trace_sha256": "ad96e44ad6aa824965c6bd9ccb00d3769fd0c911c3c9a865acdd46eb04f71924"
+  },
+  {
+    "id": "run019",
+    "size": 50,
+    "repetition": 2,
+    "evidence": false,
+    "guidance": "scoped",
+    "arm": "legacy-scoped",
+    "frozen": {
+      "expected.json": "c54a1408afaffe5d885138a329ad1e8189d6efb53f2a1984a21cb429302f7351",
+      "initial.json": "e26f4cab6c2761f67ad0106b8738082d03a6fd5974858b0000dc787d2bde5830",
+      "system.txt": "cc5db054a8f0bd224d59cc6daa60c527c15acfd08e9231e65051385b359b82b9",
+      "prompt.txt": "6bbef97e6babc2ed013a8a96fdc773b6dd9e29675613c174f9b4e34b1aff214b",
+      "rename-tool": "59c5a8bd530ff2e41cf17144533d98c378e95853a1ac4678b395838d43cfd72c"
+    },
+    "oracle": {
+      "file_scope": true,
+      "exact_bytes": true,
+      "structural_correct": true,
+      "runtime_correct": true,
+      "success": true
+    },
+    "postcheck": {
+      "subsequent_tool_calls": 4,
+      "subsequent_tools": {
+        "Read": 4
+      },
+      "boundary": "First parseable successful rename-tool result; work batched inside a shell call is not separated"
+    },
+    "config_sha256": "bac12a4c9a05cbaf1e67f4b8777b12f388fcae89f8941a88d4dee24efc9f1ea0",
+    "process_exit": 0,
+    "timed_out": false,
+    "wall_time_ms": 23331.585523905233,
+    "native": {
+      "response_input_coverage": "complete",
+      "visible_response_input_remainder": {
+        "input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation_input_tokens": 0
+      },
+      "primary_model_rounds_exact": true,
+      "native_empty_response_retry_event_indexes": [],
+      "native_tool_timings": {},
+      "tool_execution_ms": null,
+      "tool_timing_status": "not_exposed",
+      "reported_model": "claude-haiku-4-5-20251001",
+      "isolation_init": {
+        "tools": [
+          "Bash",
+          "Edit",
+          "Read",
+          "Write"
+        ],
+        "plugins": [],
+        "skills": [],
+        "mcp_servers": []
+      },
+      "all_model_usage": {
+        "claude-haiku-4-5-20251001": {
+          "inputTokens": 1086,
+          "outputTokens": 1653,
+          "cacheReadInputTokens": 54090,
+          "cacheCreationInputTokens": 10901,
+          "webSearchRequests": 0,
+          "costUSD": 0.036562,
+          "contextWindow": 200000,
+          "maxOutputTokens": 32000,
+          "thinkingTokens": 819,
+          "canonicalModel": "claude-haiku-4-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "all_model_tokens": {
+        "inputTokens": 1086,
+        "outputTokens": 1653,
+        "cacheReadInputTokens": 54090,
+        "cacheCreationInputTokens": 10901,
+        "thinkingTokens": 819,
+        "totalInputTokens": 66077,
+        "totalTokens": 67730
+      },
+      "primary_model_tokens": {
+        "inputTokens": 1086,
+        "outputTokens": 1653,
+        "cacheReadInputTokens": 54090,
+        "cacheCreationInputTokens": 10901,
+        "thinkingTokens": 819,
+        "totalInputTokens": 66077,
+        "totalTokens": 67730
+      },
+      "main_loop_tokens": {
+        "inputTokens": 66,
+        "outputTokens": 1640,
+        "cacheReadInputTokens": 54090,
+        "cacheCreationInputTokens": 10901,
+        "totalInputTokens": 65057,
+        "totalTokens": 66697
+      },
+      "whole_call_minus_main_loop": {
+        "inputTokens": 1020,
+        "outputTokens": 13,
+        "cacheReadInputTokens": 0,
+        "cacheCreationInputTokens": 0
+      },
+      "auxiliary_work_attribution": "Not identified by the trace; no response count is inferred",
+      "native_list_price_usd": 0.036562,
+      "native_subtype": "success",
+      "native_is_error": false,
+      "native_num_turns": 8,
+      "native_duration_ms": 21858,
+      "native_duration_api_ms": 21428,
+      "per_response_inputs": {
+        "msg_011CeokDyxT2uiehJtyQCVLB": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 10,
+            "cache_read_input_tokens": 0,
+            "cache_creation_input_tokens": 4284
+          }
+        },
+        "msg_011CeokE9XucpZE3sZwCgYs9": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 4284,
+            "cache_creation_input_tokens": 281
+          }
+        },
+        "msg_011CeokEFow68qDgCCjghZW2": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 4565,
+            "cache_creation_input_tokens": 237
+          }
+        },
+        "msg_011CeokEYCBJURaY7G6rB3eE": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 4802,
+            "cache_creation_input_tokens": 4787
+          }
+        },
+        "msg_011CeokEoJGXLsgPk6UV6y9x": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 9589,
+            "cache_creation_input_tokens": 393
+          }
+        },
+        "msg_011CeokEx6r3JTj2uAUh7XnA": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 9982,
+            "cache_creation_input_tokens": 288
+          }
+        },
+        "msg_011CeokF7LE4wPaLaaHpANQY": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 10270,
+            "cache_creation_input_tokens": 328
+          }
+        },
+        "msg_011CeokFFqwaNPmpMgxHpuK2": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 10598,
+            "cache_creation_input_tokens": 303
+          }
+        }
+      },
+      "initial_input_tokens": 4294,
+      "primary_model_rounds": 8,
+      "tool_calls": 7,
+      "failed_tool_calls": 0,
+      "output_accounting": "Native result scopes: modelUsage for whole call; usage for main loop"
+    },
+    "trace_sha256": "38bf297a4a12f29122b72e3473579d4a04a61508e0e0dfc9577dd5cf70b07908"
+  },
+  {
+    "id": "run020",
+    "size": 50,
+    "repetition": 2,
+    "evidence": true,
+    "guidance": "scoped",
+    "arm": "evidence-scoped",
+    "frozen": {
+      "expected.json": "c54a1408afaffe5d885138a329ad1e8189d6efb53f2a1984a21cb429302f7351",
+      "initial.json": "e26f4cab6c2761f67ad0106b8738082d03a6fd5974858b0000dc787d2bde5830",
+      "system.txt": "cc5db054a8f0bd224d59cc6daa60c527c15acfd08e9231e65051385b359b82b9",
+      "prompt.txt": "0c214da0ba252be296fac86326af3f58cfde56bf153b3d3a9e0ffb2a3f0def51",
+      "rename-tool": "ce39aea7526a6946159d25fa8e960c14d27b0b0c744a18f22815aaac8bdca0ad"
+    },
+    "oracle": {
+      "file_scope": true,
+      "exact_bytes": true,
+      "structural_correct": true,
+      "runtime_correct": true,
+      "success": true
+    },
+    "postcheck": {
+      "subsequent_tool_calls": 3,
+      "subsequent_tools": {
+        "Read": 3
+      },
+      "boundary": "First parseable successful rename-tool result; work batched inside a shell call is not separated"
+    },
+    "config_sha256": "bac12a4c9a05cbaf1e67f4b8777b12f388fcae89f8941a88d4dee24efc9f1ea0",
+    "process_exit": 0,
+    "timed_out": false,
+    "wall_time_ms": 20420.911052031443,
+    "native": {
+      "response_input_coverage": "complete",
+      "visible_response_input_remainder": {
+        "input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation_input_tokens": 0
+      },
+      "primary_model_rounds_exact": true,
+      "native_empty_response_retry_event_indexes": [],
+      "native_tool_timings": {},
+      "tool_execution_ms": null,
+      "tool_timing_status": "not_exposed",
+      "reported_model": "claude-haiku-4-5-20251001",
+      "isolation_init": {
+        "tools": [
+          "Bash",
+          "Edit",
+          "Read",
+          "Write"
+        ],
+        "plugins": [],
+        "skills": [],
+        "mcp_servers": []
+      },
+      "all_model_usage": {
+        "claude-haiku-4-5-20251001": {
+          "inputTokens": 1054,
+          "outputTokens": 1664,
+          "cacheReadInputTokens": 14998,
+          "cacheCreationInputTokens": 6896,
+          "webSearchRequests": 0,
+          "costUSD": 0.0246658,
+          "contextWindow": 200000,
+          "maxOutputTokens": 32000,
+          "thinkingTokens": 908,
+          "canonicalModel": "claude-haiku-4-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "all_model_tokens": {
+        "inputTokens": 1054,
+        "outputTokens": 1664,
+        "cacheReadInputTokens": 14998,
+        "cacheCreationInputTokens": 6896,
+        "thinkingTokens": 908,
+        "totalInputTokens": 22948,
+        "totalTokens": 24612
+      },
+      "primary_model_tokens": {
+        "inputTokens": 1054,
+        "outputTokens": 1664,
+        "cacheReadInputTokens": 14998,
+        "cacheCreationInputTokens": 6896,
+        "thinkingTokens": 908,
+        "totalInputTokens": 22948,
+        "totalTokens": 24612
+      },
+      "main_loop_tokens": {
+        "inputTokens": 34,
+        "outputTokens": 1650,
+        "cacheReadInputTokens": 14998,
+        "cacheCreationInputTokens": 6896,
+        "totalInputTokens": 21928,
+        "totalTokens": 23578
+      },
+      "whole_call_minus_main_loop": {
+        "inputTokens": 1020,
+        "outputTokens": 14,
+        "cacheReadInputTokens": 0,
+        "cacheCreationInputTokens": 0
+      },
+      "auxiliary_work_attribution": "Not identified by the trace; no response count is inferred",
+      "native_list_price_usd": 0.0246658,
+      "native_subtype": "success",
+      "native_is_error": false,
+      "native_num_turns": 6,
+      "native_duration_ms": 19069,
+      "native_duration_api_ms": 18798,
+      "per_response_inputs": {
+        "msg_011CeokFiMsuTgh1RWpeag7B": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 10,
+            "cache_read_input_tokens": 0,
+            "cache_creation_input_tokens": 4284
+          }
+        },
+        "msg_011CeokFzLpRYJAYX1RoDJGm": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 4284,
+            "cache_creation_input_tokens": 422
+          }
+        },
+        "msg_011CeokGBsbu8PDruYV2VQvy": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 4706,
+            "cache_creation_input_tokens": 1302
+          }
+        },
+        "msg_011CeokGdUUGsDA62xbkJa8D": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 6008,
+            "cache_creation_input_tokens": 888
+          }
+        }
+      },
+      "initial_input_tokens": 4294,
+      "primary_model_rounds": 4,
+      "tool_calls": 5,
+      "failed_tool_calls": 0,
+      "output_accounting": "Native result scopes: modelUsage for whole call; usage for main loop"
+    },
+    "trace_sha256": "0d1cbea8fff1c7e524609f1b3b85412104cf59f9ced358c5ec1b713e0b631009"
+  },
+  {
+    "id": "run021",
+    "size": 10,
+    "repetition": 1,
+    "evidence": true,
+    "guidance": "current",
+    "arm": "evidence-current",
+    "frozen": {
+      "expected.json": "03559312d470d41192ba3c84333f45b4b3e9b069613cf78f41f13125974881e4",
+      "initial.json": "77a0c97bc1b460d78a4c2e8091b83724c8bdbb185f6e0d9611bee9d51cbc2ddd",
+      "system.txt": "aea094bd5a1bb04a7da9aad970275488cd749360842b878d548fe930c3442682",
+      "prompt.txt": "841796fc45b89d658597d8d84f9992de1e6eb37a4d83c83ef78e6741d77ac5c4",
+      "rename-tool": "891764d203ba25c074a33077cb6d55625ed41aa38b6803579682cabcb132e4a3"
+    },
+    "oracle": {
+      "file_scope": true,
+      "exact_bytes": true,
+      "structural_correct": true,
+      "runtime_correct": true,
+      "success": true
+    },
+    "postcheck": {
+      "subsequent_tool_calls": 4,
+      "subsequent_tools": {
+        "Read": 4
+      },
+      "boundary": "First parseable successful rename-tool result; work batched inside a shell call is not separated"
+    },
+    "config_sha256": "bac12a4c9a05cbaf1e67f4b8777b12f388fcae89f8941a88d4dee24efc9f1ea0",
+    "process_exit": 0,
+    "timed_out": false,
+    "wall_time_ms": 25488.05107595399,
+    "native": {
+      "response_input_coverage": "complete",
+      "visible_response_input_remainder": {
+        "input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation_input_tokens": 0
+      },
+      "primary_model_rounds_exact": true,
+      "native_empty_response_retry_event_indexes": [],
+      "native_tool_timings": {},
+      "tool_execution_ms": null,
+      "tool_timing_status": "not_exposed",
+      "reported_model": "claude-haiku-4-5-20251001",
+      "isolation_init": {
+        "tools": [
+          "Bash",
+          "Edit",
+          "Read",
+          "Write"
+        ],
+        "plugins": [],
+        "skills": [],
+        "mcp_servers": []
+      },
+      "all_model_usage": {
+        "claude-haiku-4-5-20251001": {
+          "inputTokens": 1094,
+          "outputTokens": 1871,
+          "cacheReadInputTokens": 45627,
+          "cacheCreationInputTokens": 7334,
+          "webSearchRequests": 0,
+          "costUSD": 0.0296797,
+          "contextWindow": 200000,
+          "maxOutputTokens": 32000,
+          "thinkingTokens": 856,
+          "canonicalModel": "claude-haiku-4-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "all_model_tokens": {
+        "inputTokens": 1094,
+        "outputTokens": 1871,
+        "cacheReadInputTokens": 45627,
+        "cacheCreationInputTokens": 7334,
+        "thinkingTokens": 856,
+        "totalInputTokens": 54055,
+        "totalTokens": 55926
+      },
+      "primary_model_tokens": {
+        "inputTokens": 1094,
+        "outputTokens": 1871,
+        "cacheReadInputTokens": 45627,
+        "cacheCreationInputTokens": 7334,
+        "thinkingTokens": 856,
+        "totalInputTokens": 54055,
+        "totalTokens": 55926
+      },
+      "main_loop_tokens": {
+        "inputTokens": 74,
+        "outputTokens": 1857,
+        "cacheReadInputTokens": 45627,
+        "cacheCreationInputTokens": 7334,
+        "totalInputTokens": 53035,
+        "totalTokens": 54892
+      },
+      "whole_call_minus_main_loop": {
+        "inputTokens": 1020,
+        "outputTokens": 14,
+        "cacheReadInputTokens": 0,
+        "cacheCreationInputTokens": 0
+      },
+      "auxiliary_work_attribution": "Not identified by the trace; no response count is inferred",
+      "native_list_price_usd": 0.0296797,
+      "native_subtype": "success",
+      "native_is_error": false,
+      "native_num_turns": 9,
+      "native_duration_ms": 24133,
+      "native_duration_api_ms": 24279,
+      "per_response_inputs": {
+        "msg_011CeokHEXsfJw54snCzKEsH": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 10,
+            "cache_read_input_tokens": 0,
+            "cache_creation_input_tokens": 4105
+          }
+        },
+        "msg_011CeokHVDQv8wNqs5siApBj": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 4105,
+            "cache_creation_input_tokens": 653
+          }
+        },
+        "msg_011CeokHdEcYhhsmLqfv8vcJ": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 4758,
+            "cache_creation_input_tokens": 278
+          }
+        },
+        "msg_011CeokHkq2BonQSAywdLdPG": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 5036,
+            "cache_creation_input_tokens": 290
+          }
+        },
+        "msg_011CeokJ1WpKbmrZj8o8cfx5": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 5326,
+            "cache_creation_input_tokens": 798
+          }
+        },
+        "msg_011CeokJDSujqvin421GAdVN": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 6124,
+            "cache_creation_input_tokens": 358
+          }
+        },
+        "msg_011CeokJLogJi1kXP4CDaRs9": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 6482,
+            "cache_creation_input_tokens": 270
+          }
+        },
+        "msg_011CeokJVZH15NRUDVT8NLR6": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 6752,
+            "cache_creation_input_tokens": 292
+          }
+        },
+        "msg_011CeokJdVmadxs7qrhf5Sam": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 7044,
+            "cache_creation_input_tokens": 290
+          }
+        }
+      },
+      "initial_input_tokens": 4115,
+      "primary_model_rounds": 9,
+      "tool_calls": 8,
+      "failed_tool_calls": 0,
+      "output_accounting": "Native result scopes: modelUsage for whole call; usage for main loop"
+    },
+    "trace_sha256": "cda6d571a8f06f7350561c192688846f3f31057ce03756869a483454716de349"
+  },
+  {
+    "id": "run022",
+    "size": 10,
+    "repetition": 1,
+    "evidence": false,
+    "guidance": "scoped",
+    "arm": "legacy-scoped",
+    "frozen": {
+      "expected.json": "03559312d470d41192ba3c84333f45b4b3e9b069613cf78f41f13125974881e4",
+      "initial.json": "77a0c97bc1b460d78a4c2e8091b83724c8bdbb185f6e0d9611bee9d51cbc2ddd",
+      "system.txt": "cc5db054a8f0bd224d59cc6daa60c527c15acfd08e9231e65051385b359b82b9",
+      "prompt.txt": "f8d2e8782de0f1c8b38ef1e7e58f786bf697bcb0d831c87472d9e75eb8ed673e",
+      "rename-tool": "d0ba03e4dd892de4932507f6e0ee03030b6a291c6c718aa50d3099b6ed16f20a"
+    },
+    "oracle": {
+      "file_scope": true,
+      "exact_bytes": true,
+      "structural_correct": true,
+      "runtime_correct": true,
+      "success": true
+    },
+    "postcheck": {
+      "subsequent_tool_calls": 3,
+      "subsequent_tools": {
+        "Read": 3
+      },
+      "boundary": "First parseable successful rename-tool result; work batched inside a shell call is not separated"
+    },
+    "config_sha256": "bac12a4c9a05cbaf1e67f4b8777b12f388fcae89f8941a88d4dee24efc9f1ea0",
+    "process_exit": 0,
+    "timed_out": false,
+    "wall_time_ms": 16811.770512955263,
+    "native": {
+      "response_input_coverage": "complete",
+      "visible_response_input_remainder": {
+        "input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation_input_tokens": 0
+      },
+      "primary_model_rounds_exact": true,
+      "native_empty_response_retry_event_indexes": [],
+      "native_tool_timings": {},
+      "tool_execution_ms": null,
+      "tool_timing_status": "not_exposed",
+      "reported_model": "claude-haiku-4-5-20251001",
+      "isolation_init": {
+        "tools": [
+          "Bash",
+          "Edit",
+          "Read",
+          "Write"
+        ],
+        "plugins": [],
+        "skills": [],
+        "mcp_servers": []
+      },
+      "all_model_usage": {
+        "claude-haiku-4-5-20251001": {
+          "inputTokens": 1046,
+          "outputTokens": 1361,
+          "cacheReadInputTokens": 10099,
+          "cacheCreationInputTokens": 6608,
+          "webSearchRequests": 0,
+          "costUSD": 0.0220769,
+          "contextWindow": 200000,
+          "maxOutputTokens": 32000,
+          "thinkingTokens": 692,
+          "canonicalModel": "claude-haiku-4-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "all_model_tokens": {
+        "inputTokens": 1046,
+        "outputTokens": 1361,
+        "cacheReadInputTokens": 10099,
+        "cacheCreationInputTokens": 6608,
+        "thinkingTokens": 692,
+        "totalInputTokens": 17753,
+        "totalTokens": 19114
+      },
+      "primary_model_tokens": {
+        "inputTokens": 1046,
+        "outputTokens": 1361,
+        "cacheReadInputTokens": 10099,
+        "cacheCreationInputTokens": 6608,
+        "thinkingTokens": 692,
+        "totalInputTokens": 17753,
+        "totalTokens": 19114
+      },
+      "main_loop_tokens": {
+        "inputTokens": 26,
+        "outputTokens": 1346,
+        "cacheReadInputTokens": 10099,
+        "cacheCreationInputTokens": 6608,
+        "totalInputTokens": 16733,
+        "totalTokens": 18079
+      },
+      "whole_call_minus_main_loop": {
+        "inputTokens": 1020,
+        "outputTokens": 15,
+        "cacheReadInputTokens": 0,
+        "cacheCreationInputTokens": 0
+      },
+      "auxiliary_work_attribution": "Not identified by the trace; no response count is inferred",
+      "native_list_price_usd": 0.0220769,
+      "native_subtype": "success",
+      "native_is_error": false,
+      "native_num_turns": 5,
+      "native_duration_ms": 15355,
+      "native_duration_api_ms": 15656,
+      "per_response_inputs": {
+        "msg_011CeokK9dVhXezqEYMVauc2": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 10,
+            "cache_read_input_tokens": 0,
+            "cache_creation_input_tokens": 4282
+          }
+        },
+        "msg_011CeokKVBk5gCX5QKtD1Fo7": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 4282,
+            "cache_creation_input_tokens": 1535
+          }
+        },
+        "msg_011CeokKs9aUCunu5qzm2jpM": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 5817,
+            "cache_creation_input_tokens": 791
+          }
+        }
+      },
+      "initial_input_tokens": 4292,
+      "primary_model_rounds": 3,
+      "tool_calls": 4,
+      "failed_tool_calls": 0,
+      "output_accounting": "Native result scopes: modelUsage for whole call; usage for main loop"
+    },
+    "trace_sha256": "b9a46431f9b61aa6dad21f50c88a39932573c58e0fbbc14a1a0ab37a495e0654"
+  },
+  {
+    "id": "run023",
+    "size": 10,
+    "repetition": 1,
+    "evidence": true,
+    "guidance": "scoped",
+    "arm": "evidence-scoped",
+    "frozen": {
+      "expected.json": "03559312d470d41192ba3c84333f45b4b3e9b069613cf78f41f13125974881e4",
+      "initial.json": "77a0c97bc1b460d78a4c2e8091b83724c8bdbb185f6e0d9611bee9d51cbc2ddd",
+      "system.txt": "cc5db054a8f0bd224d59cc6daa60c527c15acfd08e9231e65051385b359b82b9",
+      "prompt.txt": "7d7be9b7506048d27eeb0d419209a96a7026070015f7024ecf827a1bab23d881",
+      "rename-tool": "4a848db2936c2fc5e1fb2f000c4dbe33738f54d72339b2b7d496294fe7181cdf"
+    },
+    "oracle": {
+      "file_scope": true,
+      "exact_bytes": true,
+      "structural_correct": true,
+      "runtime_correct": true,
+      "success": true
+    },
+    "postcheck": {
+      "subsequent_tool_calls": 4,
+      "subsequent_tools": {
+        "Read": 4
+      },
+      "boundary": "First parseable successful rename-tool result; work batched inside a shell call is not separated"
+    },
+    "config_sha256": "bac12a4c9a05cbaf1e67f4b8777b12f388fcae89f8941a88d4dee24efc9f1ea0",
+    "process_exit": 0,
+    "timed_out": false,
+    "wall_time_ms": 28593.50109891966,
+    "native": {
+      "response_input_coverage": "complete",
+      "visible_response_input_remainder": {
+        "input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation_input_tokens": 0
+      },
+      "primary_model_rounds_exact": true,
+      "native_empty_response_retry_event_indexes": [],
+      "native_tool_timings": {},
+      "tool_execution_ms": null,
+      "tool_timing_status": "not_exposed",
+      "reported_model": "claude-haiku-4-5-20251001",
+      "isolation_init": {
+        "tools": [
+          "Bash",
+          "Edit",
+          "Read",
+          "Write"
+        ],
+        "plugins": [],
+        "skills": [],
+        "mcp_servers": []
+      },
+      "all_model_usage": {
+        "claude-haiku-4-5-20251001": {
+          "inputTokens": 1094,
+          "outputTokens": 2114,
+          "cacheReadInputTokens": 48334,
+          "cacheCreationInputTokens": 7852,
+          "webSearchRequests": 0,
+          "costUSD": 0.0322014,
+          "contextWindow": 200000,
+          "maxOutputTokens": 32000,
+          "thinkingTokens": 1133,
+          "canonicalModel": "claude-haiku-4-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "all_model_tokens": {
+        "inputTokens": 1094,
+        "outputTokens": 2114,
+        "cacheReadInputTokens": 48334,
+        "cacheCreationInputTokens": 7852,
+        "thinkingTokens": 1133,
+        "totalInputTokens": 57280,
+        "totalTokens": 59394
+      },
+      "primary_model_tokens": {
+        "inputTokens": 1094,
+        "outputTokens": 2114,
+        "cacheReadInputTokens": 48334,
+        "cacheCreationInputTokens": 7852,
+        "thinkingTokens": 1133,
+        "totalInputTokens": 57280,
+        "totalTokens": 59394
+      },
+      "main_loop_tokens": {
+        "inputTokens": 74,
+        "outputTokens": 2101,
+        "cacheReadInputTokens": 48334,
+        "cacheCreationInputTokens": 7852,
+        "totalInputTokens": 56260,
+        "totalTokens": 58361
+      },
+      "whole_call_minus_main_loop": {
+        "inputTokens": 1020,
+        "outputTokens": 13,
+        "cacheReadInputTokens": 0,
+        "cacheCreationInputTokens": 0
+      },
+      "auxiliary_work_attribution": "Not identified by the trace; no response count is inferred",
+      "native_list_price_usd": 0.0322014,
+      "native_subtype": "success",
+      "native_is_error": false,
+      "native_num_turns": 9,
+      "native_duration_ms": 27271,
+      "native_duration_api_ms": 27486,
+      "per_response_inputs": {
+        "msg_011CeokLPjM9xbyRRWanWsB2": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 10,
+            "cache_read_input_tokens": 0,
+            "cache_creation_input_tokens": 4282
+          }
+        },
+        "msg_011CeokLiXwLFNwNwfook9Ku": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 4282,
+            "cache_creation_input_tokens": 710
+          }
+        },
+        "msg_011CeokLriaB1WVHWbttKf3d": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 4992,
+            "cache_creation_input_tokens": 284
+          }
+        },
+        "msg_011CeokM1knTKdypAP3QGtfS": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 5276,
+            "cache_creation_input_tokens": 298
+          }
+        },
+        "msg_011CeokMGBSse7GJMgxs8jBj": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 5574,
+            "cache_creation_input_tokens": 816
+          }
+        },
+        "msg_011CeokMef3tiG2SYfRxPhdW": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 6390,
+            "cache_creation_input_tokens": 611
+          }
+        },
+        "msg_011CeokMn1pQVhtrBSyPYuzV": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 7001,
+            "cache_creation_input_tokens": 258
+          }
+        },
+        "msg_011CeokMvix6rmFbLLgo9Ssj": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 7259,
+            "cache_creation_input_tokens": 301
+          }
+        },
+        "msg_011CeokN5Z1awVZfXGnJCFvs": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 7560,
+            "cache_creation_input_tokens": 292
+          }
+        }
+      },
+      "initial_input_tokens": 4292,
+      "primary_model_rounds": 9,
+      "tool_calls": 8,
+      "failed_tool_calls": 0,
+      "output_accounting": "Native result scopes: modelUsage for whole call; usage for main loop"
+    },
+    "trace_sha256": "6cec9df3bdfcff865b378a11da99c9f8176544e6bd2c8f1e8617f7a54eb696b6"
+  },
+  {
+    "id": "run024",
+    "size": 10,
+    "repetition": 1,
+    "evidence": false,
+    "guidance": "current",
+    "arm": "legacy-current",
+    "frozen": {
+      "expected.json": "03559312d470d41192ba3c84333f45b4b3e9b069613cf78f41f13125974881e4",
+      "initial.json": "77a0c97bc1b460d78a4c2e8091b83724c8bdbb185f6e0d9611bee9d51cbc2ddd",
+      "system.txt": "aea094bd5a1bb04a7da9aad970275488cd749360842b878d548fe930c3442682",
+      "prompt.txt": "cb67ba9a7dc89e2660a8b72d54437d7d858bd60b0c2e6c16cae34ba1ed50fb2c",
+      "rename-tool": "3d75f743ab0a6099a49dd25988e75cce0be5087929d548184901e0f0c1edbd68"
+    },
+    "oracle": {
+      "file_scope": true,
+      "exact_bytes": true,
+      "structural_correct": true,
+      "runtime_correct": true,
+      "success": true
+    },
+    "postcheck": {
+      "subsequent_tool_calls": 4,
+      "subsequent_tools": {
+        "Read": 4
+      },
+      "boundary": "First parseable successful rename-tool result; work batched inside a shell call is not separated"
+    },
+    "config_sha256": "bac12a4c9a05cbaf1e67f4b8777b12f388fcae89f8941a88d4dee24efc9f1ea0",
+    "process_exit": 0,
+    "timed_out": false,
+    "wall_time_ms": 31352.761959889904,
+    "native": {
+      "response_input_coverage": "complete",
+      "visible_response_input_remainder": {
+        "input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation_input_tokens": 0
+      },
+      "primary_model_rounds_exact": true,
+      "native_empty_response_retry_event_indexes": [],
+      "native_tool_timings": {},
+      "tool_execution_ms": null,
+      "tool_timing_status": "not_exposed",
+      "reported_model": "claude-haiku-4-5-20251001",
+      "isolation_init": {
+        "tools": [
+          "Bash",
+          "Edit",
+          "Read",
+          "Write"
+        ],
+        "plugins": [],
+        "skills": [],
+        "mcp_servers": []
+      },
+      "all_model_usage": {
+        "claude-haiku-4-5-20251001": {
+          "inputTokens": 1110,
+          "outputTokens": 2341,
+          "cacheReadInputTokens": 61983,
+          "cacheCreationInputTokens": 8671,
+          "webSearchRequests": 0,
+          "costUSD": 0.03635530000000001,
+          "contextWindow": 200000,
+          "maxOutputTokens": 32000,
+          "thinkingTokens": 1220,
+          "canonicalModel": "claude-haiku-4-5",
+          "provider": "firstParty",
+          "costBasis": "list"
+        }
+      },
+      "all_model_tokens": {
+        "inputTokens": 1110,
+        "outputTokens": 2341,
+        "cacheReadInputTokens": 61983,
+        "cacheCreationInputTokens": 8671,
+        "thinkingTokens": 1220,
+        "totalInputTokens": 71764,
+        "totalTokens": 74105
+      },
+      "primary_model_tokens": {
+        "inputTokens": 1110,
+        "outputTokens": 2341,
+        "cacheReadInputTokens": 61983,
+        "cacheCreationInputTokens": 8671,
+        "thinkingTokens": 1220,
+        "totalInputTokens": 71764,
+        "totalTokens": 74105
+      },
+      "main_loop_tokens": {
+        "inputTokens": 90,
+        "outputTokens": 2327,
+        "cacheReadInputTokens": 61983,
+        "cacheCreationInputTokens": 8671,
+        "totalInputTokens": 70744,
+        "totalTokens": 73071
+      },
+      "whole_call_minus_main_loop": {
+        "inputTokens": 1020,
+        "outputTokens": 14,
+        "cacheReadInputTokens": 0,
+        "cacheCreationInputTokens": 0
+      },
+      "auxiliary_work_attribution": "Not identified by the trace; no response count is inferred",
+      "native_list_price_usd": 0.03635530000000001,
+      "native_subtype": "success",
+      "native_is_error": false,
+      "native_num_turns": 11,
+      "native_duration_ms": 30072,
+      "native_duration_api_ms": 30428,
+      "per_response_inputs": {
+        "msg_011CeokNXP2bwbpTN4z2AFUA": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 10,
+            "cache_read_input_tokens": 0,
+            "cache_creation_input_tokens": 4105
+          }
+        },
+        "msg_011CeokNmTcUWHGxTrKyEJvR": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 4105,
+            "cache_creation_input_tokens": 633
+          }
+        },
+        "msg_011CeokNv9F57G4yYUxkVY1L": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 4738,
+            "cache_creation_input_tokens": 270
+          }
+        },
+        "msg_011CeokP2YxcZKiigKw33SuG": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 5008,
+            "cache_creation_input_tokens": 232
+          }
+        },
+        "msg_011CeokPBeQ8zerAMWdmZZPt": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 5240,
+            "cache_creation_input_tokens": 319
+          }
+        },
+        "msg_011CeokPMBdr7kk6usNUqQHq": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 5559,
+            "cache_creation_input_tokens": 309
+          }
+        },
+        "msg_011CeokPf4R6WZ5JaBJXqLJs": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 5868,
+            "cache_creation_input_tokens": 1420
+          }
+        },
+        "msg_011CeokPxzBm1CnNLUZEy35t": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 7288,
+            "cache_creation_input_tokens": 482
+          }
+        },
+        "msg_011CeokQ785PezXktPreBoJ8": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 7770,
+            "cache_creation_input_tokens": 277
+          }
+        },
+        "msg_011CeokQFy8qj92UHGuAJUuy": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 8047,
+            "cache_creation_input_tokens": 313
+          }
+        },
+        "msg_011CeokQQtAGTgqEXoszMG4C": {
+          "model": "claude-haiku-4-5-20251001",
+          "input": {
+            "input_tokens": 8,
+            "cache_read_input_tokens": 8360,
+            "cache_creation_input_tokens": 311
+          }
+        }
+      },
+      "initial_input_tokens": 4115,
+      "primary_model_rounds": 11,
+      "tool_calls": 10,
+      "failed_tool_calls": 1,
+      "output_accounting": "Native result scopes: modelUsage for whole call; usage for main loop"
+    },
+    "trace_sha256": "62b9b47c469ed5cb0ea44ceb990a9f1d21f37910fbfc58f3dc9417553a48a207"
+  }
+]

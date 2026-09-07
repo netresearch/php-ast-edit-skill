@@ -97,6 +97,8 @@ The automatic follow-up measure counts distinct tool calls after the first
 parseable successful result from a Bash invocation of the assigned rename command.
 It cannot separate checks batched inside that invocation. Redirected or mixed
 output may make the boundary unobservable; then the measure is null, not zero.
+Incomplete trace blocks also leave the observation in place with an unknown
+follow-up count and reason; they never relax native accounting validation.
 These calls may perform necessary semantic or behavior checks. Review the traces
 before calling any of them redundant, and inspect final claims for unsupported
 completeness assertions. Native failed-tool counts do not capture false-positive

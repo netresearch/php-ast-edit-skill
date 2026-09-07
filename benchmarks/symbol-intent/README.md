@@ -8,6 +8,9 @@ transaction. This is a benchmark prototype, not a shipped engine operation.
 The [completed 27-run Haiku pilot](results/2026-09-07-haiku/REPORT.md) shows the
 strongest savings at 50 files, much smaller token gains at 2/10 files, and a strong
 existing-Phpactor control. All raw observations and accounting amendments are public.
+The separate [24-run post-rename study](results/2026-09-07-postcheck/REPORT.md)
+reports scope-dependent savings from compact evidence and remaining verification
+and reporting failures, including a worse ten-file result for evidence alone.
 
 The AST alone does not resolve project symbols. This prototype composes the pinned
 [Phpactor 2026.07.22.0](https://github.com/phpactor/phpactor/releases/tag/2026.07.22.0)
