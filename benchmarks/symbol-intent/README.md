@@ -5,6 +5,10 @@ resolved PHP references in other files. The LLM selects the symbol and new name;
 the tool finds coordinates, validates name slots and submits one guarded AST
 transaction. This is a benchmark prototype, not a shipped engine operation.
 
+The [completed 27-run Haiku pilot](results/2026-09-07-haiku/REPORT.md) shows the
+strongest savings at 50 files, much smaller token gains at 2/10 files, and a strong
+existing-Phpactor control. All raw observations and accounting amendments are public.
+
 The AST alone does not resolve project symbols. This prototype composes the pinned
 [Phpactor 2026.07.22.0](https://github.com/phpactor/phpactor/releases/tag/2026.07.22.0)
 language server with `php-ast-edit`. Each invocation builds a fresh index. It rejects

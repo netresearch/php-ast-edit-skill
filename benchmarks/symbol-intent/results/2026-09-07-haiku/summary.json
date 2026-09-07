@@ -1,0 +1,227 @@
+[
+  {
+    "size": 2,
+    "arm": "text",
+    "attempts": 3,
+    "successes": 3,
+    "known_usage": 3,
+    "median_tokens": 33443,
+    "tokens": [
+      33443,
+      27815,
+      34069
+    ],
+    "median_calls": 7,
+    "calls": [
+      7,
+      6,
+      8
+    ],
+    "median_wall_ms": 20010.198393836617,
+    "wall_ms": [
+      20010.198393836617,
+      18012.86903885193,
+      20764.898887835443
+    ]
+  },
+  {
+    "size": 2,
+    "arm": "intent",
+    "attempts": 3,
+    "successes": 3,
+    "known_usage": 3,
+    "median_tokens": 28784,
+    "tokens": [
+      32963,
+      28784,
+      27676
+    ],
+    "median_calls": 7,
+    "calls": [
+      7,
+      7,
+      6
+    ],
+    "median_wall_ms": 19065.14102802612,
+    "wall_ms": [
+      19065.14102802612,
+      20017.837197054178,
+      13248.109612148255
+    ]
+  },
+  {
+    "size": 2,
+    "arm": "phpactor",
+    "attempts": 3,
+    "successes": 3,
+    "known_usage": 3,
+    "median_tokens": 27457,
+    "tokens": [
+      27457,
+      22801,
+      28440
+    ],
+    "median_calls": 6,
+    "calls": [
+      6,
+      5,
+      6
+    ],
+    "median_wall_ms": 16458.25640298426,
+    "wall_ms": [
+      16106.977788032964,
+      16458.25640298426,
+      18510.72849985212
+    ]
+  },
+  {
+    "size": 10,
+    "arm": "text",
+    "attempts": 3,
+    "successes": 2,
+    "known_usage": 3,
+    "median_tokens": 57444,
+    "tokens": [
+      68124,
+      57444,
+      50556
+    ],
+    "median_calls": 22,
+    "calls": [
+      25,
+      17,
+      22
+    ],
+    "median_wall_ms": 36567.94983893633,
+    "wall_ms": [
+      38518.22443190031,
+      26082.44801615365,
+      36567.94983893633
+    ]
+  },
+  {
+    "size": 10,
+    "arm": "intent",
+    "attempts": 3,
+    "successes": 3,
+    "known_usage": 3,
+    "median_tokens": 54562,
+    "tokens": [
+      58332,
+      54562,
+      46222
+    ],
+    "median_calls": 9,
+    "calls": [
+      8,
+      9,
+      11
+    ],
+    "median_wall_ms": 25632.27525399998,
+    "wall_ms": [
+      25632.27525399998,
+      23725.86131701246,
+      27491.177096031606
+    ]
+  },
+  {
+    "size": 10,
+    "arm": "phpactor",
+    "attempts": 3,
+    "successes": 3,
+    "known_usage": 3,
+    "median_tokens": 72479,
+    "tokens": [
+      57285,
+      72479,
+      76501
+    ],
+    "median_calls": 10,
+    "calls": [
+      8,
+      16,
+      10
+    ],
+    "median_wall_ms": 30049.868557136506,
+    "wall_ms": [
+      27037.739498075098,
+      35007.016255985945,
+      30049.868557136506
+    ]
+  },
+  {
+    "size": 50,
+    "arm": "text",
+    "attempts": 3,
+    "successes": 3,
+    "known_usage": 3,
+    "median_tokens": 299061,
+    "tokens": [
+      299061,
+      327285,
+      212754
+    ],
+    "median_calls": 22,
+    "calls": [
+      20,
+      27,
+      22
+    ],
+    "median_wall_ms": 75165.86719802581,
+    "wall_ms": [
+      75165.86719802581,
+      96679.35532308184,
+      65297.379391035065
+    ]
+  },
+  {
+    "size": 50,
+    "arm": "intent",
+    "attempts": 3,
+    "successes": 3,
+    "known_usage": 3,
+    "median_tokens": 103123,
+    "tokens": [
+      103123,
+      118254,
+      38139
+    ],
+    "median_calls": 13,
+    "calls": [
+      18,
+      13,
+      6
+    ],
+    "median_wall_ms": 40772.61053491384,
+    "wall_ms": [
+      40772.61053491384,
+      44292.488081147894,
+      20773.211684077978
+    ]
+  },
+  {
+    "size": 50,
+    "arm": "phpactor",
+    "attempts": 3,
+    "successes": 2,
+    "known_usage": 3,
+    "median_tokens": 78261,
+    "tokens": [
+      28247,
+      78261,
+      146852
+    ],
+    "median_calls": 13,
+    "calls": [
+      4,
+      15,
+      13
+    ],
+    "median_wall_ms": 33508.649179013446,
+    "wall_ms": [
+      16558.343321084976,
+      33861.06324498542,
+      33508.649179013446
+    ]
+  }
+]
