@@ -36,6 +36,14 @@ echo "::group::tests/transactions.php (guards, rollback and validation contract)
 php tests/transactions.php || fail=1
 echo "::endgroup::"
 
+echo "::group::tests/verification.php (project and changed-file verification)"
+php tests/verification.php || fail=1
+echo "::endgroup::"
+
+echo "::group::tests/reports.py (shared verification reports and compatibility)"
+python3 tests/reports.py || fail=1
+echo "::endgroup::"
+
 echo "::group::skills/php-structured-edit/scripts/php-ast-edit (wrapper resolves an executable)"
 bash skills/php-structured-edit/scripts/php-ast-edit validate --file tests/fixtures/sample.php || fail=1
 echo "::endgroup::"

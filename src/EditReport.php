@@ -8,8 +8,12 @@ namespace Netresearch\PhpAstEdit;
 final class EditReport
 {
     /** @return array<string, mixed> */
-    public static function file(FileTransaction $file, bool $dryRun, ?string $diff): array
-    {
+    public static function file(
+        FileTransaction $file,
+        bool $dryRun,
+        ?string $diff,
+        bool $compact = false,
+    ): array {
         $result = [
             'path' => $file->path,
             'mode' => $file->mode,
@@ -67,14 +71,21 @@ final class EditReport
         }
         $checks = $file->verify === [] ? 'not_run' : (in_array(false, array_column($file->verify, 'ok'), true) ? 'failed' : 'passed');
 
-        if ($file->verify !== []) {
-            $result['verify'] = $file->verify;
+        if ($compact) {
+            $result['checkIds'] = array_column($file->verify, 'id');
+        } elseif ($file->verify !== []) {
+            $result['verify'] = array_map(
+                static fn (
+                    array $check,
+                ): array => array_intersect_key($check, array_flip(['command', 'ok', 'output'])),
+                $file->verify,
+            );
         }
 
         if ($file->mode !== 'delete') {
             $result['parsed'] = true;
             $result['valid'] = true;
-            // Compatibility alias for parser success, not an application verdict.
+            // Compatibility alias of parser success, not an application verdict.
             $result['validation'] = ['parser' => 'passed', 'lint' => $file->lint, 'checks' => $checks];
         } else {
             $result['validation'] = ['parser' => 'not_run', 'lint' => ['status' => 'not_run'], 'checks' => $checks];

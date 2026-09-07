@@ -18,6 +18,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Added
 
+- Optional `report: "compact"` Apply responses emit each verification run once with per-file `checkIds`; the default `full` response preserves the existing per-file contract. The experimental adapter requests compact reports automatically; frozen benchmark evidence is unchanged.
+- Explicit `project` and `changed_files` verification scopes. Project commands use stable configured paths and run after deletions; legacy argument arrays keep changed-file behavior. Each configured entry remains a distinct execution, with configuration and exclusions captured before writes.
 - Isolated runtime-only PHAR builds, engine-bundled skill/plugin archives, dependency manifests, signed checksums and provenance. Clean installation and extracted-artifact tests run on PHP 8.2 and 8.5 before release publication. Historical release assets remain unchanged.
 - `contexts --operation NAME` for a compact single-operation contract, plus shorter selector-first skill instructions with optional canonical mode.
 - Outcome and routing evaluations, executable task oracles, actual model-run evidence import, and a reproducible CLI benchmark comparing both batched AST edits and batched contextual patches with lint.

@@ -5,9 +5,11 @@
 - [Selectors](#selectors) — named declarations without a coordinate lookup
 - [Inspect](#inspect) — node ancestry, structural refs, slots
 - [Apply document](#apply-document) — schema, file modes, transaction semantics
+- [Verification configuration](#verification-configuration) — project or changed-file checks
 - [parseAs contexts](#parseas-contexts) — how a snippet becomes any AST node
 - [Primitives](#primitives) — the complete mutation algebra
 - [Convenience operations](#convenience-operations) — the ergonomic layer above it
+- [Result fields](#result-fields) — compact and full reports, checks and warnings
 - [Snippet style](#snippet-style)
 
 ## Selectors
@@ -48,6 +50,7 @@ A `ref` is only valid together with the `sha256` it was produced from. Refs surv
 ```json
 {
   "dryRun": false,
+  "report": "compact",
   "files": [
     {
       "path": "src/Foo.php",
@@ -68,6 +71,11 @@ A `ref` is only valid together with the `sha256` it was produced from. Refs surv
 ```
 
 `target` accepts `select`, `ref`, `offset` (zero-based byte offset), or `line` + `column` (one-based byte coordinates). `kind` is optional but recommended. `expect.name`, `expect.value` and `expect.type` are optional safety guards.
+
+Optional top-level `report` accepts only `"compact"` or `"full"`. It defaults to `"full"`
+for existing consumers. Compact mode places each verification result once at the top
+level and gives files references to it; it does not change the edit, checks, exit status,
+or other result fields. See [result fields](#result-fields).
 
 ### File modes
 
@@ -91,6 +99,45 @@ Rollback covers transaction-managed paths, not arbitrary external-command side e
 Configured verification failures leave the edit in place and return a failing CLI status.
 
 Immediately before the first write, every file is compared against the snapshot it was resolved from. A file that changed, appeared or disappeared while the transaction was being prepared fails with `CONCURRENT_CHANGE` and nothing is written — otherwise the output, built from a version that no longer exists, would silently discard whoever else wrote.
+
+## Verification configuration
+
+Declare optional `verify` commands in `.php-ast-edit.json`. They run after writing and
+formatting, independently of report mode or whether canonical printing is enabled:
+
+```json
+{
+  "verify": [
+    {"scope": "project", "command": ["php", "vendor/bin/phpstan", "analyse", "--no-progress"]},
+    {"scope": "changed_files", "command": ["./check-changed-files", "{files}"]}
+  ]
+}
+```
+
+Each object contains exactly `scope` and `command`. Commands are non-empty argument
+arrays of non-empty strings without NUL bytes, executed directly without shell expansion.
+The working directory is the directory containing the applicable `.php-ast-edit.json`.
+Choose commands available in that project.
+
+| Declaration | Files that trigger it | Arguments |
+| --- | --- | --- |
+| `scope: "project"` | Changed, non-excluded files, including deletions | The declared command is unchanged; `{files}` is forbidden, including inside another argument |
+| `scope: "changed_files"` | Changed, non-excluded edits and creates; intentional deletions are omitted | Exactly one whole `{files}` argument expands to the eligible absolute file paths |
+| Legacy argument array | Same as `changed_files` | For example `["./check-changed-files", "{files}"]`; existing declarations remain supported |
+
+Each declared entry runs once per affected configuration directory. Repeated identical
+entries remain separate executions. Configuration and exclusions are captured before
+writing. Unchanged or excluded files do not trigger checks; a delete-only transaction
+can run project checks but has no changed-file check inputs. Dry runs execute neither.
+Unexpectedly missing inputs stay in the planned command so the checker can report them;
+they are not silently removed from the verification scope.
+`project` controls invocation scope; the command itself determines what it verifies.
+
+For PHPStan, keep analysed paths stable in its configuration and use a project-scoped
+command. Passing a changing `{files}` list can invalidate its result cache and replaces
+the configured analysis paths. A cold whole-project analysis can still cost more than
+a partial check. See [PHPStan result caching](https://phpstan.org/user-guide/result-cache)
+and [analysed paths](https://phpstan.org/config-reference#analysed-files).
 
 ## parseAs contexts
 
@@ -182,14 +229,38 @@ For each file, inspect:
 | `valid` | Deprecated alias of `parsed`; **not** semantic validation |
 | `validation.parser` | Parser status |
 | `validation.lint` | Host lint status, runtime, and a reason when skipped |
-| `validation.checks` | Status of configured project verification |
-| `formatter`, `verify` | Formatter execution and individual verification results, where present |
+| `validation.checks` | `passed`, `failed`, or `not_run` for verification associated with this file |
+| `formatter` | Formatter execution, where present |
+| `verify` | Full mode: associated check results with `command`, `ok`, and failure `output`, omitted when no checks ran |
+| `checkIds` | Compact mode: IDs of associated top-level verification results; `[]` when none ran |
+
+With `"report": "compact"`, top-level `verify` is an array of actual check executions:
+
+| Field | Meaning |
+| --- | --- |
+| `id` | Execution identifier, unique within this Apply response |
+| `cwd` | Absolute working directory of the check |
+| `scope` | `project` or `changed_files` |
+| `command` | Display string of the expanded command; not a shell-escaped replay instruction |
+| `ok` | Whether that check returned exit status zero |
+| `output` | Failure output excerpt, at most 4,000 bytes; omitted on success |
+
+Compact files omit `verify`; their `checkIds` refer to the shared entries. Two identical
+commands still have different IDs when executed twice. A project-check failure is a
+shared result, not evidence that every linked file caused the diagnostic. If no checks
+ran, top-level `verify` and every file's `checkIds` are empty arrays.
+
+With `"report": "full"` (the default), results keep the existing per-file `verify`
+layout without `checkIds` or top-level `verify`. Full describes that layout; it does not
+remove existing diff or diagnostic limits. Both modes retain effects, warnings, parser
+and lint information, and the same check statuses.
 
 The top-level `checksPassed` is `true`, `false`, or `null` when no checks ran. A failing
 verification makes `apply` exit nonzero; examine the retained edit before repairing it.
 `--dry-run` does not run commands that need the files written. Never report those checks
 as passed merely because preparation succeeded.
 Deletion has no output source to parse or lint, so those validation statuses are `not_run`.
+Its `validation.checks` can still report a configured project check that ran after deletion.
 
 ## Limits
 

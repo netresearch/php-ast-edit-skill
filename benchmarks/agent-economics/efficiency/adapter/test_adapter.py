@@ -280,7 +280,11 @@ class AdapterTests(unittest.TestCase):
         self.assertFalse(result["ok"])
         self.assertFalse(result["checksPassed"])
         self.assertEqual(result["files"][0]["validation"]["checks"], "failed")
-        self.assertFalse(result["files"][0]["verify"][0]["ok"])
+        self.assertFalse(result["verify"][0]["ok"])
+        self.assertEqual(
+            [result["verify"][0]["id"]], result["files"][0]["checkIds"]
+        )
+        self.assertNotIn("verify", result["files"][0])
         self.assertIn("cacheKey", self.first.read_text())
         self.assertIn(
             "consumed",

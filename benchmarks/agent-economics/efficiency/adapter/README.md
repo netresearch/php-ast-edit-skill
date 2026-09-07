@@ -69,6 +69,13 @@ it does not prevent external editors from changing files.
 
 ## Reports and audit
 
+The current adapter automatically requests `"report": "compact"` from the engine,
+overriding any caller-supplied report mode. Each check appears once in top-level `verify`;
+each file's `checkIds` links to its results, and `validation.checks` retains the status.
+The engine's default for direct callers remains the legacy full report. Use a matching
+current engine runtime for this adapter. Historical benchmark archives retain their
+frozen adapter and engine sources; this change does not alter those recorded results.
+
 The response preserves actual operation effects, formatter results, lint status,
 project checks, errors, and genuine warnings. Normal `NOT_CANONICAL` output becomes
 `printer_info: "not_canonical"`; it is not a correctness failure. Deprecated
