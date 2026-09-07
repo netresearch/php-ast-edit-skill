@@ -498,8 +498,11 @@ def add_result_evidence(result, record, root, result_path):
         evidence["reason"] = "Cannot establish disk inventory: " + str(error)
     result["exact_edit_match"] = evidence
     # Separate immutable readback artifact; the original engine report stays intact.
-    with result_path.with_suffix(".readback.json").open("x") as output:
-        json.dump({"evidence": evidence, "observed_inventory": observed}, output)
+    try:
+        with result_path.with_suffix(".readback.json").open("x") as output:
+            json.dump({"evidence": evidence, "observed_inventory": observed}, output)
+    except OSError as error:
+        result["warnings"].append("READBACK_NOT_SAVED: " + str(error))
 
 
 def main():

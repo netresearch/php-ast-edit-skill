@@ -47,6 +47,8 @@ Thus all other bytes, including unrelated identifiers, comments and strings, sta
 unchanged. Expected bytes are computed only for verification; the engine is still the
 only PHP writer. The hashed plan stores the expected inventory; a `.readback.json`
 sidecar beside `full_report` stores the observed inventory.
+If that sidecar cannot be saved, `READBACK_NOT_SAVED` preserves the engine outcome
+and inline evidence while reporting that the durable readback artifact is unavailable.
 
 This evidence does **not** verify the resolver's binding choices or completeness.
 An omitted reference can coexist with a passing exact-edit check. Behavior checks
