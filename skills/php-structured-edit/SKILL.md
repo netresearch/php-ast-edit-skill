@@ -15,8 +15,10 @@ Resolve the executable once: repository `bin/php-ast-edit`, project `vendor/bin/
 installed command, or this skill's `scripts/php-ast-edit` wrapper. Use `help` if needed;
 install missing engine dependencies before retrying.
 
-Existing files use format-preserving printing. Normalization is optional; `doctor`
-diagnoses canonical setup. Read the formatting reference when configuring formatting.
+Auto mode uses format-preserving printing unless applicable configuration enables
+canonical printing. Explicit printer choices override auto mode. Normalization is
+optional; `doctor` diagnoses canonical setup. Read the formatting reference when
+configuring formatting.
 
 ## Workflow
 

@@ -21,6 +21,12 @@ All thirty candidates passed the original tests on their final bytes; the report
 retains token categories, paired comparisons and remaining reporting mistakes.
 Its [prospective protocol](REAL_PROTOCOL.md) was frozen before execution.
 
+The separate [twenty-run guidance trial](results/2026-09-07-guidance/REPORT.md)
+found no additional efficiency benefit from `--guidance`: both arms made median
+three later calls, while observed token and time medians were higher with guidance.
+All twenty candidates made the correct change and ran the original tests on final
+bytes. This result does not measure the revised skill, which was not loaded.
+
 The AST alone does not resolve project symbols. This prototype composes the pinned
 [Phpactor 2026.07.22.0](https://github.com/phpactor/phpactor/releases/tag/2026.07.22.0)
 language server with `php-ast-edit`. Each invocation builds a fresh index. It rejects
@@ -71,6 +77,8 @@ still need assessment, and later relevant changes invalidate prior observations.
 All failures, skipped checks and other warnings remain visible. The separate
 [guidance experiment protocol](GUIDANCE_PROTOCOL.md) compares the existing compact
 response with this complete output bundle on the same integrated-test workload.
+Its [completed results](results/2026-09-07-guidance/REPORT.md) do not support promoting
+guidance to the default or claiming additional savings from it.
 
 `exact_edit_match.status: passed` means the tool read the workspace again **after**
 engine apply and configured verification, and every non-Git file matched the expected
