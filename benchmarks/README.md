@@ -14,6 +14,10 @@ candidate, comparing separate and integrated checking with a text-edit control.
 The separate [twenty-run guidance study](symbol-intent/results/2026-09-07-guidance/REPORT.md)
 found no reduction in median later calls from extra result guidance and higher
 observed token/time medians; all twenty candidates passed the edits and final tests.
+The separate [twenty-run entrypoint study](symbol-intent/results/2026-09-07-entrypoint/REPORT.md)
+found median zero preparatory calls and one total call in both arms. A before-edit
+capability paragraph did not meet the prospective adoption rule; the existing
+entrypoint stays unchanged. All twenty candidates passed the edits and final tests.
 Read the [execution and trust boundaries](TRUST.md) before grading candidate code or
 importing evidence; they also record the narrowly scoped static-analysis decisions.
 

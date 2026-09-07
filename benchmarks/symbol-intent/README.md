@@ -27,10 +27,13 @@ three later calls, while observed token and time medians were higher with guidan
 All twenty candidates made the correct change and ran the original tests on final
 bytes. This result does not measure the revised skill, which was not loaded.
 
-The [prospective intent-entrypoint trial](ENTRYPOINT_PROTOCOL.md) changes only a
-short capability paragraph visible before editing. It tests whether an explicitly
-named rename can proceed without the agent reconstructing call-site coordinates,
-while keeping the compact output, source access and final-byte tests identical.
+The [completed twenty-run intent-entrypoint trial](results/2026-09-07-entrypoint/REPORT.md)
+changed only a short capability paragraph visible before editing. Both arms already
+used median zero preparatory calls and one total tool call; token/time medians were
+slightly higher with the paragraph. It did not meet the
+[prospective adoption rule](ENTRYPOINT_PROTOCOL.md), so the existing entrypoint stays
+unchanged. All twenty candidates made the exact edit and ran the original final-byte
+tests. This selected fixture is not held-out validation or an installed-skill trial.
 Use `real_pilot.py prepare --experiment real-php-entrypoint-v1` for this separate
 twenty-candidate profile. Existing profiles and completed campaigns stay separate.
 
