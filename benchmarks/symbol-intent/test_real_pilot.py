@@ -233,8 +233,9 @@ class RealPilotTests(unittest.TestCase):
                 patch.object(study, "__file__", str(output / study.CONTROLLER)),
                 patch.object(pilot, "capture") as capture,
             ):
+                args = argparse.Namespace(output=output, execute_models=True)
                 with self.assertRaisesRegex(IntentError, "already started"):
-                    study.run(argparse.Namespace(output=output, execute_models=True))
+                    study.run(args)
                 capture.assert_not_called()
 
     def test_malformed_receipt_keeps_check_count_and_duration_unknown(self):

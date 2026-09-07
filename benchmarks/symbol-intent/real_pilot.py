@@ -585,8 +585,39 @@ def distributions(values, prefix=""):
     }
 
 
+def paired_effect(records, before_arm, after_arm):
+    deltas, pairs = {key: [] for key in metrics({})}, []
+    for repeat in range(10):
+        pair = [
+            next(
+                (r for r in records if r["arm"] == arm and r["repetition"] == repeat),
+                None,
+            )
+            for arm in (before_arm, after_arm)
+        ]
+        if any(r is None for r in pair):
+            continue
+        before, after = (metrics(r) for r in pair)
+        values = {
+            key: after[key] - before[key]
+            if before[key] is not None and after[key] is not None
+            else None
+            for key in deltas
+        }
+        pairs.append({"ids": [r["id"] for r in pair], "deltas": values})
+        for key, value in values.items():
+            if value is not None:
+                deltas[key].append(value)
+    return {
+        "before": before_arm,
+        "after": after_arm,
+        "pairs": pairs,
+        **distributions(deltas, "delta_"),
+    }
+
+
 def summarize_records(records):
-    cells, effects = [], []
+    cells = []
     for arm in ARMS:
         group = [r for r in records if r["arm"] == arm]
         values = {
@@ -609,44 +640,6 @@ def summarize_records(records):
                 **distributions(values),
             }
         )
-    for before_arm, after_arm in (
-        ("text-manual", "ast-manual"),
-        ("ast-manual", "ast-integrated"),
-    ):
-        deltas, pairs = {key: [] for key in metrics({})}, []
-        for repeat in range(10):
-            pair = [
-                next(
-                    (
-                        r
-                        for r in records
-                        if r["arm"] == arm and r["repetition"] == repeat
-                    ),
-                    None,
-                )
-                for arm in (before_arm, after_arm)
-            ]
-            if any(r is None for r in pair):
-                continue
-            before, after = (metrics(r) for r in pair)
-            values = {
-                key: after[key] - before[key]
-                if before[key] is not None and after[key] is not None
-                else None
-                for key in deltas
-            }
-            pairs.append({"ids": [r["id"] for r in pair], "deltas": values})
-            for key, value in values.items():
-                if value is not None:
-                    deltas[key].append(value)
-        effects.append(
-            {
-                "before": before_arm,
-                "after": after_arm,
-                "pairs": pairs,
-                **distributions(deltas, "delta_"),
-            }
-        )
     return {
         "experiment": EXPERIMENT,
         "planned_attempts": 30,
@@ -654,7 +647,13 @@ def summarize_records(records):
         "known_usage": sum(metrics(r)["tokens"] is not None for r in records),
         "known_native_list_price_usd": sum(metrics(r)["usd"] or 0 for r in records),
         "cells": cells,
-        "paired_effects": effects,
+        "paired_effects": [
+            paired_effect(records, before_arm, after_arm)
+            for before_arm, after_arm in (
+                ("text-manual", "ast-manual"),
+                ("ast-manual", "ast-integrated"),
+            )
+        ],
         "interpretation": "One small public-source case repeated ten times. Text versus AST bundles resolver, writer and evidence; manual versus integrated bundles automatic triggering and reporting. Checker duration is observed separately, not an inferred total tool duration. Candidate verification and hidden oracle success are distinct.",
     }
 

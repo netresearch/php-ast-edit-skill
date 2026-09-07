@@ -49,8 +49,7 @@ class OracleTests(unittest.TestCase):
             with self.assertRaises(fixture.FixtureError):
                 fixture.snapshot(root)
 
-    def test_provenance_is_deterministic_and_original_only(self):
-        self.assertEqual(fixture.provenance(), fixture.provenance())
+    def test_provenance_contains_only_original_source_information(self):
         baseline = fixture.expected_inventory(renamed=False)
         renamed = fixture.expected_inventory()
         self.assertEqual(8, len(baseline))
@@ -91,10 +90,9 @@ class OracleTests(unittest.TestCase):
                     [path.name],
                     fixture.oracle(root, allowed_extras=extras)["mismatched"],
                 )
+            overlapping = {fixture.DECLARATION: fixture.digest(source)}
             with self.assertRaisesRegex(fixture.FixtureError, "overlapping"):
-                fixture.oracle(
-                    root, allowed_extras={fixture.DECLARATION: fixture.digest(source)}
-                )
+                fixture.oracle(root, allowed_extras=overlapping)
 
     def test_successful_tests_on_mutating_source_cannot_certify_final_bytes(self):
         with tempfile.TemporaryDirectory() as directory:

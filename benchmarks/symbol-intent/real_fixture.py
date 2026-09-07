@@ -99,6 +99,13 @@ def expected_inventory(*, renamed=True):
     }
 
 
+def _reject_symlinks(directory, names):
+    for name in names:
+        path = directory / name
+        if path.is_symlink():
+            raise FixtureError("Fixture symlinks are unsupported: " + str(path))
+
+
 def snapshot(root):
     """Hash all regular fixture files, excluding only the root git metadata."""
     root = Path(root)
@@ -111,18 +118,12 @@ def snapshot(root):
 
     for directory, names, files in os.walk(root, followlinks=False, onerror=unreadable):
         current = Path(directory)
-        if current == root and ".git" in names:
-            names.remove(".git")
-        for name in names + files:
-            path = current / name
-            if current == root and name == ".git":
-                continue
-            if path.is_symlink():
-                raise FixtureError("Fixture symlinks are unsupported: " + str(path))
+        if current == root:
+            names[:] = [name for name in names if name != ".git"]
+            files = [name for name in files if name != ".git"]
+        _reject_symlinks(current, names + files)
         for name in files:
             path = current / name
-            if current == root and name == ".git":
-                continue
             if not path.is_file():
                 raise FixtureError("Fixture contains a non-regular file: " + str(path))
             result[path.relative_to(root).as_posix()] = digest(path.read_bytes())
@@ -148,7 +149,8 @@ def export(root, source_repo):
             raise FixtureError("Pinned source object missing or hash mismatch: " + name)
         blobs[name] = process.stdout
     # All source hashes are checked before writing the first output byte.
-    root.mkdir(parents=True, exist_ok=True)
+    # Explicit operator-selected export destination, not a restricted-root service.
+    root.mkdir(parents=True, exist_ok=True)  # NOSONAR(S8707)
     for name, data in blobs.items():
         path = root / name
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -233,10 +235,7 @@ def _junit(path):
             for key in ("tests", "assertions", "errors", "failures", "skipped")
         }
     except (OSError, ET.ParseError, ValueError):
-        return {
-            key: None
-            for key in ("tests", "assertions", "errors", "failures", "skipped")
-        }
+        return dict.fromkeys(("tests", "assertions", "errors", "failures", "skipped"))
 
 
 def check(root, phpunit, *, receipt_dir=None, php="php", timeout=60):
@@ -288,7 +287,8 @@ def check(root, phpunit, *, receipt_dir=None, php="php", timeout=60):
             env.pop(name, None)
         timed_out = False
         try:
-            process = subprocess.run(
+            # Operator-selected PHP executes the digest-pinned checker; see TRUST.md.
+            process = subprocess.run(  # NOSONAR(S8701)
                 argv,
                 cwd=state,
                 env=env,
