@@ -82,6 +82,21 @@ The experimental `symbol-intent` scripts have the same local-operator boundary:
 | `symbol-intent.lsp.Client` | S6350 | Execute PHP with a release-digest-verified local Phpactor PHAR and fixed LSP options. Workspace paths are argv values. |
 | `symbol-intent.symbol_intent.snapshot` | S6549 | Walk the explicit local workspace selected by the operator. There is no remote response revealing another principal's filesystem. Symlinks, unreadable directories and size excesses are refused. |
 
+The real-source verification experiment extracts an allowlisted set of public files
+from a fixed Git commit and checks their pinned hashes. It retains their original
+license and attribution. Its standalone PHPUnit checker executes those trusted
+fixture tests using an operator-supplied, digest-pinned official PHPUnit PHAR;
+bootstrap and result files live outside the candidate workspace. Test execution
+receipts record the workspace bytes before and after the check. They establish
+observed execution for a cooperative local candidate, not tamper-proof evidence
+against a hostile process that can access the evaluator's files. The independent
+expected-edit oracle is separate from the candidate-facing behavior checker.
+
+| Evaluator operation | Rule | Disposition |
+| --- | --- | --- |
+| `symbol-intent.real_fixture.export` | S8707 | Creates the operator-selected export directory after checking all pinned Git objects. The CLI accepts an explicit destination, not input to a restricted-root service. |
+| `symbol-intent.real_fixture.check` | S8701 | Executes the operator-selected PHP interpreter and digest-pinned PHPUnit PHAR via argv, with trusted public fixture tests and external temporary state. This is intentional local test execution, not a command service or sandbox. |
+
 The pilot grader additionally rejects symlink source, checks complete file scope and
 expected AST structure before runtime execution, and requires its final runtime
 marker. Plans bind complete file inventories and tool bytes. These checks improve
