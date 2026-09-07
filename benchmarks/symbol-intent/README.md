@@ -35,6 +35,28 @@ round trip between them. Full plans, resolver messages and engine reports remain
 in the external state directory. The concise result aggregates passed validations
 and preserves warnings, failed checks, skipped lint and affected file paths.
 
+Pass `--evidence` to `rename_method` or `apply_plan` for a more compact, evidence-bearing
+result. It echoes the request, shows planned/applied edit totals, and replaces repeated
+`file_issues` with `issue_groups` containing identical validation/warnings and all their
+paths. The default response remains unchanged.
+
+`exact_edit_match.status: passed` means the tool read the workspace again **after**
+engine apply and configured verification, and every non-Git file matched the expected
+SHA-256 inventory for exactly the resolved, AST-validated identifier replacements.
+Thus all other bytes, including unrelated identifiers, comments and strings, stayed
+unchanged. Expected bytes are computed only for verification; the engine is still the
+only PHP writer. The hashed plan stores the expected inventory; a `.readback.json`
+sidecar beside `full_report` stores the observed inventory.
+
+This evidence does **not** verify the resolver's binding choices or completeness.
+An omitted reference can coexist with a passing exact-edit check. Behavior checks
+and `completeness: unknown` therefore remain separate. Formatters or verifier side
+effects can make exact byte preservation `not_established` even when engine apply
+succeeds; inspect the mismatched files. An unreadable or unsupported final workspace
+also yields `not_established`. Failed or skipped checks remain visible and never
+become passes because the bytes matched. The evidence describes the readback instant,
+not protection against a malicious concurrent writer.
+
 Plans bind the complete workspace file inventory and tool/dependency bytes. Added,
 removed or changed files invalidate a plan. Name edits carry AST references, node
 expectations and source hashes. Consumed plans cannot be replayed. As with ordinary
