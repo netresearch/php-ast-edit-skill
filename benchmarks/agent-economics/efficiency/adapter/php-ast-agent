@@ -196,7 +196,7 @@ def apply_edits(directory, state):
             raise AdapterError(
                 "This experimental apply reports committed edits; dryRun is unsupported"
             )
-        document = {**request, "files": []}
+        document = {**request, "report": "compact", "files": []}
         seen = set()
         for spec in request["files"]:
             if not isinstance(spec, dict):

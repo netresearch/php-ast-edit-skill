@@ -297,6 +297,8 @@ final class Application
         Batch all edits and files belonging to one transaction in one apply request.
         
         Reports separate parsed, validation.lint and validation.checks.
+        Use report:"compact" in the apply document for shared top-level verify results
+        and per-file checkIds. The default report:"full" keeps per-file verify results.
         valid is a compatibility alias for parser success, not semantic correctness.
         Host PHP lint runs before writes; a newer explicit target reports lint skipped.
         Declared project verify checks run after writing. Failed checks keep the edit and
@@ -313,7 +315,10 @@ final class Application
         A formatter declaration is an argv list with a whole-element {files} placeholder:
           {"formatter":["php","vendor/bin/php-cs-fixer","fix","--config=.php-cs-fixer.php",
             "--path-mode=intersection","{files}"]}
-        verify is a list of argv lists. Never run project-wide format just to close a
+        verify accepts argv lists with {files}, or {scope,command} objects.
+        Use scope:"project" without {files} for stable project checks, including deletions;
+        scope:"changed_files" requires {files} and omits intentional deletions.
+        Never run project-wide format just to close a
         local edit. A clean-checkout CI gate may run format + formatter + git diff --exit-code.
         
         Exit codes: 0 command completed; 1 doctor/format/check result needs attention;

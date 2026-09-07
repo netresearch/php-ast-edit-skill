@@ -29,11 +29,13 @@ every edit. Read the formatting reference only when formatting setup is part of 
 3. Put related edits, including multiple files, in one `apply` transaction. Include the
    file's `sha256` when relying on a snapshot you read. Refs and coordinates are tied to
    that snapshot. After `STALE_SOURCE`, reread and reassess; never drop the guard to force it.
+   Set top-level `"report": "compact"` to receive each verification result once.
 4. Supply compact valid snippets. In namespaced PHP, import external types or qualify them,
    for example `\\DateTimeImmutable` inside JSON. Do not spend tokens reproducing indentation.
 5. Read `effects`, `diff`, **all** `warnings`, and `validation`. `parsed` means parser
-   success; legacy `valid` has the same limited meaning. Check whether lint and the project's
-   verification commands ran. A failed verification needs repair even when a file was written.
+   success; legacy `valid` has the same limited meaning. In compact reports, follow each
+   file's `checkIds` to top-level `verify`. Check whether lint and the project's verification
+   commands ran. A failed verification needs repair even when a file was written.
 6. Run only relevant checks that remain unperformed. Review the intended diff; an edit is
    expected to change it. Do not use a clean Git diff as a post-edit success condition.
    Avoid repository-wide `format` for a local edit.
@@ -41,12 +43,15 @@ every edit. Read the formatting reference only when formatting setup is part of 
 Minimal transaction:
 
 ```json
-{"files":[{"path":"src/Registry.php","edits":[{"target":{"select":"class:Registry"},"operation":"add_member","php":"public function register(string $name): void {}"}]}]}
+{"report":"compact","files":[{"path":"src/Registry.php","edits":[{"target":{"select":"class:Registry"},"operation":"add_member","php":"public function register(string $name): void {}"}]}]}
 ```
 
 ```bash
 php-ast-edit apply --input edits.json
 ```
+
+Omitting `report`, or setting it to `"full"`, keeps the legacy per-file `verify` layout.
+Report mode changes presentation only; `checksPassed: null` means no checks ran.
 
 ## Choose the narrow operation
 

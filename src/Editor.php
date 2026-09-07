@@ -91,6 +91,12 @@ final class Editor
     public function apply(array $document, bool $forceDryRun = false): array
     {
         $this->verifyResults = [];
+        $report = array_key_exists('report', $document) ? $document['report'] : 'full';
+
+        if (!in_array($report, ['full', 'compact'], true)) {
+            throw new EditException('apply report must be "full" or "compact".');
+        }
+        $compact = $report === 'compact';
         $files = $document['files'] ?? null;
 
         if (!is_array($files) || $files === []) {
@@ -129,16 +135,22 @@ final class Editor
         }
 
         if (!$dryRun) {
-            $this->commit($transactions);
+            $verification = (new VerificationRunner())->prepare($transactions);
+            $this->commit($transactions, $verification);
         }
-
-        return [
+        $result = [
             'files' => array_map(
-                fn (FileTransaction $file): array => $this->report($file, $dryRun),
+                fn (FileTransaction $file): array => $this->report($file, $dryRun, $compact),
                 $transactions,
             ),
             'checksPassed' => $this->verifyResults === [] ? null : !in_array(false, array_column($this->verifyResults, 'ok'), true),
         ];
+
+        if ($compact) {
+            $result['verify'] = $this->verifyResults;
+        }
+
+        return $result;
     }
 
     private function prepare(array $spec): FileTransaction
@@ -457,7 +469,7 @@ final class Editor
         return $previous[count($b)];
     }
 
-    private function commit(array $transactions): void
+    private function commit(array $transactions, array $verification): void
     {
         foreach ($transactions as $transaction) {
             if ($transaction->changed) {
@@ -488,7 +500,7 @@ final class Editor
                 $this->atomicWrite($transaction->path, (string) $transaction->output);
             }
             $this->runFormatter($transactions);
-            $this->runVerify($transactions);
+            $this->verifyResults = (new VerificationRunner())->run($verification);
         } catch (\Throwable $failure) {
             $restoreErrors = [];
             $restorer = new FileRestorer();
@@ -546,9 +558,9 @@ final class Editor
         }
     }
 
-    private function report(FileTransaction $transaction, bool $dryRun): array
+    private function report(FileTransaction $transaction, bool $dryRun, bool $compact): array
     {
-        return EditReport::file($transaction, $dryRun, $this->unifiedDiff($transaction));
+        return EditReport::file($transaction, $dryRun, $this->unifiedDiff($transaction), $compact);
     }
 
     private function applyOperation(
@@ -1939,98 +1951,8 @@ final class Editor
         return ['before' => count($before), 'after' => count($after)];
     }
 
-    /** How much of a failing check's output comes back before it stops being a summary. */
-    private const VERIFY_OUTPUT_CAP = 4000;
-
-    /**
-     * What the declared checks said about this write.
-     *
-     * @var list<array{command: string, ok: bool, output?: string}>
-     */
+    /** @var list<array<string, mixed>> What the declared checks said about this write. */
     private array $verifyResults = [];
-
-    private function runVerify(array $transactions): void
-    {
-        $this->verifyResults = [];
-        $groups = [];
-
-        foreach ($transactions as $transaction) {
-            if (!$transaction->changed || $transaction->mode === 'delete') {
-                continue;
-            }
-            $config = RepositoryConfig::discover($transaction->path);
-
-            if ($config->verify === null || $config->path === null || $config->excludes($transaction->path)) {
-                continue;
-            }
-            $root = \dirname($config->path);
-            $groups[$root] ??= ['verify' => $config->verify, 'paths' => [], 'files' => []];
-            $groups[$root]['paths'][] = realpath($transaction->path) ?: $transaction->path;
-            $groups[$root]['files'][] = $transaction;
-        }
-
-        foreach ($groups as $root => $group) {
-            foreach ($group['verify'] as $command) {
-                $expanded = [];
-
-                foreach ($command as $argument) {
-                    if ($argument === RepositoryConfig::FILES_PLACEHOLDER) {
-                        array_push($expanded, ...$group['paths']);
-                    } else {
-                        $expanded[] = $argument;
-                    }
-                }
-                $result = $this->captureCommand($expanded, $root);
-                $this->verifyResults[] = $result;
-
-                foreach ($group['files'] as $transaction) {
-                    $transaction->verify[] = $result;
-                }
-            }
-        }
-    }
-
-    private function captureCommand(array $command, string $root): array
-    {
-        $out = tempnam(sys_get_temp_dir(), 'php-ast-edit-verify-');
-        $err = tempnam(sys_get_temp_dir(), 'php-ast-edit-verify-');
-
-        if ($out === false || $err === false) {
-            if (is_string($out)) {
-                @unlink($out);
-            }
-
-            if (is_string($err)) {
-                @unlink($err);
-            }
-
-            throw new EditException('Cannot create a temporary file for the check output.');
-        }
-
-        try {
-            $process = proc_open($command, [1 => ['file', $out, 'w'], 2 => ['file', $err, 'w']], $pipes, $root);
-
-            if (!is_resource($process)) {
-                return [
-                    'command' => implode(' ', $command),
-                    'ok' => false,
-                    'output' => 'could not be started',
-                ];
-            }
-            $status = proc_close($process);
-            $said = trim((string) file_get_contents($out) . "\n" . (string) file_get_contents($err));
-            $result = ['command' => implode(' ', $command), 'ok' => $status === 0];
-
-            if ($status !== 0) {
-                $result['output'] = substr($said, 0, self::VERIFY_OUTPUT_CAP);
-            }
-
-            return $result;
-        } finally {
-            @unlink($out);
-            @unlink($err);
-        }
-    }
 
     private function renameMethod(NodeLocation $location, string $to, array $roots): array
     {

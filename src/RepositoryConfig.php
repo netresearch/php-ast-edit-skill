@@ -37,7 +37,7 @@ final class RepositoryConfig
         public readonly array $exclude = [],
         /** @var list<string>|null */
         public readonly ?array $formatter = null,
-        /** @var list<list<string>>|null */
+        /** @var list<list<string>|array{scope: string, command: list<string>}>|null */
         public readonly ?array $verify = null,
     ) {}
 
@@ -101,25 +101,7 @@ final class RepositoryConfig
             $formatter = array_values(array_map(strval(...), $formatter));
         }
 
-        $verify = $data['verify'] ?? null;
-
-        if ($verify !== null) {
-            if (!is_array($verify) || !array_is_list($verify)) {
-                throw new EditException($path . ': verify must be a list of commands.');
-            }
-            $checked = [];
-
-            foreach ($verify as $index => $command) {
-                if (!is_array($command)) {
-                    throw new EditException(
-                        $path . ': verify entry ' . $index . ' must be a command array.',
-                    );
-                }
-                self::assertFormatter($command, $path . ': verify entry ' . $index . ': ');
-                $checked[] = array_values(array_map(strval(...), $command));
-            }
-            $verify = $checked;
-        }
+        $verify = self::verificationFromJson($raw, $path);
 
         return new self(
             (bool) ($data['canonical'] ?? false),
@@ -374,6 +356,83 @@ final class RepositoryConfig
                 return $resolved . DIRECTORY_SEPARATOR . implode(DIRECTORY_SEPARATOR, $tail);
             }
             $current = $parent;
+        }
+    }
+
+    /** Validate verification declarations without changing formatter semantics.
+     * @return list<list<string>|array{scope: string, command: list<string>}>|null
+     */
+    private static function verificationFromJson(string $raw, string $path): ?array
+    {
+        // Preserve JSON object/list identity for verification entries and command lists.
+        $document = json_decode($raw, false, 32, JSON_THROW_ON_ERROR);
+        $verify = $document instanceof \stdClass ? $document->verify ?? null : null;
+
+        if ($verify === null) {
+            return null;
+        }
+
+        if (!is_array($verify)) {
+            throw new EditException($path . ': verify must be a list of commands.');
+        }
+        $checked = [];
+
+        foreach ($verify as $index => $entry) {
+            $prefix = $path . ': verify entry ' . $index . ': ';
+
+            if (is_array($entry)) {
+                self::assertFormatter($entry, $prefix);
+                self::assertVerificationArguments($entry, $prefix);
+                $checked[] = $entry;
+
+                continue;
+            }
+
+            if (!$entry instanceof \stdClass || count(get_object_vars($entry)) !== 2 || !property_exists($entry, 'scope') || !property_exists($entry, 'command')) {
+                throw new EditException(
+                    $prefix . 'expected an argv list or an object containing only scope and command.',
+                );
+            }
+
+            if (!in_array($entry->scope, ['project', 'changed_files'], true)) {
+                throw new EditException($prefix . 'scope must be project or changed_files.');
+            }
+
+            if (!is_array($entry->command)) {
+                throw new EditException($prefix . 'command must be a list of arguments.');
+            }
+            self::assertVerificationArguments($entry->command, $prefix);
+
+            if ($entry->scope === 'changed_files') {
+                self::assertFormatter($entry->command, $prefix);
+            } else {
+                foreach ($entry->command as $argument) {
+                    if (str_contains($argument, self::FILES_PLACEHOLDER)) {
+                        throw new EditException(
+                            $prefix . 'project commands must not contain ' . self::FILES_PLACEHOLDER . '.',
+                        );
+                    }
+                }
+            }
+            $checked[] = ['scope' => $entry->scope, 'command' => $entry->command];
+        }
+
+        return $checked;
+    }
+
+    /** @param array<mixed> $command */
+    private static function assertVerificationArguments(array $command, string $prefix): void
+    {
+        if ($command === [] || !array_is_list($command)) {
+            throw new EditException($prefix . 'command must be a non-empty list of arguments.');
+        }
+
+        foreach ($command as $argument) {
+            if (!is_string($argument) || $argument === '' || str_contains($argument, "\x00")) {
+                throw new EditException(
+                    $prefix . 'command arguments must be non-empty strings without NUL bytes.',
+                );
+            }
         }
     }
 }

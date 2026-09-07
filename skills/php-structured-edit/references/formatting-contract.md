@@ -48,14 +48,23 @@ Configure optional commands in `.php-ast-edit.json` as argument arrays, not shel
   "canonical": true,
   "printWidth": 100,
   "formatter": ["vendor/bin/php-cs-fixer", "fix", "--path-mode=intersection", "{files}"],
-  "verify": [["php", "vendor/bin/phpstan", "analyse", "--no-progress", "{files}"]]
+  "verify": [{"scope": "project", "command": ["php", "vendor/bin/phpstan", "analyse", "--no-progress"]}]
 }
 ```
 
-Use commands compatible with your project. `{files}` occurs exactly once and expands to
-changed file paths. A canonical `apply` runs the declared formatter on those files, then
-configured checks. Read their results instead of running them again unchanged. Excluded
-paths use format-preserving output and skip the canonical formatter.
+Use commands compatible with your project. The formatter requires exactly one whole
+`{files}` argument, expanded to changed file paths. Project-scoped verification commands
+have no `{files}` placeholder and run once per affected configuration directory, including
+after deletions. Configure PHPStan's stable analysis paths in `phpstan.neon`; a changing
+CLI file list replaces those paths and can invalidate its result cache. See the
+[verification contract](operations.md#verification-configuration) for changed-file checks
+and legacy command arrays.
+
+A canonical `apply` runs the declared formatter on changed files, then configured checks.
+Verification also runs for eligible format-preserving edits. Excluded paths skip the
+canonical formatter and do not trigger verification. Read the actual results instead of
+running the same checks again unchanged. `"report": "compact"` returns each verification
+result once in top-level `verify`, linked by file `checkIds`.
 
 The stable formatting state is the composition of the canonical printer and the project
 formatter. To check it in CI, start from a **clean committed checkout**, run both tools,

@@ -61,6 +61,7 @@ Send this JSON to `php-ast-edit apply --input edits.json`:
 
 ```json
 {
+  "report": "compact",
   "files": [{
     "path": "src/Clock.php",
     "edits": [{
@@ -78,7 +79,9 @@ Send this JSON to `php-ast-edit apply --input edits.json`:
 
 Use a file-level `sha256` guard when editing a previously read snapshot. Selectors identify named declarations without a coordinate lookup. For an expression or statement, `inspect --file src/Clock.php --line 4 --column 10` returns node ancestry, structural refs, and the snapshot hash. Ambiguous selectors fail rather than choosing the first match. Related changes across files belong in the same `files` array.
 
-Read `diff`, `effects`, `warnings`, and `validation` in the report. A successful parse is not proof of correct behavior; run the relevant project tests if they have not already run through configured `verify` commands.
+Read `diff`, `effects`, `warnings`, and `validation` in the report. With `"report": "compact"`, each actual verification run appears once in top-level `verify`; each file's `checkIds` links to those results. Omitting `report`, or choosing `"full"`, retains the existing per-file `verify` layout. Both modes report the same checks and outcomes. A successful parse is not proof of correct behavior; run the relevant project tests if they have not already run through configured `verify` commands.
+
+Use `scope: "project"` for checks such as PHPStan that should use their configured project paths, including after file deletions. Use `scope: "changed_files"` for commands that accept the changed, existing file paths through `{files}`. Configure these in `.php-ast-edit.json`; see the [verification contract](skills/php-structured-edit/references/operations.md#verification-configuration).
 
 ## Use when
 
@@ -108,7 +111,7 @@ Existing files use format-preserving printing unless the repository declares can
 
 ## Does it save tokens, calls, or time?
 
-Batching reduces CLI startups. Named selectors can eliminate an `inspect` call. Integrated reports and configured checks can avoid redundant reads and validation. These are capabilities, not a universal cost guarantee.
+Batching reduces CLI startups. Named selectors can eliminate an `inspect` call. Compact reports avoid repeating the same verification command and diagnostics for every file; they do not shorten the checks themselves. Integrated reports and configured checks can avoid redundant reads and validation. These are capabilities, not a universal cost guarantee.
 
 A contextual patch is a valid baseline and can also batch changes. Small edits may cost more through an AST tool. Full agent savings depend on instruction loading, model output, tool latency, retries, correctness, and caching. [Benchmarks](benchmarks/README.md) provides a reproducible local comparison and a separate protocol for measuring complete agent tasks. No general token or model-round reduction is claimed from a CLI microbenchmark.
 
