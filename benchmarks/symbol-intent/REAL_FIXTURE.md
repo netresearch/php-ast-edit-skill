@@ -4,8 +4,9 @@ This benchmark exports six original PHP files from the public
 [`netresearch/t3x-nr-llm` commit b505c936935b99baa3088ce62ad222d2ba61cee0](https://github.com/netresearch/t3x-nr-llm/commit/b505c936935b99baa3088ce62ad222d2ba61cee0).
 The export includes the upstream `LICENSE`, original copyright/SPDX headers,
 and deterministic `PROVENANCE.json` with source hashes. Upstream declares
-`GPL-2.0-or-later`. PHP source is extracted into disposable directories; it is
-not vendored in this tool repository.
+`GPL-2.0-or-later`. PHP source is extracted into disposable directories. Published
+benchmark evidence may include those licensed snapshots; they are not engine
+runtime dependencies.
 
 The task renames `SchemaPropertyClassifier::classify()` to `controlType()`.
 The extracted scope has one declaration, one production caller in
