@@ -72,3 +72,18 @@ or disable other security checks. Sonar documents this Python syntax in its
 [2025.5 release notes](https://docs.sonarsource.com/sonarqube-server/2025.5/server-update-and-maintenance/release-notes).
 Actual outcome-integrity defects are fixed and regression-tested, rather than covered
 by these annotations.
+
+The experimental `symbol-intent` scripts have the same local-operator boundary:
+
+| Code | Rule | Reviewed behavior and decision |
+| --- | --- | --- |
+| `symbol-intent.pilot.invoke`, `capture` | S2076, S6350 | Execute operator-selected, frozen interpreter/Claude/Git argv without a shell. The candidate prompt is an argv value, never interpolated shell source. These functions deliberately execute local evaluator and candidate code; they are not a command service or sandbox. |
+| `symbol-intent.pilot.prepare` | S2245 | The fixed PRNG seed sets reproducible experimental order, with no security role. |
+| `symbol-intent.lsp.Client` | S6350 | Execute PHP with a release-digest-verified local Phpactor PHAR and fixed LSP options. Workspace paths are argv values. |
+| `symbol-intent.symbol_intent.snapshot` | S6549 | Walk the explicit local workspace selected by the operator. There is no remote response revealing another principal's filesystem. Symlinks, unreadable directories and size excesses are refused. |
+
+The pilot grader additionally rejects symlink source, checks complete file scope and
+expected AST structure before runtime execution, and requires its final runtime
+marker. Plans bind complete file inventories and tool bytes. These checks improve
+ordinary outcome integrity; neither hashes nor the local state lock authenticate an
+operator or protect against a malicious concurrent process with the same privileges.
