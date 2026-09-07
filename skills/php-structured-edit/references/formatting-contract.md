@@ -5,8 +5,11 @@
 `apply` uses format-preserving printing when no canonical repository declaration exists.
 This is a supported default: it preserves original tokens for unchanged syntax and prints
 new or changed nodes. A subtree that cannot be mapped back to its original tokens may be
-reprinted, so inspect `diff` and `changedLines`. Small intended changes do not guarantee
-small diffs.
+reprinted, so review the returned `diff` and `changedLines`. Small intended changes do
+not guarantee small diffs. `NOT_CANONICAL` describes the selected printer; it does not
+require normalization or an additional read when supplied evidence already establishes
+the relevant byte changes. Evidence unavailable or showing unexpected changes still
+requires inspection.
 
 Select a printer explicitly per file with `"printer": "format-preserving"` or
 `"printer": "canonical"`. The report states which was used. A format-preserving edit does

@@ -14,11 +14,27 @@ import time
 from pathlib import Path
 
 import pilot
+import postcheck_pilot
 import real_fixture as fixture
 from lsp import require
 
 EXPERIMENT = "real-php-verification-v1"
 ARMS = ("text-manual", "ast-manual", "ast-integrated")
+GUIDANCE_EXPERIMENT = "real-php-guidance-v1"
+PROFILES = {
+    EXPERIMENT: {
+        "arms": ARMS,
+        "seed": 20260909,
+        "campaign_usd": 8.0,
+        "pairs": (("text-manual", "ast-manual"), ("ast-manual", "ast-integrated")),
+    },
+    GUIDANCE_EXPERIMENT: {
+        "arms": ("compact", "guidance"),
+        "seed": 20260910,
+        "campaign_usd": 5.0,
+        "pairs": (("compact", "guidance"),),
+    },
+}
 PROJECT_CONFIG = ".php-ast-edit.json"
 PHPUNIT_FILE = "phpunit.phar"
 CONTROLLER = "source/benchmarks/symbol-intent/real_pilot.py"
@@ -38,14 +54,21 @@ and what was actually checked, including any failed or unrun required checks.
 """
 
 
-def schedule():
+def profile(experiment):
+    require(experiment in PROFILES, "Unknown experiment")
+    return PROFILES[experiment]
+
+
+def schedule(experiment=EXPERIMENT):
+    design = profile(experiment)
+    arms = design["arms"]
     repeats = list(range(10))
     # Fixed prospective order; not security-sensitive randomness.
-    random.Random(20260909).shuffle(repeats)  # NOSONAR(S2245)
+    random.Random(design["seed"]).shuffle(repeats)  # NOSONAR(S2245)
     rows = []
     for block, repeat in enumerate(repeats):
-        offset = block % len(ARMS)
-        for arm in ARMS[offset:] + ARMS[:offset]:
+        offset = block % len(arms)
+        for arm in arms[offset:] + arms[:offset]:
             rows.append(
                 {"id": f"run{len(rows) + 1:03d}", "repetition": repeat, "arm": arm}
             )
@@ -117,6 +140,8 @@ def wrapper(path, argv, *, arguments=False):
 
 
 def prepare(args):
+    experiment = getattr(args, "experiment", EXPERIMENT)
+    design = profile(experiment)
     require(
         not pilot.invoke(["git", "status", "--porcelain"], pilot.SOURCE).stdout,
         "Commit source before preparation",
@@ -142,8 +167,9 @@ def prepare(args):
     shutil.copytree(pilot.SOURCE / "vendor", source / "vendor")
     shutil.copyfile(phpactor, output / pilot.PHAR_FILE)
     shutil.copyfile(phpunit, output / PHPUNIT_FILE)
-    rows = schedule()
+    rows = schedule(experiment)
     for row in rows:
+        route = "ast-integrated" if experiment == GUIDANCE_EXPERIMENT else row["arm"]
         run_dir = output / row["id"]
         run_dir.mkdir()
         work = run_dir / "work"
@@ -166,12 +192,12 @@ def prepare(args):
         wrapper(checker, check_argv)
         verification = (
             [{"scope": "project", "command": [str(checker)]}]
-            if row["arm"] == "ast-integrated"
+            if route == "ast-integrated"
             else []
         )
         pilot.save(work / PROJECT_CONFIG, {"verify": verification})
         rename = run_dir / "rename-tool"
-        if row["arm"] != "text-manual":
+        if route != "text-manual":
             wrapper(
                 rename,
                 [
@@ -185,10 +211,15 @@ def prepare(args):
                     str(run_dir / "state"),
                     "--phpactor",
                     str(output / pilot.PHAR_FILE),
-                ],
+                ]
+                + (
+                    ["--guidance"]
+                    if experiment == GUIDANCE_EXPERIMENT and row["arm"] == "guidance"
+                    else []
+                ),
                 arguments=True,
             )
-        system, prompt = prompts(task, row["arm"], rename, checker)
+        system, prompt = prompts(task, route, rename, checker)
         (run_dir / pilot.SYSTEM_FILE).write_text(system)
         (run_dir / pilot.PROMPT_FILE).write_text(prompt)
         pilot.save(run_dir / "task.json", task)
@@ -223,7 +254,7 @@ def prepare(args):
             names.append("rename-tool")
         row["frozen"] = {name: pilot.sha(run_dir / name) for name in names}
     config = {
-        "experiment": EXPERIMENT,
+        "experiment": experiment,
         "source_commit": pilot.invoke(
             ["git", "rev-parse", "HEAD"], pilot.SOURCE
         ).stdout.strip(),
@@ -238,9 +269,17 @@ def prepare(args):
         "schedule": rows,
         "runtimes": runtime_identity(),
         "max_run_usd": 0.5,
-        "campaign_usd": 8.0,
+        "campaign_usd": design["campaign_usd"],
         "timeout_seconds": 120,
     }
+    if experiment == GUIDANCE_EXPERIMENT:
+        config["comparison"] = {
+            "shared_route": "ast-integrated",
+            "compact_flags": ["--evidence"],
+            "guidance_flags": ["--evidence", "--guidance"],
+            "treatment": "Whole guidance output bundle, including syntactic role counts",
+            "forecast_native_list_price_usd_below": 1.0,
+        }
     pilot.save(output / pilot.CONFIG_FILE, config)
     (output / "config.sha256").write_text(pilot.sha(output / pilot.CONFIG_FILE) + "\n")
     print(
@@ -291,10 +330,11 @@ def validate(output, config, row=None, *, check_cli=True):
 
 def load_config(output):
     config = json.loads((output / pilot.CONFIG_FILE).read_text())
-    require(config.get("experiment") == EXPERIMENT, "Not this experiment")
+    experiment = config.get("experiment")
+    profile(experiment)
     require(
         [{k: v for k, v in r.items() if k != "frozen"} for r in config["schedule"]]
-        == schedule(),
+        == schedule(experiment),
         "Unexpected schedule",
     )
     return config
@@ -441,6 +481,19 @@ def evaluate(output, run_dir, record):
     )
 
 
+def guidance_observation(run_dir, record):
+    if record.get("accounting_error") or not record.get("native"):
+        return postcheck_pilot.unavailable_postcheck(
+            "Native accounting unavailable; trace may be incomplete"
+        )
+    try:
+        events, malformed = pilot.native.read_events(run_dir / pilot.NATIVE_FILE)
+        require(not malformed, "Malformed native trace")
+        return postcheck_pilot.post_calls(events, str(run_dir / "rename-tool"))
+    except (ValueError, TypeError, KeyError, OSError) as error:
+        return postcheck_pilot.unavailable_postcheck(str(error))
+
+
 def run(args):
     require(args.execute_models, "Run requires --execute-models")
     output = args.output.resolve(strict=True)
@@ -501,6 +554,8 @@ def run(args):
             record["native"] = pilot.accounting.summarize(events, config["model"])
         except (ValueError, KeyError, TypeError, OSError, StopIteration) as error:
             record["accounting_error"] = str(error)
+        if config["experiment"] == GUIDANCE_EXPERIMENT:
+            record["postcheck"] = guidance_observation(run_dir, record)
         try:
             evaluate(output, run_dir, record)
         except (
@@ -560,10 +615,10 @@ def run(args):
     )
 
 
-def metrics(record):
+def metrics(record, experiment=EXPERIMENT):
     native = record.get("native", {}) if not record.get("accounting_error") else {}
     checks = record.get("candidate_checks", {})
-    return {
+    values = {
         "tokens": native.get("all_model_tokens", {}).get("totalTokens"),
         "calls": native.get("tool_calls"),
         "rounds": native.get("primary_model_rounds"),
@@ -572,6 +627,24 @@ def metrics(record):
         "behavior_checks": checks.get("behavior_checks"),
         "checker_ms": checks.get("checker_ms"),
     }
+    if experiment == GUIDANCE_EXPERIMENT:
+        count, passed = (
+            checks.get("behavior_checks"),
+            checks.get("passed_final_receipts"),
+        )
+        known = (
+            type(count) is int
+            and type(passed) is int
+            and 0 <= passed <= count
+            and not checks.get("receipt_errors")
+            and not record.get("fixture_error")
+            and not record.get("evaluation_error")
+        )
+        values.update(
+            post_calls=record.get("postcheck", {}).get("subsequent_tool_calls"),
+            duplicate_final_checks=max(0, passed - 1) if known else None,
+        )
+    return values
 
 
 def distributions(values, prefix=""):
@@ -585,8 +658,9 @@ def distributions(values, prefix=""):
     }
 
 
-def paired_effect(records, before_arm, after_arm):
-    deltas, pairs = {key: [] for key in metrics({})}, []
+def paired_effect(records, before_arm, after_arm, experiment=EXPERIMENT):
+    deltas, pairs = {key: [] for key in metrics({}, experiment)}, []
+    planned = schedule(experiment)
     for repeat in range(10):
         pair = [
             next(
@@ -596,8 +670,19 @@ def paired_effect(records, before_arm, after_arm):
             for arm in (before_arm, after_arm)
         ]
         if any(r is None for r in pair):
-            continue
-        before, after = (metrics(r) for r in pair)
+            if experiment != GUIDANCE_EXPERIMENT:
+                continue
+            pair = [
+                record
+                if record is not None
+                else next(
+                    row
+                    for row in planned
+                    if row["arm"] == arm and row["repetition"] == repeat
+                )
+                for arm, record in zip((before_arm, after_arm), pair, strict=True)
+            ]
+        before, after = (metrics(r, experiment) for r in pair)
         values = {
             key: after[key] - before[key]
             if before[key] is not None and after[key] is not None
@@ -616,13 +701,18 @@ def paired_effect(records, before_arm, after_arm):
     }
 
 
-def summarize_records(records):
+def summarize_records(records, experiment=EXPERIMENT):
+    design = profile(experiment)
     cells = []
-    for arm in ARMS:
+    for arm in design["arms"]:
         group = [r for r in records if r["arm"] == arm]
         values = {
-            key: [metrics(r)[key] for r in group if metrics(r)[key] is not None]
-            for key in metrics({})
+            key: [
+                metrics(r, experiment)[key]
+                for r in group
+                if metrics(r, experiment)[key] is not None
+            ]
+            for key in metrics({}, experiment)
         }
         cells.append(
             {
@@ -640,22 +730,46 @@ def summarize_records(records):
                 **distributions(values),
             }
         )
-    return {
-        "experiment": EXPERIMENT,
-        "planned_attempts": 30,
+        if experiment == GUIDANCE_EXPERIMENT:
+            cells[-1].update(
+                {
+                    "known_" + key: len(values[key])
+                    for key in ("post_calls", "duplicate_final_checks")
+                }
+            )
+    result = {
+        "experiment": experiment,
+        "planned_attempts": len(schedule(experiment)),
         "attempts": len(records),
         "known_usage": sum(metrics(r)["tokens"] is not None for r in records),
         "known_native_list_price_usd": sum(metrics(r)["usd"] or 0 for r in records),
         "cells": cells,
         "paired_effects": [
-            paired_effect(records, before_arm, after_arm)
-            for before_arm, after_arm in (
-                ("text-manual", "ast-manual"),
-                ("ast-manual", "ast-integrated"),
-            )
+            paired_effect(records, before_arm, after_arm, experiment)
+            for before_arm, after_arm in design["pairs"]
         ],
         "interpretation": "One small public-source case repeated ten times. Text versus AST bundles resolver, writer and evidence; manual versus integrated bundles automatic triggering and reporting. Checker duration is observed separately, not an inferred total tool duration. Candidate verification and hidden oracle success are distinct.",
     }
+    if experiment == GUIDANCE_EXPERIMENT:
+        planned = schedule(experiment)
+        identities = {(r["id"], r["arm"], r["repetition"]) for r in planned}
+        require(
+            all((r["id"], r["arm"], r["repetition"]) in identities for r in records),
+            "Unexpected guidance row",
+        )
+        attempted = {r["id"] for r in records}
+        require(len(attempted) == len(records), "Duplicate guidance attempt")
+        result.update(
+            planned_rows=[
+                {**row, "attempted": row["id"] in attempted} for row in planned
+            ],
+            unattempted_ids=[
+                row["id"] for row in planned if row["id"] not in attempted
+            ],
+            post_calls_boundary=postcheck_pilot.POSTCALL_BOUNDARY,
+            interpretation="One public-source case, ten paired repetitions. Both arms use the same AST mutation and integrated checker; the treatment is the whole guidance output bundle, including syntactic role counts. Later tool calls are observable continuation, not automatically redundancy. Repeated successful final-byte receipts exclude checks on earlier bytes. Missing observations remain unknown; all twenty planned rows remain visible. Candidate verification and hidden oracle success are distinct.",
+        )
+    return result
 
 
 def summarize(args):
@@ -687,9 +801,16 @@ def summarize(args):
                 record["native"] == pilot.accounting.summarize(events, config["model"]),
                 "Native accounting drift",
             )
+        if config["experiment"] == GUIDANCE_EXPERIMENT:
+            observed = guidance_observation(run_dir, record)
+            require(
+                "postcheck" not in record or record["postcheck"] == observed,
+                "Post-call observation drift",
+            )
+            record["postcheck"] = observed
         records.append(record)
     summary = {
-        **summarize_records(records),
+        **summarize_records(records, config["experiment"]),
         "config_sha256": pilot.sha(output / pilot.CONFIG_FILE),
     }
     pilot.save(output / "real-runs.json", records)
@@ -704,6 +825,9 @@ def main():
         command = commands.add_parser(name)
         command.add_argument("--output", type=Path, required=True)
         if name == "prepare":
+            command.add_argument(
+                "--experiment", choices=tuple(PROFILES), default=EXPERIMENT
+            )
             for option in ("source-repo", "phpactor", "phpunit"):
                 command.add_argument("--" + option, type=Path, required=True)
         if name == "run":

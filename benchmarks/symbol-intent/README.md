@@ -54,6 +54,24 @@ paths. The default response remains unchanged.
 Within evidence groups, lint's PHP version is named `php_version` to distinguish
 the interpreter version from elapsed time; the engine report retains its own schema.
 
+`--guidance` implies `--evidence` and adds scoped `follow_up` actions and
+`resolved_sites`. Counts come from the validated AST parents: `declarations` are
+method declarations; `references` are method-name sites in instance, nullsafe or
+static call expressions, including first-class callable references. They are not
+executed calls or distinct callers. Counts are bound to the hashed plan. Their
+status is `applied` only when planned/applied totals agree and the exact-byte check
+passes; otherwise they remain `planned`. Older plans without these counts report
+`unknown`, never invented zeroes.
+
+The guidance identifies already executed configured commands and outstanding byte
+or validation checks. It does not declare the user's task complete. Passed commands
+retain their reported identity and scope; no generic behavior or test-count claim
+is inferred from exit status. Required additional checks and reference completeness
+still need assessment, and later relevant changes invalidate prior observations.
+All failures, skipped checks and other warnings remain visible. The separate
+[guidance experiment protocol](GUIDANCE_PROTOCOL.md) compares the existing compact
+response with this complete output bundle on the same integrated-test workload.
+
 `exact_edit_match.status: passed` means the tool read the workspace again **after**
 engine apply and configured verification, and every non-Git file matched the expected
 SHA-256 inventory for exactly the resolved, AST-validated identifier replacements.
