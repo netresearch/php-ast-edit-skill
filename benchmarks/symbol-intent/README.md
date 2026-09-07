@@ -11,11 +11,15 @@ existing-Phpactor control. All raw observations and accounting amendments are pu
 The separate [24-run post-rename study](results/2026-09-07-postcheck/REPORT.md)
 reports scope-dependent savings from compact evidence and remaining verification
 and reporting failures, including a worse ten-file result for evidence alone.
-The [public-source verification experiment](REAL_PROTOCOL.md) compares text edits,
+The [completed public-source verification experiment](results/2026-09-07-real-php/REPORT.md)
+compares text edits,
 symbol-intent edits with a separate test command, and symbol-intent edits with the
 same tests integrated into apply. It requires observed test execution on the final
 candidate bytes and uses a pinned excerpt with original tests from a public TYPO3
 extension; it does not establish full TYPO3 repository support.
+All thirty candidates passed the original tests on their final bytes; the report
+retains token categories, paired comparisons and remaining reporting mistakes.
+Its [prospective protocol](REAL_PROTOCOL.md) was frozen before execution.
 
 The AST alone does not resolve project symbols. This prototype composes the pinned
 [Phpactor 2026.07.22.0](https://github.com/phpactor/phpactor/releases/tag/2026.07.22.0)

@@ -8,6 +8,9 @@ invoke Claude Code only through an explicit `run --execute-models` command.
 The [experimental symbol-intent pilot](symbol-intent/README.md) compares a single
 cross-file rename request with batched text edits and an existing Phpactor CLI route.
 It is a separate experiment, with explicit resolver-completeness limits.
+The [public-source verification study](symbol-intent/results/2026-09-07-real-php/REPORT.md)
+adds thirty Haiku runs with original PHP tests and observed execution on every final
+candidate, comparing separate and integrated checking with a text-edit control.
 Read the [execution and trust boundaries](TRUST.md) before grading candidate code or
 importing evidence; they also record the narrowly scoped static-analysis decisions.
 
