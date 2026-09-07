@@ -2,6 +2,8 @@
 
 import argparse
 import json
+import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -23,7 +25,13 @@ class EvidenceTests(unittest.TestCase):
     def tearDown(self):
         self.temporary.cleanup()
 
-    def planned(self, include_caller=True, new_name="loadLonger", caller_starts=None):
+    def planned(
+        self,
+        include_caller=True,
+        new_name="loadLonger",
+        caller_starts=None,
+        guidance=False,
+    ):
         inventory = intent.snapshot(self.root)
         path = self.root / "Provider.php"
         anchor = intent.ast(
@@ -60,7 +68,7 @@ class EvidenceTests(unittest.TestCase):
                     ],
                 }
             )
-        document, expected = intent.translate(
+        document, expected, sites = intent.translate(
             {"documentChanges": changes},
             self.root,
             inventory,
@@ -81,12 +89,13 @@ class EvidenceTests(unittest.TestCase):
             },
             "document": document,
             "expected_inventory": expected,
+            "resolved_sites": sites,
             "resolver_result": {},
             "elapsed_ms": 0,
         }
         identifier = intent.digest(intent.encode(record))
         (self.state / (identifier + ".json")).write_bytes(intent.encode(record))
-        return argparse.Namespace(plan=identifier, evidence=True)
+        return argparse.Namespace(plan=identifier, evidence=True, guidance=guidance)
 
     def test_exact_result_groups_warnings_and_preserves_unicode_and_unrelated_names(
         self,
@@ -100,6 +109,8 @@ class EvidenceTests(unittest.TestCase):
         self.assertEqual("unknown", result["completeness"])
         self.assertEqual({"not_run": 2}, result["validation"]["checks"])
         self.assertIsNone(result["checksPassed"])
+        self.assertNotIn("follow_up", result)
+        self.assertNotIn("resolved_sites", result)
         self.assertEqual("loadLonger", result["request"]["to"])
         self.assertNotIn("file_issues", result)
         self.assertEqual(1, len(result["issue_groups"]))
@@ -259,13 +270,15 @@ class EvidenceTests(unittest.TestCase):
                 }
             )
         )
-        result, status = intent.apply_plan(self.planned(), self.state)
+        result, status = intent.apply_plan(self.planned(guidance=True), self.state)
         self.assertEqual(0, status)
         self.assertTrue(result["checksPassed"])
         self.assertEqual("not_established", result["exact_edit_match"]["status"])
         self.assertEqual(
             ["Provider.php"], result["exact_edit_match"]["mismatched_files"]
         )
+        self.assertEqual("planned", result["resolved_sites"]["status"])
+        self.assertIn("Inspect", result["follow_up"][0])
 
     def test_failed_verification_is_preserved_even_when_exact_bytes_match(self):
         (self.root / ".php-ast-edit.json").write_text(
@@ -273,12 +286,14 @@ class EvidenceTests(unittest.TestCase):
                 {"verify": [{"scope": "project", "command": ["php", "-r", "exit(1);"]}]}
             )
         )
-        result, status = intent.apply_plan(self.planned(), self.state)
+        result, status = intent.apply_plan(self.planned(guidance=True), self.state)
         self.assertEqual(1, status)
         self.assertFalse(result["ok"])
         self.assertFalse(result["checksPassed"])
         self.assertEqual("passed", result["exact_edit_match"]["status"])
         self.assertEqual("failed", result["issue_groups"][0]["validation"]["checks"])
+        self.assertTrue(any("Repair" in item for item in result["follow_up"]))
+        self.assertEqual("applied", result["resolved_sites"]["status"])
 
     def test_readback_storage_failure_preserves_retained_edits_and_failed_checks(self):
         (self.root / ".php-ast-edit.json").write_text(
@@ -314,6 +329,116 @@ class EvidenceTests(unittest.TestCase):
         self.assertIn("file_issues", result)
         self.assertIn("runtime", result["file_issues"][0]["validation"]["lint"])
         self.assertNotIn("exact_edit_match", result)
+
+    def test_guidance_implies_evidence_and_counts_resolved_declaration_and_references(
+        self,
+    ):
+        args = self.planned(guidance=True)
+        args.evidence = False
+        result, status = intent.apply_plan(args, self.state)
+        self.assertEqual(0, status)
+        self.assertEqual("passed", result["exact_edit_match"]["status"])
+        self.assertEqual(
+            {"declarations": 1, "references": 1, "status": "applied"},
+            result["resolved_sites"],
+        )
+        self.assertIn("No additional source readback", result["follow_up"][0])
+        self.assertTrue(any("No configured" in item for item in result["follow_up"]))
+        self.assertEqual("unknown", result["completeness"])
+        self.assertNotIn(intent.LIMIT_WARNING, result["warnings"])
+        self.assertTrue(
+            any("completeness unknown" in item for item in result["warnings"])
+        )
+        self.assertIn("NOT_CANONICAL", result["issue_groups"][0]["warnings"][0])
+
+    def guidance_result(self, **changes):
+        return {
+            "planned_edits": 3,
+            "edits_applied": 3,
+            "exact_edit_match": {"status": "passed"},
+            "validation": {"parser": {"passed": 3}, "lint": {"passed": 3}},
+            "verify": [{"id": "verify-1", "command": "check-tests", "ok": True}],
+            "checksPassed": True,
+            "warnings": [intent.LIMIT_WARNING, "READBACK_NOT_SAVED: storage error"],
+            **changes,
+        }
+
+    def test_cli_guidance_alone_enables_evidence(self):
+        args = self.planned()
+        process = subprocess.run(
+            [
+                sys.executable,
+                str(intent.HERE / "symbol_intent.py"),
+                "apply_plan",
+                "--state",
+                str(self.state),
+                "--plan",
+                args.plan,
+                "--guidance",
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        result = json.loads(process.stdout)
+        self.assertEqual(0, process.returncode, result)
+        self.assertEqual("passed", result["exact_edit_match"]["status"])
+        self.assertEqual("applied", result["resolved_sites"]["status"])
+        self.assertIn("follow_up", result)
+
+    def test_guidance_preserves_skips_failures_and_byte_uncertainty(self):
+        record = {"resolved_sites": {"declarations": 1, "references": 2}}
+        cases = (
+            ({}, "already passed", "applied"),
+            ({"verify": [{"ok": False}], "checksPassed": False}, "Repair", "applied"),
+            ({"verify": [], "checksPassed": None}, "No configured", "applied"),
+            ({"verify": [{"ok": None}]}, "not established", "applied"),
+            ({"exact_edit_match": {"status": "not_established"}}, "Inspect", "planned"),
+            ({"edits_applied": 2}, "edit-count", "planned"),
+            (
+                {"validation": {"parser": {"passed": 3}, "lint": {"skipped": 3}}},
+                "skipped",
+                "applied",
+            ),
+        )
+        for changes, expected, status in cases:
+            with self.subTest(changes=changes):
+                result = self.guidance_result(**changes)
+                intent.add_result_guidance(result, record)
+                self.assertTrue(any(expected in item for item in result["follow_up"]))
+                self.assertEqual(status, result["resolved_sites"]["status"])
+                self.assertIn("READBACK_NOT_SAVED: storage error", result["warnings"])
+                self.assertEqual(
+                    changes.get("checksPassed", True), result["checksPassed"]
+                )
+
+    def test_guidance_legacy_sites_are_unknown_and_optional_counts_are_validated(self):
+        args = self.planned(guidance=True)
+        record = intent.load_plan(args, self.state)
+        record.pop("resolved_sites")
+        identifier = intent.digest(intent.encode(record))
+        (self.state / (identifier + ".json")).write_bytes(intent.encode(record))
+        args.plan = identifier
+        result, _ = intent.apply_plan(args, self.state)
+        self.assertEqual(
+            {"declarations": None, "references": None, "status": "unknown"},
+            result["resolved_sites"],
+        )
+        for sites in (
+            {"declarations": True, "references": 1},
+            {"declarations": 1, "references": -1},
+            {"declarations": 1, "references": 2},
+            {"declarations": 2},
+        ):
+            record["resolved_sites"] = sites
+            raw = intent.encode(record)
+            args.plan = intent.digest(raw)
+            (self.state / (args.plan + ".json")).write_bytes(raw)
+            with (
+                self.subTest(sites=sites),
+                self.assertRaisesRegex(ValueError, "site counts"),
+            ):
+                intent.load_plan(args, self.state)
 
 
 if __name__ == "__main__":

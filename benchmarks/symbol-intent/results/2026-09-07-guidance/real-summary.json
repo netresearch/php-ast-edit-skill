@@ -1,0 +1,684 @@
+{
+  "experiment": "real-php-guidance-v1",
+  "planned_attempts": 20,
+  "attempts": 20,
+  "known_usage": 20,
+  "known_native_list_price_usd": 0.6936707999999999,
+  "cells": [
+    {
+      "arm": "compact",
+      "attempts": 10,
+      "known_usage": 10,
+      "successes": 10,
+      "code_correct": 10,
+      "candidate_verified_final": 10,
+      "tokens": [
+        12203,
+        18498,
+        22084,
+        21914,
+        12278,
+        59647,
+        31380,
+        12080,
+        69933,
+        109954
+      ],
+      "median_tokens": 21999.0,
+      "calls": [
+        1,
+        2,
+        4,
+        4,
+        1,
+        8,
+        6,
+        1,
+        9,
+        10
+      ],
+      "median_calls": 4.0,
+      "rounds": [
+        2,
+        3,
+        3,
+        3,
+        2,
+        7,
+        4,
+        2,
+        7,
+        11
+      ],
+      "median_rounds": 3.0,
+      "usd": [
+        0.018368799999999998,
+        0.0210311,
+        0.0294115,
+        0.0287081,
+        0.0185679,
+        0.0402119,
+        0.0343693,
+        0.0177808,
+        0.0456426,
+        0.050725099999999995
+      ],
+      "median_usd": 0.0290598,
+      "wall_ms": [
+        16700.710627948865,
+        19203.07568903081,
+        21708.285368978977,
+        21015.26161818765,
+        16498.212354956195,
+        30576.24626508914,
+        25917.186725884676,
+        15496.738258982077,
+        29876.286999788135,
+        35839.24096194096
+      ],
+      "median_wall_ms": 21361.773493583314,
+      "behavior_checks": [
+        1,
+        2,
+        1,
+        1,
+        1,
+        2,
+        1,
+        1,
+        2,
+        2
+      ],
+      "median_behavior_checks": 1.0,
+      "checker_ms": [
+        92.526,
+        186.24599999999998,
+        87.911,
+        89.347,
+        89.993,
+        189.435,
+        92.861,
+        94.913,
+        192.89,
+        204.655
+      ],
+      "median_checker_ms": 93.887,
+      "post_calls": [
+        0,
+        1,
+        3,
+        3,
+        0,
+        4,
+        3,
+        0,
+        4,
+        4
+      ],
+      "median_post_calls": 3.0,
+      "duplicate_final_checks": [
+        0,
+        1,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        1,
+        1
+      ],
+      "median_duplicate_final_checks": 0.0,
+      "known_post_calls": 10,
+      "known_duplicate_final_checks": 10
+    },
+    {
+      "arm": "guidance",
+      "attempts": 10,
+      "known_usage": 10,
+      "successes": 10,
+      "code_correct": 10,
+      "candidate_verified_final": 10,
+      "tokens": [
+        12324,
+        30330,
+        64379,
+        12364,
+        12207,
+        134120,
+        74967,
+        193042,
+        30801,
+        33607
+      ],
+      "median_tokens": 32204.0,
+      "calls": [
+        1,
+        5,
+        10,
+        1,
+        1,
+        12,
+        10,
+        12,
+        5,
+        6
+      ],
+      "median_calls": 5.5,
+      "rounds": [
+        2,
+        4,
+        7,
+        2,
+        2,
+        13,
+        9,
+        13,
+        4,
+        4
+      ],
+      "median_rounds": 4.0,
+      "usd": [
+        0.018676,
+        0.0328305,
+        0.046961899999999994,
+        0.0188438,
+        0.018243699999999998,
+        0.0589276,
+        0.047547400000000004,
+        0.07860179999999999,
+        0.0350775,
+        0.0331435
+      ],
+      "median_usd": 0.0341105,
+      "wall_ms": [
+        17048.136808909476,
+        23563.78440000117,
+        35241.39959109016,
+        17402.066736947745,
+        16849.423228995875,
+        43055.17712398432,
+        34689.74390998483,
+        42850.77889589593,
+        28274.64522095397,
+        25469.01322202757
+      ],
+      "median_wall_ms": 26871.82922149077,
+      "behavior_checks": [
+        1,
+        1,
+        2,
+        1,
+        1,
+        2,
+        1,
+        2,
+        1,
+        1
+      ],
+      "median_behavior_checks": 1.0,
+      "checker_ms": [
+        92.23,
+        90.382,
+        196.00900000000001,
+        91.189,
+        100.08,
+        184.69299999999998,
+        92.392,
+        179.43,
+        90.452,
+        92.004
+      ],
+      "median_checker_ms": 92.311,
+      "post_calls": [
+        0,
+        3,
+        4,
+        0,
+        0,
+        4,
+        3,
+        4,
+        3,
+        4
+      ],
+      "median_post_calls": 3.0,
+      "duplicate_final_checks": [
+        0,
+        0,
+        1,
+        0,
+        0,
+        1,
+        0,
+        1,
+        0,
+        0
+      ],
+      "median_duplicate_final_checks": 0.0,
+      "known_post_calls": 10,
+      "known_duplicate_final_checks": 10
+    }
+  ],
+  "paired_effects": [
+    {
+      "before": "compact",
+      "after": "guidance",
+      "pairs": [
+        {
+          "ids": [
+            "run001",
+            "run002"
+          ],
+          "deltas": {
+            "tokens": 121,
+            "calls": 0,
+            "rounds": 0,
+            "usd": 0.000307200000000004,
+            "wall_ms": 347.4261809606105,
+            "behavior_checks": 0,
+            "checker_ms": -0.29599999999999227,
+            "post_calls": 0,
+            "duplicate_final_checks": 0
+          }
+        },
+        {
+          "ids": [
+            "run020",
+            "run019"
+          ],
+          "deltas": {
+            "tokens": -76347,
+            "calls": -4,
+            "rounds": -7,
+            "usd": -0.017581599999999996,
+            "wall_ms": -10370.227739913389,
+            "behavior_checks": -1,
+            "checker_ms": -112.651,
+            "post_calls": 0,
+            "duplicate_final_checks": -1
+          }
+        },
+        {
+          "ids": [
+            "run009",
+            "run010"
+          ],
+          "deltas": {
+            "tokens": -71,
+            "calls": 0,
+            "rounds": 0,
+            "usd": -0.0003242000000000002,
+            "wall_ms": 351.21087403967977,
+            "behavior_checks": 0,
+            "checker_ms": 10.087000000000003,
+            "post_calls": 0,
+            "duplicate_final_checks": 0
+          }
+        },
+        {
+          "ids": [
+            "run005",
+            "run006"
+          ],
+          "deltas": {
+            "tokens": 42295,
+            "calls": 6,
+            "rounds": 4,
+            "usd": 0.017550399999999994,
+            "wall_ms": 13533.11422211118,
+            "behavior_checks": 1,
+            "checker_ms": 108.09800000000001,
+            "post_calls": 1,
+            "duplicate_final_checks": 1
+          }
+        },
+        {
+          "ids": [
+            "run017",
+            "run018"
+          ],
+          "deltas": {
+            "tokens": -39132,
+            "calls": -4,
+            "rounds": -3,
+            "usd": -0.010565100000000001,
+            "wall_ms": -1601.6417788341641,
+            "behavior_checks": -1,
+            "checker_ms": -102.43799999999999,
+            "post_calls": -1,
+            "duplicate_final_checks": -1
+          }
+        },
+        {
+          "ids": [
+            "run012",
+            "run011"
+          ],
+          "deltas": {
+            "tokens": 74473,
+            "calls": 4,
+            "rounds": 6,
+            "usd": 0.018715699999999995,
+            "wall_ms": 12478.930858895183,
+            "behavior_checks": 0,
+            "checker_ms": -4.742000000000019,
+            "post_calls": 0,
+            "duplicate_final_checks": 0
+          }
+        },
+        {
+          "ids": [
+            "run004",
+            "run003"
+          ],
+          "deltas": {
+            "tokens": 11832,
+            "calls": 3,
+            "rounds": 1,
+            "usd": 0.011799399999999998,
+            "wall_ms": 4360.708710970357,
+            "behavior_checks": -1,
+            "checker_ms": -95.86399999999998,
+            "post_calls": 2,
+            "duplicate_final_checks": -1
+          }
+        },
+        {
+          "ids": [
+            "run013",
+            "run014"
+          ],
+          "deltas": {
+            "tokens": 43587,
+            "calls": 4,
+            "rounds": 5,
+            "usd": 0.013178100000000005,
+            "wall_ms": 8772.557184100151,
+            "behavior_checks": 0,
+            "checker_ms": -0.4690000000000083,
+            "post_calls": 0,
+            "duplicate_final_checks": 0
+          }
+        },
+        {
+          "ids": [
+            "run008",
+            "run007"
+          ],
+          "deltas": {
+            "tokens": -9550,
+            "calls": -3,
+            "rounds": -1,
+            "usd": -0.0098643,
+            "wall_ms": -3613.194881239906,
+            "behavior_checks": 0,
+            "checker_ms": 1.8419999999999987,
+            "post_calls": -3,
+            "duplicate_final_checks": 0
+          }
+        },
+        {
+          "ids": [
+            "run016",
+            "run015"
+          ],
+          "deltas": {
+            "tokens": 180962,
+            "calls": 11,
+            "rounds": 11,
+            "usd": 0.060820999999999986,
+            "wall_ms": 27354.04063691385,
+            "behavior_checks": 1,
+            "checker_ms": 84.51700000000001,
+            "post_calls": 4,
+            "duplicate_final_checks": 1
+          }
+        }
+      ],
+      "delta_tokens": [
+        121,
+        -76347,
+        -71,
+        42295,
+        -39132,
+        74473,
+        11832,
+        43587,
+        -9550,
+        180962
+      ],
+      "median_delta_tokens": 5976.5,
+      "delta_calls": [
+        0,
+        -4,
+        0,
+        6,
+        -4,
+        4,
+        3,
+        4,
+        -3,
+        11
+      ],
+      "median_delta_calls": 1.5,
+      "delta_rounds": [
+        0,
+        -7,
+        0,
+        4,
+        -3,
+        6,
+        1,
+        5,
+        -1,
+        11
+      ],
+      "median_delta_rounds": 0.5,
+      "delta_usd": [
+        0.000307200000000004,
+        -0.017581599999999996,
+        -0.0003242000000000002,
+        0.017550399999999994,
+        -0.010565100000000001,
+        0.018715699999999995,
+        0.011799399999999998,
+        0.013178100000000005,
+        -0.0098643,
+        0.060820999999999986
+      ],
+      "median_delta_usd": 0.006053300000000001,
+      "delta_wall_ms": [
+        347.4261809606105,
+        -10370.227739913389,
+        351.21087403967977,
+        13533.11422211118,
+        -1601.6417788341641,
+        12478.930858895183,
+        4360.708710970357,
+        8772.557184100151,
+        -3613.194881239906,
+        27354.04063691385
+      ],
+      "median_delta_wall_ms": 2355.9597925050184,
+      "delta_behavior_checks": [
+        0,
+        -1,
+        0,
+        1,
+        -1,
+        0,
+        -1,
+        0,
+        0,
+        1
+      ],
+      "median_delta_behavior_checks": 0.0,
+      "delta_checker_ms": [
+        -0.29599999999999227,
+        -112.651,
+        10.087000000000003,
+        108.09800000000001,
+        -102.43799999999999,
+        -4.742000000000019,
+        -95.86399999999998,
+        -0.4690000000000083,
+        1.8419999999999987,
+        84.51700000000001
+      ],
+      "median_delta_checker_ms": -0.3825000000000003,
+      "delta_post_calls": [
+        0,
+        0,
+        0,
+        1,
+        -1,
+        0,
+        2,
+        0,
+        -3,
+        4
+      ],
+      "median_delta_post_calls": 0.0,
+      "delta_duplicate_final_checks": [
+        0,
+        -1,
+        0,
+        1,
+        -1,
+        0,
+        -1,
+        0,
+        0,
+        1
+      ],
+      "median_delta_duplicate_final_checks": 0.0
+    }
+  ],
+  "interpretation": "One public-source case, ten paired repetitions. Both arms use the same AST mutation and integrated checker; the treatment is the whole guidance output bundle, including syntactic role counts. Later tool calls are observable continuation, not automatically redundancy. Repeated successful final-byte receipts exclude checks on earlier bytes. Missing observations remain unknown; all twenty planned rows remain visible. Candidate verification and hidden oracle success are distinct.",
+  "planned_rows": [
+    {
+      "id": "run001",
+      "repetition": 0,
+      "arm": "compact",
+      "attempted": true
+    },
+    {
+      "id": "run002",
+      "repetition": 0,
+      "arm": "guidance",
+      "attempted": true
+    },
+    {
+      "id": "run003",
+      "repetition": 6,
+      "arm": "guidance",
+      "attempted": true
+    },
+    {
+      "id": "run004",
+      "repetition": 6,
+      "arm": "compact",
+      "attempted": true
+    },
+    {
+      "id": "run005",
+      "repetition": 3,
+      "arm": "compact",
+      "attempted": true
+    },
+    {
+      "id": "run006",
+      "repetition": 3,
+      "arm": "guidance",
+      "attempted": true
+    },
+    {
+      "id": "run007",
+      "repetition": 8,
+      "arm": "guidance",
+      "attempted": true
+    },
+    {
+      "id": "run008",
+      "repetition": 8,
+      "arm": "compact",
+      "attempted": true
+    },
+    {
+      "id": "run009",
+      "repetition": 2,
+      "arm": "compact",
+      "attempted": true
+    },
+    {
+      "id": "run010",
+      "repetition": 2,
+      "arm": "guidance",
+      "attempted": true
+    },
+    {
+      "id": "run011",
+      "repetition": 5,
+      "arm": "guidance",
+      "attempted": true
+    },
+    {
+      "id": "run012",
+      "repetition": 5,
+      "arm": "compact",
+      "attempted": true
+    },
+    {
+      "id": "run013",
+      "repetition": 7,
+      "arm": "compact",
+      "attempted": true
+    },
+    {
+      "id": "run014",
+      "repetition": 7,
+      "arm": "guidance",
+      "attempted": true
+    },
+    {
+      "id": "run015",
+      "repetition": 9,
+      "arm": "guidance",
+      "attempted": true
+    },
+    {
+      "id": "run016",
+      "repetition": 9,
+      "arm": "compact",
+      "attempted": true
+    },
+    {
+      "id": "run017",
+      "repetition": 4,
+      "arm": "compact",
+      "attempted": true
+    },
+    {
+      "id": "run018",
+      "repetition": 4,
+      "arm": "guidance",
+      "attempted": true
+    },
+    {
+      "id": "run019",
+      "repetition": 1,
+      "arm": "guidance",
+      "attempted": true
+    },
+    {
+      "id": "run020",
+      "repetition": 1,
+      "arm": "compact",
+      "attempted": true
+    }
+  ],
+  "unattempted_ids": [],
+  "post_calls_boundary": "First parseable successful rename-tool result; work batched inside a shell call is not separated",
+  "config_sha256": "9f0d71403616cc0127294a72f26055bd029e2f6103d49253cfeda3d913e44116"
+}

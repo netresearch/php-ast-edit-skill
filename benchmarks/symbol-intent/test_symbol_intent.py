@@ -163,9 +163,10 @@ class PureTests(unittest.TestCase):
                     }
                 ]
             }
-            translated, expected = intent.translate(
+            translated, expected, sites = intent.translate(
                 valid, root, inventory, path, anchor, "load"
             )
+            self.assertEqual({"declarations": 1, "references": 0}, sites)
             self.assertEqual(inventory["Caller0.php"], expected["Caller0.php"])
             self.assertEqual(
                 "set_name", translated["files"][0]["edits"][0]["operation"]
@@ -188,6 +189,45 @@ class PureTests(unittest.TestCase):
             ):
                 with self.subTest(invalid=invalid), self.assertRaises(IntentError):
                     intent.translate(invalid, root, inventory, path, anchor, "load")
+
+    def test_ast_role_counts_include_related_declarations_and_callable_references(self):
+        source = (
+            b"<?php\n"
+            b"class Provider { public static function fetch() {} }\n"
+            b"class Child extends Provider { public static function fetch() {} }\n"
+            b"function calls(Provider $p) { $p->fetch(); $p?->fetch(); Provider::fetch(); "
+            b"$a = $p->fetch(...); $b = Provider::fetch(...); }\n"
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            path = root / "Calls.php"
+            path.write_bytes(source)
+            ranges = []
+            offset = 0
+            for _ in range(source.count(b"fetch")):
+                start = source.index(b"fetch", offset)
+                offset = start + len(b"fetch")
+                ranges.append({"start": start, "end": offset})
+            report = intent.ast(
+                {
+                    "mode": "translate",
+                    "to": "load",
+                    "old_name": "fetch",
+                    "files": [
+                        {
+                            "path": str(path),
+                            "sha256": intent.digest(source),
+                            "ranges": ranges,
+                        }
+                    ],
+                },
+                root,
+            )
+            self.assertEqual(
+                {"declarations": 2, "references": 5},
+                report["files"][0]["resolved_sites"],
+            )
+            self.assertEqual(7, len(report["files"][0]["edits"]))
 
 
 @unittest.skipUnless(

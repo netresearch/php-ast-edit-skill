@@ -256,7 +256,10 @@ def translate(workspace_edit, root, inventory, anchor_path, anchor, new_name):
         },
         root,
     )
-    return document, expected_inventory
+    sites = Counter({"declarations": 0, "references": 0})
+    for file in document["files"]:
+        sites.update(file.pop("resolved_sites"))
+    return document, expected_inventory, dict(sites)
 
 
 def plan(args, state):
@@ -302,7 +305,7 @@ def plan(args, state):
         args.to,
         sum(name.endswith(".php") for name in inventory),
     )
-    document, expected_inventory = translate(
+    document, expected_inventory, sites = translate(
         resolved["workspace_edit"], root, inventory, file, anchor, args.to
     )
     require(snapshot(root) == inventory, "Workspace changed during planning")
@@ -315,6 +318,7 @@ def plan(args, state):
         "request": {"file": relative, "select": args.select, "to": args.to},
         "document": document,
         "expected_inventory": expected_inventory,
+        "resolved_sites": sites,
         "resolver_result": resolved,
         "elapsed_ms": (time.monotonic() - started) * 1000,
     }
@@ -384,6 +388,17 @@ def load_plan(args, state):
             ),
             "Invalid expected byte inventory",
         )
+    sites = record.get("resolved_sites")
+    if sites is not None:
+        require(
+            isinstance(sites, dict)
+            and set(sites) == {"declarations", "references"}
+            and all(type(count) is int and count >= 0 for count in sites.values())
+            and sites["declarations"] >= 1
+            and sum(sites.values())
+            == sum(len(file["edits"]) for file in record["document"]["files"]),
+            "Invalid resolved site counts",
+        )
     return record
 
 
@@ -452,8 +467,10 @@ def apply_plan(args, state):
         "warnings": [LIMIT_WARNING],
         "full_report": str(result_path),
     }
-    if getattr(args, "evidence", False):
+    if getattr(args, "evidence", False) or getattr(args, "guidance", False):
         add_result_evidence(result, record, root, result_path)
+    if getattr(args, "guidance", False):
+        add_result_guidance(result, record)
     return result, status
 
 
@@ -509,6 +526,53 @@ def add_result_evidence(result, record, root, result_path):
         result["warnings"].append("READBACK_NOT_SAVED: " + str(error))
 
 
+def verification_follow_up(result):
+    checks = result["verify"]
+    if result["checksPassed"] is False or any(
+        check.get("ok") is False for check in checks
+    ):
+        return "Repair the failed commands in verify; edits may be retained. Re-run affected checks after repair."
+    if not checks:
+        return "No configured verification commands ran. Run the relevant behavior checks required by the task on the final files."
+    if result["checksPassed"] is True and all(
+        check.get("ok") is True for check in checks
+    ):
+        return "Named commands in verify already passed. Repeat after relevant input changes; run any other required checks."
+    return "Configured verification success is not established. Inspect verify and run the relevant outstanding checks."
+
+
+def add_result_guidance(result, record):
+    """Scope next actions to observations; never declare the user's task complete."""
+    exact = result["exact_edit_match"]["status"] == "passed"
+    counts_match = result["planned_edits"] == result["edits_applied"]
+    sites = record.get("resolved_sites")
+    site_status = "applied" if exact and counts_match else "planned"
+    result["resolved_sites"] = (
+        {**sites, "status": site_status}
+        if sites is not None
+        else {"declarations": None, "references": None, "status": "unknown"}
+    )
+    if not exact:
+        review = "Inspect the mismatched files or reason in exact_edit_match; byte preservation is not established. Recheck affected final files."
+    elif not counts_match:
+        review = "Inspect the planned/applied edit-count discrepancy before relying on the reported site counts."
+    else:
+        review = "No additional source readback is needed solely to reconfirm the exact, reported name replacements."
+    follow_up = [review, verification_follow_up(result)]
+    validation = result["validation"]
+    if any(set(validation.get(kind, {})) != {"passed"} for kind in ("parser", "lint")):
+        follow_up.append(
+            "Address failed, skipped or unperformed parser/lint validation shown in validation and issue_groups."
+        )
+    result["follow_up"] = follow_up
+    result["warnings"] = [
+        "Experimental PHP-only rename; reference completeness unknown. Report resolved sites and named checks, not complete coverage."
+        if warning == LIMIT_WARNING
+        else warning
+        for warning in result["warnings"]
+    ]
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="action", required=True)
@@ -525,6 +589,7 @@ def main():
             command.add_argument("--plan", required=True)
         if name in ("rename_method", "apply_plan"):
             command.add_argument("--evidence", action="store_true")
+            command.add_argument("--guidance", action="store_true")
     args = parser.parse_args()
     try:
         require(

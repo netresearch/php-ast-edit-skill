@@ -5,40 +5,42 @@ description: "Use when creating, changing, deleting, or moving PHP syntax with t
 
 # PHP Structured Edit
 
-Use `php-ast-edit` for PHP writes while this skill is active. PHP snippets are construction
-input: the tool parses them, changes the AST, and prints the result. Do not fall back to
-text mutation after a rejected transaction; inspect the error and correct its cause.
+Use `php-ast-edit` for PHP writes while this skill is active. The tool parses snippets,
+changes the AST, and prints the result. After rejection, correct the cause; do not
+fall back to text mutation.
 
 ## First use
 
 Resolve the executable once: repository `bin/php-ast-edit`, project `vendor/bin/php-ast-edit`,
-installed `php-ast-edit`, or this skill's `scripts/php-ast-edit` wrapper. Run `help` if needed.
-A missing parser requires installing the engine, not repeated edit attempts.
+installed command, or this skill's `scripts/php-ast-edit` wrapper. Use `help` if needed;
+install missing engine dependencies before retrying.
 
-Existing files use format-preserving printing by default. No normalization is needed to
-start. `doctor` explains optional canonical configuration; it is not a prerequisite for
-every edit. Read the formatting reference only when formatting setup is part of the task.
+Auto mode uses format-preserving printing unless applicable configuration enables
+canonical printing. Explicit printer choices override auto mode. Normalization is
+optional; `doctor` diagnoses canonical setup. Read the formatting reference when
+configuring formatting.
 
 ## Workflow
 
 1. Find the relevant code with normal search or an LSP.
-2. Prefer a named target: `{"select":"method:Checkout::submit"}`. Other selectors:
+2. Prefer named targets: `{"select":"method:Checkout::submit"}`. Other selectors:
    `class:`, `interface:`, `trait:`, `enum:`, `function:`, `property:Foo::$items`,
-   `const:Foo::LIMIT`. Ambiguous names are refused. Use `inspect` only where a name does
-   not identify the target, such as an expression inside a body; keep its `ref` and `sha256`.
-3. Put related edits, including multiple files, in one `apply` transaction. Include the
-   file's `sha256` when relying on a snapshot you read. Refs and coordinates are tied to
-   that snapshot. After `STALE_SOURCE`, reread and reassess; never drop the guard to force it.
-   Set top-level `"report": "compact"` to receive each verification result once.
-4. Supply compact valid snippets. In namespaced PHP, import external types or qualify them,
-   for example `\\DateTimeImmutable` inside JSON. Do not spend tokens reproducing indentation.
-5. Read `effects`, `diff`, **all** `warnings`, and `validation`. `parsed` means parser
-   success; legacy `valid` has the same limited meaning. In compact reports, follow each
-   file's `checkIds` to top-level `verify`. Check whether lint and the project's verification
-   commands ran. A failed verification needs repair even when a file was written.
-6. Run only relevant checks that remain unperformed. Review the intended diff; an edit is
-   expected to change it. Do not use a clean Git diff as a post-edit success condition.
-   Avoid repository-wide `format` for a local edit.
+   `const:Foo::LIMIT`. Ambiguous names are refused. Use `inspect` for unnamed targets;
+   retain its `ref` and `sha256`.
+3. Batch related edits across files in one `apply`. Include `sha256` when relying on a
+   read snapshot. After `STALE_SOURCE`, reread and reassess; never drop the guard.
+   Use `"report":"compact"` to receive each verification result once.
+4. Supply compact valid snippets. Import or qualify external types in namespaced PHP,
+   e.g. `\\DateTimeImmutable` in JSON. The printer handles indentation.
+5. Review returned `effects`, `diff`, all `warnings`, and `validation`. `parsed` and legacy
+   `valid` mean parser success. Follow `checkIds` to top-level `verify` in compact reports.
+   Failed checks need repair; skipped or unrun checks remain outstanding where required.
+6. A passed configured command satisfies that same check on unchanged inputs. Repeat it
+   after relevant changes, or run additional checks required by the task. Use supplied
+   exact-byte evidence for its stated scope instead of rereading solely to reconfirm it.
+   Neither passing tests nor byte preservation proves reference completeness. Report
+   changed symbols and checks actually run; distinguish declarations from call sites.
+   An intended edit leaves a Git diff. Avoid repository-wide `format` for a local edit.
 
 Minimal transaction:
 
@@ -50,29 +52,24 @@ Minimal transaction:
 php-ast-edit apply --input edits.json
 ```
 
-Omitting `report`, or setting it to `"full"`, keeps the legacy per-file `verify` layout.
-Report mode changes presentation only; `checksPassed: null` means no checks ran.
+`"report":"full"` (the default) retains per-file verification. Report mode changes
+presentation only; `checksPassed: null` means no checks ran.
 
 ## Choose the narrow operation
 
-- Empty member/body/parameter list: `insert_into` with `property` and `position`, or a
-  shorthand such as `add_member`. No sibling anchor is needed.
+- Empty list: `insert_into` with `property` and `position`; class members: `add_member`.
 - Replace any node: `replace_node`; change a slot: `replace_child`.
-- New file: `mode: create`, full PHP including `<?php`, and default `expectAbsent` guard.
+- New file: `mode: create`, full PHP including `<?php`, default `expectAbsent` guard.
   Delete: `mode: delete` with the snapshot hash.
-- Local variable rename: `rename_variable` on the enclosing method/function/closure with
-  `from` and `to`. Unsafe binding collisions are rejected. Dynamic variable behavior is
-  not fully resolvable statically.
-- Method rename: `rename_method` with `to`. Inspect unresolved receivers and inheritance
-  limitations; this does not update every caller in a project. A declaration-only change
-  may use `set_name` when that is the intended scope.
+- Local rename: `rename_variable` on the enclosing function-like scope with `from`/`to`.
+  Binding collisions are rejected; dynamic variables remain limited.
+- Method rename: `rename_method` with `to`; assess unresolved receivers and inheritance
+  limits. Cross-file resolution requires project-aware tools. Use `set_name` for an
+  intentionally declaration-only change.
 - SQL/HTML/JSON inside a PHP literal: `set_string` on its `Scalar_String` node.
 
-Use `php-ast-edit contexts --operation rename_variable` for compact argument help before
-guessing an unfamiliar operation.
-
-Do not equate an AST, parser pass, or host lint pass with correct application behavior.
-Use project-aware refactoring tools when the task requires cross-file symbol resolution.
+Use `contexts --operation <name>` before guessing unfamiliar arguments.
+Parser and host lint passes do not prove application behavior.
 
 ## References, when needed
 

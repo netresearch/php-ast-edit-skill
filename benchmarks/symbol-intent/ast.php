@@ -113,6 +113,7 @@ function intentTranslateFile(array $file, string $root, string $newName, string 
     [$source, $roots] = intentSource($file, $root);
     $locator = new NodeLocator();
     $edits = [];
+    $sites = ['declarations' => 0, 'references' => 0];
     intentRequire(
         is_array($file['ranges'] ?? null) && $file['ranges'] !== [],
         'Missing edit ranges',
@@ -127,6 +128,7 @@ function intentTranslateFile(array $file, string $root, string $newName, string 
         $actual = substr($source, $range['start'], $range['end'] - $range['start']);
         intentRequire(strcasecmp($actual, $oldName) === 0, 'Identifier differs from renamed method');
         intentCollision($locator, $roots, $location, $newName);
+        $sites[$location->parent instanceof Stmt\ClassMethod ? 'declarations' : 'references']++;
         $edits[] = [
             'operation' => 'set_name',
             'target' => ['ref' => $location->path, 'kind' => 'Identifier'],
@@ -135,7 +137,12 @@ function intentTranslateFile(array $file, string $root, string $newName, string 
         ];
     }
 
-    return ['path' => $file['path'], 'sha256' => $file['sha256'], 'edits' => $edits];
+    return [
+        'path' => $file['path'],
+        'sha256' => $file['sha256'],
+        'edits' => $edits,
+        'resolved_sites' => $sites,
+    ];
 }
 
 try {

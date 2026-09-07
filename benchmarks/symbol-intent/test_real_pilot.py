@@ -22,6 +22,9 @@ class RealPilotTests(unittest.TestCase):
         rows = study.schedule()
         self.assertEqual(rows, study.schedule())
         self.assertEqual(30, len(rows))
+        self.assertEqual(
+            [7, 8, 5, 3, 0, 4, 6, 2, 9, 1], [r["repetition"] for r in rows[::3]]
+        )
         self.assertEqual(30, len({r["id"] for r in rows}))
         self.assertEqual(
             Counter({i: 3 for i in range(10)}), Counter(r["repetition"] for r in rows)
@@ -30,6 +33,43 @@ class RealPilotTests(unittest.TestCase):
             self.assertEqual(
                 set(study.ARMS), {r["arm"] for r in rows if r["repetition"] == repeat}
             )
+
+    def test_guidance_schedule_has_twenty_balanced_prospective_rows(self):
+        rows = study.schedule(study.GUIDANCE_EXPERIMENT)
+        self.assertEqual(rows, study.schedule(study.GUIDANCE_EXPERIMENT))
+        self.assertEqual(20, len(rows))
+        self.assertEqual(20, len({r["id"] for r in rows}))
+        self.assertEqual(
+            Counter(compact=10, guidance=10), Counter(r["arm"] for r in rows)
+        )
+        self.assertEqual(
+            Counter(compact=5, guidance=5), Counter(r["arm"] for r in rows[::2])
+        )
+        for index in range(0, 20, 2):
+            self.assertEqual(rows[index]["repetition"], rows[index + 1]["repetition"])
+            self.assertEqual(
+                {"compact", "guidance"}, {r["arm"] for r in rows[index : index + 2]}
+            )
+        with self.assertRaisesRegex(IntentError, "experiment"):
+            study.schedule("unknown")
+
+    def test_profile_loading_rejects_unknown_or_incomplete_schedule(self):
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory)
+            for experiment in (study.EXPERIMENT, study.GUIDANCE_EXPERIMENT):
+                config = {
+                    "experiment": experiment,
+                    "schedule": study.schedule(experiment),
+                }
+                pilot.save(output / pilot.CONFIG_FILE, config)
+                self.assertEqual(config, study.load_config(output))
+                config["schedule"].pop()
+                pilot.save(output / pilot.CONFIG_FILE, config)
+                with self.assertRaisesRegex(IntentError, "schedule"):
+                    study.load_config(output)
+            pilot.save(output / pilot.CONFIG_FILE, {"experiment": "unknown"})
+            with self.assertRaisesRegex(IntentError, "experiment"):
+                study.load_config(output)
 
     def test_all_prompts_require_same_final_byte_checks_without_oracle_answers(self):
         task = {
@@ -132,6 +172,12 @@ class RealPilotTests(unittest.TestCase):
             )
 
     def test_freeze_preserves_fixture_config_and_refuses_input_or_phar_drift(self):
+        self.assert_freeze()
+
+    def test_guidance_freeze_changes_only_wrapper_flag_between_integrated_arms(self):
+        self.assert_freeze(study.GUIDANCE_EXPERIMENT)
+
+    def assert_freeze(self, experiment=None):
         with tempfile.TemporaryDirectory() as directory:
             base = Path(directory)
             repo = base / "repo"
@@ -195,24 +241,57 @@ class RealPilotTests(unittest.TestCase):
                         source_repo=repo,
                         phpactor=phpactor,
                         phpunit=phpunit,
+                        **({"experiment": experiment} if experiment else {}),
                     )
                 )
                 capture.assert_not_called()
                 config = json.loads((output / "config.json").read_text())
-                self.assertEqual(30, len(config["schedule"]))
-                self.assertEqual(8.0, config["campaign_usd"])
+                guidance = experiment == study.GUIDANCE_EXPERIMENT
+                self.assertEqual(20 if guidance else 30, len(config["schedule"]))
+                self.assertEqual(5.0 if guidance else 8.0, config["campaign_usd"])
                 self.assertEqual(0.5, config["max_run_usd"])
                 self.assertEqual(120, config["timeout_seconds"])
+                self.assertEqual(config, study.load_config(output))
+                normalized_inputs = []
                 for row in config["schedule"]:
                     study.validate(output, config, row, check_cli=False)
                     work = output / row["id"] / "work"
                     settings = json.loads((work / study.PROJECT_CONFIG).read_text())
                     self.assertEqual(
-                        row["arm"] == "ast-integrated", bool(settings["verify"])
+                        guidance or row["arm"] == "ast-integrated",
+                        bool(settings["verify"]),
                     )
                     self.assertEqual(
                         real_fixture.snapshot(work),
                         json.loads((work.parent / "initial.json").read_text()),
+                    )
+                    if guidance:
+                        run_dir = work.parent
+                        rename = (run_dir / "rename-tool").read_text()
+                        self.assertIn("'--evidence'", rename)
+                        self.assertEqual(
+                            row["arm"] == "guidance", "'--guidance'" in rename
+                        )
+                        normalized_inputs.append(
+                            [
+                                (run_dir / name)
+                                .read_text()
+                                .replace(str(run_dir), "/RUN")
+                                .replace(", '--guidance'", "")
+                                for name in (
+                                    pilot.SYSTEM_FILE,
+                                    pilot.PROMPT_FILE,
+                                    "rename-tool",
+                                    "check-tests",
+                                    "work/" + study.PROJECT_CONFIG,
+                                )
+                            ]
+                        )
+                if guidance:
+                    self.assertTrue(
+                        all(
+                            value == normalized_inputs[0] for value in normalized_inputs
+                        )
                     )
                 row = config["schedule"][0]
                 wrapper = output / row["id"] / "check-tests"
@@ -282,6 +361,118 @@ class RealPilotTests(unittest.TestCase):
         self.assertEqual(29, sum(cell["successes"] for cell in summary["cells"]))
         self.assertEqual(3, len(summary["cells"]))
         self.assertEqual(-100, summary["paired_effects"][0]["median_delta_tokens"])
+        self.assertEqual(30, summary["planned_attempts"])
+        self.assertNotIn("planned_rows", summary)
+        self.assertNotIn("post_calls", study.metrics({}))
+
+    def test_guidance_unknowns_and_unattempted_pairs_do_not_become_zero(self):
+        planned = study.schedule(study.GUIDANCE_EXPERIMENT)
+        record = {
+            **planned[0],
+            "candidate_checks": {"behavior_checks": None, "passed_final_receipts": 0},
+        }
+        summary = study.summarize_records([record], study.GUIDANCE_EXPERIMENT)
+        self.assertEqual(20, summary["planned_attempts"])
+        self.assertEqual(1, summary["attempts"])
+        self.assertEqual(19, len(summary["unattempted_ids"]))
+        self.assertEqual(20, len(summary["planned_rows"]))
+        self.assertEqual(1, sum(row["attempted"] for row in summary["planned_rows"]))
+        self.assertEqual(10, len(summary["paired_effects"][0]["pairs"]))
+        self.assertTrue(
+            all(
+                pair["deltas"]["post_calls"] is None
+                for pair in summary["paired_effects"][0]["pairs"]
+            )
+        )
+        for cell in summary["cells"]:
+            self.assertEqual(0, cell["known_post_calls"])
+            self.assertEqual(0, cell["known_duplicate_final_checks"])
+            self.assertIsNone(cell["median_duplicate_final_checks"])
+        empty = study.summarize_records([], study.GUIDANCE_EXPERIMENT)
+        self.assertEqual(20, len(empty["unattempted_ids"]))
+
+    def test_duplicate_metric_counts_only_extra_successful_final_byte_receipts(self):
+        final, good = self.receipt()
+        stale = {**good, "before": {"old": "bytes"}, "after": {"old": "bytes"}}
+        record = {
+            "candidate_checks": study.check_summary([stale, good, good], final),
+            "postcheck": {"subsequent_tool_calls": 4},
+        }
+        values = study.metrics(record, study.GUIDANCE_EXPERIMENT)
+        self.assertEqual(3, values["behavior_checks"])
+        self.assertEqual(1, values["duplicate_final_checks"])
+        self.assertEqual(4, values["post_calls"])
+        record["fixture_error"] = "Final inventory unavailable"
+        self.assertIsNone(
+            study.metrics(record, study.GUIDANCE_EXPERIMENT)["duplicate_final_checks"]
+        )
+        record.pop("fixture_error")
+        record["candidate_checks"]["behavior_checks"] = None
+        self.assertIsNone(
+            study.metrics(record, study.GUIDANCE_EXPERIMENT)["duplicate_final_checks"]
+        )
+
+    def test_postcheck_observation_reuses_existing_trace_boundary_and_handles_incomplete(
+        self,
+    ):
+        run_dir = Path("/campaign/run001")
+        events = [
+            {
+                "message": {
+                    "content": [
+                        {
+                            "type": "tool_use",
+                            "id": "rename",
+                            "name": "Bash",
+                            "input": {
+                                "command": "/campaign/run001/rename-tool --file source.php"
+                            },
+                        }
+                    ]
+                }
+            },
+            {
+                "message": {
+                    "content": [
+                        {
+                            "type": "tool_result",
+                            "tool_use_id": "rename",
+                            "content": '{"ok": true}',
+                        }
+                    ]
+                }
+            },
+            {
+                "message": {
+                    "content": [
+                        {
+                            "type": "tool_use",
+                            "id": "read",
+                            "name": "Read",
+                            "input": {"file_path": "source.php"},
+                        }
+                    ]
+                }
+            },
+        ]
+        record = {"native": {"native_subtype": "success"}}
+        with patch.object(pilot.native, "read_events", return_value=(events, [])):
+            self.assertEqual(
+                1, study.guidance_observation(run_dir, record)["subsequent_tool_calls"]
+            )
+        with patch.object(
+            pilot.native, "read_events", return_value=(events, ["truncated"])
+        ):
+            self.assertIsNone(
+                study.guidance_observation(run_dir, record)["subsequent_tool_calls"]
+            )
+        with patch.object(pilot.native, "read_events") as read:
+            self.assertIsNone(
+                study.guidance_observation(run_dir, {"accounting_error": "incomplete"})[
+                    "subsequent_tool_calls"
+                ]
+            )
+            read.assert_not_called()
 
 
 if __name__ == "__main__":

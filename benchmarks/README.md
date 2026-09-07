@@ -11,6 +11,9 @@ It is a separate experiment, with explicit resolver-completeness limits.
 The [public-source verification study](symbol-intent/results/2026-09-07-real-php/REPORT.md)
 adds thirty Haiku runs with original PHP tests and observed execution on every final
 candidate, comparing separate and integrated checking with a text-edit control.
+The separate [twenty-run guidance study](symbol-intent/results/2026-09-07-guidance/REPORT.md)
+found no reduction in median later calls from extra result guidance and higher
+observed token/time medians; all twenty candidates passed the edits and final tests.
 Read the [execution and trust boundaries](TRUST.md) before grading candidate code or
 importing evidence; they also record the narrowly scoped static-analysis decisions.
 

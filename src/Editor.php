@@ -265,7 +265,7 @@ final class Editor
             return;
         }
         $transaction->printer = 'format-preserving';
-        $transaction->warning = 'NOT_CANONICAL: using format-preserving output; inspect changedLines and diff. Canonical normalization is optional.';
+        $transaction->warning = 'NOT_CANONICAL: using format-preserving output. Canonical normalization is optional.';
     }
 
     private function resolveTargets(FileTransaction $transaction, array $spec, string $source): void
