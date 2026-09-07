@@ -103,7 +103,7 @@ the returned assurance. The audit preserves ambiguous purpose wording separately
 including guidance002 and compact004; omission of a caveat alone is not scored as
 a false universal claim. The actual three-site fixture edits are correct. No final
 has an explicit incorrect numeric declaration/reference, test, assertion or timing
-claim. The project-check labels in guidance014 and018 mix per-file status with a
+claim. The project-check labels in guidance014 and guidance018 mix per-file status with a
 named checker but do not explicitly claim three checker executions. The bundle has
 not eliminated reporting overclaims and does not establish a reporting-accuracy gain.
 
