@@ -316,10 +316,9 @@ class PostcheckTests(unittest.TestCase):
             patch.object(study, "configuration"),
             patch.object(pilot, "run_pilot") as dispatch,
         ):
+            args = argparse.Namespace(output=Path(directory), execute_models=True)
             with self.assertRaisesRegex(IntentError, "prepared source snapshot"):
-                study.run(
-                    argparse.Namespace(output=Path(directory), execute_models=True)
-                )
+                study.run(args)
             dispatch.assert_not_called()
 
 
