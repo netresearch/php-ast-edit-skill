@@ -194,6 +194,100 @@ class PostcheckTests(unittest.TestCase):
         )
         self.assertEqual(11, sum(len(row["delta_tokens"]) for row in evidence_effects))
 
+    def test_incomplete_json_valid_trace_keeps_observation_with_unknown_post_calls(
+        self,
+    ):
+        malformed = (
+            {"type": "tool_use", "name": "Read", "input": {}},
+            {"type": "tool_use", "id": "read", "input": {}},
+            {"type": "tool_result", "content": '{"ok":true}'},
+            {"type": "tool_result", "tool_use_id": "absent", "content": "text"},
+            "not a content block",
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory)
+            row = study.schedule()[0]
+            run = output / row["id"]
+            run.mkdir()
+            config = {"schedule": [row], "model": pilot.MODEL}
+            for block in malformed:
+                with self.subTest(block=block), patch.object(pilot, "validate"):
+                    (run / pilot.NATIVE_FILE).write_text(
+                        json.dumps(
+                            {"type": "assistant", "message": {"content": [block]}}
+                        )
+                        + "\n"
+                    )
+                    observations = study.records(output, config)
+                    self.assertEqual(1, len(observations))
+                    self.assertEqual(row["id"], observations[0]["id"])
+                    postcheck = observations[0]["postcheck"]
+                    self.assertIsNone(postcheck["subsequent_tool_calls"])
+                    self.assertEqual({}, postcheck["subsequent_tools"])
+                    self.assertIn("Incomplete trace", postcheck["unavailable_reason"])
+                    self.assertEqual(
+                        0, study.summarize_records(observations)["known_usage"]
+                    )
+
+    def test_incomplete_message_after_success_cannot_be_reported_as_zero(self):
+        events = [
+            {
+                "message": {
+                    "content": [
+                        {
+                            "type": "tool_use",
+                            "id": "rename",
+                            "name": "Bash",
+                            "input": {"command": "/trial/rename-tool --to load"},
+                        }
+                    ]
+                }
+            },
+            {
+                "message": {
+                    "content": [
+                        {
+                            "type": "tool_result",
+                            "tool_use_id": "rename",
+                            "content": '{"ok":true}',
+                        }
+                    ]
+                }
+            },
+        ]
+        for incomplete in (
+            {"message": {"content": [{"type": "tool_use", "id": "read"}]}},
+            {"message": {"content": [{}]}},
+            {"message": {}},
+            {"type": "assistant"},
+        ):
+            with self.subTest(incomplete=incomplete):
+                result = study.post_calls(events + [incomplete], "/trial/rename-tool")
+                self.assertIsNone(result["subsequent_tool_calls"])
+                self.assertIn("Incomplete trace", result["unavailable_reason"])
+
+    def test_incomplete_blocks_do_not_relax_native_accounting_validation(self):
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory)
+            row = study.schedule()[0]
+            run = output / row["id"]
+            run.mkdir()
+            config = {"schedule": [row], "model": pilot.MODEL}
+            pilot.save(run / pilot.MEASUREMENT_FILE, {**row, "native": {"tokens": 42}})
+            (run / pilot.NATIVE_FILE).write_text(
+                json.dumps({"message": {"content": [{"type": "tool_use"}]}}) + "\n"
+            )
+            with (
+                patch.object(pilot, "validate"),
+                patch.object(
+                    pilot.accounting,
+                    "summarize",
+                    side_effect=IntentError("strict accounting"),
+                ),
+                self.assertRaisesRegex(IntentError, "strict accounting"),
+            ):
+                study.records(output, config)
+
     def test_malformed_or_missing_trace_cannot_support_known_usage(self):
         with tempfile.TemporaryDirectory() as directory:
             output = Path(directory)

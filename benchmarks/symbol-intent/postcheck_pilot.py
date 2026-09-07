@@ -210,48 +210,146 @@ def run(args):
     )
 
 
+POSTCALL_BOUNDARY = "First parseable successful rename-tool result; work batched inside a shell call is not separated"
+
+
+def trace_blocks(events):
+    """Yield message blocks while refusing incomplete structural observations."""
+    for index, event in enumerate(events):
+        require(isinstance(event, dict), "Event is not an object")
+        message = event.get("message")
+        if message is None:
+            require(
+                event.get("type") not in ("assistant", "user"),
+                "Dialogue event has no message",
+            )
+            continue
+        require(isinstance(message, dict), "Message is not an object")
+        content = message.get("content")
+        require(isinstance(content, list), "Message content is not a block list")
+        for block in content:
+            require(isinstance(block, dict), "Content block is not an object")
+            trace_field(block, "type")
+            yield index, block
+
+
+def trace_field(block, key):
+    value = block.get(key)
+    require(isinstance(value, str) and value, "Missing or invalid block " + key)
+    return value
+
+
+def successful_rename_result(block, call, command):
+    if call["name"] != "Bash":
+        return False
+    arguments = call.get("input", {})
+    require(isinstance(arguments, dict), "Bash input is not an object")
+    shell = arguments.get("command", "")
+    require(isinstance(shell, str), "Bash command is not a string")
+    if command not in shell or block.get("is_error"):
+        return False
+    content = block.get("content", "")
+    if isinstance(content, list):
+        require(
+            all(isinstance(part, dict) for part in content), "Invalid result content"
+        )
+        content = "\n".join(
+            part.get("text", "") for part in content if part.get("type") == "text"
+        )
+    try:
+        report = json.loads(content)
+    except (TypeError, ValueError):
+        return False
+    return isinstance(report, dict) and report.get("ok") is True
+
+
+def unavailable_postcheck(reason):
+    return {
+        "subsequent_tool_calls": None,
+        "subsequent_tools": {},
+        "boundary": POSTCALL_BOUNDARY,
+        "unavailable_reason": reason,
+    }
+
+
 def post_calls(events, command):
     """Observable later calls, not an automatic judgment of unnecessary checking."""
     calls = {}
     success_event = None
-    for index, event in enumerate(events):
-        for block in event.get("message", {}).get("content", []):
+    try:
+        for index, block in trace_blocks(events):
             if block.get("type") == "tool_use":
-                calls.setdefault(block["id"], (index, block))
-            if block.get("type") != "tool_result" or success_event is not None:
-                continue
-            call = calls.get(block["tool_use_id"], (None, {}))[1]
-            if call.get("name") != "Bash" or command not in call.get("input", {}).get(
-                "command", ""
-            ):
-                continue
-            content = block.get("content", "")
-            if isinstance(content, list):
-                content = "\n".join(
-                    part.get("text", "")
-                    for part in content
-                    if part.get("type") == "text"
+                identifier = trace_field(block, "id")
+                trace_field(block, "name")
+                calls.setdefault(identifier, (index, block))
+            elif block.get("type") == "tool_result":
+                identifier = trace_field(block, "tool_use_id")
+                require(
+                    identifier in calls,
+                    "Result has no observed tool_use: " + identifier,
                 )
-            try:
-                report = json.loads(content)
-            except (TypeError, ValueError):
-                continue
-            if (
-                isinstance(report, dict)
-                and report.get("ok") is True
-                and not block.get("is_error")
-            ):
-                success_event = index
-    later = [
-        block
-        for index, block in calls.values()
-        if success_event is not None and index > success_event
-    ]
+                if success_event is None and successful_rename_result(
+                    block, calls[identifier][1], command
+                ):
+                    success_event = index
+    except (TypeError, ValueError) as error:
+        return unavailable_postcheck("Incomplete trace: " + str(error))
+    if success_event is None:
+        return unavailable_postcheck(
+            "No parseable successful rename-tool result observed"
+        )
+    later = [block for index, block in calls.values() if index > success_event]
     return {
-        "subsequent_tool_calls": len(later) if success_event is not None else None,
+        "subsequent_tool_calls": len(later),
         "subsequent_tools": dict(Counter(block["name"] for block in later)),
-        "boundary": "First parseable successful rename-tool result; work batched inside a shell call is not separated",
+        "boundary": POSTCALL_BOUNDARY,
     }
+
+
+def treatment_record(path, row, label):
+    captured = json.loads(path.read_text())
+    require(
+        all(captured.get(k) == v for k, v in row.items()),
+        label + " treatment drift",
+    )
+    return captured
+
+
+def attempt_record(run_dir, row):
+    measurement = run_dir / pilot.MEASUREMENT_FILE
+    trace = run_dir / pilot.NATIVE_FILE
+    process = run_dir / "process.json"
+    if not any(path.exists() for path in (measurement, trace, process)):
+        return None
+    record = {**row, "oracle": None, "postcheck": {"subsequent_tool_calls": None}}
+    if measurement.exists():
+        record.update(treatment_record(measurement, row, "Measurement"))
+        return record
+    record["accounting_error"] = (
+        "Attempt has no completed measurement; raw evidence retained"
+    )
+    if process.exists():
+        record.update(treatment_record(process, row, "Process"))
+    return record
+
+
+def observe_trace(run_dir, record, model):
+    trace = run_dir / pilot.NATIVE_FILE
+    if "native" in record:
+        require(trace.is_file(), "Missing native trace for measured usage")
+    if not trace.exists():
+        return
+    events, malformed = pilot.native.read_events(trace)
+    if malformed:
+        require("native" not in record, "Malformed trace for measured usage")
+        record["accounting_error"] = "Malformed incomplete trace; raw evidence retained"
+        return
+    record["postcheck"] = post_calls(events, str(run_dir / "rename-tool"))
+    if "native" in record:
+        require(
+            record["native"] == pilot.accounting.summarize(events, model),
+            "Measurement no longer matches native accounting",
+        )
 
 
 def records(output, config):
@@ -259,50 +357,10 @@ def records(output, config):
     for row in config["schedule"]:
         run_dir = output / row["id"]
         pilot.validate(output, config, row)
-        measurement = run_dir / pilot.MEASUREMENT_FILE
-        trace = run_dir / pilot.NATIVE_FILE
-        if not any(
-            path.exists() for path in (measurement, trace, run_dir / "process.json")
-        ):
-            continue
-        record = {**row, "oracle": None, "postcheck": {"subsequent_tool_calls": None}}
-        if measurement.exists():
-            measured = json.loads(measurement.read_text())
-            require(
-                all(measured.get(k) == v for k, v in row.items()),
-                "Measurement treatment drift",
-            )
-            record.update(measured)
-        else:
-            record["accounting_error"] = (
-                "Attempt has no completed measurement; raw evidence retained"
-            )
-            process = run_dir / "process.json"
-            if process.exists():
-                captured = json.loads(process.read_text())
-                require(
-                    all(captured.get(k) == v for k, v in row.items()),
-                    "Process treatment drift",
-                )
-                record.update(captured)
-        if "native" in record:
-            require(trace.is_file(), "Missing native trace for measured usage")
-        if trace.exists():
-            events, malformed = pilot.native.read_events(trace)
-            if malformed:
-                require("native" not in record, "Malformed trace for measured usage")
-                record["accounting_error"] = (
-                    "Malformed incomplete trace; raw evidence retained"
-                )
-            else:
-                record["postcheck"] = post_calls(events, str(run_dir / "rename-tool"))
-                if "native" in record:
-                    require(
-                        record["native"]
-                        == pilot.accounting.summarize(events, config["model"]),
-                        "Measurement no longer matches native accounting",
-                    )
-        result.append(record)
+        record = attempt_record(run_dir, row)
+        if record is not None:
+            observe_trace(run_dir, record, config["model"])
+            result.append(record)
     return result
 
 
@@ -326,87 +384,97 @@ def distributions(values, prefix=""):
     return result
 
 
-def summarize_records(attempts):
-    cells, effects = [], []
-    for size in SIZES:
-        for evidence, guidance in TREATMENTS:
-            group = [
-                r
-                for r in attempts
-                if (r["size"], r["evidence"], r["guidance"])
-                == (size, evidence, guidance)
-            ]
-            values = {
-                key: [metrics(r)[key] for r in group if metrics(r)[key] is not None]
-                for key in metrics({})
-            }
-            cells.append(
-                {
-                    "size": size,
-                    "evidence": evidence,
-                    "guidance": guidance,
-                    "attempts": len(group),
-                    "successes": sum(
-                        (r.get("oracle") or {}).get("success", False) for r in group
-                    ),
-                    "unknown_oracle": sum(r.get("oracle") is None for r in group),
-                    "known_usage": len(values["tokens"]),
-                    **distributions(values),
-                }
+def cell(attempts, size, evidence, guidance):
+    group = [
+        record
+        for record in attempts
+        if (record["size"], record["evidence"], record["guidance"])
+        == (size, evidence, guidance)
+    ]
+    observed = [metrics(record) for record in group]
+    values = {
+        key: [item[key] for item in observed if item[key] is not None]
+        for key in metrics({})
+    }
+    return {
+        "size": size,
+        "evidence": evidence,
+        "guidance": guidance,
+        "attempts": len(group),
+        "successes": sum(
+            (record.get("oracle") or {}).get("success", False) for record in group
+        ),
+        "unknown_oracle": sum(record.get("oracle") is None for record in group),
+        "known_usage": len(values["tokens"]),
+        **distributions(values),
+    }
+
+
+def matching_attempt(attempts, size, repeat, evidence, guidance):
+    return next(
+        (
+            record
+            for record in attempts
+            if (
+                record["size"],
+                record["repetition"],
+                record["evidence"],
+                record["guidance"],
             )
+            == (size, repeat, evidence, guidance)
+        ),
+        None,
+    )
+
+
+def paired_effect(attempts, size, factor, control):
+    treatments = (
+        ((False, control), (True, control))
+        if factor == "evidence"
+        else ((control, "current"), (control, "scoped"))
+    )
+    deltas = {key: [] for key in metrics({})}
+    pair_ids = []
+    for repeat in range(3):
+        pair = [
+            matching_attempt(attempts, size, repeat, evidence, guidance)
+            for evidence, guidance in treatments
+        ]
+        if any(record is None for record in pair):
+            continue
+        before, after = (metrics(record) for record in pair)
+        observed = {"ids": [record["id"] for record in pair]}
+        for key, values in deltas.items():
+            observed["delta_" + key] = None
+            if before[key] is not None and after[key] is not None:
+                difference = after[key] - before[key]
+                observed["delta_" + key] = difference
+                values.append(difference)
+        pair_ids.append(observed)
+    return {
+        "size": size,
+        "factor": factor,
+        "held_constant": control,
+        "pairs": pair_ids,
+        **distributions(deltas, "delta_"),
+    }
+
+
+def summarize_records(attempts):
+    cells = [
+        cell(attempts, size, evidence, guidance)
+        for size in SIZES
+        for evidence, guidance in TREATMENTS
+    ]
+    effects = [
+        paired_effect(attempts, size, factor, control)
+        for size in SIZES
         for factor, controls in (
             ("evidence", ("current", "scoped")),
             ("guidance", (False, True)),
-        ):
-            for control in controls:
-                deltas = {key: [] for key in metrics({})}
-                pair_ids = []
-                for repeat in range(3):
-                    pair = []
-                    for treatment in (
-                        (False, True) if factor == "evidence" else ("current", "scoped")
-                    ):
-                        evidence, guidance = (
-                            (treatment, control)
-                            if factor == "evidence"
-                            else (control, treatment)
-                        )
-                        pair.append(
-                            next(
-                                (
-                                    r
-                                    for r in attempts
-                                    if (
-                                        r["size"],
-                                        r["repetition"],
-                                        r["evidence"],
-                                        r["guidance"],
-                                    )
-                                    == (size, repeat, evidence, guidance)
-                                ),
-                                None,
-                            )
-                        )
-                    if any(r is None for r in pair):
-                        continue
-                    before, after = (metrics(r) for r in pair)
-                    observed = {"ids": [r["id"] for r in pair]}
-                    for key, values in deltas.items():
-                        observed["delta_" + key] = None
-                        if before[key] is not None and after[key] is not None:
-                            difference = after[key] - before[key]
-                            observed["delta_" + key] = difference
-                            values.append(difference)
-                    pair_ids.append(observed)
-                effects.append(
-                    {
-                        "size": size,
-                        "factor": factor,
-                        "held_constant": control,
-                        "pairs": pair_ids,
-                        **distributions(deltas, "delta_"),
-                    }
-                )
+        )
+        for control in controls
+    ]
     return {
         "experiment": EXPERIMENT,
         "planned_attempts": 24,
