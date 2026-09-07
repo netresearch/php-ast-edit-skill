@@ -98,6 +98,8 @@ These are functional tests, not evidence of LLM token savings.
 The prospective [economics protocol](PROTOCOL.md) compares this API with batched
 text changes and an existing Phpactor CLI route. It distinguishes the benefit of
 delegating symbol work from any additional benefit of the AST write transaction.
+The separate [post-rename ablation](POSTCHECK_PROTOCOL.md) crosses result evidence
+with scoped verification guidance to test their effects without changing that pilot.
 
 From a clean committed checkout, prepare without model calls, then execute the
 already authorized pilot explicitly using its frozen controller:
