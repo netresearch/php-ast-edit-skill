@@ -391,12 +391,12 @@ def summarize_records(attempts):
                         continue
                     before, after = (metrics(r) for r in pair)
                     observed = {"ids": [r["id"] for r in pair]}
-                    for key in deltas:
+                    for key, values in deltas.items():
                         observed["delta_" + key] = None
                         if before[key] is not None and after[key] is not None:
                             difference = after[key] - before[key]
                             observed["delta_" + key] = difference
-                            deltas[key].append(difference)
+                            values.append(difference)
                     pair_ids.append(observed)
                 effects.append(
                     {
