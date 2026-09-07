@@ -29,6 +29,9 @@ INITIAL_FILE = "initial.json"
 SYSTEM_FILE = "system.txt"
 PROMPT_FILE = "prompt.txt"
 CONFIG_FILE = "config.json"
+NATIVE_FILE = "native.jsonl"
+RECOVERED_FILE = "measurement-recovered.json"
+MEASUREMENT_FILE = "measurement.json"
 MODEL = "claude-haiku-4-5-20251001"
 ARMS = ("text", "intent", "phpactor")
 COMMON = """Complete the requested PHP change efficiently and correctly. You may batch
@@ -291,7 +294,7 @@ def capture(argv, run, deadline):
     started = time.monotonic()
     timed_out = False
     with (
-        (run / "native.jsonl").open("xb") as out,
+        (run / NATIVE_FILE).open("xb") as out,
         (run / "stderr.txt").open("xb") as err,
     ):
         # Frozen operator-selected Claude executable and args; no shell. See TRUST.md.
@@ -355,11 +358,11 @@ def run_pilot(args):
             all(sha(Path(path)) == value for path, value in controller_hashes.items()),
             "Controller drift",
         )
-        if (run / "native.jsonl").exists():
+        if (run / NATIVE_FILE).exists():
             require(
                 args.resume_reviewed, "Existing candidate evidence; refusing to rerun"
             )
-            recovered = json.loads((run / "measurement-recovered.json").read_text())
+            recovered = json.loads((run / RECOVERED_FILE).read_text())
             require(
                 recovered == recovery(run, config),
                 "Reviewed recovery no longer matches evidence",
@@ -436,7 +439,7 @@ def run_pilot(args):
             },
         )
         try:
-            events, malformed = native.read_events(run / "native.jsonl")
+            events, malformed = native.read_events(run / NATIVE_FILE)
             require(not malformed, "Malformed native trace")
             measurement["native"] = accounting.summarize(events, config["model"])
             validate(output, config, row)
@@ -449,7 +452,7 @@ def run_pilot(args):
             )
         except ValueError as error:
             measurement["accounting_error"] = str(error)
-        save(run / "measurement.json", measurement)
+        save(run / MEASUREMENT_FILE, measurement)
         print(
             json.dumps(
                 {
@@ -484,12 +487,11 @@ def run_pilot(args):
     )
 
 
-def summarize(args):
-    output = args.output.resolve(strict=True)
+def recovered_records(output):
     records = []
     for path in sorted(output.glob("run*/measurement.json")):
         record = json.loads(path.read_text())
-        recovered_path = path.with_name("measurement-recovered.json")
+        recovered_path = path.with_name(RECOVERED_FILE)
         if recovered_path.exists():
             recovered = json.loads(recovered_path.read_text())
             require(
@@ -502,6 +504,12 @@ def summarize(args):
             record["native"] = recovered["native"]
             record["original_accounting_error"] = record.pop("accounting_error")
         records.append(record)
+    return records
+
+
+def summarize(args):
+    output = args.output.resolve(strict=True)
+    records = recovered_records(output)
     rows = []
     for size in (2, 10, 50):
         for arm in ARMS:
@@ -532,18 +540,18 @@ def summarize(args):
 
 
 def recovery(run, config):
-    original = json.loads((run / "measurement.json").read_text())
+    original = json.loads((run / MEASUREMENT_FILE).read_text())
     require(
         not original["timed_out"]
         and original.get("accounting_error")
         == "Terminal usage and modelUsage differ or required counter is missing",
         "Not the reviewed accounting-scope mismatch",
     )
-    events, malformed = native.read_events(run / "native.jsonl")
+    events, malformed = native.read_events(run / NATIVE_FILE)
     require(not malformed, "Malformed trace")
     return {
-        "original_sha256": sha(run / "measurement.json"),
-        "trace_sha256": sha(run / "native.jsonl"),
+        "original_sha256": sha(run / MEASUREMENT_FILE),
+        "trace_sha256": sha(run / NATIVE_FILE),
         "config_sha256": sha(run.parent / CONFIG_FILE),
         "accounting_sha256": sha(Path(accounting.__file__)),
         "native": accounting.summarize(events, config["model"]),
@@ -557,7 +565,7 @@ def recover(args):
     validate(output, config)
     for path in sorted(output.glob("run*/measurement.json")):
         result = recovery(path.parent, config)
-        with path.with_name("measurement-recovered.json").open("x") as handle:
+        with path.with_name(RECOVERED_FILE).open("x") as handle:
             json.dump(result, handle, indent=2)
         print(
             json.dumps(

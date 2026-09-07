@@ -45,9 +45,9 @@ def snapshot(root):
         raise error
 
     # Explicit local workspace root; no remote file-existence service. See TRUST.md.
-    for directory, names, files in os.walk(
+    for directory, names, files in os.walk(  # NOSONAR(S6549)
         root, followlinks=False, onerror=unreadable
-    ):  # NOSONAR(S6549)
+    ):
         current = Path(directory)
         if current == root and ".git" in names:
             names.remove(".git")
