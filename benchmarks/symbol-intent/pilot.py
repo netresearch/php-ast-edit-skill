@@ -362,7 +362,12 @@ def run_pilot(args):
             require(
                 args.resume_reviewed, "Existing candidate evidence; refusing to rerun"
             )
-            recovered = json.loads((run / RECOVERED_FILE).read_text())
+            recovery_path = run / RECOVERED_FILE
+            require(
+                recovery_path.is_file(),
+                f"Existing candidate {row['id']} has no reviewed recovery",
+            )
+            recovered = json.loads(recovery_path.read_text())
             require(
                 recovered == recovery(run, config),
                 "Reviewed recovery no longer matches evidence",
@@ -424,6 +429,7 @@ def run_pilot(args):
             "config_sha256": sha(output / CONFIG_FILE),
             **capture(argv, run, config["timeout_seconds"]),
         }
+        save(run / "process.json", measurement)
         measurement["oracle"] = grade(output, run, row["size"])
         (run / "diff.patch").write_text(
             invoke(
@@ -450,7 +456,7 @@ def run_pilot(args):
                 ),
                 "Controller drift",
             )
-        except ValueError as error:
+        except (ValueError, KeyError, TypeError, OSError, StopIteration) as error:
             measurement["accounting_error"] = str(error)
         save(run / MEASUREMENT_FILE, measurement)
         print(

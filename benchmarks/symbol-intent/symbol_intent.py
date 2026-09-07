@@ -328,7 +328,39 @@ def load_plan(args, state):
     raw = path.read_bytes()
     require(digest(raw) == args.plan, "Plan content hash differs")
     record = json.loads(raw)
-    require(record.get("schema") == 1, "Unknown plan schema")
+    require(
+        isinstance(record, dict)
+        and type(record.get("schema")) is int
+        and record["schema"] == 1,
+        "Unknown plan schema",
+    )
+    required = {
+        "root",
+        "inventory",
+        "runtime",
+        "resolver",
+        "request",
+        "document",
+        "resolver_result",
+        "elapsed_ms",
+    }
+    require(required <= record.keys(), "Plan is missing required fields")
+    require(
+        isinstance(record["root"], str) and Path(record["root"]).is_absolute(),
+        "Invalid plan root",
+    )
+    require(
+        isinstance(record["runtime"], str)
+        and PLAN_ID.fullmatch(record["runtime"]) is not None,
+        "Invalid plan runtime identity",
+    )
+    for field in ("inventory", "resolver", "request", "document", "resolver_result"):
+        require(isinstance(record[field], dict), "Invalid plan field: " + field)
+    require(
+        isinstance(record["document"].get("files"), list)
+        and record["document"]["files"],
+        "Plan has no file operations",
+    )
     return record
 
 

@@ -7,6 +7,7 @@ import signal
 import subprocess
 import threading
 import time
+from contextlib import suppress
 
 RELEASE = "2026.07.22.0"
 PHAR_SHA256 = "8c0155380b9d7559a12f35ddf8d09c1dc23e72f1797498038251fc35ad15574d"
@@ -218,11 +219,13 @@ class Client:
 
     def close(self):
         if self.process.poll() is None:
-            os.killpg(self.process.pid, signal.SIGTERM)
+            with suppress(ProcessLookupError):
+                os.killpg(self.process.pid, signal.SIGTERM)
             try:
                 self.process.wait(timeout=3)
             except subprocess.TimeoutExpired:
-                os.killpg(self.process.pid, signal.SIGKILL)
+                with suppress(ProcessLookupError):
+                    os.killpg(self.process.pid, signal.SIGKILL)
                 self.process.wait(timeout=3)
         self.process.stdin.close()
         self.process.stdout.close()
@@ -251,5 +254,9 @@ def rename(phar, root, directory, file, position, expected_range, new_name, php_
             "elapsed_ms": (time.monotonic() - client.started) * 1000,
         }
     finally:
-        client.close()
-        (directory / "lsp.json").write_text(json.dumps(client.events, indent=2) + "\n")
+        try:
+            (directory / "lsp.json").write_text(
+                json.dumps(client.events, indent=2) + "\n"
+            )
+        finally:
+            client.close()

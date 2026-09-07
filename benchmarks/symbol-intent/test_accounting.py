@@ -56,6 +56,12 @@ def events():
 
 
 class AccountingTests(unittest.TestCase):
+    def test_empty_response_map_is_rejected_by_existing_native_guard(self):
+        trace = events()
+        del trace[1]
+        with self.assertRaisesRegex(ValueError, "Missing primary responses"):
+            accounting.summarize(trace, MODEL)
+
     def test_whole_call_and_main_loop_are_kept_separate(self):
         result = accounting.summarize(events(), MODEL)
         self.assertEqual(17, result["all_model_tokens"]["totalTokens"])

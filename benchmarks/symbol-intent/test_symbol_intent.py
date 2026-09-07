@@ -9,9 +9,11 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import MagicMock, patch
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
+import lsp
 import symbol_intent as intent
 from lsp import IntentError
 
@@ -31,6 +33,50 @@ def fixture(root, count):
 
 
 class PureTests(unittest.TestCase):
+    def test_resolver_trace_survives_teardown_failure(self):
+        with tempfile.TemporaryDirectory() as directory:
+            state = Path(directory)
+            expected = {
+                "start": {"line": 0, "character": 0},
+                "end": {"line": 0, "character": 1},
+            }
+            client = MagicMock()
+            client.started = 0
+            client.events = [{"direction": "in", "message": {"jsonrpc": "2.0"}}]
+            client.messages = []
+            client.completed_indexes = []
+            client.request.side_effect = [expected, {"documentChanges": []}, None]
+            client.initialize.return_value = {}
+            client.close.side_effect = OSError("teardown failed")
+            with (
+                patch.object(lsp, "Client", return_value=client),
+                self.assertRaisesRegex(OSError, "teardown"),
+            ):
+                lsp.rename(
+                    state / "tool.phar",
+                    state,
+                    state,
+                    state / "source.php",
+                    expected["start"],
+                    expected,
+                    "load",
+                    1,
+                )
+            self.assertEqual(
+                client.events, json.loads((state / "lsp.json").read_text())
+            )
+            client.close.assert_called_once()
+
+    def test_self_consistent_but_incomplete_plan_is_rejected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            state = Path(directory)
+            for record in ([], {"schema": 1}, {"schema": True}):
+                raw = intent.encode(record)
+                identifier = intent.digest(raw)
+                (state / (identifier + ".json")).write_bytes(raw)
+                with self.assertRaises(IntentError):
+                    intent.load_plan(argparse.Namespace(plan=identifier), state)
+
     def test_unicode_position_conversion_and_split_rejection(self):
         source = "<?php /* 😀 */ fetch();\r\nnext".encode()
         offset = source.index(b"fetch")
