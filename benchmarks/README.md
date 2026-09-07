@@ -5,6 +5,9 @@ complete task passes its oracle and imports actual model usage. Neither substitu
 the other. The offline task harness does not invoke models or invent usage data.
 The optional [native efficiency runner](agent-economics/efficiency/PROTOCOL.md) can
 invoke Claude Code only through an explicit `run --execute-models` command.
+The [experimental symbol-intent pilot](symbol-intent/README.md) compares a single
+cross-file rename request with batched text edits and an existing Phpactor CLI route.
+It is a separate experiment, with explicit resolver-completeness limits.
 Read the [execution and trust boundaries](TRUST.md) before grading candidate code or
 importing evidence; they also record the narrowly scoped static-analysis decisions.
 
