@@ -327,7 +327,7 @@ try {
                 'failure output is not bounded to 4000 bytes',
             );
             verificationAssert(
-                str_starts_with($reports[0]['output'], $literal . "\n"),
+                str_starts_with($reports[0]['output'], "stderr\n" . $literal . "\n"),
                 'argv data was interpreted by a shell',
             );
             verificationAssert(

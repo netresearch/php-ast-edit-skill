@@ -125,9 +125,6 @@ final class VerificationRunner
         return $cwd . DIRECTORY_SEPARATOR . $path;
     }
 
-    /** @param list<string> $command
-     * @return array{command: string, ok: bool, output?: string}
-     */
     private function captureCommand(array $command, string $root): array
     {
         $out = tempnam(sys_get_temp_dir(), 'php-ast-edit-verify-');
@@ -159,9 +156,15 @@ final class VerificationRunner
             $result = ['command' => implode(' ', $command), 'ok' => $status === 0];
 
             if ($status !== 0) {
-                $said = trim(
-                    (string) file_get_contents($out, false, null, 0, self::OUTPUT_CAP) . "\n" . (string) file_get_contents($err, false, null, 0, self::OUTPUT_CAP),
-                );
+                // Reserve space for each stream, and give unused space to the other.
+                $stderr = trim((string) file_get_contents($err, false, null, 0, self::OUTPUT_CAP));
+                $stdout = trim((string) file_get_contents($out, false, null, 0, self::OUTPUT_CAP));
+                $separator = $stderr !== '' && $stdout !== '' ? "\n" : '';
+                $available = self::OUTPUT_CAP - strlen($separator);
+                $outCap = min(strlen($stdout), intdiv($available, 2));
+                $errCap = min(strlen($stderr), $available - $outCap);
+                $outCap = $available - $errCap;
+                $said = substr($stderr, 0, $errCap) . $separator . substr($stdout, 0, $outCap);
                 $result['output'] = substr($said, 0, self::OUTPUT_CAP);
             }
 

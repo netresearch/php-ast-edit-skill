@@ -81,6 +81,20 @@ class ReportTests(unittest.TestCase):
             self.assertTrue(file["verify"][0]["ok"])
             self.assertIn("command", file["verify"][0])
 
+    def test_noisy_failed_check_preserves_both_streams_within_cap(self):
+        (self.root / ".php-ast-edit.json").write_text(json.dumps({
+            "verify": [{"scope": "project", "command": [
+                "php", "-r", "echo str_repeat('stdout-progress ', 1000); "
+                "fwrite(STDERR, str_repeat('stderr-failure ', 1000)); exit(1);",
+            ]}],
+        }))
+        status, report, _ = self.apply(self.files(), report="compact")
+        self.assertEqual(1, status)
+        output = report["verify"][0]["output"]
+        self.assertTrue(output.startswith("stderr-failure"))
+        self.assertIn("stdout-progress", output)
+        self.assertLessEqual(len(output.encode()), 4000)
+
     def test_identical_commands_are_distinct_executions(self):
         self.configure(repeat=2)
         status, report, _ = self.apply(self.files(), report="compact")
