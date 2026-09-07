@@ -18,10 +18,17 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 SOURCE = HERE.parents[1]
 sys.path.insert(0, str(SOURCE / "benchmarks/agent-economics/efficiency"))
+import accounting
 import native
 from lsp import CONFIG, PHAR_SHA256, require
 from test_symbol_intent import fixture
 
+PHAR_FILE = "phpactor.phar"
+EXPECTED_FILE = "expected.json"
+INITIAL_FILE = "initial.json"
+SYSTEM_FILE = "system.txt"
+PROMPT_FILE = "prompt.txt"
+CONFIG_FILE = "config.json"
 MODEL = "claude-haiku-4-5-20251001"
 ARMS = ("text", "intent", "phpactor")
 COMMON = """Complete the requested PHP change efficiently and correctly. You may batch
@@ -51,7 +58,8 @@ def sha(path):
 
 
 def invoke(argv, cwd=None, **kwargs):
-    return subprocess.run(
+    # Operator-controlled evaluator argv; not a restricted command service. See TRUST.md.
+    return subprocess.run(  # NOSONAR(S2076, S6350)
         argv, cwd=cwd, capture_output=True, text=True, check=True, **kwargs
     )
 
@@ -80,16 +88,17 @@ def prepare(args):
     phar = args.phpactor.resolve(strict=True)
     require(sha(phar) == PHAR_SHA256, "Wrong pinned Phpactor PHAR")
     output = args.output.resolve()
-    output.mkdir()
+    output.mkdir(mode=0o700)
     source = output / "source"
     source.mkdir()
     archive = subprocess.check_output(["git", "archive", "HEAD"], cwd=SOURCE)
     subprocess.run(["tar", "-x", "-C", str(source)], input=archive, check=True)
     shutil.copytree(SOURCE / "vendor", source / "vendor")
-    shutil.copyfile(phar, output / "phpactor.phar")
+    shutil.copyfile(phar, output / PHAR_FILE)
     source_commit = invoke(["git", "rev-parse", "HEAD"], SOURCE).stdout.strip()
     blocks = [(size, repeat) for size in (2, 10, 50) for repeat in range(3)]
-    random.Random(20260907).shuffle(blocks)
+    # Reproducible trial order, never a secret or authorization decision.
+    random.Random(20260907).shuffle(blocks)  # NOSONAR(S2245)
     schedule = []
     for block, (size, repeat) in enumerate(blocks):
         rotation = block % 3
@@ -99,8 +108,8 @@ def prepare(args):
             run.mkdir()
             work = run / "work"
             expected = fixture(work, size)
-            save(run / "expected.json", expected)
-            save(run / "initial.json", manifest(work))
+            save(run / EXPECTED_FILE, expected)
+            save(run / INITIAL_FILE, manifest(work))
             invoke(["git", "init", "-q"], work, env=environment())
             invoke(["git", "add", "--", "*.php"], work, env=environment())
             invoke(
@@ -132,7 +141,7 @@ def prepare(args):
                     "--state",
                     str(state),
                     "--phpactor",
-                    str(output / "phpactor.phar"),
+                    str(output / PHAR_FILE),
                 ]
                 command.write_text(
                     "#!/usr/bin/env python3\nimport os,sys\nos.execvp('python3', "
@@ -157,7 +166,7 @@ def prepare(args):
                         ]
                     )
                     + "\nfor operation in [['index:build'],['references:member',a.owner,a.old,'--type=method','--replace='+a.to,'--filesystem=simple']]:\n r=subprocess.run(['php',"
-                    + repr(str(output / "phpactor.phar"))
+                    + repr(str(output / PHAR_FILE))
                     + ",*operation,*common],env=env)\n if r.returncode: sys.exit(r.returncode)\n"
                 )
                 instruction = f"Use the existing Phpactor CLI route for this rename: {shlex.quote(str(command))} --class 'Example\\Provider' --from fetch --to load. It runs index:build and references:member --replace with an isolated fresh index. Completeness is unknown; it has no transaction or integrated validation. You may redirect verbose output."
@@ -166,15 +175,15 @@ def prepare(args):
             if command.exists():
                 command.chmod(0o755)
             prompt = f"Rename Example\\Provider::fetch to load in Provider.php and all its PHP callers in this workspace ({size} PHP files). Preserve Other::fetch, its callers and unrelated fetch text.\n\n{instruction}"
-            (run / "system.txt").write_text(COMMON)
-            (run / "prompt.txt").write_text(prompt)
+            (run / SYSTEM_FILE).write_text(COMMON)
+            (run / PROMPT_FILE).write_text(prompt)
             frozen = {
                 name: sha(run / name)
                 for name in (
-                    "expected.json",
-                    "initial.json",
-                    "system.txt",
-                    "prompt.txt",
+                    EXPECTED_FILE,
+                    INITIAL_FILE,
+                    SYSTEM_FILE,
+                    PROMPT_FILE,
                 )
             }
             if command.exists():
@@ -191,7 +200,7 @@ def prepare(args):
     config = {
         "source_commit": source_commit,
         "source_manifest": manifest(source),
-        "phpactor_sha256": sha(output / "phpactor.phar"),
+        "phpactor_sha256": sha(output / PHAR_FILE),
         "model": MODEL,
         "cli": shutil.which("claude"),
         "cli_version": invoke(["claude", "--version"]).stdout.strip(),
@@ -200,8 +209,8 @@ def prepare(args):
         "campaign_usd": 4.0,
         "timeout_seconds": 120,
     }
-    save(output / "config.json", config)
-    (output / "config.sha256").write_text(sha(output / "config.json") + "\n")
+    save(output / CONFIG_FILE, config)
+    (output / "config.sha256").write_text(sha(output / CONFIG_FILE) + "\n")
     print(
         json.dumps(
             {
@@ -216,16 +225,14 @@ def prepare(args):
 
 def validate(output, config, row=None):
     require(
-        sha(output / "config.json") == (output / "config.sha256").read_text().strip(),
+        sha(output / CONFIG_FILE) == (output / "config.sha256").read_text().strip(),
         "Config changed",
     )
     require(
         manifest(output / "source") == config["source_manifest"],
         "Frozen source or dependency drift",
     )
-    require(
-        sha(output / "phpactor.phar") == config["phpactor_sha256"], "Resolver drift"
-    )
+    require(sha(output / PHAR_FILE) == config["phpactor_sha256"], "Resolver drift")
     if row:
         run = output / row["id"]
         require(
@@ -236,7 +243,16 @@ def validate(output, config, row=None):
 
 def grade(output, run, size):
     work = run / "work"
-    expected = json.loads((run / "expected.json").read_text())
+    expected = json.loads((run / EXPECTED_FILE).read_text())
+    if any(path.is_symlink() for path in work.rglob("*") if ".git" not in path.parts):
+        return {
+            "file_scope": False,
+            "exact_bytes": False,
+            "structural_correct": False,
+            "runtime_correct": False,
+            "success": False,
+            "error": "Symlink source refused",
+        }
     actual = {
         str(p.relative_to(work)): p.read_text()
         for p in sorted(work.rglob("*.php"))
@@ -258,10 +274,11 @@ def grade(output, run, size):
         before = json.loads(invoke(argv, input=json.dumps(expected)).stdout)
         after = json.loads(invoke(argv, input=json.dumps(actual)).stdout)
         result["structural_correct"] = before == after
-        runtime = invoke(
-            ["php", "-r", RUNTIME_ORACLE, str(work), str(size)], timeout=10
-        )
-        result["runtime_correct"] = runtime.stdout == "ORACLE_OK"
+        if result["structural_correct"] and result["file_scope"]:
+            runtime = invoke(
+                ["php", "-r", RUNTIME_ORACLE, str(work), str(size)], timeout=10
+            )
+            result["runtime_correct"] = runtime.stdout == "ORACLE_OK"
     except (subprocess.SubprocessError, ValueError) as error:
         result["error"] = str(error)
     result["success"] = all(
@@ -273,10 +290,12 @@ def grade(output, run, size):
 def capture(argv, run, deadline):
     started = time.monotonic()
     timed_out = False
-    with (run / "native.jsonl").open("xb") as out, (run / "stderr.txt").open(
-        "xb"
-    ) as err:
-        process = subprocess.Popen(
+    with (
+        (run / "native.jsonl").open("xb") as out,
+        (run / "stderr.txt").open("xb") as err,
+    ):
+        # Frozen operator-selected Claude executable and args; no shell. See TRUST.md.
+        process = subprocess.Popen(  # NOSONAR(S2076, S6350)
             argv,
             cwd=run / "work",
             env=environment(),
@@ -304,20 +323,50 @@ def capture(argv, run, deadline):
 def run_pilot(args):
     require(args.execute_models, "Run requires --execute-models")
     output = args.output.resolve(strict=True)
-    config = json.loads((output / "config.json").read_text())
+    config = json.loads((output / CONFIG_FILE).read_text())
     validate(output, config)
     require(
         invoke([config["cli"], "--version"]).stdout.strip() == config["cli_version"],
         "CLI version drift",
     )
     spent = 0.0
-    # A single-use campaign: interrupted runs remain evidence, never silently resumed.
-    with (output / "started.json").open("x") as marker:
+    controller_files = [
+        Path(__file__),
+        Path(accounting.__file__),
+        Path(native.__file__),
+        HERE / "PROTOCOL.md",
+    ]
+    controller_hashes = {str(path): sha(path) for path in controller_files}
+    marker_name = "resumed.json" if args.resume_reviewed else "started.json"
+    if args.resume_reviewed:
+        require((output / "started.json").is_file(), "No interrupted pilot to resume")
+    with (output / marker_name).open("x") as marker:
         json.dump(
-            {"started_unix": time.time(), "config_sha256": sha(output / "config.json")},
+            {
+                "started_unix": time.time(),
+                "config_sha256": sha(output / CONFIG_FILE),
+                "controller_hashes": controller_hashes,
+            },
             marker,
         )
     for row in config["schedule"]:
+        run = output / row["id"]
+        require(
+            all(sha(Path(path)) == value for path, value in controller_hashes.items()),
+            "Controller drift",
+        )
+        if (run / "native.jsonl").exists():
+            require(
+                args.resume_reviewed, "Existing candidate evidence; refusing to rerun"
+            )
+            recovered = json.loads((run / "measurement-recovered.json").read_text())
+            require(
+                recovered == recovery(run, config),
+                "Reviewed recovery no longer matches evidence",
+            )
+            spent += recovered["native"]["native_list_price_usd"]
+            require(spent <= config["campaign_usd"], "Existing spend exceeds budget")
+            continue
         require(
             spent + config["max_run_usd"] <= config["campaign_usd"],
             "Planning allowance exhausted",
@@ -325,7 +374,7 @@ def run_pilot(args):
         validate(output, config, row)
         run = output / row["id"]
         work = run / "work"
-        initial = json.loads((run / "initial.json").read_text())
+        initial = json.loads((run / INITIAL_FILE).read_text())
         require(
             all(sha(work / name) == value for name, value in initial.items()),
             "Fixture drift",
@@ -363,13 +412,13 @@ def run_pilot(args):
             "--max-budget-usd",
             str(config["max_run_usd"]),
             "--append-system-prompt",
-            (run / "system.txt").read_text(),
-            (run / "prompt.txt").read_text(),
+            (run / SYSTEM_FILE).read_text(),
+            (run / PROMPT_FILE).read_text(),
         ]
         save(run / "argv.json", argv)
         measurement = {
             **row,
-            "config_sha256": sha(output / "config.json"),
+            "config_sha256": sha(output / CONFIG_FILE),
             **capture(argv, run, config["timeout_seconds"]),
         }
         measurement["oracle"] = grade(output, run, row["size"])
@@ -389,8 +438,15 @@ def run_pilot(args):
         try:
             events, malformed = native.read_events(run / "native.jsonl")
             require(not malformed, "Malformed native trace")
-            measurement["native"] = native.summarize(events, config["model"])
+            measurement["native"] = accounting.summarize(events, config["model"])
             validate(output, config, row)
+            require(
+                all(
+                    sha(Path(path)) == value
+                    for path, value in controller_hashes.items()
+                ),
+                "Controller drift",
+            )
         except ValueError as error:
             measurement["accounting_error"] = str(error)
         save(run / "measurement.json", measurement)
@@ -430,10 +486,22 @@ def run_pilot(args):
 
 def summarize(args):
     output = args.output.resolve(strict=True)
-    records = [
-        json.loads(path.read_text())
-        for path in sorted(output.glob("run*/measurement.json"))
-    ]
+    records = []
+    for path in sorted(output.glob("run*/measurement.json")):
+        record = json.loads(path.read_text())
+        recovered_path = path.with_name("measurement-recovered.json")
+        if recovered_path.exists():
+            recovered = json.loads(recovered_path.read_text())
+            require(
+                recovered
+                == recovery(
+                    path.parent, json.loads((output / CONFIG_FILE).read_text())
+                ),
+                "Recovery evidence drift",
+            )
+            record["native"] = recovered["native"]
+            record["original_accounting_error"] = record.pop("accounting_error")
+        records.append(record)
     rows = []
     for size in (2, 10, 50):
         for arm in ARMS:
@@ -463,18 +531,60 @@ def summarize(args):
     print(json.dumps(rows, indent=2))
 
 
+def recovery(run, config):
+    original = json.loads((run / "measurement.json").read_text())
+    require(
+        not original["timed_out"]
+        and original.get("accounting_error")
+        == "Terminal usage and modelUsage differ or required counter is missing",
+        "Not the reviewed accounting-scope mismatch",
+    )
+    events, malformed = native.read_events(run / "native.jsonl")
+    require(not malformed, "Malformed trace")
+    return {
+        "original_sha256": sha(run / "measurement.json"),
+        "trace_sha256": sha(run / "native.jsonl"),
+        "config_sha256": sha(run.parent / CONFIG_FILE),
+        "accounting_sha256": sha(Path(accounting.__file__)),
+        "native": accounting.summarize(events, config["model"]),
+        "review": "Operator reviewed SDK-documented main-loop and whole-call scopes; original evidence retained",
+    }
+
+
+def recover(args):
+    output = args.output.resolve(strict=True)
+    config = json.loads((output / CONFIG_FILE).read_text())
+    validate(output, config)
+    for path in sorted(output.glob("run*/measurement.json")):
+        result = recovery(path.parent, config)
+        with path.with_name("measurement-recovered.json").open("x") as handle:
+            json.dump(result, handle, indent=2)
+        print(
+            json.dumps(
+                {
+                    "recovered": path.parent.name,
+                    "tokens": result["native"]["all_model_tokens"],
+                    "model_calls": 0,
+                }
+            )
+        )
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="action", required=True)
-    for name in ("prepare", "run", "summarize"):
+    for name in ("prepare", "run", "summarize", "recover"):
         command = sub.add_parser(name)
         command.add_argument("--output", type=Path, required=True)
         if name == "prepare":
             command.add_argument("--phpactor", type=Path, required=True)
         elif name == "run":
             command.add_argument("--execute-models", action="store_true")
+            command.add_argument("--resume-reviewed", action="store_true")
     args = parser.parse_args()
-    {"prepare": prepare, "run": run_pilot, "summarize": summarize}[args.action](args)
+    {"prepare": prepare, "run": run_pilot, "summarize": summarize, "recover": recover}[
+        args.action
+    ](args)
 
 
 if __name__ == "__main__":

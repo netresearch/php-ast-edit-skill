@@ -66,3 +66,33 @@ review. Three repetitions are a pilot, not a statistically reliable general clai
 If Phpactor CLI matches or beats the AST intent route, attribute savings to delegated
 semantic work rather than claiming the AST writer is the source of that saving.
 The AST route adds transaction/reporting guards; it may cost additional tool time.
+
+## Accounting scope amendment after run001
+
+The first candidate completed correctly, but the inherited strict parser rejected
+its terminal counters: main-loop `usage` reports 4,100 fresh input and 1,641 output
+tokens; whole-call `modelUsage` reports 5,065 and 1,655. Both cache totals agree.
+The original trace, measurement and stop are retained; the candidate is not rerun.
+
+The [official SDK documentation](https://code.claude.com/docs/en/agent-sdk/cost-tracking#track-costs-for-a-query)
+defines these fields with different scopes: `usage` covers the main loop, while
+`modelUsage` and `total_cost_usd` include auxiliary/subagent work. The
+[session documentation](https://code.claude.com/docs/en/sessions#name-your-sessions)
+also documents background title generation for unnamed sessions. Attribution of
+this particular difference to title generation is an inference, not a trace fact.
+
+`accounting.py` validates each scope separately. Deduplicated visible main-loop
+input counters must agree with terminal main-loop usage (retaining the earlier
+explicit synthetic-retry rule). Whole-call counters must be nonnegative integers,
+at least the main-loop totals; per-model costs must sum to terminal cost. Missing
+fields, invalid counters, unexplained main-loop gaps and incomplete tool linkage
+still stop execution. Whole-call minus main-loop counts are retained without
+inventing auxiliary response counts or assigning their cause.
+
+Offline `recover` writes a separate hash-bound `measurement-recovered.json`, leaving
+the original measurement unchanged. After operator review, `run --resume-reviewed
+--execute-models` skips that candidate and continues the original frozen schedule,
+prompts, tools and runtime. It records the amended controller hashes and checks them
+before and after each run. CLI flags remain unchanged, including session naming, so
+the treatment does not change halfway through. The original USD 4 allowance includes
+the recovered first run. There is no additional or replacement candidate.

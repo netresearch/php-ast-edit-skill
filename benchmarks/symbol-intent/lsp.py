@@ -94,7 +94,8 @@ class Client:
             "--config-extra",
             json.dumps(CONFIG),
         ]
-        self.process = subprocess.Popen(  # NOSONAR(S6350): pinned local executable; argv, no shell.
+        # Pinned local executable; argv, no shell. See benchmarks/TRUST.md.
+        self.process = subprocess.Popen(  # NOSONAR(S6350)
             argv,
             cwd=root,
             env=isolated_environment(directory),
@@ -110,7 +111,7 @@ class Client:
         try:
             while True:
                 self.inbox.put(read_frame(self.process.stdout))
-        except (ValueError, OSError, UnicodeError) as error:
+        except (ValueError, OSError) as error:
             self.inbox.put(error)
 
     def send(self, message):

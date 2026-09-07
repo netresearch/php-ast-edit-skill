@@ -23,6 +23,7 @@ from lsp import PHAR_SHA256, RELEASE, IntentError, rename, require
 HERE = Path(__file__).resolve().parent
 RUNTIME = HERE.parents[1]
 PLAN_ID = re.compile(r"[0-9a-f]{64}")
+JSON_SUFFIX = ".json"
 LIMIT_WARNING = "Experimental PHP-only method rename. Phpactor may omit unresolved references; run relevant behavior checks."
 
 
@@ -43,7 +44,10 @@ def snapshot(root):
     def unreadable(error):
         raise error
 
-    for directory, names, files in os.walk(root, followlinks=False, onerror=unreadable):
+    # Explicit local workspace root; no remote file-existence service. See TRUST.md.
+    for directory, names, files in os.walk(
+        root, followlinks=False, onerror=unreadable
+    ):  # NOSONAR(S6549)
         current = Path(directory)
         if current == root and ".git" in names:
             names.remove(".git")
@@ -148,6 +152,36 @@ def position_to_byte(source, position):
     return sum(len(part) + 1 for part in lines[:line]) + len(prefix)
 
 
+def validated_ranges(edits, source, anchor, is_anchor, new_name):
+    anchor_found = False
+    require(isinstance(edits, list) and edits, "Empty edit list")
+    ranges = []
+    for edit in edits:
+        require(
+            isinstance(edit, dict)
+            and set(edit) == {"range", "newText"}
+            and edit["newText"] == new_name,
+            "Unsupported rename replacement",
+        )
+        interval = edit["range"]
+        require(
+            isinstance(interval, dict) and set(interval) == {"start", "end"},
+            "Invalid rename range",
+        )
+        start = position_to_byte(source, interval["start"])
+        end = position_to_byte(source, interval["end"])
+        require(start < end, "Empty or reversed rename range")
+        ranges.append({"start": start, "end": end})
+        if is_anchor and start == anchor["start"] and end == anchor["end"]:
+            anchor_found = True
+    ranges.sort(key=lambda item: item["start"])
+    require(
+        all(first["end"] <= second["start"] for first, second in pairwise(ranges)),
+        "Overlapping rename ranges",
+    )
+    return ranges, anchor_found
+
+
 def translate(workspace_edit, root, inventory, anchor_path, anchor, new_name):
     require(
         isinstance(workspace_edit, dict) and set(workspace_edit) == {"documentChanges"},
@@ -195,37 +229,10 @@ def translate(workspace_edit, root, inventory, anchor_path, anchor, new_name):
         seen.add(relative)
         source = path.read_bytes()
         require(digest(source) == inventory[relative], "Source changed during planning")
-        require(
-            isinstance(document["edits"], list) and document["edits"], "Empty edit list"
+        ranges, matched = validated_ranges(
+            document["edits"], source, anchor, path == anchor_path, new_name
         )
-        ranges = []
-        for edit in document["edits"]:
-            require(
-                isinstance(edit, dict)
-                and set(edit) == {"range", "newText"}
-                and edit["newText"] == new_name,
-                "Unsupported rename replacement",
-            )
-            interval = edit["range"]
-            require(
-                isinstance(interval, dict) and set(interval) == {"start", "end"},
-                "Invalid rename range",
-            )
-            start = position_to_byte(source, interval["start"])
-            end = position_to_byte(source, interval["end"])
-            require(start < end, "Empty or reversed rename range")
-            ranges.append({"start": start, "end": end})
-            if (
-                path == anchor_path
-                and start == anchor["start"]
-                and end == anchor["end"]
-            ):
-                anchor_found = True
-        ranges.sort(key=lambda item: item["start"])
-        require(
-            all(first["end"] <= second["start"] for first, second in pairwise(ranges)),
-            "Overlapping rename ranges",
-        )
+        anchor_found = anchor_found or matched
         files.append(
             {"path": str(path), "sha256": inventory[relative], "ranges": ranges}
         )
@@ -301,7 +308,7 @@ def plan(args, state):
     }
     raw = encode(record)
     identifier = digest(raw)
-    with (state / (identifier + ".json")).open("xb") as output:
+    with (state / (identifier + JSON_SUFFIX)).open("xb") as output:
         output.write(raw)
     return {
         "ok": True,
@@ -316,7 +323,7 @@ def plan(args, state):
 
 def load_plan(args, state):
     require(PLAN_ID.fullmatch(args.plan) is not None, "Invalid plan ID")
-    path = state / (args.plan + ".json")
+    path = state / (args.plan + JSON_SUFFIX)
     require(not path.is_symlink(), "Symlink plans are unsupported")
     raw = path.read_bytes()
     require(digest(raw) == args.plan, "Plan content hash differs")
@@ -343,7 +350,7 @@ def apply_plan(args, state):
         {**record["document"], "report": "compact"},
         root,
     )
-    result_path = state / (args.plan + ".attempt-" + os.urandom(8).hex() + ".json")
+    result_path = state / (args.plan + ".attempt-" + os.urandom(8).hex() + JSON_SUFFIX)
     with result_path.open("xb") as output:
         output.write(encode(report))
     if status in (0, 1) or snapshot(root) != record["inventory"]:
@@ -430,7 +437,7 @@ def main():
                 result, status = load_plan(args, state), 0
         print(json.dumps(result, ensure_ascii=False))
         return status
-    except (IntentError, OSError, ValueError, subprocess.SubprocessError) as error:
+    except (OSError, ValueError, subprocess.SubprocessError) as error:
         print(json.dumps({"ok": False, "error": str(error)}))
         return 2
 

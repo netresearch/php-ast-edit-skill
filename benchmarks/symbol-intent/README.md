@@ -84,6 +84,8 @@ python3 /tmp/php-symbol-pilot/source/benchmarks/symbol-intent/pilot.py summarize
 ```
 
 Preparation freezes source, dependencies, task bytes, prompts and schedule. The
-controller is single-use; interruptions retain evidence and require offline review.
+controller never reruns an attempted candidate. The documented accounting-scope
+amendment supports offline `recover`, followed by explicit `run --resume-reviewed`;
+both retain the original trace and measurement and verify the recovery sidecar.
 The normal test suite runs without Phpactor and explicitly skips LSP integration.
 Set `PHP_AST_TEST_PHPACTOR` for both prototype and existing-CLI control integration.

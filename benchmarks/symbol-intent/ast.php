@@ -85,7 +85,7 @@ function intentCollision(
 function intentAnchor(array $request, string $root, string $newName): array
 {
     intentRequire(is_array($request['file'] ?? null), 'Missing anchor file');
-    [$source, $roots] = intentSource($request['file'], $root);
+    [, $roots] = intentSource($request['file'], $root);
     $select = $request['select'] ?? null;
     intentRequire(
         is_string($select) && str_starts_with($select, 'method:'),
@@ -154,7 +154,7 @@ try {
     );
     $newName = $request['to'] ?? null;
     intentRequire(
-        is_string($newName) && preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/D', $newName) === 1,
+        is_string($newName) && preg_match('/^[A-Za-z_]\w*$/D', $newName) === 1,
         'New name must be an ASCII identifier',
     );
     intentRequire(!str_starts_with($newName, '__'), 'Magic method rename is unsupported');
