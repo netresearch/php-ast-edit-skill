@@ -156,8 +156,11 @@ remain a separate field. Do not double-count thinking tokens.
 `real-summary.json` contains three cell distributions and within-repetition paired
 deltas for AST/manual minus text/manual and AST/integrated minus AST/manual.
 `real-runs.json` retains individual outcomes and raw measurement references. Missing
-accounting stays unknown; failed candidates are retained in denominators. Behavior
-check counts and summed checker-measured duration come from candidate receipts.
+accounting stays unknown; failed candidates are retained in denominators. Paired
+effects contain observed pairs only: an attempted but incomplete arm remains in
+the ledger and produces null deltas, while an unattempted arm cannot form a pair.
+The frozen schedule retains every planned ID, including unattempted candidates.
+Behavior check counts and summed checker-measured duration come from candidate receipts.
 Controller-only checking is excluded from candidate wall time and receipt totals.
 Checker duration is not total tool-execution duration; no API-time subtraction is
 used to invent orchestration time. Preserve unexposed native timing as null.

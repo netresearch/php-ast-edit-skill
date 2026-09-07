@@ -67,6 +67,21 @@ class OracleTests(unittest.TestCase):
                     fixture.check(root, phar)
                 run.assert_not_called()
 
+    def test_unavailable_junit_counts_stay_unknown(self):
+        with tempfile.TemporaryDirectory() as directory:
+            report = Path(directory) / "junit.xml"
+            self.assertTrue(
+                all(value is None for value in fixture._junit(report).values())
+            )
+            report.write_text("<testsuites>")
+            self.assertTrue(
+                all(value is None for value in fixture._junit(report).values())
+            )
+            report.write_text('<testsuites><testsuite tests="unknown"/></testsuites>')
+            self.assertTrue(
+                all(value is None for value in fixture._junit(report).values())
+            )
+
     def test_command_exposes_behavior_check_without_oracle(self):
         command = fixture.command(
             Path("/work"), Path("/phpunit.phar"), receipt_dir=Path("/receipts")

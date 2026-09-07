@@ -69,6 +69,8 @@ Candidate-facing stdout is one JSON object containing `ok`, `tests`, `assertions
 zero, all 17 tests executed, and identical fixture manifests before and after
 the check. A failed run has exit status one and includes up to 4,000 characters
 of actual PHPUnit diagnostics so the candidate can inspect a failed caller.
+Unreadable or malformed JUnit metadata produces null (unknown) counts. It does
+not establish that zero tests or failures occurred and cannot satisfy the check.
 This command does not consult the
 hidden expected edit inventory and cannot certify rename completeness by itself.
 
