@@ -217,16 +217,16 @@ class PostcheckTests(unittest.TestCase):
             self.assertEqual(0, study.summarize_records(incomplete)["known_usage"])
 
     def test_execution_requires_the_frozen_controller_before_dispatch(self):
-        with tempfile.TemporaryDirectory() as directory:
-            with (
-                patch.object(study, "configuration"),
-                patch.object(pilot, "run_pilot") as dispatch,
-            ):
-                with self.assertRaisesRegex(IntentError, "prepared source snapshot"):
-                    study.run(
-                        argparse.Namespace(output=Path(directory), execute_models=True)
-                    )
-                dispatch.assert_not_called()
+        with (
+            tempfile.TemporaryDirectory() as directory,
+            patch.object(study, "configuration"),
+            patch.object(pilot, "run_pilot") as dispatch,
+        ):
+            with self.assertRaisesRegex(IntentError, "prepared source snapshot"):
+                study.run(
+                    argparse.Namespace(output=Path(directory), execute_models=True)
+                )
+            dispatch.assert_not_called()
 
 
 if __name__ == "__main__":
