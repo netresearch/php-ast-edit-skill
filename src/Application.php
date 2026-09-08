@@ -457,7 +457,9 @@ final class Application
             }
         }
 
-        if ($target === []) {
+        if (!isset($target['select']) && !isset($target['ref'])) {
+            // --kind narrows a locator, it is not one: without --select or --ref it would name
+            // every node of that kind in the file, which is not a target an edit can apply to.
             throw new EditException('The flag form needs --select or --ref to name the target.');
         }
         $edit['target'] = $target;

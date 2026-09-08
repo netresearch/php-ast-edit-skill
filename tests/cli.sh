@@ -151,5 +151,13 @@ expect "apply takes one edit from flags, without a payload file" "1" \
 expect "and says so when the target is missing" "1" \
   "$( (cd "$FLAGDIR" && $BIN apply --file F.php --op set_name --value x 2>&1 || true) | grep -c 'needs --select or --ref')"
 
+# --kind is a constraint on a locator, not a locator: alone it would name every node of that
+# kind in the file, so it must not satisfy the target check on its own.
+expect "and --kind alone is not a target" "1" \
+  "$( (cd "$FLAGDIR" && $BIN apply --file F.php --kind Stmt_ClassMethod --op set_name --value x 2>&1 || true) | grep -c 'needs --select or --ref')"
+expect "while --kind still narrows a --select" "1" \
+  "$( (cd "$FLAGDIR" && $BIN apply --file F.php --select 'method:F::run' --kind Stmt_ClassMethod \
+       --op rename_variable --from value --to item > /dev/null 2>&1 && grep -c 'string \$item' "$FLAGDIR/F.php") )"
+
 
 echo "OK: CLI surface behaves as documented."
