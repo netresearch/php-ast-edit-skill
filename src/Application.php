@@ -262,6 +262,7 @@ final class Application
                         'set_visibility',
                         'add_implements',
                         'set_extends',
+                        'add_use',
                         'rename_variable',
                         'rename_method',
                     ],
@@ -446,7 +447,8 @@ final class Application
         if (!isset($options['file'])) {
             return null;
         }
-        $edit = ['operation' => $this->flagString($options, 'op', true)];
+        $operation = $this->flagString($options, 'op', true);
+        $edit = ['operation' => $operation];
         $target = [];
 
         foreach (['select', 'ref', 'kind'] as $key) {
@@ -456,15 +458,25 @@ final class Application
                 $target[$key] = $value;
             }
         }
+        $fileScoped = in_array($operation, Editor::FILE_SCOPED, true);
 
-        if (!isset($target['select']) && !isset($target['ref'])) {
+        if ($fileScoped && $target !== []) {
+            throw new EditException(
+                '--op ' . $operation . ' writes to the file, not to a node, and takes no target.',
+            );
+        }
+
+        if (!$fileScoped && !isset($target['select']) && !isset($target['ref'])) {
             // --kind narrows a locator, it is not one: without --select or --ref it would name
             // every node of that kind in the file, which is not a target an edit can apply to.
             throw new EditException('The flag form needs --select or --ref to name the target.');
         }
-        $edit['target'] = $target;
 
-        foreach (['php', 'value', 'from', 'to', 'property', 'position', 'index'] as $key) {
+        if (!$fileScoped) {
+            $edit['target'] = $target;
+        }
+
+        foreach (['php', 'value', 'alias', 'from', 'to', 'property', 'position', 'index'] as $key) {
             $value = $this->flagString($options, $key);
 
             if ($value !== null) {

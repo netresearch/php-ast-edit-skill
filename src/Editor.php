@@ -268,6 +268,69 @@ final class Editor
         $transaction->warning = 'NOT_CANONICAL: using format-preserving output. Canonical normalization is optional.';
     }
 
+    /**
+     * Operations that belong to the file rather than to a node in it.
+     *
+     * An import is not attached to anything: `use Foo\Bar;` sits in the file's import section
+     * and applies to every name below it. Making the caller name a target for it would be
+     * asking for a coordinate the operation then ignores — and worse, `use` inside a class
+     * body means something else entirely (a trait), so a class target would read as that.
+     *
+     * @var list<string>
+     */
+    public const FILE_SCOPED = ['add_use'];
+
+    /**
+     * The file's import section, as a location an edit can be resolved against.
+     *
+     * One namespace declaration owns it; without one the file's own statement list does. Two
+     * namespaces in one file give two import sections and no answer to "the file's imports",
+     * so that is refused rather than resolved to the first.
+     *
+     * @param list<Node\Stmt> $roots
+     */
+    private function fileScope(array $roots): NodeLocation
+    {
+        $namespaces = [];
+
+        foreach ($roots as $index => $root) {
+            if ($root instanceof Stmt\Namespace_) {
+                $namespaces[$index] = $root;
+            }
+        }
+
+        if (count($namespaces) > 1) {
+            throw new EditException(
+                sprintf(
+                    'This file declares %d namespaces, so it has no single import section. Add the import with insert_into on the namespace you mean.',
+                    count($namespaces),
+                ),
+            );
+        }
+
+        if ($namespaces !== []) {
+            $index = array_key_first($namespaces);
+
+            return new NodeLocation(
+                $namespaces[$index],
+                null,
+                null,
+                null,
+                $index,
+                0,
+                'stmts[' . $index . ']',
+            );
+        }
+
+        if ($roots === []) {
+            throw new EditException(
+                'An empty file has nowhere to put an import. Write its contents first.',
+            );
+        }
+
+        return new NodeLocation($roots[0], null, null, null, 0, 0, 'stmts[0]');
+    }
+
     private function resolveTargets(FileTransaction $transaction, array $spec, string $source): void
     {
         $edits = $spec['edits'] ?? [];
@@ -280,13 +343,23 @@ final class Editor
             if (!is_array($edit)) {
                 throw new EditException(sprintf('Edit %d must be an object.', $index));
             }
+            $operation = $this->requiredString($edit, 'operation');
             $target = $edit['target'] ?? null;
 
-            if (!is_array($target)) {
+            if (in_array($operation, self::FILE_SCOPED, true)) {
+                if ($target !== null) {
+                    throw new EditException(
+                        sprintf(
+                            'Edit %d: %s writes a file-level import and takes no target. A `use` inside a class body imports a trait, which is add_member with php: "use SomeTrait;".',
+                            $index,
+                            $operation,
+                        ),
+                    );
+                }
+                $location = $this->fileScope($transaction->roots);
+            } elseif (!is_array($target)) {
                 throw new EditException(sprintf('Edit %d requires a target object.', $index));
-            }
-
-            if (isset($target['select'])) {
+            } elseif (isset($target['select'])) {
                 if (isset($target['ref'])) {
                     throw new EditException('An edit names its target by ref or by select, not both.');
                 }
@@ -302,7 +375,7 @@ final class Editor
                     isset($target['kind']) ? (string) $target['kind'] : null,
                 );
             }
-            $this->assertOperationArguments($this->requiredString($edit, 'operation'), $edit);
+            $this->assertOperationArguments($operation, $edit);
             $this->assertExpectations($location->node, $edit['expect'] ?? []);
             $transaction->resolved[] = ['edit' => $edit, 'location' => $location, 'index' => (int) $index];
         }
@@ -571,7 +644,7 @@ final class Editor
     ): void {
         $operation = $this->requiredString($edit, 'operation');
 
-        $applied = $this->applyPrimitive($operation, $location, $edit, $roots, $snippets) || $this->applyComment($operation, $location, $edit) || $this->applyShorthand($operation, $location, $edit, $roots, $snippets) || $this->applySemantic($operation, $location, $edit, $snippets);
+        $applied = $this->applyPrimitive($operation, $location, $edit, $roots, $snippets) || $this->applyComment($operation, $location, $edit) || $this->applyShorthand($operation, $location, $edit, $roots, $snippets) || $this->applySemantic($operation, $location, $edit, $roots, $snippets);
 
         if (!$applied) {
             throw new EditException('Unsupported operation: ' . $operation);
@@ -777,6 +850,7 @@ final class Editor
         string $operation,
         NodeLocation $location,
         array $edit,
+        array &$roots,
         ContextParser $snippets,
     ): bool {
         $node = $location->node;
@@ -851,6 +925,10 @@ final class Editor
                 );
 
                 return true;
+            case 'add_use':
+                $this->addUse($location, $roots, $edit);
+
+                return true;
             case 'set_extends':
                 $location->replaceChild(
                     'extends',
@@ -862,6 +940,142 @@ final class Editor
             default:
                 return false;
         }
+    }
+
+    /**
+     * Add a class import to the file, once.
+     *
+     * Idempotence is the whole point: an agent that has to find out whether the import is
+     * already there pays for a read, a grep and a decision before it may write, and gets it
+     * wrong when the class is imported inside a group use. So the operation answers the
+     * question itself and reports what it found — `alreadyPresent` with the local name the
+     * class is available under, which is what the caller actually needed to know.
+     *
+     * The two ways an import can be impossible are both refused rather than papered over:
+     * importing a class that is already there under a different alias would leave the caller
+     * writing a short name the file does not bind, and importing a different class under a
+     * name that is taken would change what existing code means.
+     *
+     * @param list<Node\Stmt>     $roots
+     * @param array<string, mixed> $edit
+     */
+    private function addUse(NodeLocation $scope, array &$roots, array $edit): void
+    {
+        $name = ltrim(trim($this->requiredString($edit, 'value')), '\\');
+
+        if ($name === '') {
+            throw new EditException(
+                'add_use needs the class to import in "value", for example "Vendor\Package\Thing".',
+            );
+        }
+        $alias = isset($edit['alias']) ? trim((string) $edit['alias']) : '';
+        $short = str_contains($name, '\\') ? substr($name, (int) strrpos($name, '\\') + 1) : $name;
+        $local = $alias !== '' ? $alias : $short;
+        $namespace = $scope->node instanceof Stmt\Namespace_ ? $scope->node : null;
+        $statements = $namespace instanceof Stmt\Namespace_ ? $namespace->stmts : $roots;
+
+        foreach ($this->importsIn($statements) as [$importedName, $importedLocal]) {
+            $sameClass = strcasecmp($importedName, $name) === 0;
+            $sameLocal = strcasecmp($importedLocal, $local) === 0;
+
+            if ($sameClass && $sameLocal) {
+                $this->lastEffect = ['imported' => $name, 'as' => $importedLocal, 'alreadyPresent' => true];
+
+                return;
+            }
+
+            if ($sameClass) {
+                throw new EditException(
+                    sprintf(
+                        '%s is already imported as %s. Use that name, or pass alias to import it under another one.',
+                        $name,
+                        $importedLocal,
+                    ),
+                );
+            }
+
+            if ($sameLocal) {
+                throw new EditException(
+                    sprintf(
+                        'The name %s is already bound to %s in this file. Pass alias to import %s under a different name.',
+                        $local,
+                        $importedName,
+                        $name,
+                    ),
+                );
+            }
+        }
+        // Constructed, not parsed: it carries no line attributes for the printer to read as
+        // paragraphing, so there is nothing to clear.
+        $import = new Stmt\Use_([new UseItem(new Name($name), $alias !== '' ? $alias : null)]);
+        array_splice($statements, $this->importPosition($statements), 0, [$import]);
+
+        if ($namespace instanceof Stmt\Namespace_) {
+            $namespace->stmts = $statements;
+        } else {
+            $roots = $statements;
+        }
+        $this->lastEffect = ['imported' => $name, 'as' => $local, 'alreadyPresent' => false];
+    }
+
+    /**
+     * Every class this statement list imports, as [fully qualified name, local name].
+     *
+     * Group uses are read too. `use Vendor\Ext\{Alpha, Beta};` imports Beta as surely as a
+     * line of its own does, and a check that only reads `Stmt\Use_` would add a second import
+     * of a class the file already has.
+     *
+     * @param  list<Node\Stmt> $statements
+     * @return list<array{0: string, 1: string}>
+     */
+    private function importsIn(array $statements): array
+    {
+        $imports = [];
+
+        foreach ($statements as $statement) {
+            if (!$statement instanceof Stmt\Use_ && !$statement instanceof Stmt\GroupUse) {
+                continue;
+            }
+            // The type sits on whichever of the two nodes knows it: a plain `use X;` carries it
+            // on the statement and leaves the item unknown, a group use the other way round, and
+            // a mixed group (`use A\{B, function c}`) per item. Reading only one of them missed
+            // every group use, which is exactly the case a caller cannot see by grepping.
+            $prefix = $statement instanceof Stmt\GroupUse ? $statement->prefix->toString() . '\\' : '';
+
+            foreach ($statement->uses as $item) {
+                $type = $statement->type === Stmt\Use_::TYPE_UNKNOWN ? $item->type : $statement->type;
+
+                if ($type !== Stmt\Use_::TYPE_NORMAL) {
+                    continue;
+                }
+                $imports[] = [$prefix . $item->name->toString(), $item->getAlias()->toString()];
+            }
+        }
+
+        return $imports;
+    }
+
+    /**
+     * Where the next import goes: after the last one, or ahead of everything a file may not
+     * have imports in front of. `declare()` has to stay the first statement.
+     *
+     * No sorting. Where a formatter is declared it owns the order (php-cs-fixer's
+     * `ordered_imports` and its equivalents), and where none is, an unsorted import list is
+     * still valid PHP — reordering somebody's imports is a change they did not ask for.
+     *
+     * @param list<Node\Stmt> $statements
+     */
+    private function importPosition(array $statements): int
+    {
+        $position = 0;
+
+        foreach ($statements as $index => $statement) {
+            if ($statement instanceof Stmt\Use_ || $statement instanceof Stmt\GroupUse || $statement instanceof Stmt\Declare_) {
+                $position = $index + 1;
+            }
+        }
+
+        return $position;
     }
 
     private function moveNode(NodeLocation $location, array $edit, array &$roots): void
@@ -1764,6 +1978,7 @@ final class Editor
         'set_type' => ['requires' => ['php'], 'optional' => []],
         'set_visibility' => ['requires' => ['value'], 'optional' => []],
         'add_implements' => ['requires' => ['php'], 'optional' => ['position']],
+        'add_use' => ['requires' => ['value'], 'optional' => ['alias']],
         'set_extends' => ['requires' => ['php'], 'optional' => ['position']],
         'rename_variable' => ['requires' => ['from', 'to'], 'optional' => []],
         'rename_method' => ['requires' => ['to'], 'optional' => []],

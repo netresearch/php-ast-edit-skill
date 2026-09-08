@@ -69,6 +69,8 @@ presentation only; `checksPassed: null` means no checks ran.
   limits. Cross-file resolution requires project-aware tools. Use `set_name` for an
   intentionally declaration-only change.
 - SQL/HTML/JSON inside a PHP literal: `set_string` on its `Scalar_String` node.
+- Class import: `add_use` with `value` and no `target`; already-imported is a reported
+  no-op, a taken name an error. Add it in the same transaction as the code that needs it.
 
 Use `contexts --operation <name>` before guessing unfamiliar arguments.
 Parser and host lint passes do not prove application behavior.
