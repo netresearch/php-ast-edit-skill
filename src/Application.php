@@ -81,6 +81,13 @@ final class Application
 
     private function apply(array $options): int
     {
+        $inline = $this->inlineDocument($options);
+
+        if ($inline !== null) {
+            $this->json((new Editor())->apply($inline, isset($options['dry-run'])));
+
+            return 0;
+        }
         $input = $options['input'] ?? '-';
 
         if (!is_string($input)) {
@@ -275,6 +282,7 @@ final class Application
         Commands:
           php-ast-edit inspect --file FILE (--offset N | --line N --column N) [--kind TYPE] [--php-version 8.4]
           php-ast-edit apply [--input FILE|-] [--dry-run]
+          php-ast-edit apply --file FILE (--select SEL|--ref REF) --op OPERATION [args]
           php-ast-edit validate --file FILE [--php-version 8.4]
           php-ast-edit contexts [--operation OPERATION]
           php-ast-edit doctor [--path DIRECTORY]
@@ -284,6 +292,13 @@ final class Application
         Use a selector when the target has a name; inspect only when coordinates are needed:
           {"files":[{"path":"src/Foo.php","edits":[{"target":{"select":"method:Foo::bar"},
             "operation":"set_return_type","php":"string|int"}]}]}
+        
+        One edit against a named target is one call, with no payload file:
+          php-ast-edit apply --file src/Foo.php --select method:Foo::bar \
+              --op rename_variable --from nonce --to nonceValue
+        The operation's own arguments become flags: --php, --value, --from, --to,
+        --property, --position, --index, --parse-as. Several edits, or several files,
+        stay in one apply request through JSON on stdin.
         
         Selectors: class:, interface:, trait:, enum:, method:Foo::bar, function:,
         property:Foo::$bar, const:Foo::BAR. Names are short names; ambiguity is refused.
@@ -410,5 +425,79 @@ final class Application
             $data,
             JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE | JSON_THROW_ON_ERROR,
         ) . "\n";
+    }
+
+    /**
+     * Build a one-edit document from flags, so a simple change is one call.
+     *
+     * Measured on controlled runs: every edit cost two calls, one writing a JSON payload to a
+     * temporary file and one applying it. The JSON form stays — several edits over several
+     * files need it — but the common case is a single edit against a named target, and that
+     * should not require a file.
+     *
+     *     php-ast-edit apply --file Foo.php --select method:Foo::bar \
+     *         --op rename_variable --from nonce --to nonceValue
+     *
+     * @param  array<string, mixed> $options
+     * @return array<string, mixed>|null the document, or null when no flag form was used
+     */
+    private function inlineDocument(array $options): ?array
+    {
+        if (!isset($options['file'])) {
+            return null;
+        }
+        $edit = ['operation' => $this->flagString($options, 'op', true)];
+        $target = [];
+
+        foreach (['select', 'ref', 'kind'] as $key) {
+            $value = $this->flagString($options, $key);
+
+            if ($value !== null) {
+                $target[$key] = $value;
+            }
+        }
+
+        if ($target === []) {
+            throw new EditException('The flag form needs --select or --ref to name the target.');
+        }
+        $edit['target'] = $target;
+
+        foreach (['php', 'value', 'from', 'to', 'property', 'position', 'index'] as $key) {
+            $value = $this->flagString($options, $key);
+
+            if ($value !== null) {
+                $edit[$key] = in_array($key, ['position', 'index'], true) && ctype_digit($value) ? (int) $value : $value;
+            }
+        }
+        $parseAs = $this->flagString($options, 'parse-as');
+
+        if ($parseAs !== null) {
+            $edit['parseAs'] = $parseAs;
+        }
+
+        return ['files' => [['path' => $this->flagString($options, 'file', true), 'edits' => [$edit]]]];
+    }
+
+    /**
+     * One string option, or null when it was not given.
+     *
+     * @param array<string, mixed> $options
+     */
+    private function flagString(array $options, string $name, bool $required = false): ?string
+    {
+        if (!isset($options[$name])) {
+            if ($required) {
+                throw new EditException('The flag form requires --' . $name . '.');
+            }
+
+            return null;
+        }
+        $value = $options[$name];
+
+        if (!is_string($value)) {
+            throw new EditException('--' . $name . ' requires a value.');
+        }
+
+        return $value;
     }
 }

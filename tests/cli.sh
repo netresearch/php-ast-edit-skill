@@ -134,4 +134,22 @@ if [[ "$fail" -ne 0 ]]; then
   exit 1
 fi
 
+# ---- The flag form: one call, no payload file ------------------------------------------
+# Measured on controlled runs: every edit cost two calls, one writing a JSON payload to a
+# temporary file and one applying it. A single edit against a named target should not need
+# a file.
+FLAGDIR="$WORK/flagform"
+mkdir -p "$FLAGDIR"
+printf '{"canonical":true,"printWidth":120}' > "$FLAGDIR/.php-ast-edit.json"
+printf '[*.php]\nmax_line_length = 120\n' > "$FLAGDIR/.editorconfig"
+printf '{"files":[{"path":"%s","mode":"create","php":"<?php class F { public function run(string $item): string { return $item; } }"}]}' \
+  "$FLAGDIR/F.php" | $BIN apply > /dev/null
+(cd "$FLAGDIR" && $BIN apply --file F.php --select 'method:F::run' --op rename_variable \
+  --from item --to value > /dev/null)
+expect "apply takes one edit from flags, without a payload file" "1" \
+  "$(grep -c 'string \$value' "$FLAGDIR/F.php")"
+expect "and says so when the target is missing" "1" \
+  "$( (cd "$FLAGDIR" && $BIN apply --file F.php --op set_name --value x 2>&1 || true) | grep -c 'needs --select or --ref')"
+
+
 echo "OK: CLI surface behaves as documented."
