@@ -18,6 +18,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Added
 
+- **One edit against a named target is one call.** `apply --file F.php --select method:Foo::bar --op rename_variable --from nonce --to nonceValue` — no payload file. Measured across controlled runs, every edit cost two calls, one writing JSON to a temporary file and one applying it; that was the last fixed overhead the tool imposed on the simple case. The operation's own arguments become flags, and `contexts` says which each takes. Several edits, or several files, still go through JSON on stdin, which is what that form is for.
+
 - Optional `report: "compact"` Apply responses emit each verification run once with per-file `checkIds`; the default `full` response preserves the existing per-file contract. The experimental adapter requests compact reports automatically; frozen benchmark evidence is unchanged.
 - Explicit `project` and `changed_files` verification scopes. Project commands use stable configured paths and run after deletions; legacy argument arrays keep changed-file behavior. Each configured entry remains a distinct execution, with configuration and exclusions captured before writes.
 - Isolated runtime-only PHAR builds, engine-bundled skill/plugin archives, dependency manifests, signed checksums and provenance. Clean installation and extracted-artifact tests run on PHP 8.2 and 8.5 before release publication. Historical release assets remain unchanged.

@@ -27,7 +27,9 @@ configuring formatting.
    `class:`, `interface:`, `trait:`, `enum:`, `function:`, `property:Foo::$items`,
    `const:Foo::LIMIT`. Ambiguous names are refused. Use `inspect` for unnamed targets;
    retain its `ref` and `sha256`.
-3. Batch related edits across files in one `apply`. Include `sha256` when relying on a
+3. One edit against a named target is one call, with no payload file:
+   `apply --file F.php --select method:Foo::bar --op rename_variable --from a --to b`.
+   Batch related edits across files in one `apply`. Include `sha256` when relying on a
    read snapshot. After `STALE_SOURCE`, reread and reassess; never drop the guard.
    Use `"report":"compact"` to receive each verification result once.
 4. Supply compact valid snippets. Import or qualify external types in namespaced PHP,
