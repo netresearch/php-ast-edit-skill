@@ -17,7 +17,7 @@ cp "${CLAUDE_CREDENTIALS:-$HOME/.claude/.credentials.json}" "$cfg/.credentials.j
 chmod 600 "$cfg/.credentials.json"
 printf '{"includeCoAuthoredBy":false}\n' > "$cfg/settings.json"
 
-if [ -n "$skill" ]; then
+if [[ -n "$skill" ]]; then
   mkdir -p "$cfg/skills"
   cp -r "$skill" "$cfg/skills/$(basename "$skill")"
 fi

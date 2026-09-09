@@ -32,11 +32,11 @@ rm -rf "$work"
 git -C "$REPO" worktree remove --force "$work" 2>/dev/null || true
 git -C "$REPO" worktree add --detach "$work" "$BASE" >/dev/null
 # The subject's vendor directory, so the project's own checks can run inside the arm.
-[ -d "$REPO/.Build" ] && ln -sfn "$REPO/.Build" "$work/.Build"
-[ -d "$REPO/vendor" ] && ln -sfn "$REPO/vendor" "$work/vendor"
+[[ -d "$REPO/.Build" ]] && ln -sfn "$REPO/.Build" "$work/.Build"
+[[ -d "$REPO/vendor" ]] && ln -sfn "$REPO/vendor" "$work/vendor"
 cfg="$BENCH/cfg-$arm"
-[ -d "$cfg" ] || { echo "no configuration $cfg — see prepare.sh" >&2; exit 2; }
-[ "$arm" = free ] || export PATH="$TOOL/bin:$PATH"
+[[ -d "$cfg" ]] || { echo "no configuration $cfg — see prepare.sh" >&2; exit 2; }
+[[ "$arm" == free ]] || export PATH="$TOOL/bin:$PATH"
 # `claude -p` waits on stdin for three seconds before giving up; closing it keeps the
 # measured wall time from carrying that wait.
 ( cd "$work" && CLAUDE_CONFIG_DIR="$cfg" timeout 900 claude -p "$prompt" \

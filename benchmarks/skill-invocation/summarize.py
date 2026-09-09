@@ -13,12 +13,30 @@ import json
 import os
 import statistics
 import sys
+from pathlib import Path
+
+
+def under(root, *parts):
+    """Resolve a path and refuse anything that leaves the working root.
+
+    Both arguments this script takes come from a command line, and every path it opens is
+    built from them. Nothing here needs to reach outside the run directory, so it does not
+    get to: a `..` or an absolute segment in either argument stops the script instead of
+    reading whatever it names.
+    """
+    root = Path(root).resolve()
+    candidate = root.joinpath(*parts).resolve()
+
+    if candidate != root and root not in candidate.parents:
+        raise SystemExit(f"refusing to read outside {root}: {candidate}")
+
+    return candidate
 
 
 def invoked_skill(config_dir, session_id):
     """Whether this session called the Skill tool, read from its own transcript."""
     for path in glob.glob(f"{config_dir}/projects/*/{session_id}.jsonl"):
-        with open(path) as transcript:
+        with open(under(config_dir, os.path.relpath(path, config_dir))) as transcript:
             for line in transcript:
                 message = json.loads(line).get("message") or {}
                 for block in message.get("content") or []:
@@ -33,11 +51,19 @@ def invoked_skill(config_dir, session_id):
 
 
 def runs_for(bench, arm):
+    # Both directories are resolved before anything is globbed or opened, so an arm name
+    # carrying a path segment is refused here rather than at whichever file it first
+    # reaches — a check that only fires once a matching file exists is not a check.
+    config_dir = str(under(bench, f"cfg-{arm}"))
+    out_dir = under(bench, "out")
     runs = []
-    for path in sorted(glob.glob(f"{bench}/out/*-{arm}.json")):
-        if os.path.getsize(path) == 0:
+
+    for path in sorted(glob.glob(f"{out_dir}/*-{arm}.json")):
+        resolved = under(out_dir, os.path.basename(path))
+
+        if resolved.stat().st_size == 0:
             continue
-        with open(path) as handle:
+        with open(resolved) as handle:
             result = json.load(handle)
         # A run that failed to authenticate or timed out measured nothing; counting it
         # as a run that did not invoke the skill would report the arm as worse than it is.
@@ -51,7 +77,7 @@ def runs_for(bench, arm):
                 "cache_read": usage["cache_read_input_tokens"],
                 "usd": result.get("total_cost_usd", 0),
                 "sec": round(result.get("duration_ms", 0) / 1000, 1),
-                "skill": invoked_skill(f"{bench}/cfg-{arm}", result["session_id"]),
+                "skill": invoked_skill(config_dir, result["session_id"]),
             }
         )
     return runs
