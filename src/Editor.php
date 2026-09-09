@@ -974,14 +974,44 @@ final class Editor
         $namespace = $scope->node instanceof Stmt\Namespace_ ? $scope->node : null;
         $statements = $namespace instanceof Stmt\Namespace_ ? $namespace->stmts : $roots;
 
-        foreach ($this->importsIn($statements) as [$importedName, $importedLocal]) {
+        if ($this->importIsSettled($this->importsIn($statements), $name, $local)) {
+            return;
+        }
+        // Constructed, not parsed: it carries no line attributes for the printer to read as
+        // paragraphing, so there is nothing to clear.
+        $import = new Stmt\Use_([new UseItem(new Name($name), $alias !== '' ? $alias : null)]);
+        array_splice($statements, $this->importPosition($statements), 0, [$import]);
+
+        if ($namespace instanceof Stmt\Namespace_) {
+            $namespace->stmts = $statements;
+        } else {
+            $roots = $statements;
+        }
+        $this->lastEffect = ['imported' => $name, 'as' => $local, 'alreadyPresent' => false];
+    }
+
+    /**
+     * Whether the file already settles this import, one way or another.
+     *
+     * Returns true when the class is there under the name asked for — the caller has nothing
+     * left to do, and the effect says so. The two ways an import can be impossible throw
+     * instead: a class present under a different alias would leave the caller writing a short
+     * name the file does not bind, and a name already bound to another class would change
+     * what existing code means. Class and alias names are matched the way PHP resolves them,
+     * without regard to case.
+     *
+     * @param list<array{0: string, 1: string}> $imports
+     */
+    private function importIsSettled(array $imports, string $name, string $local): bool
+    {
+        foreach ($imports as [$importedName, $importedLocal]) {
             $sameClass = strcasecmp($importedName, $name) === 0;
             $sameLocal = strcasecmp($importedLocal, $local) === 0;
 
             if ($sameClass && $sameLocal) {
                 $this->lastEffect = ['imported' => $name, 'as' => $importedLocal, 'alreadyPresent' => true];
 
-                return;
+                return true;
             }
 
             if ($sameClass) {
@@ -1005,17 +1035,8 @@ final class Editor
                 );
             }
         }
-        // Constructed, not parsed: it carries no line attributes for the printer to read as
-        // paragraphing, so there is nothing to clear.
-        $import = new Stmt\Use_([new UseItem(new Name($name), $alias !== '' ? $alias : null)]);
-        array_splice($statements, $this->importPosition($statements), 0, [$import]);
 
-        if ($namespace instanceof Stmt\Namespace_) {
-            $namespace->stmts = $statements;
-        } else {
-            $roots = $statements;
-        }
-        $this->lastEffect = ['imported' => $name, 'as' => $local, 'alreadyPresent' => false];
+        return false;
     }
 
     /**

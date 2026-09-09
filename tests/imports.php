@@ -68,6 +68,12 @@ function addUse(string $name, ?string $alias = null): array
 {
     return array_filter(['operation' => 'add_use', 'value' => $name, 'alias' => $alias]);
 }
+// Sonar counts these; more to the point, a reader should not have to check by eye that the
+// name asked for and the name asserted on are the same string.
+const THING = 'Vendor\Other\Thing';
+const THING_IMPORT = 'use Vendor\Other\Thing;';
+const EXISTING = 'Vendor\Ext\Existing';
+
 $namespaced = "<?php\n\ndeclare(strict_types=1);\n\nnamespace Vendor\\Ext;\n\nuse Vendor\\Ext\\Existing;\n\nclass Subject\n{\n}\n";
 $plain = "<?php\n\ndeclare(strict_types=1);\n\nuse Vendor\\Ext\\Existing;\n\n\$GLOBALS['x'] = Existing::class;\n";
 

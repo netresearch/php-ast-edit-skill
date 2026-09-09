@@ -449,30 +449,9 @@ final class Application
         }
         $operation = $this->flagString($options, 'op', true);
         $edit = ['operation' => $operation];
-        $target = [];
+        $target = $this->flagTarget($options, $operation);
 
-        foreach (['select', 'ref', 'kind'] as $key) {
-            $value = $this->flagString($options, $key);
-
-            if ($value !== null) {
-                $target[$key] = $value;
-            }
-        }
-        $fileScoped = in_array($operation, Editor::FILE_SCOPED, true);
-
-        if ($fileScoped && $target !== []) {
-            throw new EditException(
-                '--op ' . $operation . ' writes to the file, not to a node, and takes no target.',
-            );
-        }
-
-        if (!$fileScoped && !isset($target['select']) && !isset($target['ref'])) {
-            // --kind narrows a locator, it is not one: without --select or --ref it would name
-            // every node of that kind in the file, which is not a target an edit can apply to.
-            throw new EditException('The flag form needs --select or --ref to name the target.');
-        }
-
-        if (!$fileScoped) {
+        if ($target !== null) {
             $edit['target'] = $target;
         }
 
@@ -490,6 +469,43 @@ final class Application
         }
 
         return ['files' => [['path' => $this->flagString($options, 'file', true), 'edits' => [$edit]]]];
+    }
+
+    /**
+     * The target the flag form names, or null for an operation that has none.
+     *
+     * @param  array<string, mixed> $options
+     * @return array<string, string>|null
+     */
+    private function flagTarget(array $options, string $operation): ?array
+    {
+        $target = [];
+
+        foreach (['select', 'ref', 'kind'] as $key) {
+            $value = $this->flagString($options, $key);
+
+            if ($value !== null) {
+                $target[$key] = $value;
+            }
+        }
+
+        if (in_array($operation, Editor::FILE_SCOPED, true)) {
+            if ($target !== []) {
+                throw new EditException(
+                    '--op ' . $operation . ' writes to the file, not to a node, and takes no target.',
+                );
+            }
+
+            return null;
+        }
+
+        if (!isset($target['select']) && !isset($target['ref'])) {
+            // --kind narrows a locator, it is not one: without --select or --ref it would name
+            // every node of that kind in the file, which is not a target an edit can apply to.
+            throw new EditException('The flag form needs --select or --ref to name the target.');
+        }
+
+        return $target;
     }
 
     /**
