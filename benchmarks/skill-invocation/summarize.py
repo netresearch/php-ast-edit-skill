@@ -13,15 +13,19 @@ are invisible reports a flattering rate off a smaller denominator. And where an 
 given, a run whose result does not satisfy it is excluded and reported too: a run that
 finished without doing the task is not a cheap run.
 
-Usage: summarize.py <bench> <arm> [arm ...] [--oracle 'shell command']
+Usage: summarize.py <bench> <arm> [arm ...] [--oracle 'command arg ...']
 
 The oracle runs once per completed run, in that run's working tree, and its exit status
-decides. For a rename: --oracle "grep -q queryBuilderFor Classes/Service/Repo.php"
+decides. It is a command and its arguments, not a shell line — no pipes, substitutions or
+redirection, because a benchmark script has no business handing a string to a shell. For
+a rename: --oracle 'grep -q queryBuilderFor Classes/Service/Repo.php'. Anything needing
+shell syntax goes in a script the oracle names.
 """
 
 import glob
 import json
 import re
+import shlex
 import statistics
 import subprocess
 import sys
@@ -71,7 +75,7 @@ def satisfies(bench, task_id, arm, oracle):
     if not work.is_dir():
         return False
 
-    return subprocess.run(oracle, cwd=work, shell=True, check=False).returncode == 0
+    return subprocess.run(oracle, cwd=work, check=False).returncode == 0
 
 
 def runs_for(bench, arm, oracle=None):
@@ -154,6 +158,7 @@ if __name__ == "__main__":
 
     if "--oracle" in argv:
         at = argv.index("--oracle")
-        check = argv[at + 1]
+        # shlex, not the shell: the words are split here and handed to execve as they are.
+        check = shlex.split(argv[at + 1])
         argv = argv[:at] + argv[at + 2 :]
     main(argv[0], argv[1:], check)

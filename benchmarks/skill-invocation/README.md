@@ -40,7 +40,7 @@ for i in 1 2 3 4 5 6 7 8; do
   done
 done
 benchmarks/skill-invocation/summarize.py "$BENCH" free ast trial \
-  --oracle 'test "$(grep -c queryBuilderFor Classes/Service/Repo.php)" = 6'
+  --oracle 'grep -q queryBuilderFor Classes/Service/Repo.php'
 ```
 
 The oracle is not optional in practice. `summarize.py` without one reports every run that
@@ -48,6 +48,9 @@ exited cleanly, and a run that finished without doing the task is not a cheap ru
 a wrong one that flatters its arm. The check runs in each run's own working tree and its
 exit status decides; runs that fail it are excluded from the medians and counted in the
 line above them, as are attempts that timed out or could not authenticate.
+
+It is a command and its arguments, not a shell line — no pipes, substitutions or
+redirection. Anything needing shell syntax goes in a script the oracle names.
 
 The subject has to be a real repository with real checks. On a fixture the model has
 nothing to verify against, skips the verification turns entirely, and the arms converge
