@@ -11,6 +11,38 @@ use PhpParser\ParserFactory;
 
 final class Application
 {
+    /**
+     * The operation's own arguments, as the flag form spells them.
+     *
+     * @var list<string>
+     */
+    private const OPERATION_FLAGS = ['php', 'value', 'alias', 'from', 'to', 'property', 'position', 'index'];
+
+    /**
+     * Everything `apply --file` reads. Anything else is refused rather than dropped.
+     *
+     * @var list<string>
+     */
+    private const FLAG_FORM_FLAGS = [
+        'file',
+        'op',
+        'select',
+        'ref',
+        'kind',
+        'parse-as',
+        'sha256',
+        'report',
+        'dry-run',
+        ...self::OPERATION_FLAGS,
+    ];
+
+    /**
+     * Everything `apply --input` reads.
+     *
+     * @var list<string>
+     */
+    private const INPUT_FORM_FLAGS = ['input', 'dry-run'];
+
     public function run(array $argv): int
     {
         try {
@@ -81,13 +113,30 @@ final class Application
 
     private function apply(array $options): int
     {
-        $inline = $this->inlineDocument($options);
+        // One command written two ways, so one execution and one verdict. Reporting the
+        // flag form's result and returning 0 over it made a failed check look like a clean
+        // edit — the opposite of what help promises, and unrecoverable for a caller that
+        // reads the exit code and stops there.
+        $document = $this->inlineDocument($options) ?? $this->inputDocument($options);
+        $result = (new Editor())->apply($document, isset($options['dry-run']));
+        $this->json($result);
 
-        if ($inline !== null) {
-            $this->json((new Editor())->apply($inline, isset($options['dry-run'])));
+        return $result['checksPassed'] === false ? 1 : 0;
+    }
 
-            return 0;
-        }
+    /**
+     * The whole transaction, read from --input or stdin.
+     *
+     * @param  array<string, mixed> $options
+     * @return array<string, mixed>
+     */
+    private function inputDocument(array $options): array
+    {
+        $this->rejectUnsupported(
+            $options,
+            self::INPUT_FORM_FLAGS,
+            '--%s belongs to the flag form. --input carries the whole document, so say it there.',
+        );
         $input = $options['input'] ?? '-';
 
         if (!is_string($input)) {
@@ -103,10 +152,29 @@ final class Application
         if (!is_array($document)) {
             throw new EditException('Apply input must decode to a JSON object.');
         }
-        $result = (new Editor())->apply($document, isset($options['dry-run']));
-        $this->json($result);
 
-        return $result['checksPassed'] === false ? 1 : 0;
+        return $document;
+    }
+
+    /**
+     * Refuse any option the chosen form does not carry.
+     *
+     * The parser takes `--anything value`, so a flag nobody reads is accepted and dropped.
+     * Dropping `--sha256` was the worst of them: the caller believes it edited the file it
+     * read, and the guard it asked for never ran.
+     *
+     * @param array<string, mixed> $options
+     * @param list<string>         $supported
+     */
+    private function rejectUnsupported(array $options, array $supported, string $format): void
+    {
+        $unsupported = array_diff(array_keys($options), $supported);
+
+        if ($unsupported === []) {
+            return;
+        }
+
+        throw new EditException(sprintf($format, implode(', --', $unsupported)));
     }
 
     private function format(array $options, bool $normalize): int
@@ -291,6 +359,7 @@ final class Application
           php-ast-edit inspect --file FILE (--offset N | --line N --column N) [--kind TYPE] [--php-version 8.4]
           php-ast-edit apply [--input FILE|-] [--dry-run]
           php-ast-edit apply --file FILE (--select SEL|--ref REF) --op OPERATION [args]
+              [--sha256 HASH] [--report full|compact] [--dry-run]
           php-ast-edit validate --file FILE [--php-version 8.4]
           php-ast-edit contexts [--operation OPERATION]
           php-ast-edit doctor [--path DIRECTORY]
@@ -309,6 +378,11 @@ final class Application
         no target: php-ast-edit apply --file src/Foo.php --op add_use --value
         'Vendor\Package\Thing'. Several edits, or several files, stay in one apply
         request through JSON on stdin.
+        The flag form answers exactly as the JSON form does, guards included: --sha256
+        carries the file guard, --report the response shape, and a failed check exits 1
+        either way. Per-file settings with no flag — mode, expectAbsent, optional,
+        requires, phpVersion, printer — need the document; a flag the chosen form cannot
+        carry is refused rather than dropped.
         
         Selectors: class:, interface:, trait:, enum:, method:Foo::bar, function:,
         property:Foo::$bar, const:Foo::BAR. Names are short names; ambiguity is refused.
@@ -466,6 +540,11 @@ final class Application
                 '--input and --file are the two ways to say the same thing, and only one at a ' . 'time. --input carries a whole transaction as JSON; --file with --select or ' . '--ref and --op is one edit written out as flags. Drop whichever you did not mean.',
             );
         }
+        $this->rejectUnsupported(
+            $options,
+            self::FLAG_FORM_FLAGS,
+            '--%s is not part of the flag form. The remaining document keys — mode, ' . 'expectAbsent, optional, requires, phpVersion, printer — are per-file settings ' . 'that only a whole document can carry: write them as JSON and pass --input.',
+        );
         $operation = $this->flagString($options, 'op', true);
         $edit = ['operation' => $operation];
         $target = $this->flagTarget($options, $operation);
@@ -474,7 +553,7 @@ final class Application
             $edit['target'] = $target;
         }
 
-        foreach (['php', 'value', 'alias', 'from', 'to', 'property', 'position', 'index'] as $key) {
+        foreach (self::OPERATION_FLAGS as $key) {
             $value = $this->flagString($options, $key);
 
             if ($value !== null) {
@@ -486,8 +565,25 @@ final class Application
         if ($parseAs !== null) {
             $edit['parseAs'] = $parseAs;
         }
+        $file = ['path' => $this->flagString($options, 'file', true), 'edits' => [$edit]];
 
-        return ['files' => [['path' => $this->flagString($options, 'file', true), 'edits' => [$edit]]]];
+        // A guard the caller asked for and the document never carried is worse than no
+        // guard: `--sha256` reads as "refuse if this file moved under me" and did nothing.
+        $sha256 = $this->flagString($options, 'sha256');
+
+        if ($sha256 !== null) {
+            $file['sha256'] = $sha256;
+        }
+        $document = ['files' => [$file]];
+        $report = $this->flagString($options, 'report');
+
+        if ($report !== null) {
+            // Passed through unvalidated: the response shape is the Editor's contract, and
+            // one place deciding which values exist is one place to change when they do.
+            $document['report'] = $report;
+        }
+
+        return $document;
     }
 
     /**
