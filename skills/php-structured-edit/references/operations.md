@@ -114,6 +114,8 @@ formatting, independently of report mode or whether canonical printing is enable
 }
 ```
 
+`doctor` proposes this declaration where the repository carries a static analyser and has not made one: the point is not tidiness but calls. An agent that cannot see whether the project's own checks passed runs them itself, afterwards, on its own judgement — in one recorded thirteen-turn edit, four turns went on PHPStan and two on the coding standard, all after the write had already succeeded. Nothing is proposed where there is no analyser to run.
+
 Each object contains exactly `scope` and `command`. Commands are non-empty argument
 arrays of non-empty strings without NUL bytes, executed directly without shell expansion.
 The working directory is the directory containing the applicable `.php-ast-edit.json`.

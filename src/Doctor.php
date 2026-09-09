@@ -30,6 +30,23 @@ final class Doctor
     ];
 
     /**
+     * Static analysers, and where each one keeps its configuration.
+     *
+     * A repository that has one of these has a check an agent will run anyway — as its own
+     * call, after the edit, having decided by itself that it was needed. Declared as `verify`
+     * it runs inside `apply` on the files that changed, and the result says whether it passed.
+     */
+    private const ANALYSER_FILES = [
+        'phpstan.neon' => 'phpstan',
+        'phpstan.neon.dist' => 'phpstan',
+        'phpstan.dist.neon' => 'phpstan',
+        'Build/phpstan.neon' => 'phpstan',
+        'Build/phpstan.neon.dist' => 'phpstan',
+        'psalm.xml' => 'psalm',
+        'psalm.xml.dist' => 'psalm',
+    ];
+
+    /**
      * Rules that put back what canonical printing removes, with what each one recovers.
      *
      * The shares were measured on a 121-file TYPO3 extension whose formatting was clean
@@ -107,6 +124,15 @@ final class Doctor
             }
             $findings[] = 'No formatter declared in ' . RepositoryConfig::FILE . '. The fixed point belongs to the printer and the project formatter together, so an edit that stops after printing leaves a file in neither shape: on a canonical TYPO3 extension, adding one 9-line method reported 34 changed lines rather than 10. Declare the command and `apply` runs it on the files it wrote' . $advice;
         }
+        $suggestedVerify = $this->suggestedVerify($root);
+
+        if ($config->verify === null && $suggestedVerify !== null) {
+            // What this saves is measured in calls, not seconds. An agent that cannot see
+            // whether the repository's own checks passed runs them itself, after the fact and
+            // on its own judgement: one recorded thirteen-turn edit spent four turns on
+            // PHPStan and two on the coding standard, all of it after the write.
+            $findings[] = 'No verify commands declared in ' . RepositoryConfig::FILE . '. This repository carries a static analyser, so an agent editing it will run one — as a separate call, after the write, deciding for itself that it was needed. Declared, it runs inside `apply` on the files that changed and the result carries checksPassed: "verify": [' . json_encode($suggestedVerify, JSON_UNESCAPED_SLASHES) . '].';
+        }
 
         return [
             'root' => $root,
@@ -121,6 +147,7 @@ final class Doctor
             'declaredIn' => $config->path,
             'formatterInCi' => $inCi,
             'declaredFormatter' => $config->formatter,
+            'declaredVerify' => $config->verify,
             'editorconfig' => $editorconfig,
             'findings' => $findings,
         ];
@@ -254,6 +281,53 @@ final class Doctor
             $tool === 'PHP_CodeSniffer' => ['php', $bin . '/phpcbf', '--standard=' . $config, RepositoryConfig::FILES_PLACEHOLDER],
             default => null,
         };
+    }
+
+    /**
+     * The verification command this project would most likely declare.
+     *
+     * Only a static analyser is suggested. A formatter is already the `formatter` key, and a
+     * test suite is not a per-edit check — running one on every `apply` would trade the calls
+     * this saves for wall time nobody asked to spend. Where the project carries nothing to
+     * run, nothing is suggested: a repository with no analyser is not missing a declaration.
+     *
+     * @return array{scope: string, command: list<string>}|null
+     */
+    private function suggestedVerify(string $root): ?array
+    {
+        foreach (self::ANALYSER_FILES as $relative => $tool) {
+            if (!is_file($root . DIRECTORY_SEPARATOR . $relative)) {
+                continue;
+            }
+            $bin = $this->binDirectory($root);
+
+            // Scoped to the changed files, which is what makes it affordable per edit — and
+            // what the agent's own run was doing anyway. PHPStan dies at PHP's default 128M on
+            // any tree of size and reports it as an ordinary failure, so the limit belongs in
+            // the command rather than in a note somebody reads after the first crash.
+            $command = match ($tool) {
+                'phpstan' => [
+                    'php',
+                    $bin . '/phpstan',
+                    'analyse',
+                    '--configuration=' . $relative,
+                    '--no-progress',
+                    '--memory-limit=1G',
+                    RepositoryConfig::FILES_PLACEHOLDER,
+                ],
+                default => [
+                    'php',
+                    $bin . '/psalm',
+                    '--config=' . $relative,
+                    '--no-cache',
+                    RepositoryConfig::FILES_PLACEHOLDER,
+                ],
+            };
+
+            return ['scope' => 'changed_files', 'command' => $command];
+        }
+
+        return null;
     }
 
     /**

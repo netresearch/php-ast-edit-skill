@@ -1292,6 +1292,69 @@ foreach ([
     );
     removeTree($shape);
 }
+// A repository that carries a static analyser will have one run against it either way. The
+// question doctor answers is whether the tool runs it, or the agent does — afterwards, as its
+// own call, having decided by itself that it was needed.
+$analysed = workspace();
+file_put_contents($analysed . '/composer.json', '{"config":{"bin-dir":".Build/bin"}}');
+mkdir($analysed . '/Build');
+file_put_contents($analysed . '/Build/phpstan.neon', "parameters:\n    level: 8\n");
+RepositoryConfig::write($analysed, 120);
+$said = implode(' ', (new Doctor())->examine($analysed)['findings']);
+check(
+    'a repository with an analyser and no verify is told so',
+    str_contains($said, 'No verify commands declared'),
+    $said,
+);
+check(
+    'and the command names this project\'s own analyser, configuration and bin-dir',
+    str_contains($said, '".Build/bin/phpstan","analyse","--configuration=Build/phpstan.neon"'),
+    $said,
+);
+check(
+    // PHPStan dies at PHP's default 128M on any tree of size and reports it as an ordinary
+    // failure, so a suggestion without the limit is one that fails on the repositories that
+    // most need it.
+    'and it carries the memory limit PHPStan needs',
+    str_contains($said, '"--memory-limit=1G"'),
+    $said,
+);
+// The counter-test: without an analyser there is nothing to declare, and a finding would be a
+// nag rather than a report. This is what keeps the check from applying to every repository.
+$unanalysed = workspace();
+RepositoryConfig::write($unanalysed, 120);
+check(
+    'a repository without an analyser is not told to declare one',
+    !str_contains(
+        implode(' ', (new Doctor())->examine($unanalysed)['findings']),
+        'No verify commands',
+    ),
+);
+file_put_contents(
+    $analysed . '/' . RepositoryConfig::FILE,
+    json_encode(
+        [
+            'canonical' => true,
+            'printWidth' => 120,
+            'verify' => [['php', '.Build/bin/phpstan', 'analyse', '{files}']],
+        ],
+        JSON_PRETTY_PRINT,
+    ) . "\n",
+);
+$report = (new Doctor())->examine($analysed);
+check(
+    'declaring verify settles it',
+    !str_contains(implode(' ', $report['findings']), 'No verify commands'),
+    implode(' | ', $report['findings']),
+);
+check(
+    'and the declared commands are reported back',
+    is_array($report['declaredVerify'] ?? null) && $report['declaredVerify'] !== [],
+    json_encode($report['declaredVerify'] ?? null),
+);
+removeTree($analysed);
+removeTree($unanalysed);
+
 // Declaring it is the last thing the contract asks for.
 file_put_contents(
     $dir . '/' . RepositoryConfig::FILE,
