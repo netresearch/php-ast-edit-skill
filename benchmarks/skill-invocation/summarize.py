@@ -13,7 +13,13 @@ are invisible reports a flattering rate off a smaller denominator. And where an 
 given, a run whose result does not satisfy it is excluded and reported too: a run that
 finished without doing the task is not a cheap run.
 
-Usage: summarize.py <bench> <arm> [arm ...] [--oracle 'command arg ...']
+Usage: summarize.py <bench> <arm> [arm ...] [--task <prefix>] [--oracle 'command arg ...']
+
+A working root holds one result file per run, named for the run's task id and arm. Two
+different tasks in the same root therefore land side by side, and without --task they are
+pooled into one median — a rename and a three-change edit averaged together, reported as
+if they were repetitions of the same thing. --task keeps a summary to the task ids that
+start with the prefix it names, and the oracle belongs to that task, not to the root.
 
 The oracle runs once per completed run, in that run's working tree, and its exit status
 decides. It is a command and its arguments, not a shell line — no pipes, substitutions or
@@ -78,12 +84,13 @@ def satisfies(bench, task_id, arm, oracle):
     return subprocess.run(oracle, cwd=work, check=False).returncode == 0
 
 
-def runs_for(bench, arm, oracle=None):
+def runs_for(bench, arm, oracle=None, task=None):
     arm = token("arm", arm)
     config_dir = bench / f"cfg-{arm}"
     runs, failed, wrong = [], 0, 0
+    prefix = token("task", task) if task is not None else ""
 
-    for path in sorted(glob.glob(str(bench / "out" / f"*-{arm}.json"))):
+    for path in sorted(glob.glob(str(bench / "out" / f"{prefix}*-{arm}.json"))):
         result_file = Path(path)
         task_id = result_file.name[: -len(f"-{arm}.json")]
         status = result_file.with_suffix(".status")
@@ -118,14 +125,17 @@ def runs_for(bench, arm, oracle=None):
     return runs, failed, wrong
 
 
-def main(bench, arms, oracle=None):
+def main(bench, arms, oracle=None, task=None):
     bench = Path(bench).resolve()
+
+    if task is not None:
+        print(f"task ids beginning {task}")
     print(
         f"{'arm':8} {'n':>2} {'invoked':>9} {'turns':>6} {'output':>8} {'cache read':>11} {'usd':>7} {'sec':>6}"
     )
 
     for arm in arms:
-        runs, failed, wrong = runs_for(bench, arm, oracle)
+        runs, failed, wrong = runs_for(bench, arm, oracle, task)
 
         if failed or wrong:
             print(
@@ -155,10 +165,16 @@ def main(bench, arms, oracle=None):
 if __name__ == "__main__":
     argv = sys.argv[1:]
     check = None
+    only = None
 
     if "--oracle" in argv:
         at = argv.index("--oracle")
         # shlex, not the shell: the words are split here and handed to execve as they are.
         check = shlex.split(argv[at + 1])
         argv = argv[:at] + argv[at + 2 :]
-    main(argv[0], argv[1:], check)
+
+    if "--task" in argv:
+        at = argv.index("--task")
+        only = argv[at + 1]
+        argv = argv[:at] + argv[at + 2 :]
+    main(argv[0], argv[1:], check, only)

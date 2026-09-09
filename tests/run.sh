@@ -92,6 +92,10 @@ echo "::group::efficiency adapter (real-engine revision guards and source views)
 python3 benchmarks/agent-economics/efficiency/adapter/test_adapter.py || fail=1
 echo "::endgroup::"
 
+echo "::group::skill invocation summary (which runs a task filter keeps and drops)"
+python3 benchmarks/skill-invocation/test_summarize.py || fail=1
+echo "::endgroup::"
+
 echo "::group::symbol intent (offline guards and pilot oracles; LSP integration opt-in)"
 python3 -m unittest discover -s benchmarks/symbol-intent -p 'test_*.py' || fail=1
 echo "::endgroup::"
