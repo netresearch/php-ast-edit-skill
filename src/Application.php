@@ -457,6 +457,11 @@ final class Application
         Reports separate parsed, validation.lint and validation.checks.
         Use report:"compact" in the apply document for shared top-level verify results
         and per-file checkIds. The default report:"full" keeps per-file verify results.
+        report:"agent" states what the write did and what it left open: outcome, a
+        checks tri-state where none_declared is not passed, failing check output only,
+        and a per-file open list. It carries no diff and no generated code — git diff
+        has those, from the snapshot beforeSha256 names. It alone is versioned, by
+        reportVersion.
         valid is a compatibility alias for parser success, not semantic correctness.
         Host PHP lint runs before writes; a newer explicit target reports lint skipped.
         Declared project verify checks run after writing. Failed checks keep the edit and

@@ -93,9 +93,10 @@ final class Editor
         $this->verifyResults = [];
         $report = array_key_exists('report', $document) ? $document['report'] : 'full';
 
-        if (!in_array($report, ['full', 'compact'], true)) {
-            throw new EditException('apply report must be "full" or "compact".');
+        if (!in_array($report, ['full', 'compact', 'agent'], true)) {
+            throw new EditException('apply report must be "full", "compact" or "agent".');
         }
+        $agent = $report === 'agent';
         $compact = $report === 'compact';
         $files = $document['files'] ?? null;
 
@@ -141,6 +142,10 @@ final class Editor
             $verification = (new VerificationRunner())->prepare($transactions);
             $this->commit($transactions, $verification);
         }
+
+        if ($agent) {
+            return $this->agentResult($transactions, $dryRun);
+        }
         $result = [
             'files' => array_map(
                 fn (FileTransaction $file): array => $this->report($file, $dryRun, $compact),
@@ -154,6 +159,49 @@ final class Editor
         }
 
         return $result;
+    }
+
+    /**
+     * The decision-shaped response: what happened, what is still open, nothing twice.
+     *
+     * `checksPassed` stays alongside `checks` because the CLI's exit code is derived from it
+     * and one command must not have two verdicts — the same reason the flag form and the
+     * JSON form were unified. `checks` is what a caller should read: it separates "every
+     * declared check passed" from "this repository declares none", which the boolean cannot.
+     *
+     * @param  list<FileTransaction> $transactions
+     * @return array<string, mixed>
+     */
+    private function agentResult(array $transactions, bool $dryRun): array
+    {
+        $failed = [];
+        $passed = 0;
+
+        foreach ($this->verifyResults as $check) {
+            if ($check['ok'] === true) {
+                ++$passed;
+
+                continue;
+            }
+            // A passing check's output is the routine noise this mode exists to drop. A
+            // failing one is the whole reason the caller is still reading.
+            $failed[] = array_intersect_key($check, array_flip(['id', 'scope', 'command', 'output']));
+        }
+        $checks = $this->verifyResults === [] ? 'none_declared' : ($failed === [] ? 'passed' : 'failed');
+
+        return [
+            'reportVersion' => EditReport::AGENT_VERSION,
+            'report' => 'agent',
+            'outcome' => $dryRun ? 'dry_run' : ($failed === [] ? 'applied' : 'applied_checks_failed'),
+            'checks' => $checks,
+            'checksPassed' => $this->verifyResults === [] ? null : $failed === [],
+            'checksPassedCount' => $passed,
+            'checksFailed' => $failed,
+            'files' => array_map(
+                static fn (FileTransaction $file): array => EditReport::agentFile($file, $dryRun),
+                $transactions,
+            ),
+        ];
     }
 
     private function prepare(array $spec): FileTransaction

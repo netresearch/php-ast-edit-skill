@@ -9,7 +9,7 @@
 - [parseAs contexts](#parseas-contexts) — how a snippet becomes any AST node
 - [Primitives](#primitives) — the complete mutation algebra
 - [Convenience operations](#convenience-operations) — the ergonomic layer above it
-- [Result fields](#result-fields) — compact and full reports, checks and warnings
+- [Result fields](#result-fields) — full, compact and agent reports, checks and warnings
 - [Snippet style](#snippet-style)
 
 ## Selectors
@@ -72,7 +72,7 @@ A `ref` is only valid together with the `sha256` it was produced from. Refs surv
 
 `target` accepts `select`, `ref`, `offset` (zero-based byte offset), or `line` + `column` (one-based byte coordinates). `kind` is optional but recommended. `expect.name`, `expect.value` and `expect.type` are optional safety guards.
 
-Optional top-level `report` accepts only `"compact"` or `"full"`. It defaults to `"full"`
+Optional top-level `report` accepts `"full"`, `"compact"` or `"agent"`. It defaults to `"full"`
 for existing consumers. Compact mode places each verification result once at the top
 level and gives files references to it; it does not change the edit, checks, exit status,
 or other result fields. See [result fields](#result-fields).
@@ -257,6 +257,43 @@ With `"report": "full"` (the default), results keep the existing per-file `verif
 layout without `checkIds` or top-level `verify`. Full describes that layout; it does not
 remove existing diff or diagnostic limits. Both modes retain effects, warnings, parser
 and lint information, and the same check statuses.
+
+### `"report": "agent"`
+
+The decision-shaped projection: what the write is known to have done, and what it left
+open. It answers what the next step needs, not what happened — so it drops the fields a
+caller can recover for itself, and it never states a claim it cannot support.
+
+| Field | Meaning |
+| --- | --- |
+| `reportVersion` | Schema version of this mode. A bump means a field was removed or changed meaning; an added field does not bump it. `full` and `compact` carry no version |
+| `outcome` | `applied`, `applied_checks_failed`, or `dry_run` |
+| `checks` | `passed`, `failed`, or `none_declared` — a repository that declares no checks did not pass them |
+| `checksPassed` | The nullable boolean the exit code is derived from, kept so one command has one verdict. Read `checks` instead |
+| `checksPassedCount` | How many declared checks passed. Their output is not carried |
+| `checksFailed` | Failing executions only, each with `id`, `scope`, `command` and `output` |
+
+Per file: `path`, `mode`, `changed`, `editsApplied`, `beforeSha256`, `afterSha256`,
+`changedLines`, `effects`, `warnings` (list only), `checkIds`, plus
+
+| Field | Meaning |
+| --- | --- |
+| `syntax` | `passed`, `skipped` (target PHP newer than the running interpreter), or `not_run` (deletion) |
+| `checks` | The same tri-state, for the checks associated with this file |
+| `open` | What this write did **not** establish; `[]` means the tool found nothing to flag |
+
+`open` entries are derived from real state, never boilerplate: `NOT_WRITTEN` on a dry run,
+`REMAINING_IN_FILE` and `UNRESOLVED_RECEIVERS` from rename effects, `CALLERS_OUTSIDE_FILE`
+whenever `rename_method` ran, `SYNTAX_UNCHECKED_ON_TARGET` when host lint was skipped, and
+`NO_CHECKS_DECLARED` when the repository declares none. One thing this list never says,
+because it is true of every response and would be noise on all of them: whether the task
+you were given is met does not follow from any of these fields.
+
+Absent by design: `diff`, `code`, `validation`, `verify`, and the legacy `warning` and
+`valid` duplicates. The diff is recoverable without re-running anything — `git diff --
+<path>` against the working tree, with `beforeSha256` naming the snapshot the edit started
+from. A file outside version control has no such record; that is the one case where this
+mode loses information `full` would have carried, and a reason to ask for `full` there.
 
 The top-level `checksPassed` is `true`, `false`, or `null` when no checks ran. A failing
 verification makes `apply` exit nonzero; examine the retained edit before repairing it.
