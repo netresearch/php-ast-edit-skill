@@ -254,6 +254,9 @@ final class NodeLocator
     /** The kinds a selector can name. */
     public const SELECTABLE = ['class', 'interface', 'trait', 'enum', 'function', 'method', 'property', 'const'];
 
+    /** How many declared names a "matched nothing" message carries before it says how many more. */
+    private const DECLARED_IN_MESSAGE = 8;
+
     /**
      * Resolve a target named by what it is, rather than by where it sits.
      *
@@ -316,7 +319,19 @@ final class NodeLocator
         }
 
         if ($matches === []) {
-            throw new EditException(sprintf('target.select "%s" matched nothing in this file.', $select));
+            // A selector that matched nothing is almost always a near miss — a method on the
+            // wrong class, a name remembered from another file, a rename that already ran.
+            // Naming what the file does declare of that kind answers the next question in
+            // the same message instead of costing an `inspect` round trip to find out.
+            $declared = $this->declaredOfKind($roots, $kind);
+
+            throw new EditException(
+                sprintf(
+                    'target.select "%s" matched nothing in this file.%s',
+                    $select,
+                    $declared === [] ? sprintf(' It declares no %s at all.', $kind) : sprintf(' It declares %s: %s.', $kind, implode(', ', $declared)),
+                ),
+            );
         }
 
         if (count($matches) > 1) {
@@ -423,6 +438,92 @@ final class NodeLocator
      * A property selector names the declaration that holds the variable, not the variable
      * itself, because that is the node an edit works on.
      */
+    /**
+     * The selectors of one kind this file would accept, for a message that has to say what
+     * is there rather than only what is not.
+     *
+     * Capped, because a large file has more members than a message can carry and the point
+     * is to orient the caller, not to reproduce the file. Members are qualified with their
+     * owner, because that is the form the selector takes.
+     *
+     * @param list<Node\Stmt> $roots
+     *
+     * @return list<string>
+     */
+    private function declaredOfKind(array $roots, string $kind): array
+    {
+        $found = [];
+
+        foreach ($roots as $root) {
+            $this->gatherOfKind($root, $kind, null, $found);
+        }
+        sort($found);
+        $found = array_values(array_unique($found));
+
+        if (count($found) <= self::DECLARED_IN_MESSAGE) {
+            return $found;
+        }
+        $shown = array_slice($found, 0, self::DECLARED_IN_MESSAGE);
+        $shown[] = sprintf('and %d more', count($found) - self::DECLARED_IN_MESSAGE);
+
+        return $shown;
+    }
+
+    /**
+     * Walk one subtree gathering the names of `$kind`, qualified by their owner.
+     *
+     * @param list<string> $found
+     */
+    private function gatherOfKind(Node $node, string $kind, ?string $inside, array &$found): void
+    {
+        $named = static fn (?Node $identifier): ?string => $identifier === null ? null : (string) $identifier;
+        $qualify = static fn (string $name): string => $inside === null ? $name : $inside . '::' . $name;
+
+        $name = match ($kind) {
+            'class' => $node instanceof Stmt\Class_ ? $named($node->name) : null,
+            'interface' => $node instanceof Stmt\Interface_ ? $named($node->name) : null,
+            'trait' => $node instanceof Stmt\Trait_ ? $named($node->name) : null,
+            'enum' => $node instanceof Stmt\Enum_ ? $named($node->name) : null,
+            'function' => $node instanceof Stmt\Function_ ? $named($node->name) : null,
+            'method' => $node instanceof Stmt\ClassMethod ? $qualify((string) $node->name) : null,
+            default => null,
+        };
+
+        if ($name !== null) {
+            $found[] = $name;
+        }
+
+        if ($kind === 'property' && $node instanceof Stmt\Property) {
+            foreach ($node->props as $property) {
+                $found[] = $qualify('$' . $property->name->toString());
+            }
+        }
+
+        if ($kind === 'const' && $node instanceof Stmt\ClassConst) {
+            foreach ($node->consts as $constant) {
+                $found[] = $qualify($constant->name->toString());
+            }
+        }
+
+        if ($node instanceof Stmt\ClassLike) {
+            $inside = $node->name === null ? null : $node->name->toString();
+        }
+
+        foreach ($node->getSubNodeNames() as $subNodeName) {
+            $value = $node->{$subNodeName};
+
+            if ($value instanceof Node) {
+                $this->gatherOfKind($value, $kind, $inside, $found);
+            } elseif (is_array($value)) {
+                foreach ($value as $child) {
+                    if ($child instanceof Node) {
+                        $this->gatherOfKind($child, $kind, $inside, $found);
+                    }
+                }
+            }
+        }
+    }
+
     private function selectorMatches(
         Node $node,
         string $kind,

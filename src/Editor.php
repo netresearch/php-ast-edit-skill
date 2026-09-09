@@ -660,7 +660,9 @@ final class Editor
         $applied = $this->applyPrimitive($operation, $location, $edit, $roots, $snippets) || $this->applyComment($operation, $location, $edit) || $this->applyShorthand($operation, $location, $edit, $roots, $snippets) || $this->applySemantic($operation, $location, $edit, $roots, $snippets);
 
         if (!$applied) {
-            throw new EditException('Unsupported operation: ' . $operation);
+            throw new EditException(
+                'Unsupported operation: ' . $operation . $this->nearestOperations($operation),
+            );
         }
     }
 
@@ -2082,6 +2084,42 @@ final class Editor
     public static function operationArguments(): array
     {
         return self::OPERATION_ARGUMENTS;
+    }
+
+    /**
+     * The catalogue entries closest to a name that is not in it.
+     *
+     * A rejected operation name is almost always a plausible synonym for a real one —
+     * `set_docblock` for `set_doc_comment` was the single most frequent failure in a
+     * measured run — and the bare rejection sends the caller to `contexts` to read the
+     * whole catalogue back. Naming the near misses answers it in the same message.
+     */
+    private function nearestOperations(string $operation): string
+    {
+        $verb = strtok($operation, '_');
+        $distances = [];
+
+        foreach (array_keys(self::OPERATION_ARGUMENTS) as $known) {
+            $distance = levenshtein($operation, $known);
+            // Two ways to be close, because a wrong name is wrong in two ways. A typo stays
+            // near in edit distance (`rename_metod`), while a plausible synonym does not —
+            // `set_docblock` is six edits from `set_doc_comment` — but shares the verb. The
+            // verb is what the caller knew; the noun is what it guessed.
+            $near = $distance <= (int) ceil(max(strlen($operation), strlen($known)) / 3);
+            $sameVerb = $verb !== false && $verb !== '' && str_starts_with($known, $verb . '_');
+
+            if ($near || $sameVerb) {
+                $distances[$known] = $distance;
+            }
+        }
+
+        if ($distances === []) {
+            return '. Run `php-ast-edit contexts` for the catalogue.';
+        }
+        asort($distances);
+        $nearest = array_slice(array_keys($distances), 0, 3);
+
+        return sprintf('. Did you mean %s?', implode(', ', $nearest));
     }
 
     /**
