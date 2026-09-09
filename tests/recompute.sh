@@ -15,7 +15,10 @@ fi
 
 fail=0
 # 12196 -> 12,196, independently of the locale.
-grouped() { printf '%s' "$1" | sed -E ':a;s/([0-9])([0-9]{3})($|,)/\1,\2\3/;ta'; }
+grouped() {
+  local number="$1"
+  printf '%s' "$number" | sed -E ':a;s/([0-9])([0-9]{3})($|,)/\1,\2\3/;ta'
+}
 expect() {
   local label="$1" expected="$2" actual="$3"
   if [[ "$expected" == "$actual" ]]; then
