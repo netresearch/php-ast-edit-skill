@@ -1,0 +1,787 @@
+{
+  "experiment": "real-php-entrypoint-v1",
+  "planned_attempts": 20,
+  "attempts": 20,
+  "known_usage": 20,
+  "known_native_list_price_usd": 0.4123079,
+  "cells": [
+    {
+      "arm": "compact",
+      "attempts": 10,
+      "known_usage": 10,
+      "successes": 10,
+      "code_correct": 10,
+      "candidate_verified_final": 10,
+      "tokens": [
+        12324,
+        12251,
+        12127,
+        12135,
+        12167,
+        12353,
+        12009,
+        62631,
+        12007,
+        11888
+      ],
+      "median_tokens": 12151.0,
+      "calls": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        9,
+        1,
+        1
+      ],
+      "median_calls": 1.0,
+      "rounds": [
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        8,
+        2,
+        2
+      ],
+      "median_rounds": 2.0,
+      "usd": [
+        0.018792299999999998,
+        0.018470399999999998,
+        0.0178853,
+        0.0179392,
+        0.0181003,
+        0.018930500000000003,
+        0.0174085,
+        0.0407255,
+        0.0174844,
+        0.0170863
+      ],
+      "median_usd": 0.01801975,
+      "wall_ms": [
+        18556.277993833646,
+        17462.473003892228,
+        16257.00801005587,
+        16503.898344933987,
+        16603.271887870505,
+        17423.218477051705,
+        15399.144440889359,
+        32590.864370111376,
+        15800.426521105692,
+        15247.193110873923
+      ],
+      "median_wall_ms": 16553.585116402246,
+      "behavior_checks": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        2,
+        1,
+        1
+      ],
+      "median_behavior_checks": 1.0,
+      "checker_ms": [
+        97.833,
+        109.698,
+        103.654,
+        106.433,
+        99.019,
+        97.98,
+        92.964,
+        334.793,
+        96.35,
+        95.421
+      ],
+      "median_checker_ms": 98.49950000000001,
+      "post_calls": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        4,
+        0,
+        0
+      ],
+      "median_post_calls": 0.0,
+      "duplicate_final_checks": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0
+      ],
+      "median_duplicate_final_checks": 0.0,
+      "pre_calls": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        4,
+        0,
+        0
+      ],
+      "median_pre_calls": 0.0,
+      "peer_calls": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "median_peer_calls": 0.0,
+      "known_post_calls": 10,
+      "known_duplicate_final_checks": 10,
+      "known_pre_calls": 10,
+      "known_peer_calls": 10
+    },
+    {
+      "arm": "intent-first",
+      "attempts": 10,
+      "known_usage": 10,
+      "successes": 10,
+      "code_correct": 10,
+      "candidate_verified_final": 10,
+      "tokens": [
+        12499,
+        12348,
+        12280,
+        12344,
+        12473,
+        17734,
+        12347,
+        31095,
+        22515,
+        12380
+      ],
+      "median_tokens": 12426.5,
+      "calls": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        2,
+        1,
+        5,
+        4,
+        1
+      ],
+      "median_calls": 1.0,
+      "rounds": [
+        2,
+        2,
+        2,
+        2,
+        2,
+        3,
+        2,
+        4,
+        3,
+        2
+      ],
+      "median_rounds": 2.0,
+      "usd": [
+        0.0188256,
+        0.018327799999999998,
+        0.0178048,
+        0.0181327,
+        0.018669699999999997,
+        0.0201553,
+        0.0181207,
+        0.03129320000000001,
+        0.0299237,
+        0.018231700000000003
+      ],
+      "median_usd": 0.018498749999999998,
+      "wall_ms": [
+        17153.83620513603,
+        16973.997816909105,
+        15148.386461194605,
+        17122.455907985568,
+        17305.43567519635,
+        18655.564507003874,
+        15549.308116082102,
+        24772.821387043223,
+        22615.91359693557,
+        16453.141337027773
+      ],
+      "median_wall_ms": 17138.1460565608,
+      "behavior_checks": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "median_behavior_checks": 1.0,
+      "checker_ms": [
+        93.821,
+        98.394,
+        97.448,
+        99.193,
+        101.534,
+        92.339,
+        95.886,
+        97.687,
+        90.512,
+        94.872
+      ],
+      "median_checker_ms": 96.667,
+      "post_calls": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        4,
+        3,
+        0
+      ],
+      "median_post_calls": 0.0,
+      "duplicate_final_checks": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "median_duplicate_final_checks": 0.0,
+      "pre_calls": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0
+      ],
+      "median_pre_calls": 0.0,
+      "peer_calls": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "median_peer_calls": 0.0,
+      "known_post_calls": 10,
+      "known_duplicate_final_checks": 10,
+      "known_pre_calls": 10,
+      "known_peer_calls": 10
+    }
+  ],
+  "paired_effects": [
+    {
+      "before": "compact",
+      "after": "intent-first",
+      "pairs": [
+        {
+          "ids": [
+            "run016",
+            "run015"
+          ],
+          "deltas": {
+            "tokens": -31536,
+            "calls": -4,
+            "rounds": -4,
+            "usd": -0.00943229999999999,
+            "wall_ms": -7818.042983068153,
+            "behavior_checks": -1,
+            "checker_ms": -237.106,
+            "post_calls": 0,
+            "duplicate_final_checks": -1,
+            "pre_calls": -4,
+            "peer_calls": 0
+          }
+        },
+        {
+          "ids": [
+            "run009",
+            "run010"
+          ],
+          "deltas": {
+            "tokens": 306,
+            "calls": 0,
+            "rounds": 0,
+            "usd": 0.0005693999999999977,
+            "wall_ms": 702.1637873258442,
+            "behavior_checks": 0,
+            "checker_ms": 2.5150000000000006,
+            "post_calls": 0,
+            "duplicate_final_checks": 0,
+            "pre_calls": 0,
+            "peer_calls": 0
+          }
+        },
+        {
+          "ids": [
+            "run004",
+            "run003"
+          ],
+          "deltas": {
+            "tokens": 97,
+            "calls": 0,
+            "rounds": 0,
+            "usd": -0.00014259999999999967,
+            "wall_ms": -488.4751869831234,
+            "behavior_checks": 0,
+            "checker_ms": -11.303999999999988,
+            "post_calls": 0,
+            "duplicate_final_checks": 0,
+            "pre_calls": 0,
+            "peer_calls": 0
+          }
+        },
+        {
+          "ids": [
+            "run013",
+            "run014"
+          ],
+          "deltas": {
+            "tokens": 338,
+            "calls": 0,
+            "rounds": 0,
+            "usd": 0.0007121999999999996,
+            "wall_ms": 150.16367519274354,
+            "behavior_checks": 0,
+            "checker_ms": 2.921999999999997,
+            "post_calls": 0,
+            "duplicate_final_checks": 0,
+            "pre_calls": 0,
+            "peer_calls": 0
+          }
+        },
+        {
+          "ids": [
+            "run005",
+            "run006"
+          ],
+          "deltas": {
+            "tokens": 153,
+            "calls": 0,
+            "rounds": 0,
+            "usd": -8.050000000000071e-05,
+            "wall_ms": -1108.6215488612652,
+            "behavior_checks": 0,
+            "checker_ms": -6.206000000000003,
+            "post_calls": 0,
+            "duplicate_final_checks": 0,
+            "pre_calls": 0,
+            "peer_calls": 0
+          }
+        },
+        {
+          "ids": [
+            "run017",
+            "run018"
+          ],
+          "deltas": {
+            "tokens": 10508,
+            "calls": 3,
+            "rounds": 1,
+            "usd": 0.0124393,
+            "wall_ms": 6815.487075829878,
+            "behavior_checks": 0,
+            "checker_ms": -5.837999999999994,
+            "post_calls": 3,
+            "duplicate_final_checks": 0,
+            "pre_calls": 0,
+            "peer_calls": 0
+          }
+        },
+        {
+          "ids": [
+            "run008",
+            "run007"
+          ],
+          "deltas": {
+            "tokens": 209,
+            "calls": 0,
+            "rounds": 0,
+            "usd": 0.0001935000000000027,
+            "wall_ms": 618.5575630515814,
+            "behavior_checks": 0,
+            "checker_ms": -7.240000000000009,
+            "post_calls": 0,
+            "duplicate_final_checks": 0,
+            "pre_calls": 0,
+            "peer_calls": 0
+          }
+        },
+        {
+          "ids": [
+            "run012",
+            "run011"
+          ],
+          "deltas": {
+            "tokens": 5381,
+            "calls": 1,
+            "rounds": 1,
+            "usd": 0.0012247999999999981,
+            "wall_ms": 1232.3460299521685,
+            "behavior_checks": 0,
+            "checker_ms": -5.641000000000005,
+            "post_calls": 0,
+            "duplicate_final_checks": 0,
+            "pre_calls": 1,
+            "peer_calls": 0
+          }
+        },
+        {
+          "ids": [
+            "run001",
+            "run002"
+          ],
+          "deltas": {
+            "tokens": 175,
+            "calls": 0,
+            "rounds": 0,
+            "usd": 3.3300000000003466e-05,
+            "wall_ms": -1402.4417886976153,
+            "behavior_checks": 0,
+            "checker_ms": -4.0120000000000005,
+            "post_calls": 0,
+            "duplicate_final_checks": 0,
+            "pre_calls": 0,
+            "peer_calls": 0
+          }
+        },
+        {
+          "ids": [
+            "run020",
+            "run019"
+          ],
+          "deltas": {
+            "tokens": 492,
+            "calls": 0,
+            "rounds": 0,
+            "usd": 0.0011454000000000047,
+            "wall_ms": 1205.9482261538506,
+            "behavior_checks": 0,
+            "checker_ms": -0.5490000000000066,
+            "post_calls": 0,
+            "duplicate_final_checks": 0,
+            "pre_calls": 0,
+            "peer_calls": 0
+          }
+        }
+      ],
+      "delta_tokens": [
+        -31536,
+        306,
+        97,
+        338,
+        153,
+        10508,
+        209,
+        5381,
+        175,
+        492
+      ],
+      "median_delta_tokens": 257.5,
+      "delta_calls": [
+        -4,
+        0,
+        0,
+        0,
+        0,
+        3,
+        0,
+        1,
+        0,
+        0
+      ],
+      "median_delta_calls": 0.0,
+      "delta_rounds": [
+        -4,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        1,
+        0,
+        0
+      ],
+      "median_delta_rounds": 0.0,
+      "delta_usd": [
+        -0.00943229999999999,
+        0.0005693999999999977,
+        -0.00014259999999999967,
+        0.0007121999999999996,
+        -8.050000000000071e-05,
+        0.0124393,
+        0.0001935000000000027,
+        0.0012247999999999981,
+        3.3300000000003466e-05,
+        0.0011454000000000047
+      ],
+      "median_delta_usd": 0.0003814500000000002,
+      "delta_wall_ms": [
+        -7818.042983068153,
+        702.1637873258442,
+        -488.4751869831234,
+        150.16367519274354,
+        -1108.6215488612652,
+        6815.487075829878,
+        618.5575630515814,
+        1232.3460299521685,
+        -1402.4417886976153,
+        1205.9482261538506
+      ],
+      "median_delta_wall_ms": 384.36061912216246,
+      "delta_behavior_checks": [
+        -1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "median_delta_behavior_checks": 0.0,
+      "delta_checker_ms": [
+        -237.106,
+        2.5150000000000006,
+        -11.303999999999988,
+        2.921999999999997,
+        -6.206000000000003,
+        -5.837999999999994,
+        -7.240000000000009,
+        -5.641000000000005,
+        -4.0120000000000005,
+        -0.5490000000000066
+      ],
+      "median_delta_checker_ms": -5.7395,
+      "delta_post_calls": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        3,
+        0,
+        0,
+        0,
+        0
+      ],
+      "median_delta_post_calls": 0.0,
+      "delta_duplicate_final_checks": [
+        -1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "median_delta_duplicate_final_checks": 0.0,
+      "delta_pre_calls": [
+        -4,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0
+      ],
+      "median_delta_pre_calls": 0.0,
+      "delta_peer_calls": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "median_delta_peer_calls": 0.0
+    }
+  ],
+  "interpretation": "One selected public-source case, ten paired repetitions. Both arms use identical AST mutation, compact evidence and integrated tests. Only the intent-first arm receives the prospective capability paragraph before editing. Pre-calls precede the first assigned invocation in native event order; same-event peer calls are separate and neither count automatically means unnecessary work. Unknown observations remain unknown, all planned rows/pairs remain visible, and final-byte candidate tests are distinct from hidden checks. This is an instruction experiment, not intrinsic AST speed or held-out validation.",
+  "planned_rows": [
+    {
+      "id": "run001",
+      "repetition": 8,
+      "arm": "compact",
+      "attempted": true
+    },
+    {
+      "id": "run002",
+      "repetition": 8,
+      "arm": "intent-first",
+      "attempted": true
+    },
+    {
+      "id": "run003",
+      "repetition": 2,
+      "arm": "intent-first",
+      "attempted": true
+    },
+    {
+      "id": "run004",
+      "repetition": 2,
+      "arm": "compact",
+      "attempted": true
+    },
+    {
+      "id": "run005",
+      "repetition": 4,
+      "arm": "compact",
+      "attempted": true
+    },
+    {
+      "id": "run006",
+      "repetition": 4,
+      "arm": "intent-first",
+      "attempted": true
+    },
+    {
+      "id": "run007",
+      "repetition": 6,
+      "arm": "intent-first",
+      "attempted": true
+    },
+    {
+      "id": "run008",
+      "repetition": 6,
+      "arm": "compact",
+      "attempted": true
+    },
+    {
+      "id": "run009",
+      "repetition": 1,
+      "arm": "compact",
+      "attempted": true
+    },
+    {
+      "id": "run010",
+      "repetition": 1,
+      "arm": "intent-first",
+      "attempted": true
+    },
+    {
+      "id": "run011",
+      "repetition": 7,
+      "arm": "intent-first",
+      "attempted": true
+    },
+    {
+      "id": "run012",
+      "repetition": 7,
+      "arm": "compact",
+      "attempted": true
+    },
+    {
+      "id": "run013",
+      "repetition": 3,
+      "arm": "compact",
+      "attempted": true
+    },
+    {
+      "id": "run014",
+      "repetition": 3,
+      "arm": "intent-first",
+      "attempted": true
+    },
+    {
+      "id": "run015",
+      "repetition": 0,
+      "arm": "intent-first",
+      "attempted": true
+    },
+    {
+      "id": "run016",
+      "repetition": 0,
+      "arm": "compact",
+      "attempted": true
+    },
+    {
+      "id": "run017",
+      "repetition": 5,
+      "arm": "compact",
+      "attempted": true
+    },
+    {
+      "id": "run018",
+      "repetition": 5,
+      "arm": "intent-first",
+      "attempted": true
+    },
+    {
+      "id": "run019",
+      "repetition": 9,
+      "arm": "intent-first",
+      "attempted": true
+    },
+    {
+      "id": "run020",
+      "repetition": 9,
+      "arm": "compact",
+      "attempted": true
+    }
+  ],
+  "unattempted_ids": [],
+  "post_calls_boundary": "First parseable successful rename-tool result; work batched inside a shell call is not separated",
+  "pre_calls_boundary": "First Bash invocation beginning with the exact assigned rename executable shell word; calls in its native event are peers, and within-shell work is not separated",
+  "config_sha256": "0c54b41096a8207afe1949f1d1a6ff9340241c0cfe920a1da66a47985bcc44b9"
+}

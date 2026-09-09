@@ -13,6 +13,7 @@ import sys
 import time
 from pathlib import Path
 
+import entrypoint_trial
 import pilot
 import postcheck_pilot
 import real_fixture as fixture
@@ -21,6 +22,7 @@ from lsp import require
 EXPERIMENT = "real-php-verification-v1"
 ARMS = ("text-manual", "ast-manual", "ast-integrated")
 GUIDANCE_EXPERIMENT = "real-php-guidance-v1"
+ENTRYPOINT_EXPERIMENT = entrypoint_trial.EXPERIMENT
 PROFILES = {
     EXPERIMENT: {
         "arms": ARMS,
@@ -33,6 +35,24 @@ PROFILES = {
         "seed": 20260910,
         "campaign_usd": 5.0,
         "pairs": (("compact", "guidance"),),
+        "route": "ast-integrated",
+        "observations": ("post_calls", "duplicate_final_checks"),
+        "interpretation": "One public-source case, ten paired repetitions. Both arms use the same AST mutation and integrated checker; the treatment is the whole guidance output bundle, including syntactic role counts. Later tool calls are observable continuation, not automatically redundancy. Repeated successful final-byte receipts exclude checks on earlier bytes. Missing observations remain unknown; all twenty planned rows remain visible. Candidate verification and hidden oracle success are distinct.",
+    },
+    ENTRYPOINT_EXPERIMENT: {
+        "arms": ("compact", "intent-first"),
+        "seed": 20260911,
+        "campaign_usd": 5.0,
+        "pairs": (("compact", "intent-first"),),
+        "route": "ast-integrated",
+        "prompt_suffix": {"intent-first": entrypoint_trial.CONTRACT},
+        "observations": (
+            "post_calls",
+            "duplicate_final_checks",
+            "pre_calls",
+            "peer_calls",
+        ),
+        "interpretation": "One selected public-source case, ten paired repetitions. Both arms use identical AST mutation, compact evidence and integrated tests. Only the intent-first arm receives the prospective capability paragraph before editing. Pre-calls precede the first assigned invocation in native event order; same-event peer calls are separate and neither count automatically means unnecessary work. Unknown observations remain unknown, all planned rows/pairs remain visible, and final-byte candidate tests are distinct from hidden checks. This is an instruction experiment, not intrinsic AST speed or held-out validation.",
     },
 }
 PROJECT_CONFIG = ".php-ast-edit.json"
@@ -118,6 +138,15 @@ def cli_identity():
     return executable, pilot.invoke([executable, "--version"]).stdout.strip()
 
 
+def profile_prompts(task, experiment, arm, rename, checker):
+    """Keep the existing prompt intact except a profile's explicit suffix."""
+    design = profile(experiment)
+    require(arm in design["arms"], "Unknown profile arm")
+    system, prompt = prompts(task, design.get("route", arm), rename, checker)
+    suffix = design.get("prompt_suffix", {}).get(arm)
+    return system, prompt + ("\n\n" + suffix if suffix else "")
+
+
 def runtime_identity():
     php = shutil.which("php")
     require(php is not None, "PHP interpreter is unavailable")
@@ -187,7 +216,7 @@ def prepare(args):
     shutil.copyfile(phpunit, output / PHPUNIT_FILE)
     rows = schedule(experiment)
     for row in rows:
-        route = "ast-integrated" if experiment == GUIDANCE_EXPERIMENT else row["arm"]
+        route = design.get("route", row["arm"])
         run_dir = output / row["id"]
         run_dir.mkdir()
         work = run_dir / "work"
@@ -221,7 +250,7 @@ def prepare(args):
                 rename_argv(output, run_dir, experiment, row["arm"]),
                 arguments=True,
             )
-        system, prompt = prompts(task, route, rename, checker)
+        system, prompt = profile_prompts(task, experiment, row["arm"], rename, checker)
         (run_dir / pilot.SYSTEM_FILE).write_text(system)
         (run_dir / pilot.PROMPT_FILE).write_text(prompt)
         pilot.save(run_dir / "task.json", task)
@@ -280,6 +309,14 @@ def prepare(args):
             "compact_flags": ["--evidence"],
             "guidance_flags": ["--evidence", "--guidance"],
             "treatment": "Whole guidance output bundle, including syntactic role counts",
+            "forecast_native_list_price_usd_below": 1.0,
+        }
+    elif experiment == ENTRYPOINT_EXPERIMENT:
+        config["comparison"] = {
+            "shared_route": "ast-integrated",
+            "shared_flags": ["--evidence"],
+            "treatment": "Capability paragraph appended before the first edit",
+            "contract": entrypoint_trial.CONTRACT,
             "forecast_native_list_price_usd_below": 1.0,
         }
     pilot.save(output / pilot.CONFIG_FILE, config)
@@ -556,8 +593,10 @@ def run(args):
             record["native"] = pilot.accounting.summarize(events, config["model"])
         except (ValueError, KeyError, TypeError, OSError, StopIteration) as error:
             record["accounting_error"] = str(error)
-        if config["experiment"] == GUIDANCE_EXPERIMENT:
+        if profile(config["experiment"]).get("observations"):
             record["postcheck"] = guidance_observation(run_dir, record)
+        if config["experiment"] == ENTRYPOINT_EXPERIMENT:
+            record["precheck"] = entrypoint_trial.observe(run_dir, record)
         try:
             evaluate(output, run_dir, record)
         except (
@@ -629,7 +668,7 @@ def metrics(record, experiment=EXPERIMENT):
         "behavior_checks": checks.get("behavior_checks"),
         "checker_ms": checks.get("checker_ms"),
     }
-    if experiment == GUIDANCE_EXPERIMENT:
+    if profile(experiment).get("observations"):
         count, passed = (
             checks.get("behavior_checks"),
             checks.get("passed_final_receipts"),
@@ -645,6 +684,11 @@ def metrics(record, experiment=EXPERIMENT):
         values.update(
             post_calls=record.get("postcheck", {}).get("subsequent_tool_calls"),
             duplicate_final_checks=max(0, passed - 1) if known else None,
+        )
+    if experiment == ENTRYPOINT_EXPERIMENT:
+        values.update(
+            pre_calls=record.get("precheck", {}).get("preceding_tool_calls"),
+            peer_calls=record.get("precheck", {}).get("peer_tool_calls"),
         )
     return values
 
@@ -663,7 +707,9 @@ def distributions(values, prefix=""):
 def paired_effect(records, before_arm, after_arm, experiment=EXPERIMENT):
     deltas, pairs = {key: [] for key in metrics({}, experiment)}, []
     planned = schedule(experiment)
-    candidates = [*records, *planned] if experiment == GUIDANCE_EXPERIMENT else records
+    candidates = (
+        [*records, *planned] if profile(experiment).get("observations") else records
+    )
     indexed = {}
     for record in candidates:
         # Keep the first observed row; planned rows only fill unattempted pairs.
@@ -720,12 +766,9 @@ def summarize_records(records, experiment=EXPERIMENT):
                 **distributions(values),
             }
         )
-        if experiment == GUIDANCE_EXPERIMENT:
+        if design.get("observations"):
             cells[-1].update(
-                {
-                    "known_" + key: len(values[key])
-                    for key in ("post_calls", "duplicate_final_checks")
-                }
+                {"known_" + key: len(values[key]) for key in design["observations"]}
             )
     result = {
         "experiment": experiment,
@@ -740,15 +783,15 @@ def summarize_records(records, experiment=EXPERIMENT):
         ],
         "interpretation": "One small public-source case repeated ten times. Text versus AST bundles resolver, writer and evidence; manual versus integrated bundles automatic triggering and reporting. Checker duration is observed separately, not an inferred total tool duration. Candidate verification and hidden oracle success are distinct.",
     }
-    if experiment == GUIDANCE_EXPERIMENT:
+    if design.get("observations"):
         planned = schedule(experiment)
         identities = {(r["id"], r["arm"], r["repetition"]) for r in planned}
         require(
             all((r["id"], r["arm"], r["repetition"]) in identities for r in records),
-            "Unexpected guidance row",
+            "Unexpected observation row",
         )
         attempted = {r["id"] for r in records}
-        require(len(attempted) == len(records), "Duplicate guidance attempt")
+        require(len(attempted) == len(records), "Duplicate observation attempt")
         result.update(
             planned_rows=[
                 {**row, "attempted": row["id"] in attempted} for row in planned
@@ -757,8 +800,10 @@ def summarize_records(records, experiment=EXPERIMENT):
                 row["id"] for row in planned if row["id"] not in attempted
             ],
             post_calls_boundary=postcheck_pilot.POSTCALL_BOUNDARY,
-            interpretation="One public-source case, ten paired repetitions. Both arms use the same AST mutation and integrated checker; the treatment is the whole guidance output bundle, including syntactic role counts. Later tool calls are observable continuation, not automatically redundancy. Repeated successful final-byte receipts exclude checks on earlier bytes. Missing observations remain unknown; all twenty planned rows remain visible. Candidate verification and hidden oracle success are distinct.",
+            interpretation=design["interpretation"],
         )
+    if experiment == ENTRYPOINT_EXPERIMENT:
+        result["pre_calls_boundary"] = entrypoint_trial.PRECALL_BOUNDARY
     return result
 
 
@@ -791,13 +836,20 @@ def summarize(args):
                 record["native"] == pilot.accounting.summarize(events, config["model"]),
                 "Native accounting drift",
             )
-        if config["experiment"] == GUIDANCE_EXPERIMENT:
+        if profile(config["experiment"]).get("observations"):
             observed = guidance_observation(run_dir, record)
             require(
                 "postcheck" not in record or record["postcheck"] == observed,
                 "Post-call observation drift",
             )
             record["postcheck"] = observed
+        if config["experiment"] == ENTRYPOINT_EXPERIMENT:
+            observed = entrypoint_trial.observe(run_dir, record)
+            require(
+                "precheck" not in record or record["precheck"] == observed,
+                "Pre-call observation drift",
+            )
+            record["precheck"] = observed
         records.append(record)
     summary = {
         **summarize_records(records, config["experiment"]),
