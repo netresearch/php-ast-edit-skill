@@ -8,6 +8,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Fixed
 
+- The flag form of `apply` now answers exactly as the JSON form does. It returned exit 0 over failed project checks while reporting `checksPassed: false`, and silently dropped `--sha256` and `--report`, which the option parser accepts under any spelling — a supplied file guard never ran and the caller was told the edit was clean. Both flags now reach the document, both input forms share one execution and one verdict, and a flag the chosen form cannot carry is refused instead of dropped.
 - Resolve imported symbol-table function aliases before variable renames, and conservatively refuse `call_user_func()` and `call_user_func_array()` in affected scopes to prevent behavior-changing renames.
 - Reject variable renames that collide with local, parameter or captured bindings, or depend on unsafe dynamic scope. Refuse ambiguous inherited method renames, case-insensitive destination conflicts and unsupported late-static dispatch; preserve parent calls and nested lexical scopes.
 - Load Composer consumer autoloaders, including custom vendor and binary directories. Prevent a standalone skill wrapper from invoking itself recursively.
