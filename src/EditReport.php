@@ -81,8 +81,17 @@ final class EditReport
         if ($file->mode === 'delete') {
             return 'not_run';
         }
+        $status = $file->lint['status'] ?? null;
 
-        return ($file->lint['status'] ?? '') === 'skipped' ? 'skipped' : 'passed';
+        if ($status === null) {
+            // `render()` lints every transaction it prints, so nothing reaches this today.
+            // It is here because the alternative default is `passed`: a path that stopped
+            // linting would report the strongest claim this field can make, silently, and
+            // an agent would stop on it. An absent check is not a passed one.
+            return 'not_run';
+        }
+
+        return $status === 'skipped' ? 'skipped' : 'passed';
     }
 
     /**
