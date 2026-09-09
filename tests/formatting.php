@@ -1319,6 +1319,19 @@ check(
     str_contains($said, '"--memory-limit=1G"'),
     $said,
 );
+check(
+    'the suggestion runs over the project, not over the changed files',
+    str_contains($said, '"scope":"project"'),
+    $said,
+);
+check(
+    // The half that makes the line above mean something: naming files on the command line
+    // replaces the analysis paths phpstan.neon declares, and a project-scoped command that
+    // still carries the placeholder is rejected by the configuration reader anyway.
+    'and therefore names no files',
+    !str_contains($said, RepositoryConfig::FILES_PLACEHOLDER),
+    $said,
+);
 // The counter-test: without an analyser there is nothing to declare, and a finding would be a
 // nag rather than a report. This is what keeps the check from applying to every repository.
 $unanalysed = workspace();

@@ -301,10 +301,17 @@ final class Doctor
             }
             $bin = $this->binDirectory($root);
 
-            // Scoped to the changed files, which is what makes it affordable per edit — and
-            // what the agent's own run was doing anyway. PHPStan dies at PHP's default 128M on
-            // any tree of size and reports it as an ordinary failure, so the limit belongs in
-            // the command rather than in a note somebody reads after the first crash.
+            // Project scope, not the changed files. Naming files on the command line replaces
+            // the analysis paths the configuration declares — which the formatting contract
+            // warns invalidates the result cache — and avoiding it costs nothing: measured warm
+            // on a 121-file TYPO3 extension, the whole project took 1.9s against 1.5-2.0s for a
+            // single file, because the cache does the work either way. What project scope buys
+            // on top is the error the edit caused somewhere else, which a file-scoped run
+            // cannot see and would report as a pass.
+            //
+            // PHPStan dies at PHP's default 128M on any tree of size and reports it as an
+            // ordinary failure, so the limit belongs in the command rather than in a note
+            // somebody reads after the first crash.
             $command = match ($tool) {
                 'phpstan' => [
                     'php',
@@ -313,18 +320,11 @@ final class Doctor
                     '--configuration=' . $relative,
                     '--no-progress',
                     '--memory-limit=1G',
-                    RepositoryConfig::FILES_PLACEHOLDER,
                 ],
-                default => [
-                    'php',
-                    $bin . '/psalm',
-                    '--config=' . $relative,
-                    '--no-cache',
-                    RepositoryConfig::FILES_PLACEHOLDER,
-                ],
+                default => ['php', $bin . '/psalm', '--config=' . $relative],
             };
 
-            return ['scope' => 'changed_files', 'command' => $command];
+            return ['scope' => 'project', 'command' => $command];
         }
 
         return null;
