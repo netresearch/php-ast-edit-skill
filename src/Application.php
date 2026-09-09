@@ -297,9 +297,11 @@ final class Application
         One edit against a named target is one call, with no payload file:
           php-ast-edit apply --file src/Foo.php --select method:Foo::bar \
               --op rename_variable --from nonce --to nonceValue
-        The operation's own arguments become flags: --php, --value, --from, --to,
-        --property, --position, --index, --parse-as. Several edits, or several files,
-        stay in one apply request through JSON on stdin.
+        The operation's own arguments become flags: --php, --value, --alias, --from,
+        --to, --property, --position, --index, --parse-as. A file-level operation takes
+        no target: php-ast-edit apply --file src/Foo.php --op add_use --value
+        'Vendor\Package\Thing'. Several edits, or several files, stay in one apply
+        request through JSON on stdin.
         
         Selectors: class:, interface:, trait:, enum:, method:Foo::bar, function:,
         property:Foo::$bar, const:Foo::BAR. Names are short names; ambiguity is refused.
