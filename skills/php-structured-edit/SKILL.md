@@ -1,6 +1,6 @@
 ---
 name: php-structured-edit
-description: "Use when creating, changing, deleting, or moving PHP syntax with the php-ast-edit CLI: symbols, members, types, statements, expressions, and PHP string literals. Use ordinary search for discovery. Not for read-only PHP questions or edits to non-PHP files."
+description: "Use when editing PHP source: renaming a method, function or variable and its call sites; adding, changing or removing a method, property, constant, parameter, return type, attribute or use import; inserting or replacing a statement, expression or call argument; changing a signature, visibility or docblock; editing a PHP string literal; creating or deleting a whole PHP file. Reach for this before Edit or sed on a .php file. Use ordinary search for discovery. Not for read-only PHP questions or edits to non-PHP files."
 ---
 
 # PHP Structured Edit

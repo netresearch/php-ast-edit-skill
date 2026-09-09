@@ -125,4 +125,5 @@ The repository's default `GITHUB_TOKEN` is read-only, so every caller job declar
 - [README.md](README.md) — installation, usage, transaction safety
 - [installation.md](docs/installation.md) — source, Composer and executable release installations
 - [benchmarks](benchmarks/README.md) — fair comparison protocol and evidence requirements
+- [skill invocation](benchmarks/skill-invocation/README.md) — whether the model reaches for the skill at all
 - [CHANGELOG.md](CHANGELOG.md) — released versions
