@@ -46,13 +46,27 @@ DELETE_PROGRAMS = {"rm", "unlink", "shred"}
 # Shell operators that end one simple command and begin the next.
 SEPARATORS = {";", "&&", "||", "|", "&", "|&"}
 
+# What this says is the only guidance a denied caller gets, and it is read instead of the
+# documentation rather than alongside it. It therefore has to name the cheap path first:
+# a named target is a selector and one call, and the coordinate form exists for the targets
+# that have no name. Leading with `inspect --line --column` and a payload file sends the
+# caller hunting for structural refs and guessing at a document shape, which is what a
+# measured run did for twenty turns before it read `help`.
 FOOTER = (
-    "\n\nUse php-ast-edit instead:\n"
-    "  php-ast-edit inspect --file <path> --line <n> --column <n>\n"
-    "  php-ast-edit apply --input edits.json\n"
+    "\n\nUse php-ast-edit instead. One edit against a named target is one call:\n"
+    "  php-ast-edit apply --file <path> --select method:Foo::bar"
+    " --op rename_variable --from nonce --to nonceValue\n"
+    "Selectors: class: interface: trait: enum: method:Foo::bar function:"
+    " property:Foo::$bar const:Foo::BAR\n"
+    "Several edits, or several files, go in one request as JSON on stdin:\n"
+    '  {"files":[{"path":"<path>","edits":[{"target":{"select":"class:Foo"},'
+    '"operation":"add_member","php":"public const READY = true;"}]}]}\n'
+    "inspect --file <path> --line <n> --column <n> is for a target that has no name.\n"
     'A new file is a file entry with "mode": "create"; a removal is "mode": "delete".\n'
-    "Run `php-ast-edit contexts` for the parseAs and operation catalog.\n"
-    "PHP_AST_ONLY_OFF=1 for a deliberate exception."
+    "Reading is not gated: cat, grep, git diff, php -l and php-ast-edit inspect run as they are.\n"
+    "Run `php-ast-edit contexts` for the operation and parseAs catalog, `help` for the rest.\n"
+    "PHP_AST_ONLY_OFF=1 for a deliberate exception — a fixture that must hold broken PHP,\n"
+    "a generated file, a merge-conflict resolution. Not for a snippet that would not parse."
 )
 
 
@@ -186,8 +200,16 @@ def text_mutation_of_php(command: str) -> str | None:
         return None
 
     for tokens in segments(command):
-        # Only this segment is exempt, not the rest of the line.
+        # Only this segment is exempt, not the rest of the line — and the exemption covers
+        # what the tool does, not where its output goes. `php-ast-edit inspect --file a.php
+        # > victim.php` writes a report over PHP source, which is the thing being gated, so
+        # a redirect into a .php file is checked in an exempt segment as in any other.
         if any("php-ast-edit" in token for token in tokens):
+            for index in range(len(tokens)):
+                target = redirect_target(tokens, index)
+
+                if target is not None and is_php_path(target):
+                    return "a shell redirect into a .php file"
             continue
         label = mutates_php(tokens)
         if label is not None:
