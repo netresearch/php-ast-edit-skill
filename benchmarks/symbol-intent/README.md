@@ -115,6 +115,31 @@ expectations and source hashes. Consumed plans cannot be replayed. As with ordin
 engine apply, exit 1 means edits were retained but verification failed; exit 2 means
 planning or application was rejected. Consult retained reports after interruption.
 
+## Why Phpactor, and not one of the others
+
+The resolver slot was filled by asking what each candidate can do from a script, not
+by preference. Checked 2026-09-09:
+
+| tool | cross-file method rename | reachable how |
+| --- | --- | --- |
+| [Phpactor](https://github.com/phpactor/phpactor) | yes | CLI and LSP |
+| [PHPantom](https://github.com/PHPantom-dev/phpantom_lsp) | yes, over LSP only | `textDocument/rename`; its CLI has `move`, `analyze`, `fix`, `format`, `init` — `move` relocates a class or namespace, not a method |
+| [jorgsowa/php-lsp](https://github.com/jorgsowa/php-lsp) | not documented | LSP; ten code actions, none of them rename |
+| [mago](https://github.com/carthage-software/mago) | no | `analyze`, `lint`, `fmt`, `init`; the LSP is planned for 2.0 and rename is named as a feature that may not ship |
+
+So there are two real candidates and they occupy the same slot: `lsp.py` speaks the
+protocol, and swapping the server is a configuration change rather than a design one.
+PHPantom's claim is readiness without an index build, which is where this prototype
+spends most of its wall time — each invocation builds a fresh Phpactor index. That
+makes it worth measuring, not worth assuming.
+
+The finding that matters more is in the [pilot's own table](results/2026-09-07-haiku/REPORT.md):
+at fifty files the plain Phpactor CLI beat this composition on tokens (78,261 against
+103,123), on wall time and on cost. The value of the resolver is real; the value of
+*building* one is not established. Read that as an argument for delegating reference
+discovery to a tool that already does it, and for keeping the engine to what it is —
+the writer.
+
 ## Deliberate limits
 
 - Trusted, self-contained workspaces only: no symlinks, custom Phpactor config,
