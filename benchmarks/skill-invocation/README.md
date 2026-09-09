@@ -36,12 +36,19 @@ queryBuilderFor(), including every call to it in that file. Change nothing else.
 
 for i in 1 2 3 4 5 6 7 8; do
   for arm in free ast trial; do
-    benchmarks/skill-invocation/run.sh "r$i" "$arm" "$PROMPT"
+    benchmarks/skill-invocation/run.sh "rename$i" "$arm" "$PROMPT"
   done
 done
-benchmarks/skill-invocation/summarize.py "$BENCH" free ast trial \
+benchmarks/skill-invocation/summarize.py "$BENCH" free ast trial --task rename \
   --oracle 'grep -q queryBuilderFor Classes/Service/Repo.php'
 ```
+
+Give the task id a name and pass it to `--task`. A result file is named for its run's task
+id and arm, so a second task measured in the same root sits beside the first, and without
+the filter both go into one median — a rename and a three-change edit averaged together
+and reported as repetitions of the same thing. The oracle belongs to the task too: it is
+the check for `rename`, and running it over another task's runs excludes all of them as
+work that was never done.
 
 The oracle is not optional in practice. `summarize.py` without one reports every run that
 exited cleanly, and a run that finished without doing the task is not a cheap run — it is
