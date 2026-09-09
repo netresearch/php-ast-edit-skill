@@ -1,0 +1,15 @@
+{
+  "source_commit": "9b16214c28d6bf1ef3074907651c94520ece71df",
+  "source_path": "benchmarks/symbol-intent/results/2026-09-07-real-php/REPORT.md",
+  "scope": "Published measurements transcribed from the report; no new model runs. Ten attempts per arm of one selected six-file task.",
+  "medians": {
+    "text_manual": {"tokens":124133.5,"calls":16,"rounds":13,"seconds":37.76,"list_usd":0.054360},
+    "ast_manual": {"tokens":30472.5,"calls":3.5,"rounds":4.5,"seconds":22.93,"list_usd":0.026171},
+    "ast_integrated": {"tokens":12212,"calls":1,"rounds":2,"seconds":16.43,"list_usd":0.018277}
+  },
+  "token_totals": {
+    "text_manual": {"fresh":12196,"cache_create":141455,"cache_read":1155890,"output":31511,"total":1341052},
+    "ast_manual": {"fresh":12400,"cache_create":82719,"cache_read":202411,"output":16636,"total":314166},
+    "ast_integrated": {"fresh":12328,"cache_create":75717,"cache_read":123622,"output":14246,"total":225913}
+  }
+}

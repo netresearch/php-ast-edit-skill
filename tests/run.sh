@@ -72,6 +72,10 @@ echo "::group::tests/cli.sh (CLI surface: inspect, apply, exit codes)"
 bash tests/cli.sh || fail=1
 echo "::endgroup::"
 
+echo "::group::tests/recompute.sh (published figures recompute from their own tables)"
+bash tests/recompute.sh || fail=1
+echo "::endgroup::"
+
 echo "::group::tests/hook.py (enforcement gate behaviour table)"
 python3 tests/hook.py || fail=1
 echo "::endgroup::"
