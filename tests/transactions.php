@@ -5,7 +5,9 @@ declare(strict_types=1);
 require_once dirname(__DIR__) . '/vendor/autoload.php';
 
 use Netresearch\PhpAstEdit\Editor;
+use Netresearch\PhpAstEdit\EditReport;
 use Netresearch\PhpAstEdit\Exception\EditException;
+use Netresearch\PhpAstEdit\FileTransaction;
 use Netresearch\PhpAstEdit\RepositoryConfig;
 
 $dir = sys_get_temp_dir() . '/php-ast-contract-' . bin2hex(random_bytes(6));
@@ -443,6 +445,45 @@ try {
             str_contains(file_get_contents($shapeTarget), '$nonceValue'),
         );
     }
+    // The agent report's `syntax` claim, at the one state the CLI cannot reach: a
+    // transaction that was never linted. The default matters — an absent check reported
+    // as `passed` is the strongest claim this field makes, and an agent stops on it.
+    $unlinted = new FileTransaction(
+        $dir . '/never-linted.php',
+        'edit',
+        '<?php class L {}',
+        [],
+        null,
+        null,
+        false,
+    );
+    $unlinted->output = '<?php class L {}';
+    contractCheck(
+        'an unlinted transaction reports syntax not_run, never passed',
+        EditReport::agentFile($unlinted, false)['syntax'] === 'not_run',
+    );
+    $skipped = clone $unlinted;
+    $skipped->lint = ['status' => 'skipped', 'runtime' => '8.2'];
+    contractCheck(
+        'a skipped lint stays skipped rather than becoming passed',
+        EditReport::agentFile($skipped, false)['syntax'] === 'skipped',
+    );
+    $linted = clone $unlinted;
+    $linted->lint = ['status' => 'passed', 'runtime' => '8.5'];
+    contractCheck(
+        'a lint that ran and passed reports passed',
+        EditReport::agentFile($linted, false)['syntax'] === 'passed',
+    );
+    // A deletion has no output to parse or lint. Today nothing lints one, so the absent
+    // status alone would produce not_run — which would leave this guarantee resting on
+    // another method's behaviour instead of on this one's rule. Given a lint result it has
+    // no business carrying, a deleted file still makes no syntax claim.
+    $deleted = new FileTransaction($dir . '/gone.php', 'delete', '<?php class G {}', [], null, null, true);
+    $deleted->lint = ['status' => 'passed', 'runtime' => '8.5'];
+    contractCheck(
+        'a deletion makes no syntax claim even when a lint result is attached',
+        EditReport::agentFile($deleted, false)['syntax'] === 'not_run',
+    );
 } finally {
     contractClean($dir);
 }

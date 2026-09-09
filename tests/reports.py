@@ -211,6 +211,142 @@ class ReportTests(unittest.TestCase):
         self.assertEqual(30, full_text.count('"output":'))
         self.assertEqual(1, compact_text.count('"output":'))
 
+    # --- report: "agent" -------------------------------------------------------------------
+    # The decision-shaped projection. Its whole value is what it leaves out, so most of these
+    # assert absence — and absence is the assertion most easily satisfied by a typo, hence the
+    # paired presence checks on the fields that must survive.
+
+    def test_agent_states_the_three_claims_separately(self):
+        self.configure()
+        status, report, _ = self.apply(self.files(), report="agent")
+        self.assertEqual(0, status)
+        self.assertEqual(1, report["reportVersion"])
+        self.assertEqual("agent", report["report"])
+        self.assertEqual("applied", report["outcome"])
+        self.assertEqual("passed", report["checks"])
+        for file in report["files"]:
+            self.assertTrue(file["changed"])
+            self.assertEqual("passed", file["syntax"])
+            self.assertEqual("passed", file["checks"])
+            self.assertEqual([], file["open"])
+            self.assertIn("const READY", pathlib.Path(file["path"]).read_text())
+
+    def test_agent_distinguishes_no_checks_declared_from_checks_passed(self):
+        # No .php-ast-edit.json at all: nothing verified this edit. A nullable boolean cannot
+        # say that, and an agent reading one stops as if the result had been checked.
+        status, report, _ = self.apply(self.files(), report="agent")
+        self.assertEqual(0, status)
+        self.assertEqual("none_declared", report["checks"])
+        self.assertIsNone(report["checksPassed"])
+        for file in report["files"]:
+            self.assertEqual("none_declared", file["checks"])
+            self.assertIn(
+                "NO_CHECKS_DECLARED",
+                " ".join(file["open"]),
+            )
+
+    def test_agent_carries_failed_check_output_once_and_drops_passing_noise(self):
+        self.configure(failing=True)
+        status, report, text = self.apply(self.files(10), report="agent")
+        self.assertEqual(1, status)
+        self.assertEqual("applied_checks_failed", report["outcome"])
+        self.assertEqual("failed", report["checks"])
+        self.assertEqual(0, report["checksPassedCount"])
+        self.assertEqual(1, len(report["checksFailed"]))
+        self.assertIn("unique-diagnostic", report["checksFailed"][0]["output"])
+        self.assertEqual(1, text.count('"output":'))
+        # The edit is kept on a failed check, in this mode as in every other.
+        for file in report["files"]:
+            self.assertIn("const READY", pathlib.Path(file["path"]).read_text())
+
+    def test_agent_omits_the_diff_the_generated_code_and_the_duplicated_fields(self):
+        self.configure()
+        _, full, full_text = self.apply(self.files(), report="full")
+        _, agent, agent_text = self.apply(self.files(), report="agent")
+        self.assertIn("diff", full["files"][0])
+        self.assertLess(len(agent_text), len(full_text))
+        for file in agent["files"]:
+            for absent in ("diff", "code", "valid", "warning", "validation", "verify"):
+                self.assertNotIn(absent, file)
+            # ... while the fields the next decision needs are still there.
+            self.assertIn("afterSha256", file)
+            self.assertIn("beforeSha256", file)
+            self.assertIn("checkIds", file)
+
+    def test_agent_dry_run_says_the_tree_is_unchanged(self):
+        self.configure()
+        files = self.files()
+        status, report, _ = self.apply(files, report="agent", dryRun=True)
+        self.assertEqual(0, status)
+        self.assertEqual("dry_run", report["outcome"])
+        for file in report["files"]:
+            self.assertNotIn("code", file)
+            self.assertIn("NOT_WRITTEN", " ".join(file["open"]))
+            self.assertNotIn("const READY", pathlib.Path(file["path"]).read_text())
+
+    def test_agent_names_what_a_rename_left_open(self):
+        self.configure()
+        source = "<?php final class Caller { public function go(): void { $this->old(); } public function old(): void {} }\n"
+        path = self.root / "Caller.php"
+        path.write_text(source)
+        status, report, _ = self.apply(
+            [
+                {
+                    "path": str(path),
+                    "edits": [
+                        {
+                            "target": {"select": "method:Caller::old"},
+                            "operation": "rename_method",
+                            "to": "renamed",
+                        }
+                    ],
+                }
+            ],
+            report="agent",
+        )
+        self.assertEqual(0, status)
+        open_text = " ".join(report["files"][0]["open"])
+        self.assertIn("CALLERS_OUTSIDE_FILE", open_text)
+
+    def test_agent_is_reachable_from_the_flag_form(self):
+        self.configure()
+        source = "<?php final class Flagged { public function run(): int { $n = 1; return $n; } }\n"
+        path = self.root / "Flagged.php"
+        path.write_text(source)
+        process = subprocess.run(
+            [
+                str(ENGINE),
+                "apply",
+                "--file",
+                str(path),
+                "--select",
+                "method:Flagged::run",
+                "--op",
+                "rename_variable",
+                "--from",
+                "n",
+                "--to",
+                "count",
+                "--report",
+                "agent",
+            ],
+            text=True,
+            cwd=self.root,
+            capture_output=True,
+            check=False,
+        )
+        report = json.loads(process.stdout or process.stderr)
+        self.assertEqual(0, process.returncode)
+        self.assertEqual("agent", report["report"])
+        self.assertEqual(1, report["reportVersion"])
+
+    def test_an_unknown_report_names_all_three_modes(self):
+        self.configure()
+        status, _, text = self.apply(self.files(), report="loud")
+        self.assertEqual(2, status)
+        for mode in ("full", "compact", "agent"):
+            self.assertIn(mode, text)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -19,6 +19,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Added
 
+- Optional `report: "agent"`. The decision-shaped projection: `outcome`, a `checks` tri-state where `none_declared` is not `passed`, the output of failing checks only, and a per-file `open` list naming what the write did **not** establish — remaining occurrences, unresolved receivers, callers `rename_method` cannot reach, syntax unconfirmed on a newer target, a repository that declares no checks. It carries no `diff`, no generated `code`, and neither of the legacy `warning`/`valid` duplicates; `git diff -- <path>` has the diff, from the snapshot `beforeSha256` names, and a file outside version control is the one case that loses information. Versioned by `reportVersion`, which `full` and `compact` deliberately do not carry.
+
 - **One edit against a named target is one call.** `apply --file F.php --select method:Foo::bar --op rename_variable --from nonce --to nonceValue` — no payload file. Measured across controlled runs, every edit cost two calls, one writing JSON to a temporary file and one applying it; that was the last fixed overhead the tool imposed on the simple case. The operation's own arguments become flags, and `contexts` says which each takes. Several edits, or several files, still go through JSON on stdin, which is what that form is for.
 
 - Optional `report: "compact"` Apply responses emit each verification run once with per-file `checkIds`; the default `full` response preserves the existing per-file contract. The experimental adapter requests compact reports automatically; frozen benchmark evidence is unchanged.

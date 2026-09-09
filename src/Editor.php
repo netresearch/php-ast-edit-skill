@@ -91,12 +91,7 @@ final class Editor
     public function apply(array $document, bool $forceDryRun = false): array
     {
         $this->verifyResults = [];
-        $report = array_key_exists('report', $document) ? $document['report'] : 'full';
-
-        if (!in_array($report, ['full', 'compact'], true)) {
-            throw new EditException('apply report must be "full" or "compact".');
-        }
-        $compact = $report === 'compact';
+        $report = $this->reportMode($document);
         $files = $document['files'] ?? null;
 
         if (!is_array($files) || $files === []) {
@@ -106,6 +101,67 @@ final class Editor
             throw new EditException(self::SHAPE_REQUIRED);
         }
         $dryRun = $forceDryRun || (bool) ($document['dryRun'] ?? false);
+        $transactions = $this->prepareAll($files);
+
+        foreach ($transactions as $transaction) {
+            $this->mutate($transaction);
+        }
+
+        foreach ($transactions as $transaction) {
+            $this->render($transaction);
+        }
+
+        if (!$dryRun) {
+            $verification = (new VerificationRunner())->prepare($transactions);
+            $this->commit($transactions, $verification);
+        }
+
+        if ($report === 'agent') {
+            return $this->agentResult($transactions, $dryRun);
+        }
+        $compact = $report === 'compact';
+        $result = [
+            'files' => array_map(
+                fn (FileTransaction $file): array => $this->report($file, $dryRun, $compact),
+                $transactions,
+            ),
+            'checksPassed' => $this->verifyResults === [] ? null : !in_array(false, array_column($this->verifyResults, 'ok'), true),
+        ];
+
+        if ($compact) {
+            $result['verify'] = $this->verifyResults;
+        }
+
+        return $result;
+    }
+
+    /**
+     * The requested response shape, or a refusal naming every shape there is.
+     *
+     * @param array<string, mixed> $document
+     */
+    private function reportMode(array $document): string
+    {
+        $report = array_key_exists('report', $document) ? $document['report'] : 'full';
+
+        if (!in_array($report, ['full', 'compact', 'agent'], true)) {
+            throw new EditException('apply report must be "full", "compact" or "agent".');
+        }
+
+        return $report;
+    }
+
+    /**
+     * One transaction per file spec, refusing two specs that name the same file.
+     *
+     * Two entries for one path would each print from their own snapshot, and the second
+     * write would silently drop the first one's edits.
+     *
+     * @param  array<mixed> $files
+     * @return list<FileTransaction>
+     */
+    private function prepareAll(array $files): array
+    {
         $transactions = [];
         $seen = [];
 
@@ -129,31 +185,67 @@ final class Editor
             $transactions[] = $transaction;
         }
 
-        foreach ($transactions as $transaction) {
-            $this->mutate($transaction);
+        return $transactions;
+    }
+
+    /**
+     * The decision-shaped response: what happened, what is still open, nothing twice.
+     *
+     * `checksPassed` stays alongside `checks` because the CLI's exit code is derived from it
+     * and one command must not have two verdicts — the same reason the flag form and the
+     * JSON form were unified. `checks` is what a caller should read: it separates "every
+     * declared check passed" from "this repository declares none", which the boolean cannot.
+     *
+     * @param  list<FileTransaction> $transactions
+     * @return array<string, mixed>
+     */
+    private function agentResult(array $transactions, bool $dryRun): array
+    {
+        $failed = [];
+        $passed = 0;
+
+        foreach ($this->verifyResults as $check) {
+            if ($check['ok'] === true) {
+                ++$passed;
+
+                continue;
+            }
+            // A passing check's output is the routine noise this mode exists to drop. A
+            // failing one is the whole reason the caller is still reading.
+            $failed[] = array_intersect_key($check, array_flip(['id', 'scope', 'command', 'output']));
+        }
+        $declared = $this->verifyResults !== [];
+        $allPassed = $failed === [];
+
+        if (!$declared) {
+            $checks = 'none_declared';
+        } elseif ($allPassed) {
+            $checks = 'passed';
+        } else {
+            $checks = 'failed';
         }
 
-        foreach ($transactions as $transaction) {
-            $this->render($transaction);
+        if ($dryRun) {
+            $outcome = 'dry_run';
+        } elseif ($allPassed) {
+            $outcome = 'applied';
+        } else {
+            $outcome = 'applied_checks_failed';
         }
 
-        if (!$dryRun) {
-            $verification = (new VerificationRunner())->prepare($transactions);
-            $this->commit($transactions, $verification);
-        }
-        $result = [
+        return [
+            'reportVersion' => EditReport::AGENT_VERSION,
+            'report' => 'agent',
+            'outcome' => $outcome,
+            'checks' => $checks,
+            'checksPassed' => $declared ? $allPassed : null,
+            'checksPassedCount' => $passed,
+            'checksFailed' => $failed,
             'files' => array_map(
-                fn (FileTransaction $file): array => $this->report($file, $dryRun, $compact),
+                static fn (FileTransaction $file): array => EditReport::agentFile($file, $dryRun),
                 $transactions,
             ),
-            'checksPassed' => $this->verifyResults === [] ? null : !in_array(false, array_column($this->verifyResults, 'ok'), true),
         ];
-
-        if ($compact) {
-            $result['verify'] = $this->verifyResults;
-        }
-
-        return $result;
     }
 
     private function prepare(array $spec): FileTransaction

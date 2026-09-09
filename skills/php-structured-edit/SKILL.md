@@ -31,11 +31,15 @@ configuring formatting.
    `apply --file F.php --select method:Foo::bar --op rename_variable --from a --to b`.
    Batch related edits across files in one `apply`. Include `sha256` when relying on a
    read snapshot. After `STALE_SOURCE`, reread and reassess; never drop the guard.
-   Use `"report":"compact"` to receive each verification result once.
+   Use `"report":"agent"` unless you need the diff in the response: it states what the
+   write did and what it left open, and drops what you can recover yourself.
 4. Supply compact valid snippets. Import or qualify external types in namespaced PHP,
    e.g. `\\DateTimeImmutable` in JSON. The printer handles indentation.
-5. Review returned `effects`, `diff`, all `warnings`, and `validation`. `parsed` and legacy
-   `valid` mean parser success. Follow `checkIds` to top-level `verify` in compact reports.
+5. In `agent` reports read `outcome`, `checks`, `checksFailed` and each file's `open`;
+   `checks: "none_declared"` means nothing verified the edit, which is not `"passed"`.
+   `git diff -- <path>` has the diff, from the snapshot `beforeSha256` names. In `full` and
+   `compact` reports read `effects`, `diff`, all `warnings` and `validation`, where `parsed`
+   and legacy `valid` mean parser success, and follow `checkIds` to top-level `verify`.
    Failed checks need repair; skipped or unrun checks remain outstanding where required.
 6. A passed configured command satisfies that same check on unchanged inputs. Repeat it
    after relevant changes, or run additional checks required by the task. Use supplied
@@ -55,7 +59,9 @@ php-ast-edit apply --input edits.json
 ```
 
 `"report":"full"` (the default) retains per-file verification. Report mode changes
-presentation only; `checksPassed: null` means no checks ran.
+presentation only; `checksPassed: null` means no checks ran — `agent` says the same thing
+as `checks: "none_declared"`, which is harder to misread. `agent` is versioned by
+`reportVersion`; `full` and `compact` are not.
 
 ## Choose the narrow operation
 
