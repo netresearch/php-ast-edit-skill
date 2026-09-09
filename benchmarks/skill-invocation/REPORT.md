@@ -48,13 +48,27 @@ task-shaped arm and 18 for the shipped one, and both were the tail of their own 
 > a private method `clearAttempts(string $key): void` that removes `$key` from the cache
 > the class already uses; and give `checkRateLimit()` the docblock […]
 
-Each of those three is named in the task-shaped description. It was invoked **0 of 5
-times**. All five runs went `Read`, seven `Edit` calls, then the project's checks.
+Each of those three is named in the task-shaped description. All three arms were run:
 
-So the description is not the whole mechanism. A request that reads as *write this code*
-goes to `Edit` however the skill is advertised. The Task A improvement is real and worth
-shipping; it is not a general fix, and this file records that rather than letting the
-Task A number imply one.
+| arm | n | invoked | turns | output | cache read | usd |
+| --- | --- | --- | --- | --- | --- | --- |
+| no skill installed | 5 | — | 17.0 | 5591 | 832450 | 0.217 |
+| description as shipped | 5 | 0/5 | 16.0 | 4880 | 773838 | 0.199 |
+| task-shaped wording | 5 | 0/5 | 17.0 | 4624 | 828988 | 0.204 |
+
+**Zero of ten.** Every run in both skill arms went `Read`, seven `Edit` calls, then the
+project's checks — the same shape as the arm with no skill installed at all.
+
+So the description is not the whole mechanism, and a mixed task is where it fails. The
+request opens by announcing three changes; from there the model plans one read and a
+column of edits, and no wording in the listing interrupts that. Whatever makes a request
+read as *write this code* rather than *restructure this code* outweighs the description
+entirely.
+
+That also answers a plausible expectation the other way round: more changes per session
+should amortise the one-time cost of reading the skill. Here more changes made invocation
+*less* likely, not more. The Task A improvement is real and worth shipping; it is not a
+general fix, and this file records that rather than letting the Task A number imply one.
 
 ## What the invoking runs still spend
 
