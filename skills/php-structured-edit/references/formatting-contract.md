@@ -55,8 +55,20 @@ Configure optional commands in `.php-ast-edit.json` as argument arrays, not shel
 }
 ```
 
-Use commands compatible with your project. The formatter requires exactly one whole
-`{files}` argument, expanded to changed file paths. Project-scoped verification commands
+Use commands compatible with your project. Both keys take an argv list, so any tool that
+accepts file paths fits without changes here — `mago format {files}` and `mago analyze`
+are valid values, as are Pint, ECS and PHP_CodeSniffer. Speed is a real
+difference between them: measured on one file of a 121-file TYPO3 extension, `mago format`
+took 0.01s against 0.40s for `php-cs-fixer fix`, and `mago analyze` 0.08s against 1.5-2.0s
+for a warm `phpstan analyse`. That is not a reason to switch. Run against the same file,
+mago's formatter disagreed with php-cs-fixer's output on 70 lines, and `mago analyze`
+reported 69 findings on a file the project's own PHPStan level passes — the tools enforce
+different things, and the declared formatter has to be the one the repository is already
+written to, or every edit reformats what the last one wrote. Declare mago where the project
+uses mago.
+
+The formatter requires exactly one whole `{files}` argument, expanded to changed file
+paths. Project-scoped verification commands
 have no `{files}` placeholder and run once per affected configuration directory, including
 after deletions. Configure PHPStan's stable analysis paths in `phpstan.neon`; a changing
 CLI file list replaces those paths and can invalidate its result cache. See the
