@@ -35,17 +35,96 @@ for value in "${1:?task id}" "${2:?arm}"; do
     exit 2
   }
 done
+# Say so if the subject is already poisoned, rather than measuring against it: a
+# root package that does not resolve to the repository means an earlier run wrote
+# through, and every check the arms run is answering about a tree that is not there.
+for autoload in "$REPO/.Build/vendor/composer/installed.php" "$REPO/vendor/composer/installed.php"; do
+  [[ -f "$autoload" ]] || continue
+  # The declared path is printed, not the resolved one: the case that matters is a
+  # root package pointing at a directory an earlier run deleted, where realpath gives
+  # nothing back and a message built on it would name the problem as an empty string.
+  declared=$(php -r '$d=require $argv[1]; echo $d["root"]["install_path"] ?? "";' "$autoload")
+  root=$(php -r 'echo realpath($argv[1]) ?: "";' "$declared")
+  [[ "$root" == "$(cd "$REPO" && pwd -P)" ]] || {
+    echo "$REPO has an autoloader whose root package is '$declared'." >&2
+    echo "An arm wrote through to the subject. Run 'composer install' there before measuring." >&2
+    exit 2
+  }
+done
+
 task="$1"; arm="$2"; prompt="${3:?prompt}"; model="${4:-claude-haiku-4-5-20251001}"
 work="$BENCH/work/$task-$arm"
 mkdir -p "$BENCH/out" "$BENCH/work"
 rm -rf "$work"
 git -C "$REPO" worktree remove --force "$work" 2>/dev/null || true
 git -C "$REPO" worktree add --detach "$work" "$BASE" >/dev/null
-# The subject's vendor directory, so the project's own checks can run inside the arm.
-[[ -d "$REPO/.Build" ]] && ln -sfn "$REPO/.Build" "$work/.Build"
-[[ -d "$REPO/vendor" ]] && ln -sfn "$REPO/vendor" "$work/vendor"
+# The subject's dependencies, so the project's own checks can run inside the arm.
+#
+# Not a symlink to the shared directory. An arm is a full Claude Code session with a
+# real repository in front of it, and one of them ran `composer dump-autoload` — which,
+# through a shared symlink, rewrote the SUBJECT's autoloader to point its root package
+# at that arm's working directory. The next run deleted that directory, so TYPO3's
+# autoload-include.php became unloadable, and the project's own PHPStan then reported
+# 66 errors of the shape "return statement is missing" against `return match (...)`.
+# Every `apply` in every later arm came back checksPassed:false for that reason, which
+# is the measurement's own doing rather than anything the model did.
+#
+# So: hardlink the packages (half a second, no extra disk) and take a real copy of
+# `vendor/composer`, which is the part composer rewrites. The arm may then install,
+# dump, or wreck its dependencies without the subject or its siblings noticing. The
+# analyser's cache under .Build/var stays per-arm for the same reason.
+copy_deps() {
+  local from="$1" to="$2"
+  mkdir -p "$(dirname "$to")"
+  cp -al "$from" "$to"
+  if [[ -d "$to/composer" ]]; then
+    rm -rf "$to/composer"
+    cp -a "$from/composer" "$to/composer"
+  fi
+}
+if [[ -d "$REPO/.Build/vendor" ]]; then
+  copy_deps "$REPO/.Build/vendor" "$work/.Build/vendor"
+
+  # An explicit conditional rather than `[[ -d … ]] && cp`. Under `set -e` the short
+  # form is safe here — the failing command is the test, not the one after the final
+  # `&&`, so it is exempt — but it reads like the trap it is not, and a subject with
+  # no bin directory is a case worth naming rather than arguing about.
+  if [[ -d "$REPO/.Build/bin" ]]; then
+    cp -a "$REPO/.Build/bin" "$work/.Build/bin"
+  fi
+elif [[ -d "$REPO/vendor" ]]; then
+  copy_deps "$REPO/vendor" "$work/vendor"
+fi
+
 cfg="$BENCH/cfg-$arm"
 [[ -d "$cfg" ]] || { echo "no configuration $cfg — see prepare.sh" >&2; exit 2; }
+
+# A hook whose script is not there fails CLOSED: Claude Code denies the tool call, so
+# an arm configured that way denies Edit, Write and Bash alike and the session spends
+# its turns explaining that it cannot act. Nothing in the result JSON says so — subtype
+# stays "success" and is_error stays false — and sixteen runs were lost to a settings
+# file still naming a worktree that had been removed after its pull request merged.
+if [[ -f "$cfg/settings.json" ]]; then
+  missing=$(python3 - "$cfg/settings.json" <<'PYEOF'
+import json, os, re, sys
+
+with open(sys.argv[1]) as handle:
+    document = json.dumps(json.load(handle))
+
+# Hook commands are shell lines, so the interpreter and its flags sit around the path.
+for candidate in sorted(set(re.findall(r"(/[^\"\s]+\.(?:py|sh|php|js))", document))):
+    if not os.path.exists(candidate):
+        print(candidate)
+PYEOF
+  ) || { echo "$cfg/settings.json is not readable as JSON" >&2; exit 2; }
+
+  if [[ -n "$missing" ]]; then
+    echo "$cfg/settings.json names scripts that are not there:" >&2
+    echo "$missing" >&2
+    echo "A hook whose script is missing denies every tool call, so the arm would run blind." >&2
+    exit 2
+  fi
+fi
 export PATH="$TOOL/bin:$PATH"
 
 # `claude -p` waits on stdin for three seconds before giving up; closing it keeps the
