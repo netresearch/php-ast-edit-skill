@@ -3,6 +3,12 @@
 Haiku 4.5, isolated configurations, a real TYPO3 extension that declares both a
 `formatter` and a `verify` command. Method in [README.md](README.md).
 
+One caveat on the arm without a skill: those three runs were taken before the harness put
+the engine on PATH for every arm, so that arm could not have reached the binary had it
+tried. It is context rather than the result — the comparison carrying the p-value is
+between two arms that both had it — but the number is not a clean no-skill baseline and
+should not be read as one.
+
 ## Task A — one rename
 
 > Rename the private method `getQueryBuilder()` in
@@ -10,8 +16,11 @@ Haiku 4.5, isolated configurations, a real TYPO3 extension that declares both a
 > to it in that file. Change nothing else. Make sure the project static analysis still
 > passes.
 
-One declaration, five calls. Every run that finished made the correct six replacements;
-the arms differ in what that cost, not in whether it worked.
+One declaration, five calls. Every run counted below made the correct six replacements,
+checked against the run's own working tree rather than its narrative; the arms differ in
+what that cost, not in whether it worked. A block of attempts died mid-series on an
+expired token; those were re-run and their results replaced, so no arm carries a smaller
+denominator than another.
 
 | arm | n | invoked | turns | output | cache read | usd |
 | --- | --- | --- | --- | --- | --- | --- |

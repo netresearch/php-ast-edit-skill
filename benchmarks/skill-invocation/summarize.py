@@ -6,12 +6,24 @@ model never called the skill tells you nothing about the tool — it is a measur
 the description, and averaging it together with runs that did call the skill hides
 exactly the effect under test. So both are reported, and the per-run line says which
 runs invoked it.
+
+Two things are counted rather than dropped. An attempt that failed — a timeout, an
+expired token — is excluded from the medians but reported, because an arm whose failures
+are invisible reports a flattering rate off a smaller denominator. And where an oracle is
+given, a run whose result does not satisfy it is excluded and reported too: a run that
+finished without doing the task is not a cheap run.
+
+Usage: summarize.py <bench> <arm> [arm ...] [--oracle 'shell command']
+
+The oracle runs once per completed run, in that run's working tree, and its exit status
+decides. For a rename: --oracle "grep -q queryBuilderFor Classes/Service/Repo.php"
 """
 
 import glob
 import json
 import re
 import statistics
+import subprocess
 import sys
 from pathlib import Path
 
@@ -50,21 +62,43 @@ def invoked_skill(config_dir, session_id):
     return False
 
 
-def runs_for(bench, arm):
+def satisfies(bench, task_id, arm, oracle):
+    """Whether this run's working tree passes the caller's success check."""
+    if oracle is None:
+        return True
+    work = bench / "work" / f"{task_id}-{arm}"
+
+    if not work.is_dir():
+        return False
+
+    return subprocess.run(oracle, cwd=work, shell=True, check=False).returncode == 0
+
+
+def runs_for(bench, arm, oracle=None):
     arm = token("arm", arm)
     config_dir = bench / f"cfg-{arm}"
-    runs = []
+    runs, failed, wrong = [], 0, 0
 
     for path in sorted(glob.glob(str(bench / "out" / f"*-{arm}.json"))):
         result_file = Path(path)
+        task_id = result_file.name[: -len(f"-{arm}.json")]
+        status = result_file.with_suffix(".status")
+        # A run that timed out or could not authenticate measured nothing. It is excluded
+        # from the medians and counted, never silently dropped.
+        exit_status = int(status.read_text().strip()) if status.exists() else 0
 
-        if result_file.stat().st_size == 0:
+        if exit_status != 0 or result_file.stat().st_size == 0:
+            failed += 1
             continue
         with result_file.open() as handle:
             result = json.load(handle)
-        # A run that failed to authenticate or timed out measured nothing; counting it
-        # as a run that did not invoke the skill would report the arm as worse than it is.
+
         if result.get("is_error"):
+            failed += 1
+            continue
+
+        if not satisfies(bench, task_id, arm, oracle):
+            wrong += 1
             continue
         usage = result["usage"]
         runs.append(
@@ -77,17 +111,23 @@ def runs_for(bench, arm):
                 "skill": invoked_skill(config_dir, result["session_id"]),
             }
         )
-    return runs
+    return runs, failed, wrong
 
 
-def main(bench, arms):
+def main(bench, arms, oracle=None):
     bench = Path(bench).resolve()
     print(
         f"{'arm':8} {'n':>2} {'invoked':>9} {'turns':>6} {'output':>8} {'cache read':>11} {'usd':>7} {'sec':>6}"
     )
 
     for arm in arms:
-        runs = runs_for(bench, arm)
+        runs, failed, wrong = runs_for(bench, arm, oracle)
+
+        if failed or wrong:
+            print(
+                f"{arm:8} excluded: {failed} failed attempt(s), "
+                f"{wrong} run(s) that did not do the task"
+            )
 
         if not runs:
             print(f"{arm:8} no completed runs")
@@ -109,4 +149,11 @@ def main(bench, arms):
 
 
 if __name__ == "__main__":
-    main(sys.argv[1], sys.argv[2:])
+    argv = sys.argv[1:]
+    check = None
+
+    if "--oracle" in argv:
+        at = argv.index("--oracle")
+        check = argv[at + 1]
+        argv = argv[:at] + argv[at + 2 :]
+    main(argv[0], argv[1:], check)

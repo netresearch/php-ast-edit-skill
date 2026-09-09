@@ -12,9 +12,11 @@ That is not a hypothetical. It is what the first arm of this measurement did.
 
 ## What is held fixed
 
-Prompt, repository, base commit, model, PATH and permission mode. The arms differ in the
-configuration directory they run under, and that directory holds nothing but credentials,
-a minimal `settings.json`, and the skill under test. Running an arm against a personal
+Prompt, repository, base commit, model, PATH and permission mode — the engine is on PATH
+in every arm, `free` included, because an arm that could not reach the binary would be
+measuring two changes at once. The arms differ in the configuration directory they run
+under, and that directory holds nothing but credentials, a minimal `settings.json`, and
+the skill under test. Running an arm against a personal
 `~/.claude` measures that configuration — its `CLAUDE.md`, its other skills, whatever
 standing instructions live there — and those dominate.
 
@@ -37,8 +39,15 @@ for i in 1 2 3 4 5 6 7 8; do
     benchmarks/skill-invocation/run.sh "r$i" "$arm" "$PROMPT"
   done
 done
-benchmarks/skill-invocation/summarize.py "$BENCH" free ast trial
+benchmarks/skill-invocation/summarize.py "$BENCH" free ast trial \
+  --oracle 'test "$(grep -c queryBuilderFor Classes/Service/Repo.php)" = 6'
 ```
+
+The oracle is not optional in practice. `summarize.py` without one reports every run that
+exited cleanly, and a run that finished without doing the task is not a cheap run — it is
+a wrong one that flatters its arm. The check runs in each run's own working tree and its
+exit status decides; runs that fail it are excluded from the medians and counted in the
+line above them, as are attempts that timed out or could not authenticate.
 
 The subject has to be a real repository with real checks. On a fixture the model has
 nothing to verify against, skips the verification turns entirely, and the arms converge
