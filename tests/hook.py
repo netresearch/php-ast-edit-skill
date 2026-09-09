@@ -8,6 +8,7 @@ a command shape an agent plausibly writes.
 
 from __future__ import annotations
 
+import importlib.util
 import json
 import pathlib
 import subprocess
@@ -94,8 +95,42 @@ def denies(tool: str, tool_input: dict) -> bool:
     return payload["hookSpecificOutput"]["permissionDecision"] == "deny"
 
 
+def footer() -> str:
+    """The denial message, read from the gate rather than restated here."""
+    specification = importlib.util.spec_from_file_location("php_ast_only", HOOK)
+    module = importlib.util.module_from_spec(specification)
+    specification.loader.exec_module(module)
+    return module.FOOTER
+
+
+def footer_claims(text: str) -> list[str]:
+    """Every command shape the denial message offers, as a command line.
+
+    A denial is read instead of the documentation, not alongside it, so a shape it names
+    and the gate then refuses costs a round trip and teaches the caller that the message
+    is unreliable. These are checked against the gate itself, so an edit to the message
+    that names a denied shape fails here rather than in someone's session.
+    """
+    claims = []
+    for line in text.splitlines():
+        if line.strip().startswith("php-ast-edit "):
+            claims.append(line.strip())
+        if "Reading is not gated:" in line:
+            named = line.split("Reading is not gated:", 1)[1]
+            named = named.split(" run as they are")[0]
+            for program in named.replace(" and ", ",").split(","):
+                program = program.strip()
+                if program:
+                    claims.append(f"{program} a.php")
+    return claims
+
+
 def main() -> int:
     failures = []
+    for claim in footer_claims(footer()):
+        if denies("Bash", {"command": claim}):
+            failures.append(f"the denial message offers a denied shape: {claim}")
+
     for tool, tool_input, expected in CASES:
         actual = denies(tool, tool_input)
         if actual != expected:
@@ -122,7 +157,10 @@ def main() -> int:
             print("  - " + failure, file=sys.stderr)
         return 1
 
-    print(f"OK: {len(CASES)} hook cases behave as documented.")
+    print(
+        f"OK: {len(CASES)} hook cases behave as documented, "
+        f"and {len(footer_claims(footer()))} shape(s) the denial offers are allowed."
+    )
     return 0
 
 

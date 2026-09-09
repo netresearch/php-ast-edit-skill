@@ -399,6 +399,46 @@ try {
     contractCheck('failed patch-version lint creates no file', !file_exists($versionPath));
     $versionLint = (new Netresearch\PhpAstEdit\PhpLint())->check('<?php echo 1;', 'current.php', $version);
     contractCheck('patch-suffixed current target runs lint', $versionLint['status'] === 'passed');
+
+    // A caller that lands on this message wrote a document of some other shape, usually a
+    // bare array of edits, and the message is all it gets. So it carries the shape — and
+    // the shape is applied here, because an example nobody runs is the one that is wrong.
+    $shapeMessage = '';
+
+    try {
+        (new Editor())->apply(['edits' => []]);
+    } catch (EditException $e) {
+        $shapeMessage = $e->getMessage();
+    }
+    contractCheck('a document without files names the files key', str_contains($shapeMessage, '"files"'));
+    contractCheck(
+        'a document without files names the flag form for one edit',
+        str_contains($shapeMessage, 'apply --file') && str_contains($shapeMessage, '--select'),
+    );
+    $start = strpos($shapeMessage, '{"files"');
+    $end = $start === false ? false : strpos($shapeMessage, '}]}]}', $start);
+    $example = $start === false || $end === false
+        ? null
+        : json_decode(substr($shapeMessage, $start, $end + 5 - $start), true);
+    contractCheck('the shape in the message parses as JSON', is_array($example));
+
+    if (is_array($example)) {
+        mkdir($dir . '/src', 0700, true);
+        file_put_contents(
+            $dir . '/src/Foo.php',
+            "<?php\n\nclass Foo\n{\n    public function bar(): int\n    {\n        \$nonce = 1;\n\n        return \$nonce;\n    }\n}\n",
+        );
+        $example['files'][0]['path'] = $dir . '/src/Foo.php';
+        $applied = (new Editor())->apply($example);
+        contractCheck(
+            'the shape in the message applies',
+            ($applied['files'][0]['changed'] ?? false) === true,
+        );
+        contractCheck(
+            'the edit in the message does what it says',
+            str_contains(file_get_contents($dir . '/src/Foo.php'), '$nonceValue'),
+        );
+    }
 } finally {
     contractClean($dir);
 }

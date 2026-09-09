@@ -100,7 +100,16 @@ final class Editor
         $files = $document['files'] ?? null;
 
         if (!is_array($files) || $files === []) {
-            throw new EditException('apply input requires a non-empty files array.');
+            // The shape belongs in the message. A caller that got here wrote a document
+            // of some other shape — usually a bare array of edits — and being told which
+            // key is missing leaves it guessing at the two levels above that key.
+            throw new EditException(
+                'apply input requires a non-empty files array: '
+                . '{"files":[{"path":"src/Foo.php","edits":[{"target":{"select":"method:Foo::bar"},'
+                . '"operation":"rename_variable","from":"nonce","to":"nonceValue"}]}]}. '
+                . 'One edit against one named target needs no document at all: '
+                . 'apply --file src/Foo.php --select method:Foo::bar --op rename_variable --from nonce --to nonceValue.',
+            );
         }
         $dryRun = $forceDryRun || (bool) ($document['dryRun'] ?? false);
         $transactions = [];
