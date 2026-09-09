@@ -200,8 +200,16 @@ def text_mutation_of_php(command: str) -> str | None:
         return None
 
     for tokens in segments(command):
-        # Only this segment is exempt, not the rest of the line.
+        # Only this segment is exempt, not the rest of the line — and the exemption covers
+        # what the tool does, not where its output goes. `php-ast-edit inspect --file a.php
+        # > victim.php` writes a report over PHP source, which is the thing being gated, so
+        # a redirect into a .php file is checked in an exempt segment as in any other.
         if any("php-ast-edit" in token for token in tokens):
+            for index in range(len(tokens)):
+                target = redirect_target(tokens, index)
+
+                if target is not None and is_php_path(target):
+                    return "a shell redirect into a .php file"
             continue
         label = mutates_php(tokens)
         if label is not None:

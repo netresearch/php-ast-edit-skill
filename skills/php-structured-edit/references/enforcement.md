@@ -11,7 +11,7 @@
 | `Edit`, `Write`, `MultiEdit`, `NotebookEdit` | the target path ends in `.php` or `.phtml` |
 | `Bash` | `sed -i` / `perl -i` on a `.php` path, a shell redirect or `tee` into a `.php` file, `apply_patch` on a `.php` path, `rm` of a `.php` path |
 
-Read-only shell work is untouched: `cat`, `grep`, `php -l`, `git diff` and friends never match. An invocation of `php-ast-edit` is allowed; a separate mutation command on the same shell line is still checked.
+Read-only shell work is untouched: `cat`, `grep`, `php -l`, `git diff` and friends never match. An invocation of `php-ast-edit` is allowed; a separate mutation command on the same shell line is still checked. The exemption covers what the tool does, not where its output goes — `php-ast-edit inspect --file a.php > victim.php` writes a report over PHP source and is denied like any other redirect into a `.php` file, while a redirect anywhere else (`> report.json`) is not.
 
 ## Claude Code
 

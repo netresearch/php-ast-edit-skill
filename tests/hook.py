@@ -11,6 +11,7 @@ from __future__ import annotations
 import importlib.util
 import json
 import pathlib
+import re
 import subprocess
 import sys
 
@@ -52,6 +53,9 @@ CASES: list[tuple[str, dict, bool]] = [
     ("Bash", {"command": "apply_patch < p.diff a.php"}, True),
     # An AST invocation exempts its own command, not the rest of the line
     ("Bash", {"command": "php-ast-edit apply --input e.json"}, False),
+    # ... and it exempts what the tool does, not where its output goes.
+    ("Bash", {"command": "php-ast-edit inspect --file a.php > victim.php"}, True),
+    ("Bash", {"command": "php-ast-edit apply --input e.json > report.json"}, False),
     ("Bash", {"command": "php-ast-edit inspect --file a.php && echo done"}, False),
     (
         "Bash",
@@ -111,10 +115,38 @@ def footer_claims(text: str) -> list[str]:
     is unreliable. These are checked against the gate itself, so an edit to the message
     that names a denied shape fails here rather than in someone's session.
     """
+    offered = []
+    # A command the message offers mid-sentence counts as much as one on its own line:
+    # `Run \`php-ast-edit contexts\` …` is an instruction, and a gate that started denying
+    # it would break the caller just as thoroughly. Backticked names without a program
+    # (`help`) are read as arguments to the tool, which is how the sentence reads them.
+    for quoted in re.findall(r"`([^`]+)`", text):
+        command = quoted.strip()
+
+        if not command:
+            continue
+
+        # A bare word is an argument the sentence hands the tool (`help`); anything with a
+        # space is a command line in its own right and is tested as written. Prefixing the
+        # latter would make every offered command an exempt AST invocation, and the check
+        # would then pass over a footer advertising `sed -i s/a/b/ a.php`.
+        if " " not in command and not command.startswith("php-ast-edit"):
+            command = f"php-ast-edit {command}"
+        offered.append(command)
+
     claims = []
+    for command in offered:
+        # The gate looks at a command line only when it names a PHP file, so a claim
+        # carrying a placeholder or no path at all can never be denied and would assert
+        # nothing. Give each one a real .php to decide about: the placeholder becomes a
+        # file, and a command that names none is put on a line beside a read of one.
+        command = command.replace("<path>", "a.php")
+        claims.append(command if ".php" in command else f"{command} && cat a.php")
+
     for line in text.splitlines():
         if line.strip().startswith("php-ast-edit "):
-            claims.append(line.strip())
+            claims.append(line.strip().replace("<path>", "a.php"))
+
         if "Reading is not gated:" in line:
             named = line.split("Reading is not gated:", 1)[1]
             named = named.split(" run as they are")[0]
