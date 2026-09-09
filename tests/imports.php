@@ -79,24 +79,21 @@ $plain = "<?php\n\ndeclare(strict_types=1);\n\nuse Vendor\\Ext\\Existing;\n\n\$G
 
 // ---- The ordinary case: the import lands in the file's import section ------------------
 $path = importFixture($namespaced);
-$result = importApply($path, [addUse('Vendor\Other\Thing')]);
+$result = importApply($path, [addUse(THING)]);
 $code = (string) file_get_contents($path);
-importCheck(
-    'the import is written into the namespace',
-    str_contains($code, 'use Vendor\Other\Thing;'),
-);
+importCheck('the import is written into the namespace', str_contains($code, THING_IMPORT));
 importCheck(
     'and it sits with the other imports, not after the class',
-    strpos($code, 'use Vendor\Other\Thing;') < strpos($code, 'class Subject'),
+    strpos($code, THING_IMPORT) < strpos($code, 'class Subject'),
 );
 importCheck(
     'the effect names what was imported, so nobody greps for it',
-    ($result['effects'][0]['imported'] ?? null) === 'Vendor\Other\Thing' && ($result['effects'][0]['as'] ?? null) === 'Thing' && ($result['effects'][0]['alreadyPresent'] ?? null) === false,
+    ($result['effects'][0]['imported'] ?? null) === THING && ($result['effects'][0]['as'] ?? null) === 'Thing' && ($result['effects'][0]['alreadyPresent'] ?? null) === false,
 );
 
 // ---- Idempotence: the same import twice is one import ----------------------------------
 $path = importFixture($namespaced);
-$result = importApply($path, [addUse('Vendor\Ext\Existing')]);
+$result = importApply($path, [addUse(EXISTING)]);
 $code = (string) file_get_contents($path);
 importCheck(
     'an import that is already there is not written twice',
@@ -133,7 +130,7 @@ $path = importFixture(
 $aliased = null;
 
 try {
-    importApply($path, [addUse('Vendor\Other\Thing')]);
+    importApply($path, [addUse(THING)]);
 } catch (EditException $failure) {
     $aliased = $failure->getMessage();
 }
@@ -143,7 +140,7 @@ importCheck(
 );
 importCheck(
     'and asking for that alias is the no-op it should be',
-    (importApply($path, [addUse('Vendor\Other\Thing', 'Widget')])['effects'][0]['alreadyPresent'] ?? null) === true,
+    (importApply($path, [addUse(THING, 'Widget')])['effects'][0]['alreadyPresent'] ?? null) === true,
 );
 $path = importFixture($namespaced);
 $taken = null;
@@ -155,7 +152,7 @@ try {
 }
 importCheck(
     'a short name already bound to another class is a collision, not a second import',
-    $taken !== null && str_contains($taken, 'Vendor\Ext\Existing'),
+    $taken !== null && str_contains($taken, EXISTING),
 );
 importApply($path, [addUse('Vendor\Somewhere\Existing', 'OtherExisting')]);
 importCheck(
@@ -168,44 +165,44 @@ importCheck(
 
 // ---- A file without a namespace has an import section too ------------------------------
 $path = importFixture($plain);
-importApply($path, [addUse('Vendor\Other\Thing')]);
+importApply($path, [addUse(THING)]);
 $code = (string) file_get_contents($path);
 importCheck(
     'an unnamespaced file takes the import at file level',
-    str_contains($code, 'use Vendor\Other\Thing;'),
+    str_contains($code, THING_IMPORT),
 );
 importCheck(
     'and it goes after the declare, which must stay first',
-    strpos($code, 'strict_types') < strpos($code, 'use Vendor\Other\Thing;'),
+    strpos($code, 'strict_types') < strpos($code, THING_IMPORT),
 );
 
 // A file whose only import section is the declare line still has somewhere to put one.
 $path = importFixture(
     "<?php\n\ndeclare(strict_types=1);\n\nnamespace Vendor\\Ext;\n\nclass Subject\n{\n}\n",
 );
-importApply($path, [addUse('Vendor\Other\Thing')]);
+importApply($path, [addUse(THING)]);
 $code = (string) file_get_contents($path);
 importCheck(
     'the first import of a file goes before the class',
-    strpos($code, 'use Vendor\Other\Thing;') < strpos($code, 'class Subject'),
+    strpos($code, THING_IMPORT) < strpos($code, 'class Subject'),
 );
 
 // ---- Two imports in one transaction ----------------------------------------------------
 $path = importFixture($namespaced);
-$result = importApply($path, [addUse('Vendor\Other\Thing'), addUse('Vendor\Other\Gadget')]);
+$result = importApply($path, [addUse(THING), addUse('Vendor\Other\Gadget')]);
 $code = (string) file_get_contents($path);
 importCheck(
     'two imports in one call both land',
-    str_contains($code, 'use Vendor\Other\Thing;') && str_contains($code, 'use Vendor\Other\Gadget;'),
+    str_contains($code, THING_IMPORT) && str_contains($code, 'use Vendor\Other\Gadget;'),
 );
 importCheck('and both are reported', count($result['effects'] ?? []) === 2);
 
 // The second edit must see what the first one wrote, or idempotence is only per-call.
 $path = importFixture($namespaced);
-$result = importApply($path, [addUse('Vendor\Other\Thing'), addUse('Vendor\Other\Thing')]);
+$result = importApply($path, [addUse(THING), addUse(THING)]);
 importCheck(
     'the same import twice in one call is written once',
-    substr_count((string) file_get_contents($path), 'use Vendor\Other\Thing;') === 1,
+    substr_count((string) file_get_contents($path), THING_IMPORT) === 1,
 );
 
 // ---- What add_use is not ---------------------------------------------------------------
@@ -213,7 +210,7 @@ $path = importFixture($namespaced);
 $targeted = null;
 
 try {
-    importApply($path, [addUse('Vendor\Other\Thing') + ['target' => ['select' => 'class:Subject']]]);
+    importApply($path, [addUse(THING) + ['target' => ['select' => 'class:Subject']]]);
 } catch (EditException $failure) {
     $targeted = $failure->getMessage();
 }
@@ -225,7 +222,7 @@ $path = importFixture("<?php\n\nnamespace A;\n\nclass X\n{\n}\n\nnamespace B;\n\
 $ambiguous = null;
 
 try {
-    importApply($path, [addUse('Vendor\Other\Thing')]);
+    importApply($path, [addUse(THING)]);
 } catch (EditException $failure) {
     $ambiguous = $failure->getMessage();
 }
