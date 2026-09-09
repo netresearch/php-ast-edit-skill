@@ -103,13 +103,7 @@ final class Editor
             // The shape belongs in the message. A caller that got here wrote a document
             // of some other shape — usually a bare array of edits — and being told which
             // key is missing leaves it guessing at the two levels above that key.
-            throw new EditException(
-                'apply input requires a non-empty files array: '
-                . '{"files":[{"path":"src/Foo.php","edits":[{"target":{"select":"method:Foo::bar"},'
-                . '"operation":"rename_variable","from":"nonce","to":"nonceValue"}]}]}. '
-                . 'One edit against one named target needs no document at all: '
-                . 'apply --file src/Foo.php --select method:Foo::bar --op rename_variable --from nonce --to nonceValue.',
-            );
+            throw new EditException(self::SHAPE_REQUIRED);
         }
         $dryRun = $forceDryRun || (bool) ($document['dryRun'] ?? false);
         $transactions = [];
@@ -288,6 +282,16 @@ final class Editor
      * @var list<string>
      */
     public const FILE_SCOPED = ['add_use'];
+
+    /**
+     * What a caller that wrote the wrong document shape is told.
+     *
+     * It arrives instead of the documentation, not alongside it, so naming the missing key
+     * is not enough: a bare array of edits is missing the two levels above that key as well.
+     * The shape is spelled out, and the flag form beside it, because a single named edit
+     * needs no document at all.
+     */
+    private const SHAPE_REQUIRED = 'apply input requires a non-empty files array: {"files":[{"path":"src/Foo.php","edits":[{"target":{"select":"method:Foo::bar"},"operation":"rename_variable","from":"nonce","to":"nonceValue"}]}]}. One edit against one named target needs no document at all: apply --file src/Foo.php --select method:Foo::bar --op rename_variable --from nonce --to nonceValue.';
 
     /**
      * The file's import section, as a location an edit can be resolved against.

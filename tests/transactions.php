@@ -410,16 +410,17 @@ try {
     } catch (EditException $e) {
         $shapeMessage = $e->getMessage();
     }
-    contractCheck('a document without files names the files key', str_contains($shapeMessage, '"files"'));
+    contractCheck(
+        'a document without files names the files key',
+        str_contains($shapeMessage, '"files"'),
+    );
     contractCheck(
         'a document without files names the flag form for one edit',
         str_contains($shapeMessage, 'apply --file') && str_contains($shapeMessage, '--select'),
     );
     $start = strpos($shapeMessage, '{"files"');
     $end = $start === false ? false : strpos($shapeMessage, '}]}]}', $start);
-    $example = $start === false || $end === false
-        ? null
-        : json_decode(substr($shapeMessage, $start, $end + 5 - $start), true);
+    $example = $start === false || $end === false ? null : json_decode(substr($shapeMessage, $start, $end + 5 - $start), true);
     contractCheck('the shape in the message parses as JSON', is_array($example));
 
     if (is_array($example)) {
