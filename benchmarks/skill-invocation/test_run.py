@@ -99,6 +99,14 @@ def main() -> int:
         result = run(bench, healthy, "T2", "free", "do nothing")
         check("a healthy subject passes the guard", "no configuration" in result.stderr)
 
+        # The fixture has no .Build/bin, so reaching the configuration check is also
+        # the evidence that an absent optional directory does not end the run early.
+        check("a subject with no .Build/bin still gets an arm", result.returncode == 2)
+        check(
+            "and the run is not cut short before the copy",
+            (bench / "work" / "T2-free" / ".Build" / "vendor").is_dir(),
+        )
+
         work = bench / "work" / "T2-free"
         vendor = work / ".Build" / "vendor"
         check("the arm has its own vendor directory", vendor.is_dir())

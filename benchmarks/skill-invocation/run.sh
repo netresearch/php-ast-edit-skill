@@ -84,7 +84,14 @@ copy_deps() {
 }
 if [[ -d "$REPO/.Build/vendor" ]]; then
   copy_deps "$REPO/.Build/vendor" "$work/.Build/vendor"
-  [[ -d "$REPO/.Build/bin" ]] && cp -a "$REPO/.Build/bin" "$work/.Build/bin"
+
+  # An explicit conditional rather than `[[ -d … ]] && cp`. Under `set -e` the short
+  # form is safe here — the failing command is the test, not the one after the final
+  # `&&`, so it is exempt — but it reads like the trap it is not, and a subject with
+  # no bin directory is a case worth naming rather than arguing about.
+  if [[ -d "$REPO/.Build/bin" ]]; then
+    cp -a "$REPO/.Build/bin" "$work/.Build/bin"
+  fi
 elif [[ -d "$REPO/vendor" ]]; then
   copy_deps "$REPO/vendor" "$work/vendor"
 fi
