@@ -10,33 +10,33 @@ runs invoked it.
 
 import glob
 import json
-import os
+import re
 import statistics
 import sys
 from pathlib import Path
 
+# An arm is a short name and a session id is what the CLI writes into its result file.
+# Neither is ever a path, so neither is allowed to look like one: every value that reaches
+# a filename here is matched against this first, and anything else stops the script rather
+# than being resolved, cleaned up or trusted.
+TOKEN = re.compile(r"\A[A-Za-z0-9][A-Za-z0-9_-]{0,63}\Z")
 
-def under(root, *parts):
-    """Resolve a path and refuse anything that leaves the working root.
 
-    Both arguments this script takes come from a command line, and every path it opens is
-    built from them. Nothing here needs to reach outside the run directory, so it does not
-    get to: a `..` or an absolute segment in either argument stops the script instead of
-    reading whatever it names.
-    """
-    root = Path(root).resolve()
-    candidate = root.joinpath(*parts).resolve()
+def token(kind, value):
+    if not TOKEN.fullmatch(str(value)):
+        raise SystemExit(f"refusing to use {kind} {value!r} in a path")
 
-    if candidate != root and root not in candidate.parents:
-        raise SystemExit(f"refusing to read outside {root}: {candidate}")
-
-    return candidate
+    return str(value)
 
 
 def invoked_skill(config_dir, session_id):
     """Whether this session called the Skill tool, read from its own transcript."""
-    for path in glob.glob(f"{config_dir}/projects/*/{session_id}.jsonl"):
-        with open(under(config_dir, os.path.relpath(path, config_dir))) as transcript:
+    pattern = str(
+        config_dir / "projects" / "*" / f"{token('session id', session_id)}.jsonl"
+    )
+
+    for path in glob.glob(pattern):
+        with Path(path).open() as transcript:
             for line in transcript:
                 message = json.loads(line).get("message") or {}
                 for block in message.get("content") or []:
@@ -51,19 +51,16 @@ def invoked_skill(config_dir, session_id):
 
 
 def runs_for(bench, arm):
-    # Both directories are resolved before anything is globbed or opened, so an arm name
-    # carrying a path segment is refused here rather than at whichever file it first
-    # reaches — a check that only fires once a matching file exists is not a check.
-    config_dir = str(under(bench, f"cfg-{arm}"))
-    out_dir = under(bench, "out")
+    arm = token("arm", arm)
+    config_dir = bench / f"cfg-{arm}"
     runs = []
 
-    for path in sorted(glob.glob(f"{out_dir}/*-{arm}.json")):
-        resolved = under(out_dir, os.path.basename(path))
+    for path in sorted(glob.glob(str(bench / "out" / f"*-{arm}.json"))):
+        result_file = Path(path)
 
-        if resolved.stat().st_size == 0:
+        if result_file.stat().st_size == 0:
             continue
-        with open(resolved) as handle:
+        with result_file.open() as handle:
             result = json.load(handle)
         # A run that failed to authenticate or timed out measured nothing; counting it
         # as a run that did not invoke the skill would report the arm as worse than it is.
@@ -84,12 +81,14 @@ def runs_for(bench, arm):
 
 
 def main(bench, arms):
-    header = ("arm", "n", "invoked", "turns", "output", "cache read", "usd", "sec")
+    bench = Path(bench).resolve()
     print(
-        f"{header[0]:8} {header[1]:>2} {header[2]:>9} {header[3]:>6} {header[4]:>8} {header[5]:>11} {header[6]:>7} {header[7]:>6}"
+        f"{'arm':8} {'n':>2} {'invoked':>9} {'turns':>6} {'output':>8} {'cache read':>11} {'usd':>7} {'sec':>6}"
     )
+
     for arm in arms:
         runs = runs_for(bench, arm)
+
         if not runs:
             print(f"{arm:8} no completed runs")
             continue
