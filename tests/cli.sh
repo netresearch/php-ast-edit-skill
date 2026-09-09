@@ -160,4 +160,13 @@ expect "while --kind still narrows a --select" "1" \
        --op rename_variable --from value --to item > /dev/null 2>&1 && grep -c 'string \$item' "$FLAGDIR/F.php") )"
 
 
+# An import has no node to name, so the flag form must not demand one — and asking twice must
+# not write it twice, which is the whole reason the operation exists.
+(cd "$FLAGDIR" && $BIN apply --file F.php --op add_use --value 'Vendor\Other\Thing' > /dev/null)
+(cd "$FLAGDIR" && $BIN apply --file F.php --op add_use --value 'Vendor\Other\Thing' > /dev/null)
+expect "a file-level import needs no target, and lands once" "1" \
+  "$(grep -c 'use Vendor.Other.Thing;' "$FLAGDIR/F.php")"
+expect "and naming a target for it is refused" "1" \
+  "$( (cd "$FLAGDIR" && $BIN apply --file F.php --op add_use --value 'Vendor\X\Y' --select 'class:F' 2>&1 || true) | grep -c 'takes no target')"
+
 echo "OK: CLI surface behaves as documented."

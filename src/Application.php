@@ -262,6 +262,7 @@ final class Application
                         'set_visibility',
                         'add_implements',
                         'set_extends',
+                        'add_use',
                         'rename_variable',
                         'rename_method',
                     ],
@@ -296,9 +297,11 @@ final class Application
         One edit against a named target is one call, with no payload file:
           php-ast-edit apply --file src/Foo.php --select method:Foo::bar \
               --op rename_variable --from nonce --to nonceValue
-        The operation's own arguments become flags: --php, --value, --from, --to,
-        --property, --position, --index, --parse-as. Several edits, or several files,
-        stay in one apply request through JSON on stdin.
+        The operation's own arguments become flags: --php, --value, --alias, --from,
+        --to, --property, --position, --index, --parse-as. A file-level operation takes
+        no target: php-ast-edit apply --file src/Foo.php --op add_use --value
+        'Vendor\Package\Thing'. Several edits, or several files, stay in one apply
+        request through JSON on stdin.
         
         Selectors: class:, interface:, trait:, enum:, method:Foo::bar, function:,
         property:Foo::$bar, const:Foo::BAR. Names are short names; ambiguity is refused.
@@ -446,25 +449,15 @@ final class Application
         if (!isset($options['file'])) {
             return null;
         }
-        $edit = ['operation' => $this->flagString($options, 'op', true)];
-        $target = [];
+        $operation = $this->flagString($options, 'op', true);
+        $edit = ['operation' => $operation];
+        $target = $this->flagTarget($options, $operation);
 
-        foreach (['select', 'ref', 'kind'] as $key) {
-            $value = $this->flagString($options, $key);
-
-            if ($value !== null) {
-                $target[$key] = $value;
-            }
+        if ($target !== null) {
+            $edit['target'] = $target;
         }
 
-        if (!isset($target['select']) && !isset($target['ref'])) {
-            // --kind narrows a locator, it is not one: without --select or --ref it would name
-            // every node of that kind in the file, which is not a target an edit can apply to.
-            throw new EditException('The flag form needs --select or --ref to name the target.');
-        }
-        $edit['target'] = $target;
-
-        foreach (['php', 'value', 'from', 'to', 'property', 'position', 'index'] as $key) {
+        foreach (['php', 'value', 'alias', 'from', 'to', 'property', 'position', 'index'] as $key) {
             $value = $this->flagString($options, $key);
 
             if ($value !== null) {
@@ -478,6 +471,43 @@ final class Application
         }
 
         return ['files' => [['path' => $this->flagString($options, 'file', true), 'edits' => [$edit]]]];
+    }
+
+    /**
+     * The target the flag form names, or null for an operation that has none.
+     *
+     * @param  array<string, mixed> $options
+     * @return array<string, string>|null
+     */
+    private function flagTarget(array $options, string $operation): ?array
+    {
+        $target = [];
+
+        foreach (['select', 'ref', 'kind'] as $key) {
+            $value = $this->flagString($options, $key);
+
+            if ($value !== null) {
+                $target[$key] = $value;
+            }
+        }
+
+        if (in_array($operation, Editor::FILE_SCOPED, true)) {
+            if ($target !== []) {
+                throw new EditException(
+                    '--op ' . $operation . ' writes to the file, not to a node, and takes no target.',
+                );
+            }
+
+            return null;
+        }
+
+        if (!isset($target['select']) && !isset($target['ref'])) {
+            // --kind narrows a locator, it is not one: without --select or --ref it would name
+            // every node of that kind in the file, which is not a target an edit can apply to.
+            throw new EditException('The flag form needs --select or --ref to name the target.');
+        }
+
+        return $target;
     }
 
     /**
