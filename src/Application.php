@@ -225,7 +225,14 @@ final class Application
                     'Unknown operation: ' . $operation . '. Run contexts for the catalog.',
                 );
             }
-            $this->json(['operation' => $operation, 'arguments' => $arguments[$operation]]);
+            $spec = $arguments[$operation];
+            $values = array_intersect_key(
+                Editor::argumentValues(),
+                array_flip([...$spec['requires'], ...$spec['optional']]),
+            );
+            $this->json(
+                $values === [] ? ['operation' => $operation, 'arguments' => $spec] : ['operation' => $operation, 'arguments' => $spec, 'argumentValues' => $values],
+            );
 
             return 0;
         }
@@ -448,6 +455,16 @@ final class Application
     {
         if (!isset($options['file'])) {
             return null;
+        }
+
+        // The two forms are alternatives, and mixing them produced the least useful message
+        // the CLI had: `--input e.json --file a.php` reported that the flag form requires
+        // --op, which is true and answers nothing, because the caller had a whole document
+        // and did not want the flag form at all.
+        if (isset($options['input'])) {
+            throw new EditException(
+                '--input and --file are the two ways to say the same thing, and only one at a ' . 'time. --input carries a whole transaction as JSON; --file with --select or ' . '--ref and --op is one edit written out as flags. Drop whichever you did not mean.',
+            );
         }
         $operation = $this->flagString($options, 'op', true);
         $edit = ['operation' => $operation];

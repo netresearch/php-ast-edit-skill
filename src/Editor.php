@@ -660,7 +660,9 @@ final class Editor
         $applied = $this->applyPrimitive($operation, $location, $edit, $roots, $snippets) || $this->applyComment($operation, $location, $edit) || $this->applyShorthand($operation, $location, $edit, $roots, $snippets) || $this->applySemantic($operation, $location, $edit, $roots, $snippets);
 
         if (!$applied) {
-            throw new EditException('Unsupported operation: ' . $operation);
+            throw new EditException(
+                'Unsupported operation: ' . $operation . $this->nearestOperations($operation),
+            );
         }
     }
 
@@ -1329,7 +1331,12 @@ final class Editor
             return (int) $position;
         }
 
-        throw new EditException('position must be an integer, "start" or "end".');
+        throw new EditException(
+            sprintf(
+                'position must be "start", "end" or a zero-based index; the default is "end". Got: %s',
+                is_scalar($position) ? var_export($position, true) : get_debug_type($position),
+            ),
+        );
     }
 
     private function optionalIndex(array $edit): ?int
@@ -2082,6 +2089,59 @@ final class Editor
     public static function operationArguments(): array
     {
         return self::OPERATION_ARGUMENTS;
+    }
+
+    /**
+     * The values an enumerated argument accepts, for the catalogue to publish.
+     *
+     * `contexts --operation insert_into` named `position` as optional and stopped, so the
+     * value domain was discoverable only by getting it wrong — which three of eight measured
+     * runs did. An argument whose values are a closed set says so where it is listed.
+     *
+     * @return array<string, array{values: list<string>, default?: string}>
+     */
+    public static function argumentValues(): array
+    {
+        return [
+            'position' => ['values' => ['start', 'end', '<zero-based index>'], 'default' => 'end'],
+            'index' => ['values' => ['<zero-based index>']],
+        ];
+    }
+
+    /**
+     * The catalogue entries closest to a name that is not in it.
+     *
+     * A rejected operation name is almost always a plausible synonym for a real one —
+     * `set_docblock` for `set_doc_comment` was the single most frequent failure in a
+     * measured run — and the bare rejection sends the caller to `contexts` to read the
+     * whole catalogue back. Naming the near misses answers it in the same message.
+     */
+    private function nearestOperations(string $operation): string
+    {
+        $verb = strtok($operation, '_');
+        $distances = [];
+
+        foreach (array_keys(self::OPERATION_ARGUMENTS) as $known) {
+            $distance = levenshtein($operation, $known);
+            // Two ways to be close, because a wrong name is wrong in two ways. A typo stays
+            // near in edit distance (`rename_metod`), while a plausible synonym does not —
+            // `set_docblock` is six edits from `set_doc_comment` — but shares the verb. The
+            // verb is what the caller knew; the noun is what it guessed.
+            $near = $distance <= (int) ceil(max(strlen($operation), strlen($known)) / 3);
+            $sameVerb = $verb !== false && $verb !== '' && str_starts_with($known, $verb . '_');
+
+            if ($near || $sameVerb) {
+                $distances[$known] = $distance;
+            }
+        }
+
+        if ($distances === []) {
+            return '. Run `php-ast-edit contexts` for the catalogue.';
+        }
+        asort($distances);
+        $nearest = array_slice(array_keys($distances), 0, 3);
+
+        return sprintf('. Did you mean %s?', implode(', ', $nearest));
     }
 
     /**
