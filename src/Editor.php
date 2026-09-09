@@ -1331,7 +1331,12 @@ final class Editor
             return (int) $position;
         }
 
-        throw new EditException('position must be an integer, "start" or "end".');
+        throw new EditException(
+            sprintf(
+                'position must be "start", "end" or a zero-based index; the default is "end". Got: %s',
+                is_scalar($position) ? var_export($position, true) : get_debug_type($position),
+            ),
+        );
     }
 
     private function optionalIndex(array $edit): ?int
@@ -2084,6 +2089,23 @@ final class Editor
     public static function operationArguments(): array
     {
         return self::OPERATION_ARGUMENTS;
+    }
+
+    /**
+     * The values an enumerated argument accepts, for the catalogue to publish.
+     *
+     * `contexts --operation insert_into` named `position` as optional and stopped, so the
+     * value domain was discoverable only by getting it wrong — which three of eight measured
+     * runs did. An argument whose values are a closed set says so where it is listed.
+     *
+     * @return array<string, array{values: list<string>, default?: string}>
+     */
+    public static function argumentValues(): array
+    {
+        return [
+            'position' => ['values' => ['start', 'end', '<zero-based index>'], 'default' => 'end'],
+            'index' => ['values' => ['<zero-based index>']],
+        ];
     }
 
     /**

@@ -159,6 +159,63 @@ guidanceCheck(
     str_contains($constant, 'Order::RATE'),
 );
 
+// The two apply forms are alternatives. Mixing them used to report that the flag form
+// requires --op, which is true and answers nothing: the caller had a whole document and
+// did not want the flag form at all.
+$engine = dirname(__DIR__) . '/bin/php-ast-edit';
+$mixed = shell_exec(
+    escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg($engine) . ' apply --input /dev/null --file x.php 2>&1',
+) ?? '';
+guidanceCheck(
+    'mixing --input and --file names both forms',
+    str_contains($mixed, '--input and --file'),
+);
+guidanceCheck('mixing them does not ask for --op', !str_contains($mixed, 'requires --op'));
+
+// An argument whose values are a closed set says so where it is listed, rather than only
+// when it is got wrong.
+$catalogue = json_decode(
+    shell_exec(
+        escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg($engine) . ' contexts --operation insert_into',
+    ) ?: '{}',
+    true,
+);
+guidanceCheck(
+    'the catalogue publishes the values position accepts',
+    in_array('start', $catalogue['argumentValues']['position']['values'] ?? [], true),
+);
+guidanceCheck(
+    'the catalogue publishes the default',
+    ($catalogue['argumentValues']['position']['default'] ?? null) === 'end',
+);
+$plain = json_decode(
+    shell_exec(
+        escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg($engine) . ' contexts --operation rename_method',
+    ) ?: '{}',
+    true,
+);
+guidanceCheck(
+    'an operation with no enumerated argument carries no empty map',
+    !array_key_exists('argumentValues', $plain),
+);
+
+// And the refusal itself now says what it got, so a wrong value is visible in the message.
+$position = guidanceRefusal(
+    $subject,
+    [
+        'target' => ['select' => 'class:Order'],
+        'operation' => 'insert_into',
+        'property' => 'stmts',
+        'php' => 'public int $x = 1;',
+        'position' => 'middle',
+    ],
+);
+guidanceCheck(
+    'a bad position names the values it accepts',
+    str_contains($position, '"start", "end"'),
+);
+guidanceCheck('a bad position echoes what it got', str_contains($position, 'middle'));
+
 rmdir($dir);
 
 if ($failed !== []) {
