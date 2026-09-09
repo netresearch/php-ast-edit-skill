@@ -202,9 +202,17 @@ final class Editor
     private function agentResult(array $transactions, bool $dryRun): array
     {
         $failed = [];
+        $verifications = [];
         $passed = 0;
 
         foreach ($this->verifyResults as $check) {
+            // Every execution is named, passing ones included. A caller deciding whether it
+            // may skip a check it already ran needs to know which command that was and where
+            // it ran; a bare count says a check passed without saying which. The per-file
+            // `checkIds` and `afterSha256` supply the rest — which files it saw, at what
+            // bytes — so the whole proof is in this response without repeating a path.
+            $verifications[] = array_intersect_key($check, array_flip(['id', 'scope', 'cwd', 'command', 'ok']));
+
             if ($check['ok'] === true) {
                 ++$passed;
 
@@ -241,6 +249,14 @@ final class Editor
             'checksPassed' => $declared ? $allPassed : null,
             'checksPassedCount' => $passed,
             'checksFailed' => $failed,
+            'verifications' => $verifications,
+            // What this response does NOT establish about reuse. The engine knows the
+            // command, the directory, the files and their bytes; it cannot see the check
+            // tool's version, the dependency tree it resolved, or anything else in the
+            // environment. A caller keyed only on what is above will reuse a stale pass
+            // after a dependency bump — so the limit is stated rather than left to be
+            // discovered.
+            'proofExcludes' => ['dependencies', 'checkToolVersions', 'runtime', 'environment'],
             'files' => array_map(
                 static fn (FileTransaction $file): array => EditReport::agentFile($file, $dryRun),
                 $transactions,
