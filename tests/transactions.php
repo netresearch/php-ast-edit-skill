@@ -424,12 +424,15 @@ try {
     contractCheck('the shape in the message parses as JSON', is_array($example));
 
     if (is_array($example)) {
-        mkdir($dir . '/src', 0700, true);
+        // The message names src/Foo.php; the fixture takes that path so the example is
+        // applied as written rather than as a rewritten near-relative of itself.
+        $shapeTarget = $dir . '/src/Foo.php';
+        mkdir(dirname($shapeTarget), 0700, true);
         file_put_contents(
-            $dir . '/src/Foo.php',
+            $shapeTarget,
             "<?php\n\nclass Foo\n{\n    public function bar(): int\n    {\n        \$nonce = 1;\n\n        return \$nonce;\n    }\n}\n",
         );
-        $example['files'][0]['path'] = $dir . '/src/Foo.php';
+        $example['files'][0]['path'] = $shapeTarget;
         $applied = (new Editor())->apply($example);
         contractCheck(
             'the shape in the message applies',
@@ -437,7 +440,7 @@ try {
         );
         contractCheck(
             'the edit in the message does what it says',
-            str_contains(file_get_contents($dir . '/src/Foo.php'), '$nonceValue'),
+            str_contains(file_get_contents($shapeTarget), '$nonceValue'),
         );
     }
 } finally {
