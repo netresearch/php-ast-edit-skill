@@ -347,6 +347,69 @@ class ReportTests(unittest.TestCase):
         for mode in ("full", "compact", "agent"):
             self.assertIn(mode, text)
 
+    # --- the proof a caller needs to decide reuse ------------------------------------------
+
+    def test_every_execution_is_named_including_the_passing_ones(self):
+        self.configure(repeat=2)
+        _, report, _ = self.apply(self.files(), report="agent")
+        self.assertEqual("passed", report["checks"])
+        self.assertEqual(2, report["checksPassedCount"])
+        self.assertEqual(2, len(report["verifications"]))
+        for entry in report["verifications"]:
+            self.assertTrue(entry["ok"])
+            self.assertEqual(str(self.root), entry["cwd"])
+            self.assertIn("command", entry)
+            self.assertIn("scope", entry)
+            # The proof carries no output for a check that passed.
+            self.assertNotIn("output", entry)
+        self.assertEqual(2, len({e["id"] for e in report["verifications"]}))
+
+    def test_the_proof_joins_to_the_files_by_check_id_and_hash(self):
+        self.configure()
+        _, report, _ = self.apply(self.files(3), report="agent")
+        ids = {entry["id"] for entry in report["verifications"]}
+        for file in report["files"]:
+            # Which check saw this file, and at exactly which bytes.
+            self.assertTrue(set(file["checkIds"]).issubset(ids))
+            self.assertEqual(
+                hashlib.sha256(pathlib.Path(file["path"]).read_bytes()).hexdigest(),
+                file["afterSha256"],
+            )
+
+    def test_a_failed_execution_appears_in_both_lists_with_output_only_in_one(self):
+        self.configure(failing=True)
+        _, report, _ = self.apply(self.files(), report="agent")
+        self.assertEqual(1, len(report["verifications"]))
+        self.assertEqual(1, len(report["checksFailed"]))
+        self.assertFalse(report["verifications"][0]["ok"])
+        self.assertEqual(
+            report["verifications"][0]["id"], report["checksFailed"][0]["id"]
+        )
+        self.assertNotIn("output", report["verifications"][0])
+        self.assertIn("unique-diagnostic", report["checksFailed"][0]["output"])
+
+    def test_the_report_names_what_the_proof_does_not_cover(self):
+        self.configure()
+        _, report, _ = self.apply(self.files(), report="agent")
+        # A caller keyed only on command plus file hashes reuses a stale pass after a
+        # dependency bump. The engine cannot see those inputs, so it says so.
+        self.assertEqual(
+            ["dependencies", "checkToolVersions", "runtime", "environment"],
+            report["proofExcludes"],
+        )
+
+    def test_adding_the_proof_did_not_bump_the_schema_version(self):
+        # The documented rule: a bump means a field was removed or changed meaning.
+        self.configure()
+        _, report, _ = self.apply(self.files(), report="agent")
+        self.assertEqual(1, report["reportVersion"])
+
+    def test_no_checks_declared_leaves_the_proof_empty_not_absent(self):
+        _, report, _ = self.apply(self.files(), report="agent")
+        self.assertEqual("none_declared", report["checks"])
+        self.assertEqual([], report["verifications"])
+        self.assertEqual(0, report["checksPassedCount"])
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -272,6 +272,8 @@ caller can recover for itself, and it never states a claim it cannot support.
 | `checksPassed` | The nullable boolean the exit code is derived from, kept so one command has one verdict. Read `checks` instead |
 | `checksPassedCount` | How many declared checks passed. Their output is not carried |
 | `checksFailed` | Failing executions only, each with `id`, `scope`, `command` and `output` |
+| `verifications` | **Every** execution, passing ones included: `id`, `scope`, `cwd`, `command`, `ok`. No `output` — a passing check's is routine noise, a failing one's is in `checksFailed` |
+| `proofExcludes` | Inputs this response does **not** account for |
 
 Per file: `path`, `mode`, `changed`, `editsApplied`, `beforeSha256`, `afterSha256`,
 `changedLines`, `effects`, `warnings` (list only), `checkIds`, plus
@@ -281,6 +283,20 @@ Per file: `path`, `mode`, `changed`, `editsApplied`, `beforeSha256`, `afterSha25
 | `syntax` | `passed`, `skipped` (target PHP newer than the running interpreter), or `not_run` (deletion) |
 | `checks` | The same tri-state, for the checks associated with this file |
 | `open` | What this write did **not** establish; `[]` means the tool found nothing to flag |
+
+#### Deciding whether a check may be skipped
+
+`verifications` plus the per-file `checkIds` and `afterSha256` are the whole proof this
+tool can give: which command ran, in which directory, over which files, at exactly which
+bytes, with which verdict. A caller that recorded that can ask whether the same command
+over the same bytes needs running again.
+
+`proofExcludes` names what it leaves out — `dependencies`, `checkToolVersions`, `runtime`,
+`environment`. The engine sees none of those, and a reuse key built only from what is above
+will reuse a stale pass after a dependency bump or a tool upgrade. It is stated rather than
+left to be discovered, because a verification cache that silently answers `passed` is worse
+than no cache. Building that key is the caller's, not this tool's: it is the side that knows
+what its environment consists of.
 
 `open` entries are derived from real state, never boilerplate: `NOT_WRITTEN` on a dry run,
 `REMAINING_IN_FILE` and `UNRESOLVED_RECEIVERS` from rename effects, `CALLERS_OUTSIDE_FILE`
