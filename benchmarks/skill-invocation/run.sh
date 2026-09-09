@@ -98,6 +98,33 @@ fi
 
 cfg="$BENCH/cfg-$arm"
 [[ -d "$cfg" ]] || { echo "no configuration $cfg — see prepare.sh" >&2; exit 2; }
+
+# A hook whose script is not there fails CLOSED: Claude Code denies the tool call, so
+# an arm configured that way denies Edit, Write and Bash alike and the session spends
+# its turns explaining that it cannot act. Nothing in the result JSON says so — subtype
+# stays "success" and is_error stays false — and sixteen runs were lost to a settings
+# file still naming a worktree that had been removed after its pull request merged.
+if [[ -f "$cfg/settings.json" ]]; then
+  missing=$(python3 - "$cfg/settings.json" <<'PYEOF'
+import json, os, re, sys
+
+with open(sys.argv[1]) as handle:
+    document = json.dumps(json.load(handle))
+
+# Hook commands are shell lines, so the interpreter and its flags sit around the path.
+for candidate in sorted(set(re.findall(r"(/[^\"\s]+\.(?:py|sh|php|js))", document))):
+    if not os.path.exists(candidate):
+        print(candidate)
+PYEOF
+  ) || { echo "$cfg/settings.json is not readable as JSON" >&2; exit 2; }
+
+  if [[ -n "$missing" ]]; then
+    echo "$cfg/settings.json names scripts that are not there:" >&2
+    echo "$missing" >&2
+    echo "A hook whose script is missing denies every tool call, so the arm would run blind." >&2
+    exit 2
+  fi
+fi
 export PATH="$TOOL/bin:$PATH"
 
 # `claude -p` waits on stdin for three seconds before giving up; closing it keeps the

@@ -13,6 +13,7 @@ rewrites, and a subject that is already poisoned stops the run instead of being
 measured.
 """
 
+import json
 import os
 import shutil
 import subprocess
@@ -50,6 +51,46 @@ def subject(root: Path, install_path: str) -> Path:
     return repo
 
 
+def arm(bench: Path, name: str, hook: str | None = None) -> Path:
+    """A configuration directory, optionally with a PreToolUse hook naming `hook`."""
+    cfg = bench / f"cfg-{name}"
+    cfg.mkdir(parents=True)
+    if hook is not None:
+        (cfg / "settings.json").write_text(
+            json.dumps(
+                {
+                    "hooks": {
+                        "PreToolUse": [
+                            {
+                                "matcher": "Bash",
+                                "hooks": [
+                                    {"type": "command", "command": f"python3 {hook}"}
+                                ],
+                            }
+                        ]
+                    }
+                }
+            )
+        )
+    return cfg
+
+
+def stub_claude(root: Path) -> Path:
+    """A `claude` that answers instantly, so a case may run an arm to completion.
+
+    run.sh puts $TOOL/bin first and the inherited PATH after it, and $TOOL/bin holds
+    the engine rather than the CLI, so this directory is what `claude` resolves to.
+    Without it a test that gets past the configuration check would start a real
+    fifteen-minute session against the API.
+    """
+    stub = root / "stub-bin"
+    stub.mkdir(exist_ok=True)
+    claude = stub / "claude"
+    claude.write_text('#!/bin/sh\necho \'{"subtype":"stub"}\'\n')
+    claude.chmod(0o755)
+    return stub
+
+
 def run(bench: Path, repo: Path, *args: str) -> subprocess.CompletedProcess:
     head = subprocess.run(
         ["git", "rev-parse", "HEAD"],
@@ -63,7 +104,13 @@ def run(bench: Path, repo: Path, *args: str) -> subprocess.CompletedProcess:
         capture_output=True,
         text=True,
         check=False,
-        env={**os.environ, "BENCH": str(bench), "REPO": str(repo), "BASE": head},
+        env={
+            **os.environ,
+            "PATH": f"{stub_claude(bench.parent)}{os.pathsep}{os.environ['PATH']}",
+            "BENCH": str(bench),
+            "REPO": str(repo),
+            "BASE": head,
+        },
     )
 
 
@@ -137,6 +184,25 @@ def main() -> int:
             "an arm rewriting its autoloader leaves the subject alone",
             subject_installed.read_text() == before,
         )
+
+        # A hook whose script is missing fails CLOSED: Claude Code denies the tool
+        # call, so the arm denies Edit, Write and Bash alike and spends its turns
+        # saying it cannot act. The result JSON reports subtype "success" and
+        # is_error false throughout, so a dead arm looks like a completed one.
+        dead = arm(bench, "dead", hook=str(root / "removed-worktree" / "hook.py"))
+        result = run(bench, healthy, "T3", "dead", "do nothing")
+        check("a hook script that is not there stops the run", result.returncode == 2)
+        check("it names the script", "removed-worktree" in result.stderr)
+        check("it says why that matters", "denies every tool call" in result.stderr)
+
+        (root / "present.py").write_text("")
+        arm(bench, "live", hook=str(root / "present.py"))
+        run(bench, healthy, "T4", "live", "do nothing")
+        check(
+            "a configuration whose hooks exist runs the arm",
+            (bench / "out" / "T4-live.status").read_text().strip() == "0",
+        )
+        shutil.rmtree(dead)
 
     if failures:
         print(f"FAIL: {len(failures)} case(s)", file=sys.stderr)
