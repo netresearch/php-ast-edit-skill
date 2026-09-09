@@ -276,6 +276,23 @@ mixed_code=$?
 set -e
 expect "a flag the flag form cannot carry is refused" "2" "$unsupported_code"
 expect "and the message names it" "1" "$(grep -c -- '--mode' "$CONTRACTDIR/unsupported.out")"
+# Three kinds of wrong flag need three answers. One message for all of them sends the
+# author of a typo to write it into a document, where it does not belong either.
+expect "a real setting with no flag is sent to the document" "1" \
+  "$(grep -c 'per-file setting with no flag' "$CONTRACTDIR/unsupported.out")"
+contract_file typo
+set +e
+$BIN apply --file "$CONTRACTDIR/typo.php" --select "$CONTRACT_TARGET" --op rename_variable --from a --to b \
+  --moed create > "$CONTRACTDIR/typo.out" 2>&1
+typo_code=$?
+set -e
+expect "a typo is refused as a typo" "2" "$typo_code"
+expect "and is not called a per-file setting" "0" \
+  "$(grep -c 'per-file setting' "$CONTRACTDIR/typo.out")"
+expect "and says there is no such flag" "1" "$(grep -c 'is not a flag apply takes' "$CONTRACTDIR/typo.out")"
+expect "two of them agree in number" "1" \
+  "$( (cd "$CONTRACTDIR" && $BIN apply --file typo.php --select "$CONTRACT_TARGET" --op rename_variable \
+       --from a --to b --mode create --printer canonical 2>&1 || true) | grep -c 'are per-file settings')"
 expect "and it wrote nothing" "1" "$(grep -c "$CONTRACT_UNTOUCHED" "$CONTRACTDIR/unsupported.php")"
 expect "a flag the JSON form cannot carry is refused" "2" "$mixed_code"
 expect "and that message names it too" "1" "$(grep -c -- '--select' "$CONTRACTDIR/mixed.out")"

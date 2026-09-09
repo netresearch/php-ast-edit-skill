@@ -43,6 +43,16 @@ final class Application
      */
     private const INPUT_FORM_FLAGS = ['input', 'dry-run'];
 
+    /**
+     * Real per-file settings that no flag carries — the document is their only home.
+     *
+     * Named so a caller who reaches for `--mode` is told where it lives, rather than that it
+     * does not exist. Kept in step with what `Editor::prepare()` reads from a file spec.
+     *
+     * @var list<string>
+     */
+    private const DOCUMENT_ONLY_KEYS = ['mode', 'expectAbsent', 'optional', 'requires', 'phpVersion', 'printer'];
+
     public function run(array $argv): int
     {
         try {
@@ -135,7 +145,8 @@ final class Application
         $this->rejectUnsupported(
             $options,
             self::INPUT_FORM_FLAGS,
-            '--%s belongs to the flag form. --input carries the whole document, so say it there.',
+            self::FLAG_FORM_FLAGS,
+            '--input carries the whole document, so say it there.',
         );
         $input = $options['input'] ?? '-';
 
@@ -157,24 +168,71 @@ final class Application
     }
 
     /**
-     * Refuse any option the chosen form does not carry.
+     * Refuse any option the chosen form does not carry, and say which kind of wrong it is.
      *
      * The parser takes `--anything value`, so a flag nobody reads is accepted and dropped.
      * Dropping `--sha256` was the worst of them: the caller believes it edited the file it
      * read, and the guard it asked for never ran.
      *
+     * Three kinds of wrong, and one message for all three helps none of them. `--select`
+     * against `--input` is a real flag in the wrong form. `--mode` is a real setting that
+     * simply has no flag, and belongs in the document. `--fil` is a typo, and telling its
+     * author to write it into a document sends them somewhere it does not belong either.
+     *
      * @param array<string, mixed> $options
-     * @param list<string>         $supported
+     * @param list<string>         $supported the flags this form reads
+     * @param list<string>         $otherForm the flags the other form reads
      */
-    private function rejectUnsupported(array $options, array $supported, string $format): void
-    {
-        $unsupported = array_diff(array_keys($options), $supported);
+    private function rejectUnsupported(
+        array $options,
+        array $supported,
+        array $otherForm,
+        string $advice,
+    ): void {
+        $unsupported = array_values(array_diff(array_keys($options), $supported));
 
         if ($unsupported === []) {
             return;
         }
+        $misplaced = array_values(array_intersect($unsupported, $otherForm));
+        $rest = array_diff($unsupported, $otherForm);
+        $documentOnly = array_values(array_intersect($rest, self::DOCUMENT_ONLY_KEYS));
+        $unknown = array_values(array_diff($rest, self::DOCUMENT_ONLY_KEYS));
+        $parts = [];
 
-        throw new EditException(sprintf($format, implode(', --', $unsupported)));
+        if ($misplaced !== []) {
+            $parts[] = $this->flagList($misplaced) . $this->verb($misplaced, ' belongs', ' belong') . ' to the other form of apply. ' . $advice;
+        }
+
+        if ($documentOnly !== []) {
+            $parts[] = $this->flagList($documentOnly) . $this->verb(
+                $documentOnly,
+                ' is a per-file setting with no flag: write it in the document and pass --input.',
+                ' are per-file settings with no flag: write them in the document and pass --input.',
+            );
+        }
+
+        if ($unknown !== []) {
+            $parts[] = $this->flagList($unknown) . $this->verb($unknown, ' is not a flag', ' are not flags') . ' apply takes. Run `php-ast-edit help` for the two forms and what each carries.';
+        }
+
+        throw new EditException(implode(' ', $parts));
+    }
+
+    /**
+     * @param list<string> $flags
+     */
+    private function flagList(array $flags): string
+    {
+        return '--' . implode(', --', $flags);
+    }
+
+    /**
+     * @param list<string> $flags
+     */
+    private function verb(array $flags, string $singular, string $plural): string
+    {
+        return count($flags) === 1 ? $singular : $plural;
     }
 
     private function format(array $options, bool $normalize): int
@@ -380,9 +438,10 @@ final class Application
         request through JSON on stdin.
         The flag form answers exactly as the JSON form does, guards included: --sha256
         carries the file guard, --report the response shape, and a failed check exits 1
-        either way. Per-file settings with no flag — mode, expectAbsent, optional,
-        requires, phpVersion, printer — need the document; a flag the chosen form cannot
-        carry is refused rather than dropped.
+        either way. A flag the chosen form cannot carry is refused rather than dropped,
+        and the refusal says which kind it is: a real flag in the other form, a per-file
+        setting that only the document carries (mode, expectAbsent, optional, requires,
+        phpVersion, printer), or no such flag at all.
         
         Selectors: class:, interface:, trait:, enum:, method:Foo::bar, function:,
         property:Foo::$bar, const:Foo::BAR. Names are short names; ambiguity is refused.
@@ -543,7 +602,8 @@ final class Application
         $this->rejectUnsupported(
             $options,
             self::FLAG_FORM_FLAGS,
-            '--%s is not part of the flag form. The remaining document keys — mode, ' . 'expectAbsent, optional, requires, phpVersion, printer — are per-file settings ' . 'that only a whole document can carry: write them as JSON and pass --input.',
+            self::INPUT_FORM_FLAGS,
+            'Per-file settings with no flag — mode, expectAbsent, optional, requires, ' . 'phpVersion, printer — only a whole document can carry: write them as JSON and ' . 'pass --input.',
         );
         $operation = $this->flagString($options, 'op', true);
         $edit = ['operation' => $operation];
