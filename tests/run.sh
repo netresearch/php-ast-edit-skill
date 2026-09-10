@@ -32,6 +32,10 @@ echo "::group::tests/guidance.php (what a refusal says next)"
 php tests/guidance.php || fail=1
 echo "::endgroup::"
 
+echo "::group::tests/scoped-replace.php (replace by what the code says, inside a named scope)"
+php tests/scoped-replace.php || fail=1
+echo "::endgroup::"
+
 echo "::group::tests/renames.php (binding collisions and method dispatch)"
 php tests/renames.php || fail=1
 echo "::endgroup::"

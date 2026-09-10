@@ -6,6 +6,19 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Added
+
+- **`replace_expression` and `replace_statement` take a `match`.** With it, the target is a scope — `method:RateLimiter::resetLockout` — and every expression or statement inside it that is the same code as `match` is replaced, each with its own copy of `php`; the effect reports `replaced`. The comparison is structural, so spacing and quoting do not matter. Across sixteen gated agent sessions on a three-change task, "inside this method, replace X with Y" was tried five ways and refused each time; the engine took it only through `inspect` and a line and column, and 54 of 98 `apply` calls were refused. `--match` carries it in the flag form.
+- `set_docblock` and `update_docblock` are taken as `set_doc_comment`. And an edit that lacks exactly one required argument while carrying exactly one field its operation does not take is read that way: `rename_method` with `new_name`, `set_doc_comment` with `docComment` or `php`. The engine refused these while quoting the field back in the refusal. Two unknown fields, or a missing argument with nothing to fill it, are still refused.
+- The flag form reads a lone unknown flag the same way: `--op update_docblock --text …` is `set_doc_comment` with `--value`. `contexts --operation` answers for a synonym as `apply` does.
+- A selector qualified with the file's own namespace — `method:Vendor\\Service\\RateLimiter::reset` — resolves like the short name. A different namespace still matches nothing.
+- A class member written where a statement goes is refused with the operation that takes it: `add_member` on the class, or `parseAs: member`.
+- `apply --input /dev/stdin` reads standard input like `--input -`. A heredoc caller spells it that way, and a sandbox may have no such path while standard input is readable.
+
+### Fixed
+
+- **`replace_statement` no longer accepts a declaration.** A method, property or class is a `Stmt` to the parser, so the class check let the operation swap one for a statement; the file then failed only at the reparse gate with a syntax error on a line the caller never wrote. It is refused before mutation, and the refusal shows the `match` form.
+
 ## [0.8.0] - 2026-09-10
 
 ### Changed

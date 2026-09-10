@@ -69,6 +69,8 @@ as `checks: "none_declared"`, which is harder to misread. `agent` is versioned b
 
 - Empty list: `insert_into` with `property` and `position`; class members: `add_member`.
 - Replace any node: `replace_node`; change a slot: `replace_child`.
+- Change code inside a named method: keep the method as target, `replace_expression`
+  or `replace_statement` with `match` (the code as it is) and `php` (the replacement).
 - New file: `mode: create`, full PHP including `<?php`, default `expectAbsent` guard.
   Delete: `mode: delete` with the snapshot hash.
 - Local rename: `rename_variable` on the enclosing function-like scope with `from`/`to`.

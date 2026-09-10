@@ -272,6 +272,26 @@ final class NodeLocator
      *
      * @param list<Node\Stmt> $roots
      */
+    /** The short name of `$name` when its qualifier is a namespace this file declares. */
+    private function inThisNamespace(string $name, array $roots): string
+    {
+        $qualified = ltrim($name, '\\');
+        $separator = strrpos($qualified, '\\');
+
+        if ($separator === false) {
+            return $qualified;
+        }
+        $namespace = substr($qualified, 0, $separator);
+
+        foreach ($roots as $root) {
+            if ($root instanceof \PhpParser\Node\Stmt\Namespace_ && $root->name !== null && strcasecmp($root->name->toString(), $namespace) === 0) {
+                return substr($qualified, $separator + 1);
+            }
+        }
+
+        return $name;
+    }
+
     public function resolveSelect(array $roots, string $select): NodeLocation
     {
         $select = trim($select);
@@ -298,6 +318,14 @@ final class NodeLocator
 
         if (str_contains($name, '::')) {
             [$owner, $name] = explode('::', $name, 2);
+        }
+        // A selector names things by their short name, but a caller that copied the class from
+        // a `use` line writes it qualified. When the qualifier is this file's own namespace the
+        // two say the same thing; a different namespace is left as written and matches nothing.
+        $owner = $owner === null ? null : $this->inThisNamespace($owner, $roots);
+
+        if (in_array($kind, ['class', 'interface', 'trait', 'enum', 'function'], true)) {
+            $name = $this->inThisNamespace($name, $roots);
         }
         $matches = [];
 

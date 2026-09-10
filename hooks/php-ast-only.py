@@ -61,6 +61,9 @@ FOOTER = (
     "Several edits, or several files, go in one request as JSON on stdin:\n"
     '  {"files":[{"path":"<path>","edits":[{"target":{"select":"class:Foo"},'
     '"operation":"add_member","php":"public const READY = true;"}]}]}\n'
+    "Code inside a named method: keep it as target and say what to find, no coordinates:\n"
+    "  php-ast-edit apply --file <path> --select method:Foo::bar"
+    " --op replace_expression --match '$this->old()' --php '$this->new()'\n"
     "inspect --file <path> --line <n> --column <n> is for a target that has no name.\n"
     'A new file is a file entry with "mode": "create"; a removal is "mode": "delete".\n'
     "Reading is not gated: cat, grep, git diff, php -l and php-ast-edit inspect run as they are.\n"

@@ -28,9 +28,12 @@ use PhpParser\Node\StaticVar;
 use PhpParser\Node\Stmt;
 use PhpParser\Node\UseItem;
 use PhpParser\Node\VarLikeIdentifier;
+use PhpParser\NodeDumper;
 use PhpParser\NodeFinder;
 use PhpParser\NodeTraverser;
+use PhpParser\NodeVisitor;
 use PhpParser\NodeVisitor\CloningVisitor;
+use PhpParser\NodeVisitorAbstract;
 use PhpParser\Parser;
 use PhpParser\ParserFactory;
 use PhpParser\PhpVersion;
@@ -464,6 +467,7 @@ final class Editor
             if (!is_array($edit)) {
                 throw new EditException(sprintf('Edit %d must be an object.', $index));
             }
+            $edit = $this->acceptSynonyms($edit);
             $operation = $this->requiredString($edit, 'operation');
             $target = $edit['target'] ?? null;
 
@@ -919,8 +923,16 @@ final class Editor
 
                 return true;
             case 'replace_expression':
+                if (isset($edit['match'])) {
+                    $this->replaceMatches($location, $edit, $snippets, 'expr');
+
+                    return true;
+                }
+
                 if (!$node instanceof Expr) {
-                    throw new EditException('replace_expression requires an Expr target.');
+                    throw new EditException(
+                        'replace_expression requires an Expr target. ' . $this->scopedForm('replace_expression', $edit, $location),
+                    );
                 }
                 $location->replace(
                     $snippets->parseOne('expr', $this->requiredString($edit, 'php')),
@@ -929,8 +941,20 @@ final class Editor
 
                 return true;
             case 'replace_statement':
-                if (!$node instanceof Stmt) {
-                    throw new EditException('replace_statement requires a Stmt target.');
+                if (isset($edit['match'])) {
+                    $this->replaceMatches($location, $edit, $snippets, 'stmt');
+
+                    return true;
+                }
+
+                // A method, property or class is a Stmt to the parser, so the class check
+                // alone let replace_statement swap a declaration for a statement. The file
+                // then failed only at the reparse gate, with a syntax error on a line the
+                // caller never wrote — eight times across sixteen measured sessions.
+                if (!$node instanceof Stmt || $this->isDeclaration($node)) {
+                    throw new EditException(
+                        'replace_statement requires a Stmt target. ' . $this->scopedForm('replace_statement', $edit, $location),
+                    );
                 }
                 $location->replace(
                     $snippets->parseOne('stmt', $this->requiredString($edit, 'php')),
@@ -2101,6 +2125,12 @@ final class Editor
      *
      * @var array<string, array{requires: list<string>, optional: list<string>}>
      */
+    /**
+     * Operation names a measured caller used for a real operation, and the engine then
+     * refused while naming the real one. `set_docblock` was the most frequent unknown name.
+     */
+    private const OPERATION_SYNONYMS = ['set_docblock' => 'set_doc_comment', 'update_docblock' => 'set_doc_comment'];
+
     private const OPERATION_ARGUMENTS = [
         'replace_node' => ['requires' => ['php'], 'optional' => ['parseAs']],
         'delete_node' => ['requires' => [], 'optional' => []],
@@ -2112,8 +2142,8 @@ final class Editor
         'remove_doc_comment' => ['requires' => [], 'optional' => []],
         'set_name' => ['requires' => ['value'], 'optional' => []],
         'set_string' => ['requires' => ['value'], 'optional' => []],
-        'replace_expression' => ['requires' => ['php'], 'optional' => []],
-        'replace_statement' => ['requires' => ['php'], 'optional' => []],
+        'replace_expression' => ['requires' => ['php'], 'optional' => ['match']],
+        'replace_statement' => ['requires' => ['php'], 'optional' => ['match']],
         'insert_before' => ['requires' => ['php'], 'optional' => ['parseAs']],
         'insert_after' => ['requires' => ['php'], 'optional' => ['parseAs']],
         'delete' => ['requires' => [], 'optional' => []],
@@ -2185,6 +2215,12 @@ final class Editor
         );
     }
 
+    /** The catalogue name an operation is known by, where the caller used a synonym. */
+    public static function canonicalOperation(string $operation): string
+    {
+        return self::OPERATION_SYNONYMS[$operation] ?? $operation;
+    }
+
     /**
      * What each operation takes, for the catalogue to publish.
      *
@@ -2250,6 +2286,190 @@ final class Editor
         $nearest = array_slice(array_keys($distances), 0, 3);
 
         return sprintf('. Did you mean %s?', implode(', ', $nearest));
+    }
+
+    /**
+     * Take the names and fields the engine used to refuse while quoting, in the same breath,
+     * what the caller meant.
+     *
+     * Each such refusal cost a turn and settled nothing the engine did not already know:
+     * `rename_method` refused `new_name`, `set_doc_comment` refused `docComment` and `php`,
+     * each with a message that repeated the field back. The rule is narrow on purpose. An
+     * edit that lacks exactly one required argument and carries exactly one field its
+     * operation does not take has one reading, and that is the one taken. Two unknown
+     * fields, or a missing argument with nothing to fill it, are still refused: there the
+     * engine would be guessing, and a guess it acts on is worse than a refusal.
+     *
+     * @param array<string, mixed> $edit
+     *
+     * @return array<string, mixed>
+     */
+    private function acceptSynonyms(array $edit): array
+    {
+        $operation = $edit['operation'] ?? null;
+
+        if (is_string($operation) && isset(self::OPERATION_SYNONYMS[$operation])) {
+            $operation = self::OPERATION_SYNONYMS[$operation];
+            $edit['operation'] = $operation;
+        }
+        $spec = is_string($operation) ? self::OPERATION_ARGUMENTS[$operation] ?? null : null;
+
+        if ($spec === null) {
+            return $edit;
+        }
+        $missing = array_values(
+            array_filter($spec['requires'], static fn (string $name): bool => !isset($edit[$name])),
+        );
+        $known = array_merge($spec['requires'], $spec['optional'], ['operation', 'target', 'expect']);
+        $unknown = array_values(array_diff(array_keys($edit), $known));
+
+        if (count($missing) === 1 && count($unknown) === 1) {
+            $edit[$missing[0]] = $edit[$unknown[0]];
+            unset($edit[$unknown[0]]);
+        }
+
+        return $edit;
+    }
+
+    /**
+     * Replace every expression or statement inside the target that is the same code as
+     * `match`, each with its own freshly parsed copy of `php`.
+     *
+     * "Inside resetLockout(), replace X with Y" was the edit measured agent sessions could
+     * not express: the engine wanted that one node by line and column, and reaching it cost
+     * an inspect round trip per attempt. The target stays a name, and the node is found by
+     * what it says. Equality is structural — the node dump without positions or comments —
+     * so spacing, quoting and line breaks in `match` do not matter, while names, arguments
+     * and operators do.
+     *
+     * Matches are collected on the untouched tree and the outermost wins, so a pattern
+     * nested inside another occurrence of itself is replaced once. The target itself is not
+     * a candidate: without `match` the same operation replaces it directly.
+     *
+     * @param 'expr'|'stmt' $context
+     */
+    private function replaceMatches(
+        NodeLocation $location,
+        array $edit,
+        ContextParser $snippets,
+        string $context,
+    ): void {
+        $match = $this->requiredString($edit, 'match');
+        $php = $this->requiredString($edit, 'php');
+        $pattern = $snippets->parseOne($context, $match);
+        $root = $location->node;
+        $finder = new class (
+            $root,
+            $context === 'expr' ? Expr::class : Stmt::class,
+            $pattern,
+        ) extends NodeVisitorAbstract {
+            public \SplObjectStorage $found;
+
+            private readonly NodeDumper $dumper;
+
+            private readonly string $wanted;
+
+            /** @param class-string<Node> $kind */
+            public function __construct(
+                private readonly Node $root,
+                private readonly string $kind,
+                private readonly Node $pattern,
+            ) {
+                $this->found = new \SplObjectStorage();
+                $this->dumper = new NodeDumper();
+                $this->wanted = $this->dumper->dump($pattern);
+            }
+
+            public function enterNode(Node $node): ?int
+            {
+                if ($node === $this->root || !$node instanceof $this->kind || $node->getType() !== $this->pattern->getType()) {
+                    return null;
+                }
+
+                if ($this->dumper->dump($node) !== $this->wanted) {
+                    return null;
+                }
+                $this->found->attach($node);
+
+                return NodeVisitor::DONT_TRAVERSE_CHILDREN;
+            }
+        };
+        (new NodeTraverser($finder))->traverse([$root]);
+
+        if ($finder->found->count() === 0) {
+            throw new EditException(
+                sprintf(
+                    'No %s inside %s is the same code as `%s`. The comparison is structural: spacing and quoting do not matter; names, arguments and operators do.',
+                    $context === 'expr' ? 'expression' : 'statement',
+                    $this->targetName($edit, $location),
+                    $match,
+                ),
+            );
+        }
+        // One parse per occurrence: a node shared between two places would be one object
+        // hanging in two parents, and the next edit to either would move both.
+        $replacer = new class (
+            $finder->found,
+            static fn (): Node => $snippets->parseOne($context, $php),
+        ) extends NodeVisitorAbstract {
+            /** @param \Closure(): Node $parse */
+            public function __construct(
+                private readonly \SplObjectStorage $targets,
+                private readonly \Closure $parse,
+            ) {}
+
+            public function leaveNode(Node $node): ?Node
+            {
+                if (!$this->targets->contains($node)) {
+                    return null;
+                }
+                $replacement = ($this->parse)();
+                // It takes the replaced node's lines, as NodeLocation::replace() does, or the
+                // printer reads line 1 of the snippet as a gap and answers with blank lines.
+                $replacement->setAttribute('startLine', $node->getStartLine());
+                $replacement->setAttribute('endLine', $node->getEndLine());
+
+                return $replacement;
+            }
+        };
+        (new NodeTraverser($replacer))->traverse([$root]);
+        $this->lastEffect = ['replaced' => $finder->found->count()];
+    }
+
+    /**
+     * The form an edit takes when its target is the scope rather than the node: shown where
+     * a caller named a declaration and meant something inside it.
+     */
+    private function scopedForm(string $operation, array $edit, NodeLocation $location): string
+    {
+        $what = $operation === 'replace_expression' ? 'expression' : 'statement';
+        $example = [
+            'target' => $edit['target'] ?? '…',
+            'operation' => $operation,
+            'match' => '<the ' . $what . ' as it is written>',
+            'php' => '<its replacement>',
+        ];
+
+        return sprintf(
+            'This target is a %s. To replace a %s inside it, keep the target and name the %s with "match": %s. replace_node replaces the target itself.',
+            $location->node->getType(),
+            $what,
+            $what,
+            json_encode($example, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
+        );
+    }
+
+    /** A declaration a selector can name; replacing one with a statement is never meant. */
+    private function isDeclaration(Node $node): bool
+    {
+        return $node instanceof Stmt\ClassLike || $node instanceof Stmt\Function_ || $node instanceof Stmt\ClassMethod || $node instanceof Stmt\Property || $node instanceof Stmt\ClassConst || $node instanceof Stmt\EnumCase || $node instanceof Stmt\TraitUse;
+    }
+
+    private function targetName(array $edit, NodeLocation $location): string
+    {
+        $target = $edit['target'] ?? null;
+
+        return is_array($target) && isset($target['select']) ? (string) $target['select'] : $location->node->getType();
     }
 
     /**

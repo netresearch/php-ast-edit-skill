@@ -169,6 +169,8 @@ A snippet is parsed inside a synthetic host construct, so the grammar always com
 
 `parseAs` is inferred from the target node and the addressed property, so it rarely needs to be given. The inference is node-aware where a sub node name is shared: `stmts` is a member list on a class-like node and a statement list everywhere else, `uses` is a closure binding on a `Closure` and an imported name on a `use` statement, `vars` is a static variable on `static` and an expression on `unset`. Where a node still admits more than one shape — an enum body takes cases, methods and constants — the candidates are tried in order and the parser decides. Pass `parseAs` explicitly for anything the tool cannot name; the error message lists the known contexts.
 
+An edit that lacks exactly one required argument and carries exactly one field its operation does not take is read as that argument — `new_name` beside `rename_method` is `to`. With two unknown fields, or a missing argument and none beside it, the edit is refused and the refusal shows the shape. `set_docblock` and `update_docblock` are `set_doc_comment`.
+
 ## Primitives
 
 | Operation | Fields | Effect |
@@ -188,7 +190,7 @@ Shorthands over the primitives. They are ergonomics, not the coverage boundary.
 
 - `set_name` — set an identifier/name/variable or a node's static `name` property. Requires `value`.
 - `set_string` — set a `Scalar_String` value. Requires `value`.
-- `replace_expression` / `replace_statement` — replace one `Expr` / one `Stmt`. Requires `php`.
+- `replace_expression` / `replace_statement` — replace one `Expr` / one `Stmt`. Requires `php`. With `match`, the target is a scope instead — a method, function or class named by its selector — and every expression or statement inside it that is the same code as `match` is replaced, each with its own copy of `php`; the effect reports `replaced`. The comparison is structural: spacing and quoting in `match` do not matter, names, arguments and operators do. A match that finds nothing is refused, and so is `replace_statement` on a declaration without `match` — a method or class is a `Stmt` to the parser, and swapping one for a statement never parses. `replace_node` replaces a declaration whole.
 - `insert_before` / `insert_after` — insert around a node that already sits in a list. Requires `php`.
 - `delete` — alias of `delete_node`.
 - `replace_argument` / `add_argument` / `remove_argument` — zero-based call arguments. Require `index`; the first two require `php`.
