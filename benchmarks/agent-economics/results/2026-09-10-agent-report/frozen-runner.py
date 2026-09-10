@@ -31,7 +31,31 @@ INITIAL_HASHES = "initial-hashes.json"
 STATE = "state.json"
 BASELINE_COMMIT = "baseline-commit.txt"
 TASK_MANIFEST = "controller/benchmarks/tasks.json"
-ARMS = ("contextual_patch", "full_skill", "compact_full", "compact_focused")
+ARMS = (
+    "contextual_patch",
+    "full_skill",
+    "full_skill_compact_report",
+    "compact_full",
+    "compact_focused",
+)
+# The one decision `full_skill_compact_report` reverses: which response shape the
+# skill tells the agent to ask for. Both substitutions express that single choice —
+# the sentence that states it and the example an agent copies. Everything else in
+# SKILL.md, including the paragraphs describing all three shapes, is identical in
+# both arms, so the treatment is the recommendation and not the reference text.
+REPORT_RECOMMENDATION = (
+    (
+        (
+            'Use `"report":"agent"` unless you need the diff in the response: it states what the\n'
+            "   write did and what it left open, and drops what you can recover yourself."
+        ),
+        (
+            'Use `"report":"compact"` to receive each verification result once, linked from each\n'
+            "   file's `checkIds`."
+        ),
+    ),
+    ('{"report":"agent","files"', '{"report":"compact","files"'),
+)
 MODELS = {
     "sonnet": {"id": "claude-sonnet-4-6", "effort": "medium"},
     "haiku": {"id": "claude-haiku-4-5-20251001", "effort": None},
@@ -194,9 +218,18 @@ def variants(base):
         f"Relative references resolve beneath {skill}.\n\n"
         + (skill / "SKILL.md").read_text()
     )
+    control = full
+    for recommended, alternative in REPORT_RECOMMENDATION:
+        require(
+            recommended in control,
+            "SKILL.md no longer carries the agent recommendation this arm reverses: "
+            + recommended,
+        )
+        control = control.replace(recommended, alternative, 1)
     return {
         "contextual_patch": BASELINE,
         "full_skill": full,
+        "full_skill_compact_report": control,
         "compact_full": COMPACT.replace("MODE", "full"),
         "compact_focused": COMPACT.replace("MODE", "focused"),
     }

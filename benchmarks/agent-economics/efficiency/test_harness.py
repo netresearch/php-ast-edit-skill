@@ -1,9 +1,7 @@
 """Offline campaign-directory and native-timing regressions; no model calls."""
 
-import difflib
 import json
 import os
-import pathlib
 import shutil
 import stat
 import tempfile
@@ -299,76 +297,6 @@ class NativeTimingTests(unittest.TestCase):
         )
         self.assertEqual(partial["tool_timing_status"], "partial")
         self.assertIsNone(partial["tool_execution_ms"])
-
-
-class ReportRecommendationArmTests(unittest.TestCase):
-    """`full_skill_compact_report` is `full_skill` with one decision reversed.
-
-    The arm is built by substitution into the live SKILL.md, so it goes stale silently the
-    moment that file is reworded — and a control that still recommends `agent` measures
-    nothing while looking exactly like a result.
-    """
-
-    def variants(self, skill_text=None):
-        root = pathlib.Path(__file__).resolve().parents[3]
-        skill_dir = root / "skills/php-structured-edit"
-        if skill_text is not None:
-            directory = tempfile.mkdtemp(prefix="php-ast-arm-")
-            skill_dir = pathlib.Path(directory) / "php-structured-edit"
-            skill_dir.mkdir()
-            (skill_dir / "SKILL.md").write_text(skill_text)
-        target = skill_dir
-
-        class Base:
-            def __truediv__(self, relative):
-                if relative == "runtime/skills/php-structured-edit":
-                    return target
-                return root / relative
-
-        return runner.variants(Base())
-
-    def test_the_two_arms_differ_only_in_the_recommended_report_mode(self):
-        variants = self.variants()
-        treatment = variants["full_skill"].splitlines()
-        control = variants["full_skill_compact_report"].splitlines()
-        changed = [
-            line
-            for line in difflib.unified_diff(treatment, control, lineterm="", n=0)
-            if line.startswith(("+", "-")) and not line.startswith(("+++", "---"))
-        ]
-        # Two lines of recommendation, replaced by two, plus the one-line example.
-        self.assertEqual(6, len(changed), "\n".join(changed))
-        # Every change belongs to the recommendation or the example it governs; nothing
-        # else in the skill may differ between the arms.
-        block = "\n".join(changed)
-        self.assertIn('"report":"agent"', block)
-        self.assertIn('"report":"compact"', block)
-        for term in ("Selectors:", "sha256", "STALE_SOURCE", "add_use", "checksFailed"):
-            self.assertNotIn(term, block, f"the arms also differ in {term}")
-
-    def test_the_control_recommends_and_describes_the_same_mode(self):
-        # An earlier draft replaced only the opening clause, leaving a sentence that
-        # recommended compact and then described what agent does.
-        control = self.variants()["full_skill_compact_report"]
-        self.assertNotIn('Use `"report":"agent"`', control)
-        self.assertNotIn("what it left open, and drops what you can recover", control)
-        self.assertIn('Use `"report":"compact"`', control)
-        self.assertNotIn('{"report":"agent","files"', control)
-
-    def test_a_reworded_recommendation_fails_loudly_instead_of_silently(self):
-        reworded = (
-            (
-                pathlib.Path(__file__).resolve().parents[3]
-                / "skills/php-structured-edit/SKILL.md"
-            )
-            .read_text()
-            .replace('Use `"report":"agent"` unless', "Prefer the agent report when")
-        )
-        with self.assertRaises(Exception) as raised:
-            self.variants(reworded)
-        self.assertIn(
-            "no longer carries the agent recommendation", str(raised.exception)
-        )
 
 
 if __name__ == "__main__":

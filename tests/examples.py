@@ -55,11 +55,21 @@ def documents():
         yield path, document, fixtures
 
 
-def recommended_mode():
-    """The mode SKILL.md tells an agent to use, read out of the instruction itself."""
-    match = re.search(r'Use `"report":"([a-z]+)"` unless', SKILL.read_text())
+def conditional_mode():
+    """The mode SKILL.md names, and the condition it names it for.
+
+    The skill no longer prescribes a default. It points at `agent` for one case — a
+    declared check whose verdict matters — because recommending it generally was measured
+    and lost (benchmarks/agent-economics/results/2026-09-10-agent-report). An example that
+    reaches for it outside that case contradicts the guidance again, in the direction the
+    measurement already ruled out.
+    """
+    match = re.search(
+        r'Use `"report":"([a-z]+)"` when a declared check', SKILL.read_text()
+    )
     if not check(
-        match is not None, "SKILL.md no longer states a recommended report mode"
+        match is not None,
+        'SKILL.md no longer names the case report:"agent" is for',
     ):
         return None
     return match.group(1)
@@ -69,16 +79,16 @@ def main():
     if not ENGINE.is_file():
         print("SKIP: engine not built.")
         return 0
-    expected = recommended_mode()
+    conditional = conditional_mode()
 
     for path, document, fixtures in documents():
-        # Every example that names a mode must name the one the skill recommends. An
-        # example is what gets copied; prose twenty lines up is not.
-        if "report" in document:
+        # Neither fixture declares a check, so neither is the case the skill names. An
+        # example is what gets copied; the condition in the prose is not.
+        if conditional is not None and document.get("report") == conditional:
             check(
-                document["report"] == expected,
-                f"{path.name}: the example uses report {document['report']!r} while "
-                f"SKILL.md recommends {expected!r}",
+                False,
+                f"{path.name}: the example asks for report {conditional!r} on a fixture "
+                "that declares no checks — the case SKILL.md does not name it for",
             )
 
         with tempfile.TemporaryDirectory(prefix="php-ast-examples-") as directory:
@@ -122,7 +132,7 @@ def main():
         for line in failures:
             print(f"FAIL {line}", file=sys.stderr)
         return 1
-    print("OK: the documented apply examples run and match the recommended mode.")
+    print("OK: the documented apply examples run and stay inside the skill's guidance.")
     return 0
 
 

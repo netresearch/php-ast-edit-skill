@@ -1,0 +1,256 @@
+{
+  "runs": [
+    {
+      "run_id": "run001",
+      "variant": "full_skill_compact_report",
+      "model_key": "haiku",
+      "repetition": 2,
+      "primary_model_rounds": 4,
+      "tool_calls": 3,
+      "native_list_price_usd": 0.033786500000000004,
+      "candidate_wall_ms": 14797.039671000675,
+      "accounting_errors": [],
+      "all_model_tokens": {
+        "inputTokens": 33,
+        "outputTokens": 1161,
+        "cacheReadInputTokens": 33165,
+        "cacheCreationInputTokens": 12316,
+        "thinkingTokens": 703,
+        "totalInputTokens": 45514,
+        "totalTokens": 46675
+      },
+      "oracle_passed": true
+    },
+    {
+      "run_id": "run002",
+      "variant": "full_skill",
+      "model_key": "haiku",
+      "repetition": 2,
+      "primary_model_rounds": 4,
+      "tool_calls": 3,
+      "native_list_price_usd": 0.019670299999999998,
+      "candidate_wall_ms": 11233.229682999081,
+      "accounting_errors": [],
+      "all_model_tokens": {
+        "inputTokens": 33,
+        "outputTokens": 1039,
+        "cacheReadInputTokens": 40003,
+        "cacheCreationInputTokens": 5221,
+        "thinkingTokens": 595,
+        "totalInputTokens": 45257,
+        "totalTokens": 46296
+      },
+      "oracle_passed": true
+    },
+    {
+      "run_id": "run003",
+      "variant": "full_skill_compact_report",
+      "model_key": "sonnet",
+      "repetition": 2,
+      "primary_model_rounds": 4,
+      "tool_calls": 3,
+      "native_list_price_usd": 0.0845841,
+      "candidate_wall_ms": 10382.28602601157,
+      "accounting_errors": [],
+      "all_model_tokens": {
+        "inputTokens": 5,
+        "outputTokens": 456,
+        "cacheReadInputTokens": 31297,
+        "cacheCreationInputTokens": 11390,
+        "thinkingTokens": 27,
+        "totalInputTokens": 42692,
+        "totalTokens": 43148
+      },
+      "oracle_passed": true
+    },
+    {
+      "run_id": "run004",
+      "variant": "full_skill",
+      "model_key": "sonnet",
+      "repetition": 2,
+      "primary_model_rounds": 5,
+      "tool_calls": 4,
+      "native_list_price_usd": 0.0526305,
+      "candidate_wall_ms": 15803.06266300613,
+      "accounting_errors": [],
+      "all_model_tokens": {
+        "inputTokens": 6,
+        "outputTokens": 566,
+        "cacheReadInputTokens": 49575,
+        "cacheCreationInputTokens": 4875,
+        "thinkingTokens": 27,
+        "totalInputTokens": 54456,
+        "totalTokens": 55022
+      },
+      "oracle_passed": true
+    },
+    {
+      "run_id": "run005",
+      "variant": "full_skill",
+      "model_key": "haiku",
+      "repetition": 1,
+      "primary_model_rounds": 4,
+      "tool_calls": 3,
+      "native_list_price_usd": 0.0152002,
+      "candidate_wall_ms": 13938.843957002973,
+      "accounting_errors": [],
+      "all_model_tokens": {
+        "inputTokens": 33,
+        "outputTokens": 1077,
+        "cacheReadInputTokens": 42402,
+        "cacheCreationInputTokens": 2771,
+        "thinkingTokens": 578,
+        "totalInputTokens": 45206,
+        "totalTokens": 46283
+      },
+      "oracle_passed": true
+    },
+    {
+      "run_id": "run006",
+      "variant": "full_skill_compact_report",
+      "model_key": "haiku",
+      "repetition": 1,
+      "primary_model_rounds": 4,
+      "tool_calls": 3,
+      "native_list_price_usd": 0.015693400000000003,
+      "candidate_wall_ms": 20838.526933002868,
+      "accounting_errors": [],
+      "all_model_tokens": {
+        "inputTokens": 33,
+        "outputTokens": 1118,
+        "cacheReadInputTokens": 42404,
+        "cacheCreationInputTokens": 2915,
+        "thinkingTokens": 725,
+        "totalInputTokens": 45352,
+        "totalTokens": 46470
+      },
+      "oracle_passed": true
+    },
+    {
+      "run_id": "run007",
+      "variant": "full_skill",
+      "model_key": "haiku",
+      "repetition": 3,
+      "primary_model_rounds": 4,
+      "tool_calls": 3,
+      "native_list_price_usd": 0.015546700000000002,
+      "candidate_wall_ms": 14037.490556991543,
+      "accounting_errors": [],
+      "all_model_tokens": {
+        "inputTokens": 33,
+        "outputTokens": 1129,
+        "cacheReadInputTokens": 42467,
+        "cacheCreationInputTokens": 2811,
+        "thinkingTokens": 634,
+        "totalInputTokens": 45311,
+        "totalTokens": 46440
+      },
+      "oracle_passed": true
+    },
+    {
+      "run_id": "run008",
+      "variant": "full_skill_compact_report",
+      "model_key": "haiku",
+      "repetition": 3,
+      "primary_model_rounds": 4,
+      "tool_calls": 3,
+      "native_list_price_usd": 0.014826,
+      "candidate_wall_ms": 15240.978424000787,
+      "accounting_errors": [],
+      "all_model_tokens": {
+        "inputTokens": 33,
+        "outputTokens": 997,
+        "cacheReadInputTokens": 42320,
+        "cacheCreationInputTokens": 2788,
+        "thinkingTokens": 548,
+        "totalInputTokens": 45141,
+        "totalTokens": 46138
+      },
+      "oracle_passed": true
+    },
+    {
+      "run_id": "run009",
+      "variant": "full_skill",
+      "model_key": "sonnet",
+      "repetition": 3,
+      "primary_model_rounds": 6,
+      "tool_calls": 5,
+      "native_list_price_usd": 0.0483972,
+      "candidate_wall_ms": 15693.001617008122,
+      "accounting_errors": [],
+      "all_model_tokens": {
+        "inputTokens": 7,
+        "outputTokens": 739,
+        "cacheReadInputTokens": 64484,
+        "cacheCreationInputTokens": 2991,
+        "thinkingTokens": 27,
+        "totalInputTokens": 67482,
+        "totalTokens": 68221
+      },
+      "oracle_passed": true
+    },
+    {
+      "run_id": "run010",
+      "variant": "full_skill_compact_report",
+      "model_key": "sonnet",
+      "repetition": 3,
+      "primary_model_rounds": 3,
+      "tool_calls": 2,
+      "native_list_price_usd": 0.025672799999999996,
+      "candidate_wall_ms": 9081.746938012657,
+      "accounting_errors": [],
+      "all_model_tokens": {
+        "inputTokens": 4,
+        "outputTokens": 360,
+        "cacheReadInputTokens": 29976,
+        "cacheCreationInputTokens": 1878,
+        "thinkingTokens": 27,
+        "totalInputTokens": 31858,
+        "totalTokens": 32218
+      },
+      "oracle_passed": true
+    },
+    {
+      "run_id": "run011",
+      "variant": "full_skill_compact_report",
+      "model_key": "sonnet",
+      "repetition": 1,
+      "primary_model_rounds": 3,
+      "tool_calls": 2,
+      "native_list_price_usd": 0.025501799999999998,
+      "candidate_wall_ms": 8479.950939989067,
+      "accounting_errors": [],
+      "all_model_tokens": {
+        "inputTokens": 4,
+        "outputTokens": 353,
+        "cacheReadInputTokens": 29976,
+        "cacheCreationInputTokens": 1867,
+        "thinkingTokens": 27,
+        "totalInputTokens": 31847,
+        "totalTokens": 32200
+      },
+      "oracle_passed": true
+    },
+    {
+      "run_id": "run012",
+      "variant": "full_skill",
+      "model_key": "sonnet",
+      "repetition": 1,
+      "primary_model_rounds": 5,
+      "tool_calls": 4,
+      "native_list_price_usd": 0.0385833,
+      "candidate_wall_ms": 11885.47762100643,
+      "accounting_errors": [],
+      "all_model_tokens": {
+        "inputTokens": 6,
+        "outputTokens": 567,
+        "cacheReadInputTokens": 52041,
+        "cacheCreationInputTokens": 2408,
+        "thinkingTokens": 27,
+        "totalInputTokens": 54455,
+        "totalTokens": 55022
+      },
+      "oracle_passed": true
+    }
+  ]
+}
