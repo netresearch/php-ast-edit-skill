@@ -1524,7 +1524,10 @@ check(
 );
 check(
     'and the advice says so, with the width it was measured against',
-    str_contains((string) $report['overWidth']['advice'], '1 lines exceed the declared width of 60, 1 of them method chains'),
+    str_contains(
+        (string) $report['overWidth']['advice'],
+        '1 lines exceed the declared width of 60, 1 of them method chains',
+    ),
     (string) $report['overWidth']['advice'],
 );
 check(

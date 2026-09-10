@@ -163,11 +163,7 @@ final class Doctor
             'overWidth' => $overWidth === null ? null : [
                 ...$overWidth,
                 'advice' => $overWidth['total'] === 0 ? null : sprintf(
-                    '%d lines exceed the declared width of %d, %d of them method chains. The printer '
-                    . 'breaks every comma-separated list at that width and does not break chains; no '
-                    . 'formatter rule does either, because php-cs-fixer\'s method_chaining_indentation '
-                    . 'only indents a chain that already spans lines. Longest line: %d. Normalising '
-                    . 'will not remove these.',
+                    '%d lines exceed the declared width of %d, %d of them method chains. The printer ' . 'breaks every comma-separated list at that width and does not break chains; no ' . 'formatter rule does either, because php-cs-fixer\'s method_chaining_indentation ' . 'only indents a chain that already spans lines. Longest line: %d. Normalising ' . 'will not remove these.',
                     $overWidth['total'],
                     $declaredWidth['width'],
                     $overWidth['chains'],
