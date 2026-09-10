@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "source_commit": "5f4fde5460c5fc73661069fac8bb7a6460fee42c",
+  "source_status": "",
+  "execution_allowed": true,
+  "models": {
+    "sonnet": {
+      "id": "claude-sonnet-4-6",
+      "effort": "medium"
+    },
+    "haiku": {
+      "id": "claude-haiku-4-5-20251001",
+      "effort": null
+    }
+  },
+  "arms": [
+    "full_skill",
+    "full_skill_compact_report"
+  ],
+  "task_ids": [
+    "local-variable"
+  ],
+  "repetitions": 3,
+  "seed": 20260910,
+  "claude": "/home/cybot/.local/share/claude/versions/2.1.267",
+  "cli_version": "2.1.267 (Claude Code)",
+  "php_version": "PHP 8.5.10 (cli) (built: Aug 28 2026 06:46:18) (NTS)",
+  "cli_common": [
+    "-p",
+    "--safe-mode",
+    "--disable-slash-commands",
+    "--strict-mcp-config",
+    "--mcp-config",
+    "{\"mcpServers\":{}}",
+    "--setting-sources",
+    "",
+    "--settings",
+    "{}",
+    "--no-session-persistence",
+    "--tools",
+    "Bash,Read,Edit,Write",
+    "--output-format",
+    "stream-json",
+    "--verbose",
+    "--permission-mode",
+    "bypassPermissions",
+    "--prompt-suggestions",
+    "false",
+    "--name",
+    "php-edit-efficiency"
+  ],
+  "timeout_seconds": 120,
+  "max_run_usd": 0.75,
+  "campaign_budget_usd": 8.0,
+  "cache_condition": "unknown; fresh independent sessions",
+  "effort_policy": "Sonnet medium; Haiku null/not_supported, no effort flag or inherited effort override",
+  "billing_note": "Native list-price estimates under existing authentication, not proof of charges",
+  "variant_instructions": {
+    "full_skill": "Apply the complete skill below. Its executable is already on PATH. Relative references resolve beneath /tmp/campaign-agent-report-run1/runtime/skills/php-structured-edit.\n\n---\nname: php-structured-edit\ndescription: \"Use when editing PHP source: renaming a method, function or variable and its call sites; adding, changing or removing a method, property, constant, parameter, return type, attribute or use import; inserting or replacing a statement, expression or call argument; changing a signature, visibility or docblock; editing a PHP string literal; creating or deleting a whole PHP file. Reach for this before Edit or sed on a .php file. Use ordinary search for discovery. Not for read-only PHP questions or edits to non-PHP files.\"\n---\n\n# PHP Structured Edit\n\nUse `php-ast-edit` for PHP writes while this skill is active. The tool parses snippets,\nchanges the AST, and prints the result. After rejection, correct the cause; do not\nfall back to text mutation.\n\n## First use\n\nResolve the executable once: repository `bin/php-ast-edit`, project `vendor/bin/php-ast-edit`,\ninstalled command, or this skill's `scripts/php-ast-edit` wrapper. Use `help` if needed;\ninstall missing engine dependencies before retrying.\n\nAuto mode uses format-preserving printing unless applicable configuration enables\ncanonical printing. Explicit printer choices override auto mode. Normalization is\noptional; `doctor` diagnoses canonical setup. Read the formatting reference when\nconfiguring formatting.\n\n## Workflow\n\n1. Find the relevant code with normal search or an LSP.\n2. Prefer named targets: `{\"select\":\"method:Checkout::submit\"}`. Other selectors:\n   `class:`, `interface:`, `trait:`, `enum:`, `function:`, `property:Foo::$items`,\n   `const:Foo::LIMIT`. Ambiguous names are refused. Use `inspect` for unnamed targets;\n   retain its `ref` and `sha256`.\n3. One edit against a named target is one call, with no payload file:\n   `apply --file F.php --select method:Foo::bar --op rename_variable --from a --to b`.\n   Batch related edits across files in one `apply`. Include `sha256` when relying on a\n   read snapshot. After `STALE_SOURCE`, reread and reassess; never drop the guard.\n   Use `\"report\":\"agent\"` unless you need the diff in the response: it states what the\n   write did and what it left open, and drops what you can recover yourself.\n4. Supply compact valid snippets. Import or qualify external types in namespaced PHP,\n   e.g. `\\\\DateTimeImmutable` in JSON. The printer handles indentation.\n5. In `agent` reports read `outcome`, `checks`, `checksFailed` and each file's `open`;\n   `checks: \"none_declared\"` means nothing verified the edit, which is not `\"passed\"`.\n   `git diff -- <path>` has the diff, from the snapshot `beforeSha256` names. In `full` and\n   `compact` reports read `effects`, `diff`, all `warnings` and `validation`, where `parsed`\n   and legacy `valid` mean parser success, and follow `checkIds` to top-level `verify`.\n   Failed checks need repair; skipped or unrun checks remain outstanding where required.\n6. A passed configured command satisfies that same check on unchanged inputs. Repeat it\n   after relevant changes, or run additional checks required by the task. Use supplied\n   exact-byte evidence for its stated scope instead of rereading solely to reconfirm it.\n   Neither passing tests nor byte preservation proves reference completeness. Report\n   changed symbols and checks actually run; distinguish declarations from call sites.\n   An intended edit leaves a Git diff. Avoid repository-wide `format` for a local edit.\n\nMinimal transaction:\n\n```json\n{\"report\":\"agent\",\"files\":[{\"path\":\"src/Registry.php\",\"edits\":[{\"target\":{\"select\":\"class:Registry\"},\"operation\":\"add_member\",\"php\":\"public function register(string $name): void {}\"}]}]}\n```\n\n```bash\nphp-ast-edit apply --input edits.json\n```\n\n`\"report\":\"full\"` (the default) retains per-file verification. Report mode changes\npresentation only; `checksPassed: null` means no checks ran \u2014 `agent` says the same thing\nas `checks: \"none_declared\"`, which is harder to misread. `agent` is versioned by\n`reportVersion`; `full` and `compact` are not.\n\n## Choose the narrow operation\n\n- Empty list: `insert_into` with `property` and `position`; class members: `add_member`.\n- Replace any node: `replace_node`; change a slot: `replace_child`.\n- New file: `mode: create`, full PHP including `<?php`, default `expectAbsent` guard.\n  Delete: `mode: delete` with the snapshot hash.\n- Local rename: `rename_variable` on the enclosing function-like scope with `from`/`to`.\n  Binding collisions are rejected; dynamic variables remain limited.\n- Method rename: `rename_method` with `to`; assess unresolved receivers and inheritance\n  limits. Cross-file resolution requires project-aware tools. Use `set_name` for an\n  intentionally declaration-only change.\n- SQL/HTML/JSON inside a PHP literal: `set_string` on its `Scalar_String` node.\n- Class import: `add_use` with `value` and no `target`; already-imported is a reported\n  no-op, a taken name an error. Add it in the same transaction as the code that needs it.\n\nUse `contexts --operation <name>` before guessing unfamiliar arguments.\nParser and host lint passes do not prove application behavior.\n\n## References, when needed\n\n- [Operations](references/operations.md): full schema, selectors, guards, `parseAs`, reports.\n- [Formatting](references/formatting-contract.md): preserving layout, optional normalization.\n- [Enforcement](references/enforcement.md): optional hook and its limits.\n",
+    "full_skill_compact_report": "Apply the complete skill below. Its executable is already on PATH. Relative references resolve beneath /tmp/campaign-agent-report-run1/runtime/skills/php-structured-edit.\n\n---\nname: php-structured-edit\ndescription: \"Use when editing PHP source: renaming a method, function or variable and its call sites; adding, changing or removing a method, property, constant, parameter, return type, attribute or use import; inserting or replacing a statement, expression or call argument; changing a signature, visibility or docblock; editing a PHP string literal; creating or deleting a whole PHP file. Reach for this before Edit or sed on a .php file. Use ordinary search for discovery. Not for read-only PHP questions or edits to non-PHP files.\"\n---\n\n# PHP Structured Edit\n\nUse `php-ast-edit` for PHP writes while this skill is active. The tool parses snippets,\nchanges the AST, and prints the result. After rejection, correct the cause; do not\nfall back to text mutation.\n\n## First use\n\nResolve the executable once: repository `bin/php-ast-edit`, project `vendor/bin/php-ast-edit`,\ninstalled command, or this skill's `scripts/php-ast-edit` wrapper. Use `help` if needed;\ninstall missing engine dependencies before retrying.\n\nAuto mode uses format-preserving printing unless applicable configuration enables\ncanonical printing. Explicit printer choices override auto mode. Normalization is\noptional; `doctor` diagnoses canonical setup. Read the formatting reference when\nconfiguring formatting.\n\n## Workflow\n\n1. Find the relevant code with normal search or an LSP.\n2. Prefer named targets: `{\"select\":\"method:Checkout::submit\"}`. Other selectors:\n   `class:`, `interface:`, `trait:`, `enum:`, `function:`, `property:Foo::$items`,\n   `const:Foo::LIMIT`. Ambiguous names are refused. Use `inspect` for unnamed targets;\n   retain its `ref` and `sha256`.\n3. One edit against a named target is one call, with no payload file:\n   `apply --file F.php --select method:Foo::bar --op rename_variable --from a --to b`.\n   Batch related edits across files in one `apply`. Include `sha256` when relying on a\n   read snapshot. After `STALE_SOURCE`, reread and reassess; never drop the guard.\n   Use `\"report\":\"compact\"` to receive each verification result once, linked from each\n   file's `checkIds`.\n4. Supply compact valid snippets. Import or qualify external types in namespaced PHP,\n   e.g. `\\\\DateTimeImmutable` in JSON. The printer handles indentation.\n5. In `agent` reports read `outcome`, `checks`, `checksFailed` and each file's `open`;\n   `checks: \"none_declared\"` means nothing verified the edit, which is not `\"passed\"`.\n   `git diff -- <path>` has the diff, from the snapshot `beforeSha256` names. In `full` and\n   `compact` reports read `effects`, `diff`, all `warnings` and `validation`, where `parsed`\n   and legacy `valid` mean parser success, and follow `checkIds` to top-level `verify`.\n   Failed checks need repair; skipped or unrun checks remain outstanding where required.\n6. A passed configured command satisfies that same check on unchanged inputs. Repeat it\n   after relevant changes, or run additional checks required by the task. Use supplied\n   exact-byte evidence for its stated scope instead of rereading solely to reconfirm it.\n   Neither passing tests nor byte preservation proves reference completeness. Report\n   changed symbols and checks actually run; distinguish declarations from call sites.\n   An intended edit leaves a Git diff. Avoid repository-wide `format` for a local edit.\n\nMinimal transaction:\n\n```json\n{\"report\":\"compact\",\"files\":[{\"path\":\"src/Registry.php\",\"edits\":[{\"target\":{\"select\":\"class:Registry\"},\"operation\":\"add_member\",\"php\":\"public function register(string $name): void {}\"}]}]}\n```\n\n```bash\nphp-ast-edit apply --input edits.json\n```\n\n`\"report\":\"full\"` (the default) retains per-file verification. Report mode changes\npresentation only; `checksPassed: null` means no checks ran \u2014 `agent` says the same thing\nas `checks: \"none_declared\"`, which is harder to misread. `agent` is versioned by\n`reportVersion`; `full` and `compact` are not.\n\n## Choose the narrow operation\n\n- Empty list: `insert_into` with `property` and `position`; class members: `add_member`.\n- Replace any node: `replace_node`; change a slot: `replace_child`.\n- New file: `mode: create`, full PHP including `<?php`, default `expectAbsent` guard.\n  Delete: `mode: delete` with the snapshot hash.\n- Local rename: `rename_variable` on the enclosing function-like scope with `from`/`to`.\n  Binding collisions are rejected; dynamic variables remain limited.\n- Method rename: `rename_method` with `to`; assess unresolved receivers and inheritance\n  limits. Cross-file resolution requires project-aware tools. Use `set_name` for an\n  intentionally declaration-only change.\n- SQL/HTML/JSON inside a PHP literal: `set_string` on its `Scalar_String` node.\n- Class import: `add_use` with `value` and no `target`; already-imported is a reported\n  no-op, a taken name an error. Add it in the same transaction as the code that needs it.\n\nUse `contexts --operation <name>` before guessing unfamiliar arguments.\nParser and host lint passes do not prove application behavior.\n\n## References, when needed\n\n- [Operations](references/operations.md): full schema, selectors, guards, `parseAs`, reports.\n- [Formatting](references/formatting-contract.md): preserving layout, optional normalization.\n- [Enforcement](references/enforcement.md): optional hook and its limits.\n"
+  },
+  "common_instructions": "Complete the supplied PHP maintenance task autonomously and accurately.\nRead relevant source before editing. Preserve unrelated code and behavior. Batch\nrelated work where useful. Run relevant syntax/behavior checks that remain necessary,\nreview the intended diff, and finish concisely. Do not create commits, install packages,\nuse network services or other agents/models. Never inspect home directories, global\ninstructions/configuration, evaluator/controller/state files or answer keys. Do not\ninspect unrelated directories. Work only on the supplied task files; leave no extras.\nDependencies are installed. Bash, Read, Edit and Write are available. Documented tool\nand skill paths may be accessed as needed. No repository-wide AST-only rule applies\nto these disposable fixtures. Follow this run's editing instructions below.\n",
+  "instruction_words": {
+    "full_skill": 717,
+    "full_skill_compact_report": 702
+  },
+  "common_instruction_words": 111,
+  "full_skill_words": 701,
+  "task_manifest_sha256": "f2c2e6ea3a758eedd6f838f4a8448a0ebcf5ef8d8db025433373543b4edbc609",
+  "preparation_ms": 260.009389006882
+}

@@ -61,7 +61,6 @@ Send this JSON to `php-ast-edit apply --input edits.json`:
 
 ```json
 {
-  "report": "agent",
   "files": [{
     "path": "src/Clock.php",
     "edits": [{
@@ -79,7 +78,7 @@ Send this JSON to `php-ast-edit apply --input edits.json`:
 
 Use a file-level `sha256` guard when editing a previously read snapshot. Selectors identify named declarations without a coordinate lookup. For an expression or statement, `inspect --file src/Clock.php --line 4 --column 10` returns node ancestry, structural refs, and the snapshot hash. Ambiguous selectors fail rather than choosing the first match. Related changes across files belong in the same `files` array.
 
-Three response shapes. `"report": "agent"` states what the write did and what it left open: `outcome`, a `checks` tri-state where `none_declared` is not `passed`, failing check output only, and a per-file `open` list. It carries no diff — `git diff -- <path>` has that, from the snapshot `beforeSha256` names. `"report": "compact"` emits each verification run once in top-level `verify`, linked from each file's `checkIds`. Omitting `report`, or choosing `"full"`, keeps the per-file `verify` layout and the `diff`. All three report the same checks and outcomes. A successful parse is not proof of correct behavior; run the relevant project tests if they have not already run through configured `verify` commands.
+Three response shapes. Omitting `report`, or choosing `"full"`, keeps the per-file `verify` layout and the `diff` — the default, and the right one when you want to see the change. `"report": "compact"` emits each verification run once in top-level `verify`, linked from each file's `checkIds`. `"report": "agent"` states what the write did and what it left open — `outcome`, a `checks` tri-state where `none_declared` is not `passed`, failing check output, a per-file `open` list, and `verifications` naming every execution — and carries no diff. Reach for it when a declared check's verdict is what you need; [measured](benchmarks/agent-economics/results/2026-09-10-agent-report/REPORT.md) on an edit with no declared checks, fetching the dropped diff back cost more than it saved. All three report the same checks and outcomes. A successful parse is not proof of correct behavior; run the relevant project tests if they have not already run through configured `verify` commands.
 
 Use `scope: "project"` for checks such as PHPStan that should use their configured project paths, including after file deletions. Use `scope: "changed_files"` for commands that accept the changed, existing file paths through `{files}`. Configure these in `.php-ast-edit.json`; see the [verification contract](skills/php-structured-edit/references/operations.md#verification-configuration).
 

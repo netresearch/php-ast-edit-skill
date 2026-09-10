@@ -31,10 +31,8 @@ configuring formatting.
    `apply --file F.php --select method:Foo::bar --op rename_variable --from a --to b`.
    Batch related edits across files in one `apply`. Include `sha256` when relying on a
    read snapshot. After `STALE_SOURCE`, reread and reassess; never drop the guard.
-   Use `"report":"agent"` when a declared check's verdict is what you need, or the diff
-   would be large: it carries the check proof and drops the diff. Measured otherwise,
-   fetching that diff back costs more than it saved (benchmarks/agent-economics/
-   results/2026-09-10-agent-report).
+   Use `"report":"agent"` unless you need the diff in the response: it states what the
+   write did and what it left open, and drops what you can recover yourself.
 4. Supply compact valid snippets. Import or qualify external types in namespaced PHP,
    e.g. `\\DateTimeImmutable` in JSON. The printer handles indentation.
 5. In `agent` reports read `outcome`, `checks`, `checksFailed` and each file's `open`;
@@ -53,7 +51,7 @@ configuring formatting.
 Minimal transaction:
 
 ```json
-{"files":[{"path":"src/Registry.php","edits":[{"target":{"select":"class:Registry"},"operation":"add_member","php":"public function register(string $name): void {}"}]}]}
+{"report":"agent","files":[{"path":"src/Registry.php","edits":[{"target":{"select":"class:Registry"},"operation":"add_member","php":"public function register(string $name): void {}"}]}]}
 ```
 
 ```bash
