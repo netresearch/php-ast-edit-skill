@@ -32,6 +32,8 @@ final class ProjectRename
 {
     private const LISTED = 20;
 
+    private const NAMED = 'The resolver named %s, %s; nothing was changed.';
+
     private readonly NodeLocator $locator;
 
     /** @param \Closure(string): array{0: string, 1: list<Stmt>} $parse the engine's own parse of a file */
@@ -406,23 +408,19 @@ final class ProjectRename
         try {
             $location = $this->locator->locate($roots, $range['start'], 'Identifier');
         } catch (EditException) {
-            throw new EditException(
-                'The resolver named ' . $where . ', where there is no method name; nothing was changed.',
-            );
+            throw new EditException(sprintf(self::NAMED, $where, 'where there is no method name'));
         }
         $parent = $location->parent;
         $callable = $parent instanceof Stmt\ClassMethod || $parent instanceof Expr\MethodCall || $parent instanceof Expr\NullsafeMethodCall || $parent instanceof Expr\StaticCall;
 
         if ($location->start() !== $range['start'] || $location->end() + 1 !== $range['end'] || $location->property !== 'name' || !$callable) {
             throw new EditException(
-                'The resolver named ' . $where . ', which is not a method name the engine can rename; nothing was changed.',
+                sprintf(self::NAMED, $where, 'which is not a method name the engine can rename'),
             );
         }
 
         if (strcasecmp(substr($source, $range['start'], $range['end'] - $range['start']), $from) !== 0) {
-            throw new EditException(
-                'The resolver named ' . $where . ', which does not read ' . $from . '; nothing was changed.',
-            );
+            throw new EditException(sprintf(self::NAMED, $where, 'which does not read ' . $from));
         }
 
         return $location;

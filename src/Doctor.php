@@ -150,12 +150,7 @@ final class Doctor
             'resolver' => [
                 'phpactor' => $phar,
                 'status' => $resolver,
-                'advice' => $resolver === 'ready' ? null : sprintf(
-                    'rename_method on a public, protected or inherited method resolves its call sites across the project through Phpactor %s, which is %s. %s',
-                    PhpactorReferenceFinder::RELEASE,
-                    $resolver === 'missing' ? 'not set up here' : 'not the pinned release at ' . $phar,
-                    PhpactorReferenceFinder::installHint(),
-                ),
+                'advice' => $this->resolverAdvice($resolver, $phar),
             ],
             'declaredWidth' => $declaredWidth['width'],
             'widthSource' => $declaredWidth['source'],
@@ -171,6 +166,21 @@ final class Doctor
             'editorconfig' => $editorconfig,
             'findings' => $findings,
         ];
+    }
+
+    private function resolverAdvice(string $status, ?string $phar): ?string
+    {
+        if ($status === 'ready') {
+            return null;
+        }
+        $state = $status === 'missing' ? 'not set up here' : 'not the pinned release at ' . $phar;
+
+        return sprintf(
+            'rename_method on a public, protected or inherited method resolves its call sites across the project through Phpactor %s, which is %s. %s',
+            PhpactorReferenceFinder::RELEASE,
+            $state,
+            PhpactorReferenceFinder::installHint(),
+        );
     }
 
     /**

@@ -17,6 +17,9 @@ use PhpParser\Node;
 use PhpParser\NodeFinder;
 use PhpParser\ParserFactory;
 
+const BASE_FILE = 'src/Base.php';
+const USE_FILE = 'src/Use1.php';
+
 $failures = [];
 $count = 0;
 $base = sys_get_temp_dir() . '/php-ast-project-rename-' . bin2hex(random_bytes(6));
@@ -141,7 +144,7 @@ function projectRefusal(callable $call): string
 
 $hierarchy = [
     'src/Contract.php' => "<?php\nnamespace App;\ninterface Contract\n{\n    public function fetch(): int;\n}\n",
-    'src/Base.php' => "<?php\nnamespace App;\nclass Base implements Contract\n{\n    public function fetch(): int\n    {\n        return 1;\n    }\n}\n",
+    BASE_FILE => "<?php\nnamespace App;\nclass Base implements Contract\n{\n    public function fetch(): int\n    {\n        return 1;\n    }\n}\n",
     'src/Child.php' => "<?php\nnamespace App;\nclass Child extends Base\n{\n    public function fetch(): int\n    {\n        return parent::fetch() + 1;\n    }\n}\n",
     'src/Leaf.php' => "<?php\nnamespace App;\nclass Leaf extends Base\n{\n}\n",
     'src/Use1.php' => "<?php\nnamespace App;\nfinal class Use1\n{\n    public function run(Contract \$c, Leaf \$l): int\n    {\n        return \$c->fetch() + \$l->fetch() + (new Child())->fetch();\n    }\n}\n",
@@ -154,7 +157,7 @@ try {
         function () use ($hierarchy): void {
             $root = projectFixture('hierarchy', $hierarchy);
             $finder = new CallsByName();
-            $result = projectRename($root, 'src/Base.php', 'method:Base::fetch', 'load', $finder);
+            $result = projectRename($root, BASE_FILE, 'method:Base::fetch', 'load', $finder);
             $rename = $result['renames'][0] ?? [];
             projectAssert(
                 ($rename['declarations'] ?? null) === 3,
@@ -189,7 +192,7 @@ try {
             $root = projectFixture('no-resolver', $hierarchy);
             putenv(PhpactorReferenceFinder::ENVIRONMENT);
             $message = projectRefusal(
-                static fn () => projectRename($root, 'src/Base.php', 'method:Base::fetch', 'load', null),
+                static fn () => projectRename($root, BASE_FILE, 'method:Base::fetch', 'load', null),
             );
             projectAssert(
                 str_contains($message, 'extends or implements'),
@@ -200,7 +203,7 @@ try {
                 'setup missing: ' . $message,
             );
             projectAssert(
-                str_contains((string) file_get_contents($root . '/src/Base.php'), 'fetch'),
+                str_contains((string) file_get_contents($root . '/' . BASE_FILE), 'fetch'),
                 'file changed on refusal',
             );
         },
@@ -275,13 +278,7 @@ try {
                 ],
             );
             $message = projectRefusal(
-                static fn () => projectRename(
-                    $root,
-                    'src/Base.php',
-                    'method:Base::fetch',
-                    'load',
-                    new CallsByName(),
-                ),
+                static fn () => projectRename($root, BASE_FILE, 'method:Base::fetch', 'load', new CallsByName()),
             );
             projectAssert(str_contains($message, 'already declares load'), $message);
         },
@@ -292,17 +289,17 @@ try {
         function () use ($hierarchy): void {
             $root = projectFixture('risky', $hierarchy);
             $finder = new CallsByName(
-                [['file' => $root . '/src/Use1.php', 'line' => 7, 'text' => '$x->fetch()']],
+                [['file' => $root . '/' . USE_FILE, 'line' => 7, 'text' => '$x->fetch()']],
             );
             $message = projectRefusal(
-                static fn () => projectRename($root, 'src/Base.php', 'method:Base::fetch', 'load', $finder),
+                static fn () => projectRename($root, BASE_FILE, 'method:Base::fetch', 'load', $finder),
             );
             projectAssert(
                 str_contains($message, 'Use1.php:7') && str_contains($message, 'receiver type'),
                 $message,
             );
             projectAssert(
-                str_contains((string) file_get_contents($root . '/src/Base.php'), 'fetch'),
+                str_contains((string) file_get_contents($root . '/' . BASE_FILE), 'fetch'),
                 'file changed on refusal',
             );
         },
@@ -314,10 +311,10 @@ try {
             $root = projectFixture('wrong-offset', $hierarchy);
             $finder = new CallsByName(
                 [],
-                [['file' => $root . '/src/Use1.php', 'start' => 20, 'end' => 25, 'line' => 3]],
+                [['file' => $root . '/' . USE_FILE, 'start' => 20, 'end' => 25, 'line' => 3]],
             );
             $message = projectRefusal(
-                static fn () => projectRename($root, 'src/Base.php', 'method:Base::fetch', 'load', $finder),
+                static fn () => projectRename($root, BASE_FILE, 'method:Base::fetch', 'load', $finder),
             );
             projectAssert(str_contains($message, 'nothing was changed'), $message);
 
@@ -339,7 +336,7 @@ try {
             $root = projectFixture(
                 'private',
                 [
-                    'src/Base.php' => "<?php\nnamespace App;\nclass Base\n{\n    private function key(): string\n    {\n        return 'base';\n    }\n}\n",
+                    BASE_FILE => "<?php\nnamespace App;\nclass Base\n{\n    private function key(): string\n    {\n        return 'base';\n    }\n}\n",
                     'src/Child.php' => "<?php\nnamespace App;\nfinal class Child extends Base\n{\n    private function key(): string\n    {\n        return 'child';\n    }\n\n    public function run(): string\n    {\n        return \$this->key();\n    }\n}\n",
                 ],
             );
@@ -355,7 +352,7 @@ try {
                 json_encode($result['renames'] ?? null),
             );
             projectAssert(
-                str_contains((string) file_get_contents($root . '/src/Base.php'), 'function key()'),
+                str_contains((string) file_get_contents($root . '/' . BASE_FILE), 'function key()'),
                 'the parent\'s private method was renamed too',
             );
         },
@@ -450,7 +447,7 @@ try {
                 exec('git -C ' . escapeshellarg($root) . ' add -A');
                 $result = projectRename(
                     $root,
-                    'src/Base.php',
+                    BASE_FILE,
                     'method:Base::fetch',
                     'load',
                     new PhpactorReferenceFinder($phar),
@@ -460,7 +457,7 @@ try {
                     json_encode($result['renames'] ?? null),
                 );
                 projectAssert(
-                    !str_contains((string) file_get_contents($root . '/src/Use1.php'), 'fetch'),
+                    !str_contains((string) file_get_contents($root . '/' . USE_FILE), 'fetch'),
                     'Use1 still calls fetch',
                 );
             },

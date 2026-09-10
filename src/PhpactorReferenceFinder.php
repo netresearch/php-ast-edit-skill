@@ -76,7 +76,7 @@ final class PhpactorReferenceFinder implements ReferenceFinder
 
     public function references(string $root, string $class, string $member): array
     {
-        $state = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'php-ast-edit-phpactor' . DIRECTORY_SEPARATOR . sha1($root);
+        $state = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'php-ast-edit-phpactor' . DIRECTORY_SEPARATOR . hash('sha256', $root);
         // Phpactor reads user configuration and keeps its cache under the XDG directories.
         // Pointing them at a directory of our own keeps a developer's settings out of the
         // resolution and still lets repeated queries in one project share a cache.

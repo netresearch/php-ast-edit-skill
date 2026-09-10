@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Netresearch\PhpAstEdit;
 
 use Netresearch\PhpAstEdit\Exception\EditException;
+use PhpParser\ConstExprEvaluationException;
+use PhpParser\ConstExprEvaluator;
 use PhpParser\Node;
 use PhpParser\Node\Stmt;
 use PhpParser\NodeFinder;
@@ -332,6 +334,59 @@ final class ProjectIndex
         }
     }
 
+    /**
+     * One of Composer's generated tables, evaluated rather than included.
+     *
+     * The files are two assignments — `$vendorDir`, `$baseDir`, each a `dirname()` chain
+     * over `__DIR__` — and a `return array(…)` of string concatenations. Including one would
+     * run whatever the repository being edited put there; evaluating that grammar runs
+     * nothing, and anything outside it makes the table empty rather than executed.
+     *
+     * @return array<string, mixed>
+     */
+    private static function composerTable(string $path): array
+    {
+        if (!is_file($path)) {
+            return [];
+        }
+        $roots = (new ParserFactory())->createForHostVersion()->parse((string) file_get_contents($path)) ?? [];
+        $variables = [];
+        $evaluator = null;
+        $evaluator = new ConstExprEvaluator(
+            static function (Node\Expr $expr) use (&$evaluator, &$variables, $path): string {
+                if ($expr instanceof Node\Scalar\MagicConst\Dir) {
+                    return \dirname($path);
+                }
+
+                if ($expr instanceof Node\Expr\Variable && is_string($expr->name) && isset($variables[$expr->name])) {
+                    return $variables[$expr->name];
+                }
+
+                if ($expr instanceof Node\Expr\FuncCall && $expr->name instanceof Node\Name && $expr->name->toLowerString() === 'dirname' && count($expr->args) === 1 && $expr->args[0] instanceof Node\Arg) {
+                    return \dirname((string) $evaluator->evaluateDirectly($expr->args[0]->value));
+                }
+
+                throw new ConstExprEvaluationException('Not part of a generated Composer table.');
+            },
+        );
+
+        try {
+            foreach ($roots as $statement) {
+                if ($statement instanceof Stmt\Expression && $statement->expr instanceof Node\Expr\Assign && $statement->expr->var instanceof Node\Expr\Variable && is_string($statement->expr->var->name)) {
+                    $variables[$statement->expr->var->name] = (string) $evaluator->evaluateDirectly($statement->expr->expr);
+                } elseif ($statement instanceof Stmt\Return_ && $statement->expr !== null) {
+                    $value = $evaluator->evaluateDirectly($statement->expr);
+
+                    return is_array($value) ? $value : [];
+                }
+            }
+        } catch (ConstExprEvaluationException) {
+            return [];
+        }
+
+        return [];
+    }
+
     private function autoloadFile(string $name): ?string
     {
         if ($this->autoload === null) {
@@ -347,15 +402,8 @@ final class ProjectIndex
                     $vendor = str_starts_with($directory, '/') ? $directory : $this->root . DIRECTORY_SEPARATOR . $directory;
                 }
             }
-            // Both files are generated arrays: `$vendorDir` and `$baseDir`, then `return array(…)`.
-            // Requiring them runs nothing else, which is not true of autoload.php.
-            $read = static function (string $path): array {
-                $value = is_file($path) ? require $path : [];
-
-                return is_array($value) ? $value : [];
-            };
-            $this->autoload['classmap'] = array_change_key_case($read($vendor . '/composer/autoload_classmap.php'));
-            $psr4 = $read($vendor . '/composer/autoload_psr4.php');
+            $this->autoload['classmap'] = array_change_key_case(self::composerTable($vendor . '/composer/autoload_classmap.php'));
+            $psr4 = self::composerTable($vendor . '/composer/autoload_psr4.php');
             uksort($psr4, static fn (string $a, string $b): int => strlen($b) <=> strlen($a));
             $this->autoload['psr4'] = $psr4;
         }
