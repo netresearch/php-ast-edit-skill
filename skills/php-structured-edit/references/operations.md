@@ -219,7 +219,16 @@ Shorthands over the primitives. They are ergonomics, not the coverage boundary.
   Every declaration and call site becomes a guarded `set_name` in one transaction, and the
   result carries `renames`: `method`, `declarations`, `references`, `files`, `hierarchy`,
   and `notRenamed` — mentions of the old name outside PHP, plus Fluid property reads
-  (`{item.label}` for `getLabel()`), which are listed and not changed. Refused before
+  (`{item.label}` for `getLabel()`), which are listed and not changed. PHP string literals
+  that read the old name — a PHPUnit `->method('old')`, a callable `[$x, 'old']` — are
+  listed under `literals`, one entry per file and declaration with its `select`, `lines`
+  and `refs` in the same order, and `literalsCount`; they are not changed, because which
+  class a string names is not known. A `replace_expression` on an entry (`target.select`
+  as listed, `match: "'old'"`, `php: "'new'"`) sets every literal of that entry — right
+  when all of them mean the method. Where some do not (a data provider's name, a backed
+  enum value), or where an entry has no `select` (a literal outside any declaration, or a
+  selector the file uses twice), `set_string` on the refs that do. `literalsUnread` names
+  PHP files the scan could not read or skipped above 1 MB. Refused before
   anything is written: a declaration of the method outside the project (a vendor base
   class, a PHP interface such as `JsonSerializable`), an ancestor found nowhere, a trait
   declaring the method, the new name taken anywhere in the hierarchy, and any call whose

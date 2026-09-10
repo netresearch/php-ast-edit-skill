@@ -19,6 +19,7 @@ use PhpParser\ParserFactory;
 
 const BASE_FILE = 'src/Base.php';
 const USE_FILE = 'src/Use1.php';
+const CALLABLES_FILE = 'config/callables.php';
 
 $failures = [];
 $count = 0;
@@ -400,6 +401,109 @@ try {
             projectAssert(
                 ($result['renames'][0]['notRenamed'] ?? []) === ['Resources/Private/Templates/List.html:2'],
                 json_encode($result['renames'][0]['notRenamed'] ?? null),
+            );
+        },
+    );
+
+    projectCase(
+        'string literals that read the old name are listed by scope, and the listed edits set them',
+        function () use ($hierarchy): void {
+            $root = projectFixture(
+                'literals',
+                [
+                    ...$hierarchy,
+                    'tests/FetchTest.php' => "<?php\nnamespace App\\Tests;\nfinal class FetchTest\n{\n    public function testIt(object \$mock, object \$c): array\n    {\n        \$mock->method('fetch');\n\n        return [[\$c, 'fetch'], 'fetcher', 'Fetch'];\n    }\n}\n",
+                    CALLABLES_FILE => "<?php\nreturn ['fetch'];\n",
+                    'tests/Twin.php' => "<?php\nnamespace A {\nfinal class Twin\n{\n    public const M = 'fetch';\n}\n}\nnamespace B {\nfinal class Twin\n{\n    public const M = 'fetch';\n}\n}\n",
+                ],
+            );
+            $result = projectRename($root, BASE_FILE, 'method:Base::fetch', 'load', new CallsByName());
+            $rename = $result['renames'][0] ?? [];
+            projectAssert(
+                ($rename['literals'] ?? null) == [
+                    [
+                        'file' => CALLABLES_FILE,
+                        'refs' => ['stmts[0].expr.items[0].value'],
+                        'lines' => [2],
+                    ],
+                    [
+                        'file' => 'tests/FetchTest.php',
+                        'select' => 'class:FetchTest',
+                        'lines' => [7, 9],
+                        'refs' => [
+                            'stmts[0].stmts[0].stmts[0].stmts[0].expr.args[0].value',
+                            'stmts[0].stmts[0].stmts[0].stmts[1].expr.items[0].value.items[1].value',
+                        ],
+                    ],
+                    [
+                        'file' => 'tests/Twin.php',
+                        'refs' => [
+                            'stmts[0].stmts[0].stmts[0].consts[0].value',
+                            'stmts[1].stmts[0].stmts[0].consts[0].value',
+                        ],
+                        'lines' => [5, 11],
+                    ],
+                ] && ($rename['literalsCount'] ?? null) === 5,
+                json_encode($rename),
+            );
+            projectAssert(
+                str_contains(
+                    (string) ($rename['literalsMeans'] ?? ''),
+                    "match \"'fetch'\", php \"'load'\"",
+                ),
+                (string) ($rename['literalsMeans'] ?? 'no literalsMeans'),
+            );
+            (new Editor(null))->apply(
+                [
+                    'files' => [
+                        [
+                            'path' => $root . '/tests/FetchTest.php',
+                            'edits' => [
+                                [
+                                    'target' => ['select' => $rename['literals'][1]['select']],
+                                    'operation' => 'replace_expression',
+                                    'match' => "'fetch'",
+                                    'php' => "'load'",
+                                ],
+                            ],
+                        ],
+                        [
+                            // One of two: a ref sets a literal alone, where the scope would set both.
+                            'path' => $root . '/tests/Twin.php',
+                            'edits' => [
+                                [
+                                    'target' => ['ref' => $rename['literals'][2]['refs'][0]],
+                                    'operation' => 'set_string',
+                                    'value' => 'load',
+                                ],
+                            ],
+                        ],
+                        [
+                            'path' => $root . '/' . CALLABLES_FILE,
+                            'edits' => [
+                                [
+                                    'target' => ['ref' => $rename['literals'][0]['refs'][0]],
+                                    'operation' => 'set_string',
+                                    'value' => 'load',
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            );
+            $test = (string) file_get_contents($root . '/tests/FetchTest.php');
+            projectAssert(
+                substr_count($test, "'load'") === 2 && str_contains($test, "'fetcher', 'Fetch'") && !str_contains($test, "'fetch'"),
+                $test,
+            );
+            $twin = (string) file_get_contents($root . '/tests/Twin.php');
+            projectAssert(
+                strpos($twin, "'load'") < strpos($twin, "'fetch'") && substr_count($twin, "'fetch'") === 1,
+                $twin,
+            );
+            projectAssert(
+                (string) file_get_contents($root . '/' . CALLABLES_FILE) === "<?php\nreturn ['load'];\n",
+                (string) file_get_contents($root . '/' . CALLABLES_FILE),
             );
         },
     );

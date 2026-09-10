@@ -6,7 +6,9 @@ namespace Netresearch\PhpAstEdit;
 
 use Netresearch\PhpAstEdit\Exception\EditException;
 use PhpParser\Node\Expr;
+use PhpParser\Node\Scalar\String_;
 use PhpParser\Node\Stmt;
+use PhpParser\NodeTraverser;
 
 /**
  * A method rename the file alone cannot decide: every declaration and call site across the
@@ -24,9 +26,10 @@ use PhpParser\Node\Stmt;
  * - the new name already taken anywhere in the hierarchy;
  * - a call Phpactor could not attribute to a class (`risky`), which may be one of ours.
  *
- * Mentions of the old name outside PHP — Services.yaml, TCA, TypoScript, Fluid property
- * access — are not renamed and not refused; they are listed, because only a person or a
- * model reading them can say whether they meant this method.
+ * Mentions of the old name outside PHP — Services.yaml, TypoScript, Fluid property access —
+ * and PHP string literals that read it — a PHPUnit `->method('fetch')`, a callable — are not
+ * renamed and not refused; they are listed, because only a person or a model reading them
+ * can say whether they meant this method.
  */
 final class ProjectRename
 {
@@ -208,9 +211,29 @@ final class ProjectRename
                 'resolver' => $resolver,
                 'notRenamed' => $mentions,
                 'notRenamedCount' => $total,
-                'notRenamedMeans' => 'Mentions of the old name outside PHP — configuration, TCA, TypoScript, Fluid templates. They were not changed; each needs reading.',
+                'notRenamedMeans' => 'Mentions of the old name outside PHP — configuration, TypoScript, Fluid templates. They were not changed; each needs reading.',
                 'ancestorsSeen' => $hierarchy,
+                ...$this->literalReport($index, $from, $to),
             ],
+        ];
+    }
+
+    /** @return array<string, mixed> the `literals` fields of the report, empty when there are none */
+    private function literalReport(ProjectIndex $index, string $from, string $to): array
+    {
+        [$literals, $count, $unread] = $this->literals($index, $from);
+
+        return [
+            ...$literals === [] ? [] : [
+                'literals' => $literals,
+                'literalsCount' => $count,
+                'literalsMeans' => sprintf(
+                    "PHP string literals that read %1\$s, such as a PHPUnit ->method('%1\$s') or a callable. Not changed: which class each one names is not known here, and another class may have a method of that name. Where every literal of an entry means this method, a replace_expression on it — target.select as listed, match \"'%1\$s'\", php \"'%2\$s'\" — sets all of them; otherwise, or where an entry has no select, set_string on the refs that do (lines and refs are in the same order).",
+                    $from,
+                    $to,
+                ),
+            ],
+            ...$unread === [] ? [] : ['literalsUnread' => $unread],
         ];
     }
 
@@ -471,5 +494,70 @@ final class ProjectRename
         }
 
         return [$listed, $total];
+    }
+
+    /**
+     * PHP string literals that read the old name: `->method('fetch')` in a PHPUnit mock, a
+     * callable `[$service, 'fetch']`, `method_exists($x, 'fetch')`. Which class each one
+     * names takes dataflow the engine does not have, and a vendor class may declare a method
+     * of the same name, so none is changed. They are grouped by the declaration that holds
+     * them, because that is the scope one `replace_expression` with `match` can name to set
+     * every one of them; each also comes with its ref, so `set_string` can set only some —
+     * a data provider's name or a backed enum value that happens to read the same is not
+     * the method.
+     *
+     * Measured on a TYPO3 extension: renaming a service getter left 67 mock literals in nine
+     * test files, and 174 of its 682 unit tests failed until they were changed as well.
+     *
+     * @return array{0: list<array<string, mixed>>, 1: int, 2: list<string>}
+     */
+    private function literals(ProjectIndex $index, string $from): array
+    {
+        $groups = [];
+        $total = 0;
+        $unread = [];
+
+        foreach ($index->phpFiles() as $file) {
+            $relative = substr($file, strlen($index->root) + 1);
+            $content = filesize($file) > 1000000 ? false : file_get_contents($file);
+
+            if ($content === false) {
+                $unread[] = $relative;
+
+                continue;
+            }
+
+            if (!str_contains($content, $from)) {
+                continue;
+            }
+
+            // Every project file already parsed when the index was built, or the rename was
+            // refused; a parse error cannot reach this point.
+            [, $roots] = ($this->parse)($file);
+            $visitor = new NameLiterals($from);
+            (new NodeTraverser($visitor))->traverse($roots);
+
+            $found = $visitor->found();
+            $total += count($found);
+            $this->group($groups, $relative, $found, $roots);
+        }
+        ksort($groups);
+
+        return [array_values($groups), $total, $unread];
+    }
+
+    /**
+     * @param array<string, array<string, mixed>> $groups
+     * @param list<array{0: ?string, 1: String_}> $found
+     * @param list<Stmt> $roots
+     */
+    private function group(array &$groups, string $relative, array $found, array $roots): void
+    {
+        foreach ($found as [$select, $node]) {
+            $key = $relative . "\x00" . $select;
+            $groups[$key] ??= ['file' => $relative] + ($select === null ? [] : ['select' => $select]) + ['lines' => [], 'refs' => []];
+            $groups[$key]['lines'][] = $node->getStartLine();
+            $groups[$key]['refs'][] = $this->locator->locate($roots, $node->getStartFilePos(), 'Scalar_String')->path;
+        }
     }
 }
