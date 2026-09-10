@@ -29,16 +29,16 @@ final class RenameMethod
         }
         $from = $method->name->toString();
         $owner = $location->parent;
+        $refusal = self::projectWideBecause($method, $owner);
 
-        if (!$owner instanceof Stmt\Class_ || $owner->extends !== null || $owner->implements !== []) {
+        if ($refusal !== null || !$owner instanceof Stmt\Class_) {
+            // Reached only when the edit did not name its target by selector: with one, the
+            // engine resolves this case across the project before the file is touched.
             throw new EditException(
-                'rename_method requires a concrete class without inheritance, interfaces or trait composition; resolve those contracts explicitly.',
-            );
-        }
-
-        if ($method->isAbstract() || !$method->isPrivate() && !$owner->isFinal()) {
-            throw new EditException(
-                'rename_method requires a private method or a final class; inherited overrides cannot be resolved within this edit.',
+                sprintf(
+                    'rename_method cannot decide this from one file: %s. Target the method as method:Class::name and the engine resolves every call site across the project.',
+                    $refusal ?? 'the method has no class',
+                ),
             );
         }
 
@@ -47,10 +47,6 @@ final class RenameMethod
         }
 
         foreach ($owner->stmts as $member) {
-            if ($member instanceof Stmt\TraitUse) {
-                throw new EditException('rename_method cannot resolve trait composition or aliases.');
-            }
-
             if ($member instanceof Stmt\ClassMethod && $member !== $method && strcasecmp($member->name->toString(), $to) === 0) {
                 throw new EditException(
                     'rename_method: destination method ' . $to . ' already exists in this class.',
@@ -79,6 +75,42 @@ final class RenameMethod
         }
 
         return ['renamed' => 1 + count($calls), 'otherReceivers' => $others];
+    }
+
+    /**
+     * Why one file cannot decide this rename, or null when it can.
+     *
+     * One file decides it for a private method, or for any method of a final class, as long
+     * as the class has no parent, interface or trait to share the name with. The reason is
+     * phrased for the caller: it ends up in the refusal when no resolver is set up.
+     */
+    public static function projectWideBecause(
+        Stmt\ClassMethod $method,
+        ?\PhpParser\Node $owner,
+    ): ?string {
+        if (!$owner instanceof Stmt\Class_) {
+            return 'it is declared in an interface, trait or enum';
+        }
+
+        if ($owner->extends !== null || $owner->implements !== []) {
+            return 'its class extends or implements another type';
+        }
+
+        foreach ($owner->stmts as $member) {
+            if ($member instanceof Stmt\TraitUse) {
+                return 'its class uses a trait';
+            }
+        }
+
+        if ($method->isAbstract()) {
+            return 'it is abstract';
+        }
+
+        if (!$method->isPrivate() && !$owner->isFinal()) {
+            return 'it is ' . ($method->isProtected() ? 'protected' : 'public') . ' in a class that can be extended';
+        }
+
+        return null;
     }
 
     /** @param array<int, Expr\MethodCall|Expr\NullsafeMethodCall|Expr\StaticCall> $calls */

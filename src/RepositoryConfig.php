@@ -39,6 +39,8 @@ final class RepositoryConfig
         public readonly ?array $formatter = null,
         /** @var list<list<string>|array{scope: string, command: list<string>}>|null */
         public readonly ?array $verify = null,
+        /** Path to phpactor.phar, relative to this file or absolute; see PhpactorReferenceFinder. */
+        public readonly ?string $phpactor = null,
     ) {}
 
     /** Walk up from a file or directory until the marker turns up. */
@@ -102,6 +104,11 @@ final class RepositoryConfig
         }
 
         $verify = self::verificationFromJson($raw, $path);
+        $phpactor = $data['phpactor'] ?? null;
+
+        if ($phpactor !== null && (!is_string($phpactor) || $phpactor === '')) {
+            throw new EditException($path . ': phpactor must be the path to phpactor.phar.');
+        }
 
         return new self(
             (bool) ($data['canonical'] ?? false),
@@ -110,6 +117,7 @@ final class RepositoryConfig
             array_values(array_map(strval(...), $exclude)),
             $formatter,
             $verify,
+            $phpactor,
         );
     }
 

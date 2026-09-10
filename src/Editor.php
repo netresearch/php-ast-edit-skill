@@ -42,7 +42,11 @@ final class Editor
 {
     private readonly NodeLocator $locator;
 
-    public function __construct()
+    /** @var list<array<string, mixed>> what each project-wide rename in this apply resolved */
+    private array $projectRenames = [];
+
+    /** @param ?ReferenceFinder $finder null: Phpactor, where the repository points at one */
+    public function __construct(private readonly ?ReferenceFinder $finder = null)
     {
         $this->locator = new NodeLocator();
     }
@@ -104,7 +108,8 @@ final class Editor
             throw new EditException(self::SHAPE_REQUIRED);
         }
         $dryRun = $forceDryRun || (bool) ($document['dryRun'] ?? false);
-        $transactions = $this->prepareAll($files);
+        $this->projectRenames = [];
+        $transactions = $this->prepareAll($this->expandProjectRenames($files));
 
         foreach ($transactions as $transaction) {
             $this->mutate($transaction);
@@ -134,6 +139,10 @@ final class Editor
 
         if ($alreadyRun !== null) {
             $result['alreadyRun'] = $alreadyRun;
+        }
+
+        if ($this->projectRenames !== []) {
+            $result['renames'] = $this->projectRenames;
         }
 
         if ($compact) {
@@ -173,6 +182,117 @@ final class Editor
             'Passed over the whole project on the files as written: %s. With no file, dependency or check tool changed since, running it again by hand repeats this result.',
             implode('; ', array_keys($commands)),
         );
+    }
+
+    /**
+     * Every rename_method one file cannot decide, turned into the project-wide edits that
+     * carry it.
+     *
+     * Done before any file is prepared, so what follows is an ordinary transaction: each
+     * touched file carries the hash its sites were computed against, and the stale-source
+     * guard, the duplicate check and verification treat it like any other multi-file apply.
+     * A file the caller already edits keeps its own entry, with the rename's edits first:
+     * they were located on the file as it is on disk.
+     *
+     * @param  array<mixed> $files
+     * @return array<mixed>
+     */
+    private function expandProjectRenames(array $files): array
+    {
+        $extra = [];
+
+        foreach ($files as $i => $spec) {
+            if (!is_array($spec) || !is_string($spec['path'] ?? null) || !is_array($spec['edits'] ?? null) || ($spec['mode'] ?? 'edit') !== 'edit') {
+                continue;
+            }
+            $edits = [];
+            $here = $this->canonicalPath($spec['path']);
+
+            foreach ($spec['edits'] as $edit) {
+                $plan = is_array($edit) ? $this->projectRename($spec['path'], $this->acceptSynonyms($edit)) : null;
+
+                if ($plan === null) {
+                    $edits[] = $edit;
+
+                    continue;
+                }
+
+                foreach ($plan['files'] as $file => $entry) {
+                    $key = $this->canonicalPath($file);
+
+                    if ($key === $here) {
+                        array_push($edits, ...$entry['edits']);
+
+                        continue;
+                    }
+                    $extra[$key] ??= ['path' => $file, 'sha256' => $entry['sha256'], 'edits' => []];
+                    array_push($extra[$key]['edits'], ...$entry['edits']);
+                }
+                $this->projectRenames[] = $plan['report'];
+            }
+            $files[$i]['edits'] = $edits;
+        }
+
+        foreach ($files as $i => $spec) {
+            $key = is_array($spec) && is_string($spec['path'] ?? null) ? $this->canonicalPath($spec['path']) : null;
+
+            if ($key === null || !isset($extra[$key])) {
+                continue;
+            }
+
+            if (($spec['mode'] ?? 'edit') !== 'edit') {
+                throw new EditException(
+                    sprintf(
+                        'rename_method has call sites in %s, which this transaction %s.',
+                        $spec['path'],
+                        $spec['mode'] === 'delete' ? 'deletes' : 'creates',
+                    ),
+                );
+            }
+            $files[$i]['edits'] = [...$extra[$key]['edits'], ...is_array($spec['edits'] ?? null) ? $spec['edits'] : []];
+            unset($extra[$key]);
+        }
+
+        return [...$files, ...array_values($extra)];
+    }
+
+    /**
+     * The project-wide plan for one rename_method edit, or null when the file decides it.
+     *
+     * @param array<string, mixed> $edit
+     * @return array{files: array<string, array{sha256: string, edits: list<array<string, mixed>>}>, report: array<string, mixed>}|null
+     */
+    private function projectRename(string $path, array $edit): ?array
+    {
+        $target = $edit['target'] ?? null;
+
+        if (($edit['operation'] ?? null) !== 'rename_method' || !is_string($edit['to'] ?? null) || !is_array($target) || !is_string($target['select'] ?? null)) {
+            return null;
+        }
+        [, , $roots] = $this->parseFile($path, null);
+        $location = $this->locator->resolveSelect($roots, $target['select']);
+
+        if (!$location->node instanceof Stmt\ClassMethod) {
+            return null;
+        }
+        $reason = RenameMethod::projectWideBecause($location->node, $location->parent);
+
+        if ($reason === null) {
+            return null;
+        }
+        $finder = $this->finder;
+
+        if ($finder === null) {
+            $phar = PhpactorReferenceFinder::locate(RepositoryConfig::discover($path));
+            $finder = $phar === null ? null : new PhpactorReferenceFinder($phar);
+        }
+        $parse = function (string $file): array {
+            [$source, , $fileRoots] = $this->parseFile($file, null);
+
+            return [$source, $fileRoots];
+        };
+
+        return (new ProjectRename($finder, $parse))->plan($path, $roots, $location, $edit['to'], $reason);
     }
 
     /**
@@ -291,6 +411,7 @@ final class Editor
             'checksFailed' => $failed,
             'verifications' => $verifications,
             ...$this->alreadyRun() === null ? [] : ['alreadyRun' => $this->alreadyRun()],
+            ...$this->projectRenames === [] ? [] : ['renames' => $this->projectRenames],
             // What this response does NOT establish about reuse. The engine knows the
             // command, the directory, the files and their bytes; it cannot see the check
             // tool's version, the dependency tree it resolved, or anything else in the

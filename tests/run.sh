@@ -36,6 +36,10 @@ echo "::group::tests/scoped-replace.php (replace by what the code says, inside a
 php tests/scoped-replace.php || fail=1
 echo "::endgroup::"
 
+echo "::group::tests/project-rename.php (rename_method across a project: hierarchy, resolver, refusals)"
+php tests/project-rename.php || fail=1
+echo "::endgroup::"
+
 echo "::group::tests/renames.php (binding collisions and method dispatch)"
 php tests/renames.php || fail=1
 echo "::endgroup::"

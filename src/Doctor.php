@@ -134,9 +134,24 @@ final class Doctor
             $findings[] = 'No verify commands declared in ' . RepositoryConfig::FILE . '. This repository carries a static analyser, so an agent editing it will run one — as a separate call, after the write, deciding for itself that it was needed. Declared, it runs inside `apply` on the files that changed and the result carries checksPassed: "verify": [' . json_encode($suggestedVerify, JSON_UNESCAPED_SLASHES) . '].';
         }
 
+        // Reported beside the findings rather than among them: `status` answers whether the
+        // repository is ready for canonical editing, and a missing resolver does not change
+        // that. It changes which renames the engine can decide.
+        $phar = PhpactorReferenceFinder::locate($config);
+        $resolver = match (true) {
+            $phar === null => 'missing',
+            is_file($phar) && hash_file('sha256', $phar) === PhpactorReferenceFinder::SHA256 => 'ready',
+            default => 'wrong_release',
+        };
+
         return [
             'root' => $root,
             'status' => $findings === [] ? 'ready' : 'warn',
+            'resolver' => [
+                'phpactor' => $phar,
+                'status' => $resolver,
+                'advice' => $this->resolverAdvice($resolver, $phar),
+            ],
             'declaredWidth' => $declaredWidth['width'],
             'widthSource' => $declaredWidth['source'],
             'missingRules' => $missingRules,
@@ -151,6 +166,21 @@ final class Doctor
             'editorconfig' => $editorconfig,
             'findings' => $findings,
         ];
+    }
+
+    private function resolverAdvice(string $status, ?string $phar): ?string
+    {
+        if ($status === 'ready') {
+            return null;
+        }
+        $state = $status === 'missing' ? 'not set up here' : 'not the pinned release at ' . $phar;
+
+        return sprintf(
+            'rename_method on a public, protected or inherited method resolves its call sites across the project through Phpactor %s, which is %s. %s',
+            PhpactorReferenceFinder::RELEASE,
+            $state,
+            PhpactorReferenceFinder::installHint(),
+        );
     }
 
     /**
