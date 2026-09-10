@@ -89,6 +89,21 @@ that integration does not stop the repeat run. That subject declares its check w
 changed-files check saw the edited files and not the project. Those eight sessions were
 never told the project check had run.
 
+## Reproducing this
+
+[evidence.tar.gz](evidence.tar.gz) holds all four campaigns' schedules, configurations,
+frozen digests and per-run evidence — argv, prompts, the native transcript, the engine
+audit, the diff and the oracle. It summarizes itself wherever it is unpacked:
+
+```bash
+sha256sum -c SHA256SUMS
+mkdir evidence && tar -C evidence -xzf evidence.tar.gz
+python3 ../../efficiency/check_arms.py evidence/{pilot-2,b,c,d}
+```
+
+The `summary` that prints is the one in [runs.json](runs.json), and every figure above
+was recomputed from it rather than copied from the prose.
+
 ## Provenance
 
 All four campaigns froze the same tree: source commit `2a7616a`, `SKILL.md`

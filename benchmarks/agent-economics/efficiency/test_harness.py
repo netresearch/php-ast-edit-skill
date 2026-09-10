@@ -10,6 +10,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
+import check_arms
 import native
 import runner
 
@@ -276,6 +277,37 @@ class ScheduleSelectionTests(unittest.TestCase):
         for keys in [("gpt",), ("haiku", "haiku"), ()]:
             with self.subTest(keys=keys), self.assertRaises(ValueError):
                 runner.balanced_order(["fixture"], seed=1, model_keys=keys)
+
+
+class EvidenceRelocationTests(unittest.TestCase):
+    """An unpacked evidence archive must summarize, and a missing one must not."""
+
+    def campaign(self):
+        base = Path(tempfile.mkdtemp(prefix="php-ast-relocated-"))
+        self.addCleanup(lambda: shutil.rmtree(base, ignore_errors=True))
+        (base / "runs/run001/evidence").mkdir(parents=True)
+        return base
+
+    def test_evidence_is_found_where_the_archive_put_it(self):
+        base = self.campaign()
+        row = {"run_id": "run001", "evidence": "/nonexistent/runs/run001/evidence"}
+        self.assertEqual(
+            check_arms.resolve_evidence(base, row),
+            base / "runs/run001/evidence",
+        )
+
+    def test_the_recorded_path_wins_when_it_is_still_there(self):
+        base = self.campaign()
+        original = Path(tempfile.mkdtemp(prefix="php-ast-original-"))
+        self.addCleanup(lambda: shutil.rmtree(original, ignore_errors=True))
+        row = {"run_id": "run001", "evidence": str(original)}
+        self.assertEqual(check_arms.resolve_evidence(base, row), original)
+
+    def test_absent_evidence_is_raised_rather_than_counted_as_an_empty_campaign(self):
+        base = self.campaign()
+        row = {"run_id": "run002", "evidence": "/nonexistent/runs/run002/evidence"}
+        with self.assertRaises(FileNotFoundError):
+            check_arms.resolve_evidence(base, row)
 
 
 class CheckArmTests(unittest.TestCase):

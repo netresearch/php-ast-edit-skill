@@ -84,6 +84,25 @@ def classify(commands):
     return len(ran), bool(after)
 
 
+def resolve_evidence(base, row):
+    """Where this run's evidence is now, which is not always where it was written.
+
+    The schedule records the absolute path the campaign ran at. An unpacked evidence
+    archive sits somewhere else, so fall back to the layout the runner creates. Falling
+    back silently to a directory that is not there would report a campaign as empty, so
+    the missing path is raised rather than skipped.
+    """
+    recorded = Path(row["evidence"])
+    if recorded.is_dir():
+        return recorded
+    relocated = base / "runs" / row["run_id"] / "evidence"
+    if relocated.is_dir():
+        return relocated
+    raise FileNotFoundError(
+        f"{row['run_id']}: no evidence at {recorded} or {relocated}"
+    )
+
+
 def rows(campaigns):
     collected = []
     for campaign in campaigns:
@@ -92,7 +111,7 @@ def rows(campaigns):
         for row in load(base / "schedule.json"):
             if row["variant"] not in ARMS:
                 continue
-            evidence = Path(row["evidence"])
+            evidence = resolve_evidence(base, row)
             measurement = load(evidence / "measurement.json")
             applies, already = engine_calls(evidence / "engine-audit.jsonl")
             total, after = classify(bash_commands(evidence / "raw.jsonl"))
