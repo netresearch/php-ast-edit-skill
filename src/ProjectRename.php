@@ -182,7 +182,8 @@ final class ProjectRename
 
             foreach ($ranges as $range) {
                 $site = $this->site($fileRoots, $source, $range, $from, $file);
-                $site->parent instanceof Stmt\ClassMethod ? ++$declarations : ++$references;
+                $declaration = $site->parent instanceof Stmt\ClassMethod;
+                $declaration ? ++$declarations : ++$references;
                 $edits[] = [
                     'operation' => 'set_name',
                     'target' => ['ref' => $site->path, 'kind' => 'Identifier'],
@@ -191,6 +192,8 @@ final class ProjectRename
                         'type' => 'Identifier',
                     ],
                     'value' => $to,
+                    // Its callers are edits of their own in this transaction.
+                    ...$declaration ? ['declarationOnly' => true] : [],
                 ];
             }
             $files[$file] = ['sha256' => hash('sha256', $source), 'edits' => $edits];

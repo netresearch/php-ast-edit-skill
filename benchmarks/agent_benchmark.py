@@ -695,6 +695,7 @@ def self_test(binary):
                                         },
                                         "operation": "set_name",
                                         "value": "renamed",
+                                        "declarationOnly": True,
                                     }
                                 ],
                             }

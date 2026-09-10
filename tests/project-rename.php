@@ -181,6 +181,10 @@ try {
                 );
             }
             projectAssert(
+                !isset($result['open']),
+                'open without literals: ' . json_encode($result['open'] ?? null),
+            );
+            projectAssert(
                 ($rename['notRenamed'] ?? []) === ['config/Services.yaml:4'],
                 'yaml mention not listed: ' . json_encode($rename['notRenamed'] ?? null),
             );
@@ -447,11 +451,63 @@ try {
                 json_encode($rename),
             );
             projectAssert(
+                array_key_first($result) === 'open' && str_contains(
+                    (string) $result['open'],
+                    '5 string literal(s) in 3 file(s) still read fetch (renames[0].literals)',
+                ),
+                json_encode($result['open'] ?? null),
+            );
+            projectAssert(
                 str_contains(
                     (string) ($rename['literalsMeans'] ?? ''),
                     "match \"'fetch'\", php \"'load'\"",
                 ),
                 (string) ($rename['literalsMeans'] ?? 'no literalsMeans'),
+            );
+            // Literals set in the same apply are not open any more.
+            $together = projectFixture(
+                'literals-together',
+                [
+                    ...$hierarchy,
+                    'tests/FetchTest.php' => (string) file_get_contents($root . '/tests/FetchTest.php'),
+                    'config/callables.php' => "<?php\nreturn ['fetch'];\n",
+                    'tests/Twin.php' => (string) file_get_contents($root . '/tests/Twin.php'),
+                ],
+            );
+            $both = (new Editor(new CallsByName()))->apply(
+                [
+                    'report' => 'compact',
+                    'files' => [
+                        [
+                            'path' => $together . '/' . BASE_FILE,
+                            'edits' => [
+                                [
+                                    'target' => ['select' => 'method:Base::fetch'],
+                                    'operation' => 'rename_method',
+                                    'to' => 'load',
+                                ],
+                            ],
+                        ],
+                        [
+                            'path' => $together . '/tests/FetchTest.php',
+                            'edits' => [
+                                [
+                                    'target' => ['select' => 'class:FetchTest'],
+                                    'operation' => 'replace_expression',
+                                    'match' => "'fetch'",
+                                    'php' => "'load'",
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            );
+            projectAssert(
+                str_contains(
+                    (string) ($both['open'] ?? ''),
+                    '3 string literal(s) in 2 file(s) still read fetch',
+                ),
+                json_encode($both['open'] ?? null),
             );
             (new Editor(null))->apply(
                 [
