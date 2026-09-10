@@ -92,8 +92,10 @@ def resolve_evidence(base, row):
     back silently to a directory that is not there would report a campaign as empty, so
     the missing path is raised rather than skipped.
     """
+    # The schedule's own recorded path, and the campaign the operator named; both are
+    # local evidence locations, not request input. See benchmarks/TRUST.md.
     recorded = Path(row["evidence"])
-    if recorded.is_dir():
+    if recorded.is_dir():  # NOSONAR(S6549)
         return recorded
     relocated = base / "runs" / row["run_id"] / "evidence"
     if relocated.is_dir():

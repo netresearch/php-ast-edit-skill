@@ -84,6 +84,27 @@ def prepare(task, work, state, binary):
     return {"prompt": task["prompt"], "workspace": str(work), "files": list(baseline)}
 
 
+def fixture_scope(state, files):
+    """The names the workspace should hold, and whether the fixture's own files survived.
+
+    Files the fixture put there — a declared project check and its configuration — are
+    not the task, so they do not belong in `baseline`, which lint, `output_hashes` and
+    the cross-arm identity check all iterate. The scope check must expect them rather
+    than read them as something the candidate left behind.
+
+    Their bytes are pinned, which is why this is a digest and not a name list: a
+    candidate asked to make the declared check pass can make it pass by rewriting it.
+
+    @return tuple[list[str], bool]
+    """
+    fixture = state.get("fixture", {})
+    intact = all(
+        name in files and digest(files[name]) == checksum
+        for name, checksum in fixture.items()
+    )
+    return sorted({**state["baseline"], **fixture}), intact
+
+
 def grade(task, work, state):
     state = load(state)
     if state["task_id"] != task["id"] or state["task_manifest_sha256"] != digest(TASKS):
@@ -102,21 +123,8 @@ def grade(task, work, state):
         and path.is_file()
         and path.resolve().is_relative_to(work)
     }
-    # Files the fixture itself put in the workspace — a declared project check and its
-    # configuration. They are not the task, so they do not belong in `baseline`, and the
-    # scope check must expect them rather than read them as something the candidate left
-    # behind. Their bytes are pinned: a candidate that rewrites the check it is asked to
-    # satisfy fails scope, which is the only reason this is a digest and not a name list.
-    fixture = state.get("fixture", {})
-    fixture_intact = all(
-        name in files and digest(files[name]) == checksum
-        for name, checksum in fixture.items()
-    )
-    same_scope = (
-        not has_symlinks
-        and sorted(files) == sorted({**state["baseline"], **fixture})
-        and fixture_intact
-    )
+    expected, fixture_intact = fixture_scope(state, files)
+    same_scope = not has_symlinks and sorted(files) == expected and fixture_intact
     lint = {
         name: invoke(["php", "-l", name], work).returncode == 0 if same_scope else None
         for name in state["baseline"]
