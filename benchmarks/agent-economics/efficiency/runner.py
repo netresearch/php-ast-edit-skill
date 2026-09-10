@@ -1,4 +1,4 @@
-"""Prepare and run the bounded four-arm experiment; prepare/validate call no models."""
+"""Prepare and run the bounded arm experiment; prepare/validate call no models."""
 
 import argparse
 import fcntl
@@ -31,7 +31,54 @@ INITIAL_HASHES = "initial-hashes.json"
 STATE = "state.json"
 BASELINE_COMMIT = "baseline-commit.txt"
 TASK_MANIFEST = "controller/benchmarks/tasks.json"
-ARMS = ("contextual_patch", "full_skill", "compact_full", "compact_focused")
+ARMS = (
+    "contextual_patch",
+    "full_skill",
+    "compact_full",
+    "compact_focused",
+    "check_manual",
+    "check_integrated",
+)
+# The two arms that carry a project check. Both get `check.php` and the same task clause;
+# only `check_integrated` declares the check to the engine, so the one variable between
+# them is whether `apply` runs it and reports the verdict.
+CHECK_ARMS = ("check_manual", "check_integrated")
+CHECK_SCRIPT = "check.php"
+CHECK_COMMAND = ["php", CHECK_SCRIPT]
+CHECK_CLAUSE = "Make sure `php check.php` still passes."
+CHECK_CONFIG = {"verify": [{"scope": "project", "command": CHECK_COMMAND}]}
+# Parses every PHP file in the tree in-process: TOKEN_PARSE makes token_get_all raise on
+# a syntax error. Deliberately cheap — it exists so a fixture can declare a project-scoped
+# check at all, and is not a stand-in for a real static analyser's cost.
+CHECK_SOURCE = """<?php
+
+declare(strict_types=1);
+
+$failures = [];
+$tree = new RecursiveIteratorIterator(
+    new RecursiveDirectoryIterator(__DIR__, FilesystemIterator::SKIP_DOTS),
+);
+
+foreach ($tree as $file) {
+    if ($file->getExtension() !== 'php' || $file->getPathname() === __FILE__) {
+        continue;
+    }
+
+    try {
+        token_get_all((string) file_get_contents($file->getPathname()), TOKEN_PARSE);
+    } catch (ParseError $error) {
+        $failures[] = $file->getPathname() . ': ' . $error->getMessage();
+    }
+}
+
+if ($failures !== []) {
+    echo implode("\\n", $failures), "\\n";
+
+    exit(1);
+}
+
+echo "OK: every PHP file parses\\n";
+"""
 MODELS = {
     "sonnet": {"id": "claude-sonnet-4-6", "effort": "medium"},
     "haiku": {"id": "claude-haiku-4-5-20251001", "effort": None},
@@ -199,20 +246,31 @@ def variants(base):
         "full_skill": full,
         "compact_full": COMPACT.replace("MODE", "full"),
         "compact_focused": COMPACT.replace("MODE", "focused"),
+        # Identical text in both check arms: nothing in an instruction may name the
+        # declared check, or the measurement would be of the wording rather than of
+        # what `apply` reports.
+        "check_manual": full,
+        "check_integrated": full,
     }
 
 
-def balanced_order(task_ids, seed, arms=ARMS):
+def balanced_order(task_ids, seed, arms=ARMS, model_keys=tuple(MODELS)):
     require(
         arms and len(arms) == len(set(arms)) and set(arms) <= set(ARMS),
         "Invalid or duplicate arms",
+    )
+    require(
+        model_keys
+        and len(model_keys) == len(set(model_keys))
+        and set(model_keys) <= set(MODELS),
+        "Invalid or duplicate model keys",
     )
     # A fixed seed orders samples reproducibly; it makes no security decisions.
     rng = random.Random(seed)
     blocks = [
         (task, model, repeat)
         for task in task_ids
-        for model in MODELS
+        for model in model_keys
         for repeat in range(1, 4)
     ]
     rng.shuffle(blocks)  # NOSONAR(S2245)
@@ -282,18 +340,45 @@ def make_templates(base, task_ids, tasks):
     return templates
 
 
+def check_fixture(work, variant):
+    """The project check both check arms carry, declared to the engine in one of them.
+
+    `check.php` is written for both, so the arms differ by the declaration alone. The task
+    clause asks for the same command in both, and neither instruction text mentions that
+    `apply` can run it: what the integrated arm's model learns, it learns from the report.
+
+    Returns the paths to add to the fixture commit, so an untracked file cannot turn up in
+    `diff.patch` or `git-status.txt` and read as something the model left behind.
+    """
+    if variant not in CHECK_ARMS:
+        return []
+    (work / CHECK_SCRIPT).write_text(CHECK_SOURCE)
+    added = [CHECK_SCRIPT]
+
+    if variant == "check_integrated":
+        save(work / ".php-ast-edit.json", CHECK_CONFIG)
+        added.append(".php-ast-edit.json")
+
+    return added
+
+
 def prepare_fixture(base, row, template, instructions):
     folder = base / "runs" / row["run_id"]
     work, evidence = folder / "work", folder / "evidence"
     evidence.mkdir(parents=True)
     shutil.copytree(Path(template["workspace"]), work)
+    extra = check_fixture(work, row["variant"])
     initial = load(base / "templates" / row["task_id"] / STATE)
-    state = {**initial, "work": str(work)}
+    state = {
+        **initial,
+        "work": str(work),
+        "fixture": {name: digest(work / name) for name in extra},
+    }
     save(evidence / STATE, state)
     save(evidence / INITIAL_HASHES, initial["baseline"])
     shutil.copytree(work, evidence / "initial")
     checked(["git", "-c", "init.templateDir=", "init", "-q"], work)
-    checked(["git", "add", "--", *template["files"]], work)
+    checked(["git", "add", "--", *template["files"], *extra], work)
     checked(
         [
             "git",
@@ -313,8 +398,12 @@ def prepare_fixture(base, row, template, instructions):
     )
     (evidence / BASELINE_COMMIT).write_text(checked(["git", "rev-parse", "HEAD"], work))
     (evidence / "system-append.txt").write_text(COMMON + "\n" + instructions)
+    prompt = template["prompt"]
+
+    if row["variant"] in CHECK_ARMS:
+        prompt += " " + CHECK_CLAUSE
     (evidence / "prompt.txt").write_text(
-        template["prompt"] + "\n\nFiles: " + ", ".join(template["files"]) + "\n"
+        prompt + "\n\nFiles: " + ", ".join(template["files"]) + "\n"
     )
     return {**row, "work": str(work), "evidence": str(evidence)}
 
@@ -351,7 +440,8 @@ def create_campaign_directory(output):
 
 def prepare(args):
     arms = tuple(args.arms.split(","))
-    planned_order = balanced_order(args.tasks.split(","), args.seed, arms)
+    model_keys = tuple(args.models.split(","))
+    planned_order = balanced_order(args.tasks.split(","), args.seed, arms, model_keys)
     base = create_campaign_directory(args.output)
     started = time.monotonic()
     commit, status = snapshot(args, base)
@@ -377,6 +467,7 @@ def prepare(args):
         "source_status": status,
         "execution_allowed": not args.development,
         "models": MODELS,
+        "model_keys": model_keys,
         "arms": arms,
         "task_ids": task_ids,
         "repetitions": 3,
@@ -971,6 +1062,7 @@ def main():
     parser.add_argument("--manifest", "--tasks-json", type=Path)
     parser.add_argument("--tasks", default="local-variable,multi-file-members")
     parser.add_argument("--arms", default=",".join(ARMS))
+    parser.add_argument("--models", default=",".join(MODELS))
     parser.add_argument("--seed", type=int, default=20260906)
     parser.add_argument("--campaign-budget-usd", type=float, default=8.0)
     parser.add_argument(

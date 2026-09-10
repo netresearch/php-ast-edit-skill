@@ -10,6 +10,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
+import check_arms
 import native
 import runner
 
@@ -29,7 +30,11 @@ class CampaignDirectoryTests(unittest.TestCase):
 
     def args(self, output):
         return SimpleNamespace(
-            arms="compact_full,compact_focused", tasks="fixture", seed=1, output=output
+            arms="compact_full,compact_focused",
+            models=",".join(runner.MODELS),
+            tasks="fixture",
+            seed=1,
+            output=output,
         )
 
     def test_private_directory_exists_before_any_snapshot_or_command(self):
@@ -260,6 +265,109 @@ class LegacyRecoveryTests(unittest.TestCase):
         base, evidence, folder = self.fixture(timed_out=True)
         with self.assertRaisesRegex(ValueError, "Cannot recover timed-out candidate"):
             runner.recovered_measurement(base, evidence, folder)
+
+
+class ScheduleSelectionTests(unittest.TestCase):
+    def test_the_schedule_holds_only_the_selected_models(self):
+        rows = runner.balanced_order(["fixture"], seed=1, model_keys=("haiku",))
+        self.assertEqual({row["model_key"] for row in rows}, {"haiku"})
+        self.assertEqual(len(rows), 3 * len(runner.ARMS))
+
+    def test_an_unknown_model_key_is_refused(self):
+        for keys in [("gpt",), ("haiku", "haiku"), ()]:
+            with self.subTest(keys=keys), self.assertRaises(ValueError):
+                runner.balanced_order(["fixture"], seed=1, model_keys=keys)
+
+
+class EvidenceRelocationTests(unittest.TestCase):
+    """An unpacked evidence archive must summarize, and a missing one must not."""
+
+    def campaign(self):
+        base = Path(tempfile.mkdtemp(prefix="php-ast-relocated-"))
+        self.addCleanup(lambda: shutil.rmtree(base, ignore_errors=True))
+        (base / "runs/run001/evidence").mkdir(parents=True)
+        return base
+
+    def test_evidence_is_found_where_the_archive_put_it(self):
+        base = self.campaign()
+        row = {"run_id": "run001", "evidence": "/nonexistent/runs/run001/evidence"}
+        self.assertEqual(
+            check_arms.resolve_evidence(base, row),
+            base / "runs/run001/evidence",
+        )
+
+    def test_the_recorded_path_wins_when_it_is_still_there(self):
+        base = self.campaign()
+        original = Path(tempfile.mkdtemp(prefix="php-ast-original-"))
+        self.addCleanup(lambda: shutil.rmtree(original, ignore_errors=True))
+        row = {"run_id": "run001", "evidence": str(original)}
+        self.assertEqual(check_arms.resolve_evidence(base, row), original)
+
+    def test_absent_evidence_is_raised_rather_than_counted_as_an_empty_campaign(self):
+        base = self.campaign()
+        row = {"run_id": "run002", "evidence": "/nonexistent/runs/run002/evidence"}
+        with self.assertRaises(FileNotFoundError):
+            check_arms.resolve_evidence(base, row)
+
+
+class CheckArmTests(unittest.TestCase):
+    """The two check arms must differ by the declaration and by nothing else."""
+
+    def work(self):
+        temporary = tempfile.TemporaryDirectory(prefix="php-ast-check-arm-")
+        self.addCleanup(temporary.cleanup)
+        return Path(temporary.name)
+
+    def test_only_the_integrated_arm_declares_the_check(self):
+        for arm, expected in [
+            ("check_manual", [runner.CHECK_SCRIPT]),
+            ("check_integrated", [runner.CHECK_SCRIPT, ".php-ast-edit.json"]),
+            ("full_skill", []),
+            ("contextual_patch", []),
+        ]:
+            work = self.work()
+            with self.subTest(arm=arm):
+                self.assertEqual(runner.check_fixture(work, arm), expected)
+                # Every returned name is added to the fixture commit, so one that was
+                # never written would leave `git add` failing rather than silently
+                # dropping the treatment.
+                self.assertEqual(
+                    sorted(path.name for path in work.iterdir()), sorted(expected)
+                )
+
+    def test_the_declared_command_is_the_one_the_task_clause_names(self):
+        declared = runner.CHECK_CONFIG["verify"][0]
+        self.assertEqual(declared["scope"], "project")
+        self.assertIn(
+            " ".join(declared["command"]),
+            runner.CHECK_CLAUSE,
+            "A clause naming a different command would make the arms two tasks.",
+        )
+
+    def test_no_instruction_text_distinguishes_the_check_arms(self):
+        base = Path(tempfile.mkdtemp(prefix="php-ast-check-variants-"))
+        self.addCleanup(lambda: shutil.rmtree(base, ignore_errors=True))
+        skill = base / "runtime/skills/php-structured-edit"
+        skill.mkdir(parents=True)
+        (skill / "SKILL.md").write_text("Fixture skill body.\n")
+        instructions = runner.variants(base)
+        self.assertEqual(instructions["check_manual"], instructions["check_integrated"])
+        for arm in runner.CHECK_ARMS:
+            with self.subTest(arm=arm):
+                self.assertNotIn("alreadyRun", instructions[arm])
+                self.assertNotIn(".php-ast-edit.json", instructions[arm])
+
+    def test_the_check_fails_on_a_file_that_does_not_parse(self):
+        """A check nothing can fail would make every treatment run vacuous."""
+        work = self.work()
+        runner.check_fixture(work, "check_manual")
+        (work / "Good.php").write_text("<?php\n\nclass Good {}\n")
+        passing = runner.invoke(["php", runner.CHECK_SCRIPT], work)
+        self.assertEqual(passing.returncode, 0, passing.stdout + passing.stderr)
+        (work / "Broken.php").write_text("<?php\n\nclass Broken {\n")
+        failing = runner.invoke(["php", runner.CHECK_SCRIPT], work)
+        self.assertEqual(failing.returncode, 1, failing.stdout + failing.stderr)
+        self.assertIn("Broken.php", failing.stdout)
 
 
 class NativeTimingTests(unittest.TestCase):

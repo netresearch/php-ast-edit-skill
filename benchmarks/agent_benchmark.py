@@ -84,6 +84,27 @@ def prepare(task, work, state, binary):
     return {"prompt": task["prompt"], "workspace": str(work), "files": list(baseline)}
 
 
+def fixture_scope(state, files):
+    """The names the workspace should hold, and whether the fixture's own files survived.
+
+    Files the fixture put there — a declared project check and its configuration — are
+    not the task, so they do not belong in `baseline`, which lint, `output_hashes` and
+    the cross-arm identity check all iterate. The scope check must expect them rather
+    than read them as something the candidate left behind.
+
+    Their bytes are pinned, which is why this is a digest and not a name list: a
+    candidate asked to make the declared check pass can make it pass by rewriting it.
+
+    Returns the expected sorted names and whether the fixture's files are unchanged.
+    """
+    fixture = state.get("fixture", {})
+    intact = all(
+        name in files and digest(files[name]) == checksum
+        for name, checksum in fixture.items()
+    )
+    return sorted({**state["baseline"], **fixture}), intact
+
+
 def grade(task, work, state):
     state = load(state)
     if state["task_id"] != task["id"] or state["task_manifest_sha256"] != digest(TASKS):
@@ -102,7 +123,8 @@ def grade(task, work, state):
         and path.is_file()
         and path.resolve().is_relative_to(work)
     }
-    same_scope = not has_symlinks and sorted(files) == sorted(state["baseline"])
+    expected, fixture_intact = fixture_scope(state, files)
+    same_scope = not has_symlinks and sorted(files) == expected and fixture_intact
     lint = {
         name: invoke(["php", "-l", name], work).returncode == 0 if same_scope else None
         for name in state["baseline"]
@@ -140,6 +162,7 @@ def grade(task, work, state):
         "task_manifest_sha256": digest(TASKS),
         "passed": passed,
         "file_scope_passed": same_scope,
+        "fixture_intact": fixture_intact,
         "lint": lint,
         "runtime_passed": runtime_passed,
         "expected_change_passed": expected_change,
@@ -650,7 +673,35 @@ def self_test_oracle_integrity(task, work, state, base, binary):
             raise RuntimeError("A directory symlink escaped the source scope check")
     finally:
         link.unlink()
-    print("OK: runtime completion and source scope reject early exits and symlinks")
+
+    declared = work / "check.php"
+    declared.write_text("<?php\n\nexit(0);\n")
+    fixture_state = base / "fixture.state.json"
+    original = load(state)
+    save(
+        fixture_state,
+        {**original, "fixture": {"check.php": digest(declared)}},
+    )
+    try:
+        outcome = grade(task, work, fixture_state)
+        if not outcome["file_scope_passed"] or not outcome["fixture_intact"]:
+            raise RuntimeError("A declared fixture file was read as candidate output")
+        declared.write_text("<?php\n\n// weakened by the candidate\n")
+        outcome = grade(task, work, fixture_state)
+        if (
+            outcome["passed"]
+            or outcome["file_scope_passed"]
+            or outcome["fixture_intact"]
+        ):
+            raise RuntimeError("A rewritten fixture check escaped the scope guard")
+        if grade(task, work, state)["file_scope_passed"]:
+            raise RuntimeError("An undeclared extra file escaped the scope check")
+    finally:
+        declared.unlink()
+    print(
+        "OK: runtime completion and source scope reject early exits, symlinks "
+        "and rewritten fixture checks"
+    )
 
 
 def self_test(binary):

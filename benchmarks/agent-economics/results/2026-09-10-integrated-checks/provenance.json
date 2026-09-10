@@ -1,0 +1,68 @@
+{
+  "campaigns": {
+    "pilot-2": {
+      "source_commit": "2a7616ac4d170bcdf2b415094cce8309b66104c1",
+      "task_ids": [
+        "multi-file-members"
+      ],
+      "model_keys": [
+        "haiku"
+      ],
+      "arms": [
+        "check_manual",
+        "check_integrated"
+      ],
+      "seed": 20260906,
+      "skill_md_sha256": "a82928e7351c5f268992cbc53aca6637b6ff7a18ba66d1a3abe6bfaa1445f7da",
+      "engine_sha256": "37c88821e8c5d77fe3d7c8ced145f5dfe22b035f8b531b7b78198c96966e97cd"
+    },
+    "b": {
+      "source_commit": "2a7616ac4d170bcdf2b415094cce8309b66104c1",
+      "task_ids": [
+        "local-variable"
+      ],
+      "model_keys": [
+        "haiku"
+      ],
+      "arms": [
+        "check_manual",
+        "check_integrated"
+      ],
+      "seed": 20260906,
+      "skill_md_sha256": "a82928e7351c5f268992cbc53aca6637b6ff7a18ba66d1a3abe6bfaa1445f7da",
+      "engine_sha256": "37c88821e8c5d77fe3d7c8ced145f5dfe22b035f8b531b7b78198c96966e97cd"
+    },
+    "c": {
+      "source_commit": "2a7616ac4d170bcdf2b415094cce8309b66104c1",
+      "task_ids": [
+        "multi-file-members"
+      ],
+      "model_keys": [
+        "sonnet"
+      ],
+      "arms": [
+        "check_manual",
+        "check_integrated"
+      ],
+      "seed": 20260906,
+      "skill_md_sha256": "a82928e7351c5f268992cbc53aca6637b6ff7a18ba66d1a3abe6bfaa1445f7da",
+      "engine_sha256": "37c88821e8c5d77fe3d7c8ced145f5dfe22b035f8b531b7b78198c96966e97cd"
+    },
+    "d": {
+      "source_commit": "2a7616ac4d170bcdf2b415094cce8309b66104c1",
+      "task_ids": [
+        "local-variable"
+      ],
+      "model_keys": [
+        "sonnet"
+      ],
+      "arms": [
+        "check_manual",
+        "check_integrated"
+      ],
+      "seed": 20260906,
+      "skill_md_sha256": "a82928e7351c5f268992cbc53aca6637b6ff7a18ba66d1a3abe6bfaa1445f7da",
+      "engine_sha256": "37c88821e8c5d77fe3d7c8ced145f5dfe22b035f8b531b7b78198c96966e97cd"
+    }
+  }
+}
