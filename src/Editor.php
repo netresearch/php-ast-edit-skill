@@ -170,7 +170,7 @@ final class Editor
         }
 
         return sprintf(
-            'Passed over the whole project on the files as written: %s. The result stands until a file changes again; running it by hand now repeats it.',
+            'Passed over the whole project on the files as written: %s. With no file, dependency or check tool changed since, running it again by hand repeats this result.',
             implode('; ', array_keys($commands)),
         );
     }

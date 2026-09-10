@@ -273,8 +273,9 @@ and lint information, and the same check statuses.
 
 Every mode carries `alreadyRun` when every check passed and at least one had
 `scope: "project"`: a sentence naming those project commands. They ran after the
-formatter, on the files as written, so rerunning them before another change repeats the
-result. A `changed_files` check is never named there; it did not see the project.
+formatter, on the files as written, so rerunning them while no file, dependency or check
+tool has changed repeats the result; `proofExcludes` lists what the engine cannot see
+change. A `changed_files` check is never named there; it did not see the project.
 
 ### `"report": "agent"`
 
@@ -291,7 +292,7 @@ caller can recover for itself, and it never states a claim it cannot support.
 | `checksPassedCount` | How many declared checks passed. Their output is not carried |
 | `checksFailed` | Failing executions only, each with `id`, `scope`, `command` and `output` |
 | `verifications` | **Every** execution, passing ones included: `id`, `scope`, `cwd`, `command`, `ok`. No `output` — a passing check's is routine noise, a failing one's is in `checksFailed` |
-| `alreadyRun` | Present when every check passed and one was project-scoped: those commands, which need no rerun until a file changes |
+| `alreadyRun` | Present when every check passed and one was project-scoped: those commands, which need no rerun while no file, dependency or check tool has changed |
 | `proofExcludes` | Inputs this response does **not** account for |
 
 Per file: `path`, `mode`, `changed`, `editsApplied`, `beforeSha256`, `afterSha256`,
