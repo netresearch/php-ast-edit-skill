@@ -79,7 +79,9 @@ A canonical `apply` runs the declared formatter on changed files, then configure
 Verification also runs for eligible format-preserving edits. Excluded paths skip the
 canonical formatter and do not trigger verification. Read the actual results instead of
 running the same checks again unchanged. `"report": "compact"` returns each verification
-result once in top-level `verify`, linked by file `checkIds`.
+result once in top-level `verify`, linked by file `checkIds`; `"report": "agent"` names
+every execution in `verifications` with the command and directory it ran in, which is what
+says whether a check has already covered the current bytes.
 
 The stable formatting state is the composition of the canonical printer and the project
 formatter. To check it in CI, start from a **clean committed checkout**, run both tools,
