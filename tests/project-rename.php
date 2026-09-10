@@ -19,6 +19,7 @@ use PhpParser\ParserFactory;
 
 const BASE_FILE = 'src/Base.php';
 const USE_FILE = 'src/Use1.php';
+const CALLABLES_FILE = 'config/callables.php';
 
 $failures = [];
 $count = 0;
@@ -412,7 +413,7 @@ try {
                 [
                     ...$hierarchy,
                     'tests/FetchTest.php' => "<?php\nnamespace App\\Tests;\nfinal class FetchTest\n{\n    public function testIt(object \$mock, object \$c): array\n    {\n        \$mock->method('fetch');\n\n        return [[\$c, 'fetch'], 'fetcher', 'Fetch'];\n    }\n}\n",
-                    'config/callables.php' => "<?php\nreturn ['fetch'];\n",
+                    CALLABLES_FILE => "<?php\nreturn ['fetch'];\n",
                 ],
             );
             $result = projectRename($root, BASE_FILE, 'method:Base::fetch', 'load', new CallsByName());
@@ -420,7 +421,7 @@ try {
             projectAssert(
                 ($rename['literals'] ?? null) == [
                     [
-                        'file' => 'config/callables.php',
+                        'file' => CALLABLES_FILE,
                         'refs' => ['stmts[0].expr.items[0].value'],
                         'lines' => [2],
                     ],
@@ -454,7 +455,7 @@ try {
                             ],
                         ],
                         [
-                            'path' => $root . '/config/callables.php',
+                            'path' => $root . '/' . CALLABLES_FILE,
                             'edits' => [
                                 [
                                     'target' => ['ref' => $rename['literals'][0]['refs'][0]],
@@ -472,8 +473,8 @@ try {
                 $test,
             );
             projectAssert(
-                (string) file_get_contents($root . '/config/callables.php') === "<?php\nreturn ['load'];\n",
-                (string) file_get_contents($root . '/config/callables.php'),
+                (string) file_get_contents($root . '/' . CALLABLES_FILE) === "<?php\nreturn ['load'];\n",
+                (string) file_get_contents($root . '/' . CALLABLES_FILE),
             );
         },
     );

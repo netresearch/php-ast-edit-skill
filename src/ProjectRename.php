@@ -5,12 +5,10 @@ declare(strict_types=1);
 namespace Netresearch\PhpAstEdit;
 
 use Netresearch\PhpAstEdit\Exception\EditException;
-use PhpParser\Node;
 use PhpParser\Node\Expr;
 use PhpParser\Node\Scalar\String_;
 use PhpParser\Node\Stmt;
 use PhpParser\NodeTraverser;
-use PhpParser\NodeVisitorAbstract;
 
 /**
  * A method rename the file alone cannot decide: every declaration and call site across the
@@ -198,7 +196,6 @@ final class ProjectRename
             $files[$file] = ['sha256' => hash('sha256', $source), 'edits' => $edits];
         }
         [$mentions, $total] = $this->mentions($index, $from);
-        [$literals, $literalCount, $unread] = $this->literals($index, $from);
 
         return [
             'files' => $files,
@@ -216,17 +213,27 @@ final class ProjectRename
                 'notRenamedCount' => $total,
                 'notRenamedMeans' => 'Mentions of the old name outside PHP — configuration, TypoScript, Fluid templates. They were not changed; each needs reading.',
                 'ancestorsSeen' => $hierarchy,
-                ...$literals === [] ? [] : [
-                    'literals' => $literals,
-                    'literalsCount' => $literalCount,
-                    'literalsMeans' => sprintf(
-                        "PHP string literals that read %1\$s, such as a PHPUnit ->method('%1\$s') or a callable. Not changed: which class each one names is not known here, and another class may have a method of that name. For those that mean this method, one apply with a replace_expression per entry — target.select as listed, match \"'%1\$s'\", php \"'%2\$s'\" — sets every one in that scope; an entry with refs takes set_string on each ref.",
-                        $from,
-                        $to,
-                    ),
-                ],
-                ...$unread === [] ? [] : ['literalsUnread' => $unread],
+                ...$this->literalReport($index, $from, $to),
             ],
+        ];
+    }
+
+    /** @return array<string, mixed> the `literals` fields of the report, empty when there are none */
+    private function literalReport(ProjectIndex $index, string $from, string $to): array
+    {
+        [$literals, $count, $unread] = $this->literals($index, $from);
+
+        return [
+            ...$literals === [] ? [] : [
+                'literals' => $literals,
+                'literalsCount' => $count,
+                'literalsMeans' => sprintf(
+                    "PHP string literals that read %1\$s, such as a PHPUnit ->method('%1\$s') or a callable. Not changed: which class each one names is not known here, and another class may have a method of that name. For those that mean this method, one apply with a replace_expression per entry — target.select as listed, match \"'%1\$s'\", php \"'%2\$s'\" — sets every one in that scope; an entry with refs takes set_string on each ref.",
+                    $from,
+                    $to,
+                ),
+            ],
+            ...$unread === [] ? [] : ['literalsUnread' => $unread],
         ];
     }
 
@@ -521,65 +528,32 @@ final class ProjectRename
 
                 continue;
             }
-            $visitor = new class ($from) extends NodeVisitorAbstract {
-                /** @var list<array{0: ?string, 1: String_}> */
-                public array $found = [];
-
-                /** @var list<?string> the outermost named declaration, once per level entered */
-                private array $scopes = [];
-
-                public function __construct(private readonly string $from) {}
-
-                public function enterNode(Node $node): ?int
-                {
-                    if ($node instanceof Stmt\ClassLike || $node instanceof Stmt\Function_) {
-                        $this->scopes[] = $this->scopes === [] ? self::selector($node) : end($this->scopes);
-                    }
-
-                    if ($node instanceof String_ && $node->value === $this->from) {
-                        $this->found[] = [$this->scopes === [] ? null : end($this->scopes), $node];
-                    }
-
-                    return null;
-                }
-
-                public function leaveNode(Node $node): ?int
-                {
-                    if ($node instanceof Stmt\ClassLike || $node instanceof Stmt\Function_) {
-                        array_pop($this->scopes);
-                    }
-
-                    return null;
-                }
-
-                private static function selector(Stmt\ClassLike|Stmt\Function_ $node): ?string
-                {
-                    $kind = match (true) {
-                        $node instanceof Stmt\Function_ => 'function',
-                        $node instanceof Stmt\Interface_ => 'interface',
-                        $node instanceof Stmt\Trait_ => 'trait',
-                        $node instanceof Stmt\Enum_ => 'enum',
-                        default => 'class',
-                    };
-
-                    return $node->name === null ? null : $kind . ':' . $node->name->toString();
-                }
-            };
+            $visitor = new NameLiterals($from);
             (new NodeTraverser($visitor))->traverse($roots);
 
-            foreach ($visitor->found as [$select, $node]) {
-                ++$total;
-                $key = $relative . "\x00" . $select;
-                $groups[$key] ??= ['file' => $relative] + ($select === null ? ['refs' => []] : ['select' => $select]) + ['lines' => []];
-                $groups[$key]['lines'][] = $node->getStartLine();
-
-                if ($select === null) {
-                    $groups[$key]['refs'][] = $this->locator->locate($roots, $node->getStartFilePos(), 'Scalar_String')->path;
-                }
-            }
+            $total += count($visitor->found);
+            $this->group($groups, $relative, $visitor->found, $roots);
         }
         ksort($groups);
 
         return [array_values($groups), $total, $unread];
+    }
+
+    /**
+     * @param array<string, array<string, mixed>> $groups
+     * @param list<array{0: ?string, 1: String_}> $found
+     * @param list<Stmt> $roots
+     */
+    private function group(array &$groups, string $relative, array $found, array $roots): void
+    {
+        foreach ($found as [$select, $node]) {
+            $key = $relative . "\x00" . $select;
+            $groups[$key] ??= ['file' => $relative] + ($select === null ? ['refs' => []] : ['select' => $select]) + ['lines' => []];
+            $groups[$key]['lines'][] = $node->getStartLine();
+
+            if ($select === null) {
+                $groups[$key]['refs'][] = $this->locator->locate($roots, $node->getStartFilePos(), 'Scalar_String')->path;
+            }
+        }
     }
 }
