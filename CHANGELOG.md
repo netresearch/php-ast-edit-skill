@@ -6,6 +6,15 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-09-10
+
+### Changed
+
+Two behaviours of `apply --file` changed. A caller that scripted against the old ones will notice.
+
+- **A failed project check now exits 1 through the flag form too.** It returned 0 while its own JSON body said `checksPassed: false`. `help` and the 0.7.0 notes had promised exit 1 since the checks landed; only the JSON form delivered it.
+- **A flag the chosen form cannot carry is refused instead of dropped.** The option parser accepts `--anything value`, so `--sha256`, `--report`, `--mode` and typos were taken and silently ignored. `--sha256` and `--report` now reach the document; everything else is refused by name, and the refusal says which kind of wrong it is — a flag belonging to the other form, a per-file setting only the document can carry, or no such flag.
+
 ### Fixed
 
 - The flag form of `apply` now answers exactly as the JSON form does. It returned exit 0 over failed project checks while reporting `checksPassed: false`, and silently dropped `--sha256` and `--report`, which the option parser accepts under any spelling — a supplied file guard never ran and the caller was told the edit was clean. Both flags now reach the document, both input forms share one execution and one verdict, and a flag the chosen form cannot carry is refused instead of dropped.
@@ -16,6 +25,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Reject PHP compile errors before writing and after formatting when the host runtime can check the target. Report `parsed`, `validation.lint` and `validation.checks` separately; `valid` remains a deprecated parser-only compatibility alias.
 - Preserve multiple warnings in `warnings`; retain the combined legacy `warning` field. Reset verification state between transactions. Failed project checks now return exit 1 while retaining the edit; transaction failures still return exit 2.
 - Make the documented quickstart executable, correct source/Composer installation paths, and remove obsolete normalization flags and the misleading post-edit clean-tree gate.
+
+### Measured
+
+- **Recommending `report: "agent"` as the default was measured and withdrawn.** Twelve sessions against `b1b79e6`: Sonnet paid +71% tokens, +67% model rounds and +89% list price for the recommendation; Haiku was unaffected. The mechanism is in the traces — the mode withholds the diff, `SKILL.md` said where to fetch it, and Sonnet fetched it in 3 of 3 runs against 0 of 3 in the control. `SKILL.md` now names the case the mode is for rather than prescribing it. The mode itself is unchanged, and the run is its worst case: with no declared checks, every field that distinguishes it was empty. See [`benchmarks/agent-economics/results/2026-09-10-agent-report`](benchmarks/agent-economics/results/2026-09-10-agent-report/REPORT.md).
+- The published figures of the 2026-09-07 comparison now recompute in the test suite from the report's own tables, including the distinction between the median comparison (−90.2%) and the comparison of summed tokens (−83.2%), and the decomposition showing 92.6% of the reduction is cache-read.
 
 ### Added
 
@@ -30,6 +44,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Isolated runtime-only PHAR builds, engine-bundled skill/plugin archives, dependency manifests, signed checksums and provenance. Clean installation and extracted-artifact tests run on PHP 8.2 and 8.5 before release publication. Historical release assets remain unchanged.
 - `contexts --operation NAME` for a compact single-operation contract, plus shorter selector-first skill instructions with optional canonical mode.
 - Outcome and routing evaluations, executable task oracles, actual model-run evidence import, and a reproducible CLI benchmark comparing both batched AST edits and batched contextual patches with lint.
+- The documented apply examples in `README.md` and `SKILL.md` now run in the test suite and are checked against the guidance around them; the skill had recommended one report mode twenty lines above an example using another.
 - Installation, FAQ, limits and alternatives documentation, with explicit distinctions between parsing, lint, behavior, local timings and measured model usage.
 
 ### Measurement note
