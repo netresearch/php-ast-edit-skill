@@ -16,7 +16,7 @@ interleaves the arms so drift lands on both.
 - Subject: `netresearch/t3x-nr-passkeys-be`
 - Subject commit: `31275da4f846f77aba0e750b716e68647edbb818` — the extension's own
   `.php-ast-edit.json` declares PHPStan with `scope: project` and the php-cs-fixer formatter
-- Tool commit: `TBD`
+- Tool commit: `622ecfcae188787b3599e405bdf0186340a70cc8` — main after #64 (`alreadyRun`) and #66 (project-wide `rename_method`)
 - Resolver: Phpactor 2026.07.22.0, sha256 `8c0155380b9d7559a12f35ddf8d09c1dc23e72f1797498038251fc35ad15574d`,
   exported as `PHP_AST_EDIT_PHPACTOR` to both arms
 - Model: `claude-haiku-4-5-20251001`, via `claude -p --output-format json`; the CLI
