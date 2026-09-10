@@ -565,6 +565,52 @@ try {
     );
 
     projectCase(
+        'mocks: true sets the names PHPUnit mocks list and leaves every other literal listed',
+        function () use ($hierarchy): void {
+            $root = projectFixture(
+                'mocks',
+                [
+                    ...$hierarchy,
+                    'tests/UseTest.php' => "<?php\nnamespace App\\Tests;\nfinal class UseTest extends \\PHPUnit\\Framework\\TestCase\n{\n    #[\\PHPUnit\\Framework\\Attributes\\DataProvider('fetch')]\n    public function testIt(): void\n    {\n        \$a = \$this->createMock(\\App\\Base::class);\n        \$a->method('fetch')->willReturn(1);\n        \$b = \$this->getMockBuilder(\\App\\Base::class)->onlyMethods(['fetch', 'other'])->getMock();\n        \$c = \$this->createConfiguredMock(\\App\\Base::class, ['fetch' => 2]);\n        \$d = [\$a, 'fetch'];\n    }\n}\n",
+                ],
+            );
+            $result = (new Editor(new CallsByName()))->apply(
+                [
+                    'report' => 'compact',
+                    'files' => [
+                        [
+                            'path' => $root . '/' . BASE_FILE,
+                            'edits' => [
+                                [
+                                    'target' => ['select' => 'method:Base::fetch'],
+                                    'operation' => 'rename_method',
+                                    'to' => 'load',
+                                    'mocks' => true,
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            );
+            $rename = $result['renames'][0] ?? [];
+            $test = (string) file_get_contents($root . '/tests/UseTest.php');
+            projectAssert(($rename['mocksSet'] ?? null) === 3, json_encode($rename));
+            projectAssert(
+                str_contains($test, "->method('load')") && str_contains($test, "onlyMethods(['load', 'other'])") && str_contains($test, "['load' => 2]"),
+                $test,
+            );
+            projectAssert(
+                str_contains($test, "DataProvider('fetch')") && str_contains($test, "[\$a, 'fetch']"),
+                'a literal outside a mock list changed: ' . $test,
+            );
+            projectAssert(
+                ($rename['literalsCount'] ?? null) === 2 && str_contains((string) ($result['open'] ?? ''), '2 string literal(s) in 1 file(s)'),
+                json_encode([$rename['literalsCount'] ?? null, $result['open'] ?? null]),
+            );
+        },
+    );
+
+    projectCase(
         'a PHAR that is not the pinned release is refused, and doctor says so',
         function () use ($hierarchy): void {
             $root = projectFixture(

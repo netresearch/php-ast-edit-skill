@@ -195,6 +195,14 @@ guidanceCheck(
     ) === '',
 );
 
+$mocksFlag = shell_exec(
+    escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg(dirname(__DIR__) . '/bin/php-ast-edit') . ' apply --file x.php --select method:A::b --op set_name --value x --mocks 2>&1',
+) ?? '';
+guidanceCheck(
+    '--mocks is refused outside rename_method',
+    str_contains($mocksFlag, '--mocks takes no value and belongs to --op rename_method'),
+);
+
 foreach (['--op set_string --value x --declaration-only', '--op set_name --value x --declaration-only=false'] as $flags) {
     $misplaced = shell_exec(
         escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg(dirname(__DIR__) . '/bin/php-ast-edit') . ' apply --file x.php --select method:A::b ' . $flags . ' 2>&1',

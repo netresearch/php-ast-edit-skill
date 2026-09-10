@@ -361,7 +361,22 @@ final class Editor
             return [$source, $fileRoots];
         };
 
-        return (new ProjectRename($finder, $parse))->plan($path, $roots, $location, $edit['to'], $reason);
+        $mocks = $edit['mocks'] ?? false;
+
+        if (!is_bool($mocks)) {
+            throw new EditException(
+                'rename_method "mocks" is true or false: true also sets the method names PHPUnit mocks list.',
+            );
+        }
+
+        return (new ProjectRename($finder, $parse))->plan(
+            $path,
+            $roots,
+            $location,
+            $edit['to'],
+            $reason,
+            $mocks,
+        );
     }
 
     /**
@@ -2524,7 +2539,7 @@ final class Editor
         'add_use' => ['requires' => ['value'], 'optional' => ['alias']],
         'set_extends' => ['requires' => ['php'], 'optional' => ['position']],
         'rename_variable' => ['requires' => ['from', 'to'], 'optional' => []],
-        'rename_method' => ['requires' => ['to'], 'optional' => []],
+        'rename_method' => ['requires' => ['to'], 'optional' => ['mocks']],
     ];
 
     /**
