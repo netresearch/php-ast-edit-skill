@@ -10,6 +10,21 @@ Select a PHP symbol, apply a typed change, and review the resulting diff. `php-a
 | `php-ast-edit` | The PHP command-line editor |
 | `php-structured-edit` | Agent instructions and a wrapper for that editor |
 
+## Measured: up to 90% fewer tokens
+
+On a six-file rename in a public PHP project, with the project's 17 existing tests actually executed on every final result, the semantic-plus-verified route used **90.2% fewer tokens** than text edits with a separate checking step — median 12,212 against 124,133.5, counting cache use. One tool call instead of 16, two model rounds instead of 13, 16.4 seconds instead of 37.8. All thirty attempts across the three arms produced correct code.
+
+That figure is two effects, and both are worth knowing separately:
+
+| | |
+| --- | --- |
+| Editing by symbol instead of by text | **−75.5%** |
+| Letting the tool run the project's checks and report the verdict | **−59.9%** on top |
+
+**What the number is, exactly.** Medians of one task, ten repetitions per arm. Combined tokens including cache reads, which are neither priced nor processed like fresh input — the native **list price fell 66.4%**, not 90.2%. Fresh uncached input barely moved: 92.6% of the difference is cached context the model no longer had to be handed again.
+
+**Where it does not hold.** At fifty files, plain Phpactor refactoring beat the composed route on tokens, time and cost. A small local rename on Haiku cost 66.6% *more*. The arithmetic above [recomputes in the test suite](benchmarks/symbol-intent/results/2026-09-07-real-php/recompute/) from the report's own tables, and the [raw runs and evidence archive](benchmarks/symbol-intent/results/2026-09-07-real-php/) ship with checksums. Every result, including the ones that went the other way, is in [Does this save tokens, calls, or time](#does-this-save-tokens-calls-or-time) below.
+
 ## Installation
 
 The source checkout below follows development `main`. Published v0.7.0 archives
@@ -108,13 +123,17 @@ Method renaming is scoped to a declaration and structurally attributable calls i
 
 Existing files use format-preserving printing unless the repository declares canonical formatting or the request explicitly selects a printer. Some changed subtrees may still be reprinted. Review the measured diff. [Canonical formatting](skills/php-structured-edit/references/formatting-contract.md) is an optional project-wide choice.
 
-## Does it save tokens, calls, or time?
+## Does this save tokens, calls, or time
 
 Batching reduces CLI startups. Named selectors can eliminate an `inspect` call. Compact reports avoid repeating the same verification command and diagnostics for every file; they do not shorten the checks themselves. Integrated reports and configured checks can avoid redundant reads and validation. These are capabilities, not a universal cost guarantee.
 
 A contextual patch is a valid baseline and can also batch changes. Small edits may cost more through an AST tool. Full agent savings depend on instruction loading, model output, tool latency, retries, correctness, and caching. [Benchmarks](benchmarks/README.md) provides a reproducible local comparison and a separate protocol for measuring complete agent tasks. No general token or model-round reduction is claimed from a CLI microbenchmark.
 
-The [30-run public-source verification experiment](benchmarks/symbol-intent/results/2026-09-07-real-php/REPORT.md) compares an **experimental semantic rename workflow** with text edits on one six-file PHP extraction. With the same 17 existing tests actually executed on every final result, the integrated workflow used median 1 versus 16 tool calls, 12,212 versus 124,133.5 tokens including cache use, and 16.43 versus 37.76 seconds. All thirty changes were correct; native median list-price cost fell 66.4%. Fresh uncached input was nearly unchanged. These gains apply to this composite resolver, AST and verification experiment, not the installed skill in arbitrary PHP projects.
+The [30-run public-source verification experiment](benchmarks/symbol-intent/results/2026-09-07-real-php/REPORT.md) compares an **experimental semantic rename workflow** with text edits on one six-file PHP extraction. With the same 17 existing tests actually executed on every final result, the integrated workflow used median 1 versus 16 tool calls, 12,212 versus 124,133.5 tokens including cache use, and 16.43 versus 37.76 seconds. All thirty changes were correct; native median list-price cost fell 66.4%. Fresh uncached input was nearly unchanged. These gains apply to this composite resolver, AST and verification experiment, not the installed skill in arbitrary PHP projects. The 90.2% splits into −75.5% from semantic editing and a further −59.9% from integrating the project's checks, so neither half accounts for it alone. The [recomputation](benchmarks/symbol-intent/results/2026-09-07-real-php/recompute/) runs in the test suite and fails if these figures stop following from the report's own tables.
+
+At fifty files the same table reports the opposite: plain Phpactor CLI refactoring used 78,261 tokens against the composed route's 103,123, and won on wall time and cost as well. Reference discovery is worth delegating; building a resolver is not established. See [why the resolver is Phpactor](benchmarks/symbol-intent/README.md).
+
+A [twelve-session trial](benchmarks/agent-economics/results/2026-09-10-agent-report/REPORT.md) tested whether recommending the compact `report: "agent"` response shape saves anything. It does not, on an edit with no declared checks: Sonnet paid 71% more tokens and 67% more model rounds, because the mode withholds the diff and the model fetched it back with an extra call. The recommendation was withdrawn; the mode stays for the case it is for.
 
 The separate [20-run result-guidance trial](benchmarks/symbol-intent/results/2026-09-07-guidance/REPORT.md) found **no additional savings** from extra continuation advice: median later calls stayed at three, while observed token and time medians rose 46.4% and 25.8%. All twenty edits and final test runs passed. The optional output bundle remains experimental; this trial did not load or measure the revised skill.
 
