@@ -1,6 +1,6 @@
 {
   "name": "php-structured-edit",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "description": "Structured PHP edits for coding agents: named selectors, hash-guarded batches, format preservation and explicit validation results.",
   "author": {
     "name": "Netresearch DTT GmbH",

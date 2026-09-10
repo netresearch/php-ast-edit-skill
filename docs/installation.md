@@ -4,10 +4,8 @@ The editor and the instructions are separate components. The editor needs PHP 8.
 JSON/tokenizer extensions, and nikic/php-parser. A PHAR bundles the parser; a source or
 Composer installation resolves it through Composer. Composer installations require 2.2+.
 
-These instructions describe the revised source tree. Before the change merges, use the
-reviewed checkout. Public clone and `dev-main` installs require those changes on `main`;
-newly bundled release assets require a subsequent published release. Historical v0.7.0
-artifacts retain their documented limitations.
+These instructions describe `main`. Historical v0.7.0 artifacts retain their documented
+limitations; a release published after those repairs carries the bundled assets.
 
 ## Source checkout: the recommended development path
 
