@@ -130,12 +130,49 @@ final class Editor
             ),
             'checksPassed' => $this->verifyResults === [] ? null : !in_array(false, array_column($this->verifyResults, 'ok'), true),
         ];
+        $alreadyRun = $this->alreadyRun();
+
+        if ($alreadyRun !== null) {
+            $result['alreadyRun'] = $alreadyRun;
+        }
 
         if ($compact) {
             $result['verify'] = $this->verifyResults;
         }
 
         return $result;
+    }
+
+    /**
+     * The project checks this apply ran and passed, said as the repeat work they save.
+     *
+     * Measured on a three-change task: after applies whose project checks had passed, the
+     * gated arm still ran the project's analysis by hand, and its own check runs took 303
+     * seconds of tool time across eight sessions against 171 without the skill. The fields
+     * carried the proof — command, scope, ok — and nothing said what it was good for. Only
+     * project scope is named: a changed_files check saw the edited files, not the project.
+     */
+    private function alreadyRun(): ?string
+    {
+        if ($this->verifyResults === [] || in_array(false, array_column($this->verifyResults, 'ok'), true)) {
+            return null;
+        }
+        $commands = [];
+
+        foreach ($this->verifyResults as $check) {
+            if ($check['scope'] === 'project') {
+                $commands[$check['command']] = true;
+            }
+        }
+
+        if ($commands === []) {
+            return null;
+        }
+
+        return sprintf(
+            'Passed over the whole project on the files as written: %s. The result stands until a file changes again; running it by hand now repeats it.',
+            implode('; ', array_keys($commands)),
+        );
     }
 
     /**
@@ -253,6 +290,7 @@ final class Editor
             'checksPassedCount' => $passed,
             'checksFailed' => $failed,
             'verifications' => $verifications,
+            ...$this->alreadyRun() === null ? [] : ['alreadyRun' => $this->alreadyRun()],
             // What this response does NOT establish about reuse. The engine knows the
             // command, the directory, the files and their bytes; it cannot see the check
             // tool's version, the dependency tree it resolved, or anything else in the

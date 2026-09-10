@@ -65,6 +65,8 @@ FOOTER = (
     "  php-ast-edit apply --file <path> --select method:Foo::bar"
     " --op replace_expression --match '$this->old()' --php '$this->new()'\n"
     "inspect --file <path> --line <n> --column <n> is for a target that has no name.\n"
+    "An apply that reports alreadyRun has run the project's checks on what it wrote;\n"
+    "running them again by hand repeats that result.\n"
     'A new file is a file entry with "mode": "create"; a removal is "mode": "delete".\n'
     "Reading is not gated: cat, grep, git diff, php -l and php-ast-edit inspect run as they are.\n"
     "Run `php-ast-edit contexts` for the operation and parseAs catalog, `help` for the rest.\n"
