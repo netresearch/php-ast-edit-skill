@@ -295,9 +295,12 @@ final class ProjectRename
             }
         }
         $seen = 0;
+        // A change of case only: PHP method names are case-insensitive, so every name that
+        // matches the new one is the method itself. Nothing can collide.
+        $caseOnly = $lowerTo === $lowerFrom;
 
         foreach ($family as $member) {
-            if ($this->declares($member['node'], $lowerTo)) {
+            if (!$caseOnly && $this->declares($member['node'], $lowerTo)) {
                 throw new EditException(
                     sprintf('rename_method: %s already declares %s.', $member['name'], $to),
                 );
@@ -306,7 +309,7 @@ final class ProjectRename
             foreach ($index->ancestors($member['name']) as $ancestor) {
                 ++$seen;
 
-                if (in_array($lowerTo, $ancestor['methods'], true)) {
+                if (!$caseOnly && in_array($lowerTo, $ancestor['methods'], true)) {
                     throw new EditException(
                         sprintf(
                             'rename_method: %s, an ancestor of %s, already declares %s.',
@@ -331,7 +334,7 @@ final class ProjectRename
         }
 
         foreach ($index->projectClasses() as $candidate) {
-            if (isset($family[strtolower($candidate['name'])]) || !$this->declares($candidate['node'], $lowerTo)) {
+            if ($caseOnly || isset($family[strtolower($candidate['name'])]) || !$this->declares($candidate['node'], $lowerTo)) {
                 continue;
             }
             $above = array_map(

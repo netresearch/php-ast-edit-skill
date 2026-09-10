@@ -33,6 +33,8 @@ final class ProjectIndex
     /** @var array{classmap: array<string, string>, psr4: array<string, list<string>>}|null */
     private ?array $autoload = null;
 
+    private bool $scanned = false;
+
     private function __construct(
         public readonly string $root,
         private readonly RepositoryConfig $config,
@@ -281,12 +283,13 @@ final class ProjectIndex
 
     private function scan(): void
     {
-        static $scanned = [];
-
-        if (isset($scanned[spl_object_id($this)])) {
+        // On the instance, not in a static keyed by object id: ids are reused once an index
+        // is freed, and a later index that inherited a "scanned" mark would see no project
+        // classes — no descendants, so an override would keep the old name.
+        if ($this->scanned) {
             return;
         }
-        $scanned[spl_object_id($this)] = true;
+        $this->scanned = true;
 
         foreach ($this->phpFiles() as $file) {
             $this->load($file, true);

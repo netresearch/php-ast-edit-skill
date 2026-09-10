@@ -434,6 +434,43 @@ try {
         },
     );
 
+    projectCase(
+        'a change of case only is not a collision with itself',
+        function () use ($hierarchy): void {
+            $root = projectFixture('case-only', $hierarchy);
+            $result = projectRename($root, BASE_FILE, 'method:Base::fetch', 'Fetch', new CallsByName());
+            projectAssert(
+                ($result['renames'][0]['declarations'] ?? null) === 3,
+                json_encode($result['renames'] ?? null),
+            );
+            projectAssert(
+                str_contains(
+                    (string) file_get_contents($root . '/src/Child.php'),
+                    'function Fetch(',
+                ),
+                'Child kept the old case',
+            );
+        },
+    );
+
+    projectCase(
+        'every index sees the project classes, however many came before it',
+        function () use ($hierarchy): void {
+            $root = projectFixture('many-indexes', $hierarchy);
+
+            // Object ids are reused as soon as an index is freed; a cache keyed by them would
+            // hand a later index an earlier one's "already scanned" and an empty class list.
+            for ($round = 0; $round < 50; ++$round) {
+                $index = Netresearch\PhpAstEdit\ProjectIndex::for($root . '/' . BASE_FILE);
+                projectAssert(
+                    count($index->projectClasses()) === 5,
+                    'round ' . $round . ' saw ' . count($index->projectClasses()) . ' classes',
+                );
+                unset($index);
+            }
+        },
+    );
+
     $phar = getenv('PHP_AST_EDIT_PHPACTOR_TEST');
 
     if (is_string($phar) && is_file($phar)) {
