@@ -2287,9 +2287,12 @@ final class Editor
      * what the caller meant.
      *
      * Each such refusal cost a turn and settled nothing the engine did not already know:
-     * `set_doc_comment` refused `docComment` with a message that repeated it back. Only
-     * measured synonyms are accepted; a general tolerance layer would turn every typo into a
-     * guess about intent.
+     * `rename_method` refused `new_name`, `set_doc_comment` refused `docComment` and `php`,
+     * each with a message that repeated the field back. The rule is narrow on purpose. An
+     * edit that lacks exactly one required argument and carries exactly one field its
+     * operation does not take has one reading, and that is the one taken. Two unknown
+     * fields, or a missing argument with nothing to fill it, are still refused: there the
+     * engine would be guessing, and a guess it acts on is worse than a refusal.
      *
      * @param array<string, mixed> $edit
      *
@@ -2300,18 +2303,23 @@ final class Editor
         $operation = $edit['operation'] ?? null;
 
         if (is_string($operation) && isset(self::OPERATION_SYNONYMS[$operation])) {
-            $edit['operation'] = self::OPERATION_SYNONYMS[$operation];
+            $operation = self::OPERATION_SYNONYMS[$operation];
+            $edit['operation'] = $operation;
         }
+        $spec = is_string($operation) ? self::OPERATION_ARGUMENTS[$operation] ?? null : null;
 
-        if (($edit['operation'] ?? null) === 'set_doc_comment' && !isset($edit['value']) && isset($edit['docComment'])) {
-            $edit['value'] = $edit['docComment'];
-            unset($edit['docComment']);
+        if ($spec === null) {
+            return $edit;
         }
+        $missing = array_values(
+            array_filter($spec['requires'], static fn (string $name): bool => !isset($edit[$name])),
+        );
+        $known = array_merge($spec['requires'], $spec['optional'], ['operation', 'target', 'expect']);
+        $unknown = array_values(array_diff(array_keys($edit), $known));
 
-        // Beside `match`, `replace` has no other reading than the replacement.
-        if (isset($edit['match'], $edit['replace']) && !isset($edit['php'])) {
-            $edit['php'] = $edit['replace'];
-            unset($edit['replace']);
+        if (count($missing) === 1 && count($unknown) === 1) {
+            $edit[$missing[0]] = $edit[$unknown[0]];
+            unset($edit[$unknown[0]]);
         }
 
         return $edit;

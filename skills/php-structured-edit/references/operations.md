@@ -169,6 +169,8 @@ A snippet is parsed inside a synthetic host construct, so the grammar always com
 
 `parseAs` is inferred from the target node and the addressed property, so it rarely needs to be given. The inference is node-aware where a sub node name is shared: `stmts` is a member list on a class-like node and a statement list everywhere else, `uses` is a closure binding on a `Closure` and an imported name on a `use` statement, `vars` is a static variable on `static` and an expression on `unset`. Where a node still admits more than one shape — an enum body takes cases, methods and constants — the candidates are tried in order and the parser decides. Pass `parseAs` explicitly for anything the tool cannot name; the error message lists the known contexts.
 
+An edit that lacks exactly one required argument and carries exactly one field its operation does not take is read as that argument — `new_name` beside `rename_method` is `to`. With two unknown fields, or a missing argument and none beside it, the edit is refused and the refusal shows the shape. `set_docblock` and `update_docblock` are `set_doc_comment`.
+
 ## Primitives
 
 | Operation | Fields | Effect |

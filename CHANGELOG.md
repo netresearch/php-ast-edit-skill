@@ -9,7 +9,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 ### Added
 
 - **`replace_expression` and `replace_statement` take a `match`.** With it, the target is a scope — `method:RateLimiter::resetLockout` — and every expression or statement inside it that is the same code as `match` is replaced, each with its own copy of `php`; the effect reports `replaced`. The comparison is structural, so spacing and quoting do not matter. Across sixteen gated agent sessions on a three-change task, "inside this method, replace X with Y" was tried five ways and refused each time; the engine took it only through `inspect` and a line and column, and 54 of 98 `apply` calls were refused. `--match` carries it in the flag form.
-- `set_docblock` and `update_docblock` are taken as `set_doc_comment`, and `set_doc_comment` reads `docComment` as its `value`. The engine refused both while naming, in the refusal, what the caller meant.
+- `set_docblock` and `update_docblock` are taken as `set_doc_comment`. And an edit that lacks exactly one required argument while carrying exactly one field its operation does not take is read that way: `rename_method` with `new_name`, `set_doc_comment` with `docComment` or `php`. The engine refused these while quoting the field back in the refusal. Two unknown fields, or a missing argument with nothing to fill it, are still refused.
+- `apply --input /dev/stdin` reads standard input like `--input -`. A heredoc caller spells it that way, and a sandbox may have no such path while standard input is readable.
 
 ### Fixed
 

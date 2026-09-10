@@ -330,6 +330,88 @@ scopedCheck(
 );
 @unlink($flagPath);
 
+// One argument missing and one field the operation does not take: there is one reading.
+// Measured callers sent `new_name` to rename_method and `php` to set_doc_comment.
+$renamed = scopedApply(
+    $subject,
+    [
+        'target' => ['select' => 'method:RateLimiter::lockoutKeyFor'],
+        'operation' => 'rename_method',
+        'new_name' => 'keyFor',
+    ],
+);
+scopedCheck(
+    'rename_method reads new_name as to',
+    $renamed['error'] === '' && str_contains($renamed['code'], 'function keyFor('),
+);
+
+$phpAsValue = scopedApply(
+    $subject,
+    ['target' => $docTarget, 'operation' => 'set_doc_comment', 'php' => 'Forget the caller.'],
+);
+scopedCheck(
+    'set_doc_comment reads php as value',
+    $phpAsValue['error'] === '' && str_contains($phpAsValue['code'], 'Forget the caller.'),
+);
+
+// Two unknown fields are two readings, and a missing argument with nothing beside it is
+// none: both stay refusals.
+$ambiguous = scopedApply(
+    $subject,
+    ['target' => $docTarget, 'operation' => 'set_doc_comment', 'text' => 'A.', 'comment' => 'B.'],
+);
+scopedCheck(
+    'two unknown fields are still refused',
+    str_contains($ambiguous['error'], 'takes its arguments beside'),
+);
+$nothing = scopedApply(
+    $subject,
+    [
+        'target' => ['select' => 'class:RateLimiter'],
+        'operation' => 'insert_into',
+        'php' => 'private int $x = 1;',
+        'position' => 'end',
+    ],
+);
+scopedCheck(
+    'a missing argument with nothing to fill it is still refused',
+    str_contains($nothing['error'], 'takes its arguments beside'),
+);
+
+// A heredoc caller spells standard input `/dev/stdin`; it is read as `-`.
+$stdinPath = $dir . '/Stdin.php';
+file_put_contents($stdinPath, $subject);
+$stdinDocument = json_encode(
+    [
+        'files' => [
+            [
+                'path' => $stdinPath,
+                'edits' => [
+                    [
+                        'target' => $docTarget,
+                        'operation' => 'set_doc_comment',
+                        'value' => 'Read from standard input.',
+                    ],
+                ],
+            ],
+        ],
+    ],
+);
+$process = proc_open(
+    [PHP_BINARY, dirname(__DIR__) . '/bin/php-ast-edit', 'apply', '--input', '/dev/stdin'],
+    [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']],
+    $pipes,
+);
+fwrite($pipes[0], (string) $stdinDocument);
+fclose($pipes[0]);
+stream_get_contents($pipes[1]);
+stream_get_contents($pipes[2]);
+scopedCheck(
+    '--input /dev/stdin reads standard input',
+    proc_close($process) === 0 && str_contains((string) file_get_contents($stdinPath), 'Read from standard input.'),
+);
+@unlink($stdinPath);
+
 rmdir($dir);
 
 if ($failed !== []) {

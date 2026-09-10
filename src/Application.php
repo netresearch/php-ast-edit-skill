@@ -153,7 +153,9 @@ final class Application
         if (!is_string($input)) {
             throw new EditException('--input requires a path or -.');
         }
-        $json = $input === '-' ? stream_get_contents(STDIN) : file_get_contents($input);
+        // `/dev/stdin` is how a heredoc caller spells `-`, and some sandboxes give a process
+        // no such path while its standard input is perfectly readable.
+        $json = in_array($input, ['-', '/dev/stdin', 'php://stdin'], true) ? stream_get_contents(STDIN) : file_get_contents($input);
 
         if ($json === false || trim($json) === '') {
             throw new EditException('No apply JSON received.');
