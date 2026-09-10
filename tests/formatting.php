@@ -506,9 +506,9 @@ try {
 
 try {
     $locator = new Netresearch\PhpAstEdit\NodeLocator();
-    $parsed = (new ParserFactory())->createForHostVersion()->parse(
-        "<?php\nclass A { public function f() {} }\nclass B { public function f() {} }\n",
-    ) ?? [];
+    $parsed = (new ParserFactory())
+        ->createForHostVersion()
+        ->parse("<?php\nclass A { public function f() {} }\nclass B { public function f() {} }\n") ?? [];
     $locator->resolveSelect($parsed, 'method:f');
     check('an ambiguous selector is refused', false, 'accepted');
 } catch (EditException $failure) {
@@ -1420,19 +1420,27 @@ check(
     $longest <= 60,
     'longest line is ' . $longest . ":\n" . $wide,
 );
-// A chain: the receiver is rendered before the call's own argument list, so a
-// re-print keyed on a flag rather than on the list breaks the wrong one — the
-// short inner list, leaving the long line long.
+// A chain over the width is broken between its calls, not inside one of their
+// argument lists. Breaking a list leaves the chain on one line and the line long;
+// this used to break the outer list, and the assertion below is what changed.
 $chained = $printer->prettyPrintFile(
     $parser->parse(
         "<?php\nclass C { public function f(\$aaa, \$bbb) { \$q->firstMethodName(\$aaa)->secondMethodName(\$bbb, \$aaa); } }\n",
     ) ?? [],
 );
 check(
-    'the outer list of a chain is the one that breaks',
-    // Both halves are needed: the negative one alone is satisfied by a chain
-    // that is not broken at all, whatever the receiver does.
-    str_contains($chained, "secondMethodName(\n") && !str_contains($chained, "firstMethodName(\n"),
+    'a chain over the width breaks between its calls',
+    str_contains(
+        $chained,
+        "\$q\n            ->firstMethodName(\$aaa)\n            ->secondMethodName(\$bbb, \$aaa);",
+    ),
+    $chained,
+);
+check(
+    // The original defect this fixture was written for: a re-print keyed on a flag
+    // rather than on the list broke the short inner list and left the line long.
+    'and neither argument list is broken to achieve it',
+    !str_contains($chained, "firstMethodName(\n") && !str_contains($chained, "secondMethodName(\n"),
     $chained,
 );
 // Two empty argument lists are `===` to each other, so keying the re-print on
@@ -1496,9 +1504,9 @@ $again = $printer->prettyPrintFile($parser->parse($wide) ?? []);
 check('and the broken form prints back to itself', $again === $wide, $again);
 
 // ---- doctor names what the printer cannot bring under the declared width ----------------
-// The width is a declaration the repository makes about itself, and a chain is the one
-// construct that keeps breaking it. Reporting it is the whole contribution here: nothing
-// in this package breaks chains, and no formatter rule does either.
+// The width is a declaration the repository makes about itself, and `doctor` reports what
+// the repository does not hold to it. The printer breaks lists and chains; this count is
+// what remains over the width after that, which no run of the tool will remove.
 $overWide = workspace();
 file_put_contents($overWide . '/.editorconfig', "root = true\n\n[*]\nmax_line_length = 60\n");
 file_put_contents(
@@ -1526,7 +1534,7 @@ check(
     'and the advice says so, with the width it was measured against',
     str_contains(
         (string) $report['overWidth']['advice'],
-        '1 lines exceed the declared width of 60, 1 of them method chains',
+        '1 lines exceed the declared width of 60, 1 of them carrying a method chain',
     ),
     (string) $report['overWidth']['advice'],
 );
