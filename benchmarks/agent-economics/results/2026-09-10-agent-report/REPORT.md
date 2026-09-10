@@ -105,3 +105,12 @@ task with a declared check that fails, where the mode's own fields are non-empty
 
 - `config.json` — the frozen campaign configuration
 - `runs.json` — every run's tokens, rounds, tool calls, price, wall time and oracle result
+- `frozen-SKILL.md` — the treatment text as the campaign ran it, which the live skill no
+  longer carries
+
+The controller that ran this is commit `5f4fde5460c5fc73661069fac8bb7a6460fee42c` on this
+branch — the commit that added the arm and the one after it removes it again. Its
+`runner.py` hashes to `3208ff447e72de9df02655b21983c46d02d981e3482b173ccf048e8511713203`, which is what the campaign
+directory recorded at prepare time. A verbatim copy is deliberately not committed here: it
+would be a second copy of a file three directories away, and git already holds those exact
+bytes.
