@@ -47,9 +47,9 @@ final class CallsByName implements ReferenceFinder
         foreach (new RecursiveIteratorIterator(
             new RecursiveDirectoryIterator($root . '/src', FilesystemIterator::SKIP_DOTS),
         ) as $file) {
-            $roots = (new ParserFactory())->createForHostVersion()->parse(
-                (string) file_get_contents((string) $file),
-            ) ?? [];
+            $roots = (new ParserFactory())
+                ->createForHostVersion()
+                ->parse((string) file_get_contents((string) $file)) ?? [];
             $calls = (new NodeFinder())->find(
                 $roots,
                 static fn (
