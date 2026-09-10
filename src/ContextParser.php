@@ -189,11 +189,17 @@ final class ContextParser
         try {
             $stmts = $this->parser->parse($source);
         } catch (ParserError $error) {
+            // A member written where a statement goes was measured twice, both times as an
+            // insert next to a method. The parser's complaint names a token; this names the
+            // operation that takes the snippet as written.
+            $member = in_array($context, ['stmt', 'stmts'], true) && preg_match('/^\s*(?:public|protected|private)\b/', $code) === 1;
+
             throw new EditException(
                 sprintf(
-                    'Snippet is not valid in the "%s" context: %s',
+                    'Snippet is not valid in the "%s" context: %s%s',
                     $context,
                     $error->getRawMessage(),
+                    $member ? '. It reads as a class member: add_member on the class takes it, or pass "parseAs": "member".' : '',
                 ),
             );
         }

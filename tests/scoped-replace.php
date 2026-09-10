@@ -412,6 +412,96 @@ scopedCheck(
 );
 @unlink($stdinPath);
 
+// --- From the run against 9088a31 ---------------------------------------------------------
+// A selector qualified with the file's own namespace names the same class.
+$namespaced = "<?php\n\nnamespace Vendor\\Service;\n\n" . substr($subject, strlen("<?php\n\n"));
+$qualified = scopedApply(
+    $namespaced,
+    [
+        'target' => ['select' => 'method:Vendor\Service\RateLimiter::recordSuccess'],
+        'operation' => 'set_doc_comment',
+        'value' => 'Qualified.',
+    ],
+);
+scopedCheck(
+    'a selector qualified with this file\'s namespace resolves',
+    $qualified['error'] === '' && str_contains($qualified['code'], 'Qualified.'),
+);
+$foreign = scopedApply(
+    $namespaced,
+    [
+        'target' => ['select' => 'method:Other\RateLimiter::recordSuccess'],
+        'operation' => 'set_doc_comment',
+        'value' => 'Qualified.',
+    ],
+);
+scopedCheck(
+    'a different namespace still matches nothing',
+    str_contains($foreign['error'], 'matched nothing'),
+);
+
+// A member snippet written where a statement goes is told where members go.
+$memberInBody = scopedApply(
+    $subject,
+    [
+        'target' => ['select' => 'method:RateLimiter::recordSuccess'],
+        'operation' => 'insert_after',
+        'parseAs' => 'stmts',
+        'php' => 'private function forget(string $key): void {}',
+    ],
+);
+scopedCheck(
+    'a member snippet in a statement context names add_member',
+    str_contains($memberInBody['error'], 'add_member'),
+);
+
+// The flag form reads a lone unknown flag the same way.
+$flagDocPath = $dir . '/FlagDoc.php';
+file_put_contents($flagDocPath, $subject);
+$flagRun = static function (array $extra) use ($flagDocPath): int {
+    exec(
+        implode(
+            ' ',
+            array_map(
+                'escapeshellarg',
+                array_merge(
+                    [
+                        PHP_BINARY,
+                        dirname(__DIR__) . '/bin/php-ast-edit',
+                        'apply',
+                        '--file',
+                        $flagDocPath,
+                        '--select',
+                        'method:RateLimiter::recordSuccess',
+                    ],
+                    $extra,
+                ),
+            ),
+        ) . ' 2>&1',
+        $output,
+        $status,
+    );
+
+    return $status;
+};
+scopedCheck(
+    'the flag form reads --text beside update_docblock as --value',
+    $flagRun(['--op', 'update_docblock', '--text', 'From a flag.']) === 0 && str_contains((string) file_get_contents($flagDocPath), 'From a flag.'),
+);
+scopedCheck(
+    'two unknown flags are still refused',
+    $flagRun(['--op', 'set_doc_comment', '--text', 'A.', '--body', 'B.']) === 2,
+);
+@unlink($flagDocPath);
+
+// The catalogue answers for a synonym the way apply does.
+exec(
+    escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg(dirname(__DIR__) . '/bin/php-ast-edit') . ' contexts --operation update_docblock 2>&1',
+    $contextsOutput,
+    $contextsStatus,
+);
+scopedCheck('contexts --operation answers for a synonym', $contextsStatus === 0);
+
 rmdir($dir);
 
 if ($failed !== []) {

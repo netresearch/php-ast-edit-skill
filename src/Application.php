@@ -346,7 +346,7 @@ final class Application
         $arguments = Editor::operationArguments();
 
         if (isset($options['operation'])) {
-            $operation = (string) $options['operation'];
+            $operation = Editor::canonicalOperation((string) $options['operation']);
 
             if (!isset($arguments[$operation])) {
                 throw new EditException(
@@ -578,6 +578,54 @@ final class Application
     }
 
     /**
+     * An unknown flag beside exactly one missing argument of the operation is that argument.
+     *
+     * The flag form of the rule Editor applies to a document: measured, `--op update_docblock
+     * --text …` was refused as an unknown flag while `value` was the one thing missing. Two
+     * unknown flags, or none missing, are left to the refusal.
+     *
+     * @param  array<string, mixed> $options
+     * @return array<string, mixed>
+     */
+    private function adoptLoneFlag(array $options): array
+    {
+        $unknown = array_values(
+            array_diff(
+                array_keys($options),
+                self::FLAG_FORM_FLAGS,
+                self::INPUT_FORM_FLAGS,
+                self::DOCUMENT_ONLY_KEYS,
+            ),
+        );
+        $operation = $options['op'] ?? null;
+
+        if (count($unknown) !== 1 || !is_string($operation)) {
+            return $options;
+        }
+        $spec = Editor::operationArguments()[Editor::canonicalOperation($operation)] ?? null;
+
+        if ($spec === null) {
+            return $options;
+        }
+        $missing = array_values(
+            array_filter(
+                $spec['requires'],
+                static fn (
+                    string $name,
+                ): bool => in_array($name, self::OPERATION_FLAGS, true) && !isset($options[$name]),
+            ),
+        );
+
+        if (count($missing) !== 1) {
+            return $options;
+        }
+        $options[$missing[0]] = $options[$unknown[0]];
+        unset($options[$unknown[0]]);
+
+        return $options;
+    }
+
+    /**
      * Build a one-edit document from flags, so a simple change is one call.
      *
      * Measured on controlled runs: every edit cost two calls, one writing a JSON payload to a
@@ -606,6 +654,7 @@ final class Application
                 '--input and --file are the two ways to say the same thing, and only one at a ' . 'time. --input carries a whole transaction as JSON; --file with --select or ' . '--ref and --op is one edit written out as flags. Drop whichever you did not mean.',
             );
         }
+        $options = $this->adoptLoneFlag($options);
         $this->rejectUnsupported(
             $options,
             self::FLAG_FORM_FLAGS,

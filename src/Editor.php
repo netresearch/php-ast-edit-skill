@@ -2215,6 +2215,12 @@ final class Editor
         );
     }
 
+    /** The catalogue name an operation is known by, where the caller used a synonym. */
+    public static function canonicalOperation(string $operation): string
+    {
+        return self::OPERATION_SYNONYMS[$operation] ?? $operation;
+    }
+
     /**
      * What each operation takes, for the catalogue to publish.
      *
