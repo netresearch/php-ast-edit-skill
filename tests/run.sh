@@ -76,6 +76,10 @@ echo "::group::tests/recompute.sh (published figures recompute from their own ta
 bash tests/recompute.sh || fail=1
 echo "::endgroup::"
 
+echo "::group::tests/examples.py (documented apply examples run and match the recommendation)"
+python3 tests/examples.py || fail=1
+echo "::endgroup::"
+
 echo "::group::tests/hook.py (enforcement gate behaviour table)"
 python3 tests/hook.py || fail=1
 echo "::endgroup::"

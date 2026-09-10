@@ -51,7 +51,7 @@ configuring formatting.
 Minimal transaction:
 
 ```json
-{"report":"compact","files":[{"path":"src/Registry.php","edits":[{"target":{"select":"class:Registry"},"operation":"add_member","php":"public function register(string $name): void {}"}]}]}
+{"report":"agent","files":[{"path":"src/Registry.php","edits":[{"target":{"select":"class:Registry"},"operation":"add_member","php":"public function register(string $name): void {}"}]}]}
 ```
 
 ```bash
