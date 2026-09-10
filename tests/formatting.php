@@ -1495,6 +1495,87 @@ check(
 $again = $printer->prettyPrintFile($parser->parse($wide) ?? []);
 check('and the broken form prints back to itself', $again === $wide, $again);
 
+// ---- doctor names what the printer cannot bring under the declared width ----------------
+// The width is a declaration the repository makes about itself, and a chain is the one
+// construct that keeps breaking it. Reporting it is the whole contribution here: nothing
+// in this package breaks chains, and no formatter rule does either.
+$overWide = workspace();
+file_put_contents($overWide . '/.editorconfig', "root = true\n\n[*]\nmax_line_length = 60\n");
+file_put_contents(
+    $overWide . '/Chain.php',
+    "<?php\nfinal class Chain\n{\n    public function run(): void\n    {\n        \$this->alpha()->bravo()->charlie();\n    }\n}\n",
+);
+$report = (new Doctor())->examine($overWide);
+check(
+    'a repository under its declared width has nothing to report',
+    $report['overWidth']['total'] === 0 && $report['overWidth']['advice'] === null,
+    json_encode($report['overWidth']),
+);
+// One chain of three links, pushed past the declaration.
+file_put_contents(
+    $overWide . '/Chain.php',
+    "<?php\nfinal class Chain\n{\n    public function run(): void\n    {\n        \$this->alphaMethod()->bravoMethod()->charlieMethod()->deltaMethod();\n    }\n}\n",
+);
+$report = (new Doctor())->examine($overWide);
+check(
+    'a chain over the declared width is counted',
+    $report['overWidth']['total'] === 1 && $report['overWidth']['chains'] === 1,
+    json_encode($report['overWidth']),
+);
+check(
+    'and the advice says so, with the width it was measured against',
+    str_contains(
+        (string) $report['overWidth']['advice'],
+        '1 lines exceed the declared width of 60, 1 of them method chains',
+    ),
+    (string) $report['overWidth']['advice'],
+);
+check(
+    // The repository can still be edited canonically; the chain is a limit of the
+    // toolchain, not a reason to call the repository unprepared. So the overrun is
+    // reported beside the findings, the way a missing resolver is, and adds none.
+    'and an overrun adds no finding',
+    !str_contains(implode(' ', $report['findings']), 'exceed the declared width'),
+    implode(' | ', $report['findings']),
+);
+// A single call with a long argument list is over the width too — but the printer breaks
+// those, so blaming the chain count for it would misdirect whoever reads the finding.
+file_put_contents(
+    $overWide . '/Chain.php',
+    "<?php\nfinal class Chain\n{\n    public function run(): void\n    {\n        \$this->singleCall('an argument long enough to run past the declaration');\n    }\n}\n",
+);
+$report = (new Doctor())->examine($overWide);
+check(
+    'a long single call counts against the width but not as a chain',
+    $report['overWidth']['total'] === 1 && $report['overWidth']['chains'] === 0,
+    json_encode($report['overWidth']),
+);
+// Excluded paths are not this repository's source, so they are not held to its width.
+file_put_contents(
+    $overWide . '/Chain.php',
+    "<?php\nfinal class Chain\n{\n    public function run(): void\n    {\n        \$this->alphaMethod()->bravoMethod()->charlieMethod()->deltaMethod();\n    }\n}\n",
+);
+RepositoryConfig::write($overWide, 60, ['Chain.php']);
+$report = (new Doctor())->examine($overWide);
+check(
+    'an excluded file is not held to the declared width',
+    $report['overWidth']['total'] === 0,
+    json_encode($report['overWidth']),
+);
+// Without a declared width there is no declaration to exceed, and doctor already says so.
+$noWidth = workspace();
+unlink($noWidth . '/.editorconfig');
+file_put_contents(
+    $noWidth . '/Chain.php',
+    "<?php\nfinal class Chain\n{\n    public function run(): void\n    {\n        \$this->alphaMethod()->bravoMethod()->charlieMethod()->deltaMethod();\n    }\n}\n",
+);
+$report = (new Doctor())->examine($noWidth);
+check(
+    'no declared width means nothing is reported as exceeding it',
+    $report['overWidth'] === null,
+    json_encode($report['overWidth']),
+);
+
 if ($problems !== []) {
     fwrite(
         STDERR,
