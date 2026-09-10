@@ -195,6 +195,21 @@ guidanceCheck(
     ) === '',
 );
 
+guidanceCheck(
+    'a mocks value that is not a boolean is refused, null included',
+    str_contains(
+        guidanceRefusal(
+            $subject,
+            [
+                'target' => ['select' => 'method:Order::sum'],
+                'operation' => 'rename_method',
+                'to' => 'total',
+                'mocks' => null,
+            ],
+        ),
+        '"mocks" is true or false',
+    ),
+);
 $mocksFlag = shell_exec(
     escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg(dirname(__DIR__) . '/bin/php-ast-edit') . ' apply --file x.php --select method:A::b --op set_name --value x --mocks 2>&1',
 ) ?? '';

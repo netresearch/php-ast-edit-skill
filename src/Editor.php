@@ -338,6 +338,14 @@ final class Editor
         if (($edit['operation'] ?? null) !== 'rename_method' || !is_string($edit['to'] ?? null) || !is_array($target) || !is_string($target['select'] ?? null)) {
             return null;
         }
+        // Checked before the path is chosen: a rename one file decides would ignore it.
+        $mocks = array_key_exists('mocks', $edit) ? $edit['mocks'] : false;
+
+        if (!is_bool($mocks)) {
+            throw new EditException(
+                'rename_method "mocks" is true or false: true also sets the method names PHPUnit mocks list.',
+            );
+        }
         [, , $roots] = $this->parseFile($path, null);
         $location = $this->locator->resolveSelect($roots, $target['select']);
 
@@ -360,14 +368,6 @@ final class Editor
 
             return [$source, $fileRoots];
         };
-
-        $mocks = $edit['mocks'] ?? false;
-
-        if (!is_bool($mocks)) {
-            throw new EditException(
-                'rename_method "mocks" is true or false: true also sets the method names PHPUnit mocks list.',
-            );
-        }
 
         return (new ProjectRename($finder, $parse))->plan(
             $path,
