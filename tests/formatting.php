@@ -1504,9 +1504,9 @@ $again = $printer->prettyPrintFile($parser->parse($wide) ?? []);
 check('and the broken form prints back to itself', $again === $wide, $again);
 
 // ---- doctor names what the printer cannot bring under the declared width ----------------
-// The width is a declaration the repository makes about itself, and a chain is the one
-// construct that keeps breaking it. Reporting it is the whole contribution here: nothing
-// in this package breaks chains, and no formatter rule does either.
+// The width is a declaration the repository makes about itself, and `doctor` reports what
+// the repository does not hold to it. The printer breaks lists and chains; this count is
+// what remains over the width after that, which no run of the tool will remove.
 $overWide = workspace();
 file_put_contents($overWide . '/.editorconfig', "root = true\n\n[*]\nmax_line_length = 60\n");
 file_put_contents(
@@ -1534,7 +1534,7 @@ check(
     'and the advice says so, with the width it was measured against',
     str_contains(
         (string) $report['overWidth']['advice'],
-        '1 lines exceed the declared width of 60, 1 of them method chains',
+        '1 lines exceed the declared width of 60, 1 of them carrying a method chain',
     ),
     (string) $report['overWidth']['advice'],
 );

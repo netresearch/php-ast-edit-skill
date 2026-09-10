@@ -163,7 +163,7 @@ final class Doctor
             'overWidth' => $overWidth === null ? null : [
                 ...$overWidth,
                 'advice' => $overWidth['total'] === 0 ? null : sprintf(
-                    '%d lines exceed the declared width of %d, %d of them method chains. The printer ' . 'breaks every comma-separated list at that width and does not break chains; no ' . 'formatter rule does either, because php-cs-fixer\'s method_chaining_indentation ' . 'only indents a chain that already spans lines. Longest line: %d. Normalising ' . 'will not remove these.',
+                    '%d lines exceed the declared width of %d, %d of them carrying a method chain. ' . 'The printer breaks comma-separated lists and method chains at that width, so what ' . 'is left is what it cannot reach: what stands before an expression on its own line, ' . 'string concatenation, and a name already longer than the budget. Longest line: %d. ' . 'Normalising will not remove these.',
                     $overWidth['total'],
                     $declaredWidth['width'],
                     $overWidth['chains'],
@@ -190,10 +190,10 @@ final class Doctor
      *
      * `doctor` answers whether a repository is ready for canonical editing, and this is the
      * one place where the honest answer is "it will still exceed its own declaration".
-     * Reported rather than fixed: the printer breaks every comma-separated list at the
-     * declared width and gives up on chains, and no formatter rule covers them either —
-     * php-cs-fixer's `method_chaining_indentation` indents a chain that already spans lines
-     * and never introduces the break.
+     * Reported rather than fixed: the printer breaks comma-separated lists and method
+     * chains at the declared width, and what is left over is what it cannot reach — what
+     * stands before an expression on its line, string concatenation, and a single name
+     * already longer than the budget.
      *
      * A chain is two or more `->call(` links on the line. One link is an ordinary call whose
      * argument list is long, and the printer already breaks those, so counting it here would
