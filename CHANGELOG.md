@@ -206,7 +206,8 @@ The historical figures below come from reported controlled runs comparing succes
 - `php-structured-edit` Agent Skill with the operation reference and a wrapper resolving the repository binary, `vendor/bin`, a local PHAR, or `PATH`.
 - PHAR build via `scripts/build-phar.php`.
 
-[Unreleased]: https://github.com/netresearch/php-ast-edit-skill/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/netresearch/php-ast-edit-skill/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/netresearch/php-ast-edit-skill/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/netresearch/php-ast-edit-skill/compare/v0.6.1...v0.7.0
 [0.6.1]: https://github.com/netresearch/php-ast-edit-skill/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/netresearch/php-ast-edit-skill/compare/v0.5.0...v0.6.0
