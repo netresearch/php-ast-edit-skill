@@ -3,6 +3,10 @@
 Haiku 4.5, isolated configurations, a real TYPO3 extension that declares both a
 `formatter` and a `verify` command. Method in [README.md](README.md).
 
+As of 2026-09-10 the gate wins on a single rename (p = 0.0034) and loses on a task with
+three changes in one file (p = 0.0012). The loss is refused `apply` calls — 54 of 98 —
+not AST editing: the one gated run with none of them finished under the ungated median.
+
 Read the confound section first. Every number taken before 2026-09-09 was measured
 against a subject whose own static analyser was broken by the measurement, and the
 `checksPassed` figures from that period say nothing about the tool.
@@ -99,19 +103,50 @@ Against the repaired subject, and with the tool on PATH in every arm:
 | task | arm | n | correct | turns | output | cache read | usd |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | B, as written | no skill | 8 | 8/8 | 14.5 | 5414 | 679956 | 0.187 |
+| B, as written | gate | 8 | 8/8 | 19.0 | 7996 | 959933 | 0.243 |
 | C, satisfiable | no skill | 8 | 8/8 | 13.0 | 4230 | 599092 | 0.172 |
+| C, satisfiable | gate | 8 | 8/8 | **22.0** | 6668 | 1143573 | **0.261** |
 
-Per-run turns: `10 12 13 14 15 15 17 19` and `12 12 12 13 13 14 17 18`.
+Per-run turns, no skill then gate:
 
-The pre-repair figure for the same arm and the same task was 17.0 turns at $0.217. Two
-and a half turns of the free arm's cost were the broken analyser, not the task.
+```
+B   10 12 13 14 15 15 17 19   |   12 14 16 19 19 20 27 28
+C   12 12 12 13 13 14 17 18   |   13 18 19 22 22 23 24 26
+```
 
-The gated arm is being re-measured. Its earlier figures are void for a second reason:
-`cfg-hook3` pointed at a worktree removed after the pull request it belonged to merged,
-so the hook script was missing and Claude Code denied every operation. All sixteen runs
-of that arm changed nothing at all and burned 17 to 40 turns saying so. A missing hook
-script fails closed, and an arm can be entirely dead without anything in the result JSON
-saying so — `subtype` was `success` and `is_error` was `false` in every one.
+**The gate loses here.** Exact one-sided Mann-Whitney p = 0.031 on B and p = 0.0012 on C:
+on the satisfiable task it costs nine more turns and half as much again in dollars. The
+outcomes are equal — all sixteen C trees pass the oracle, report `[OK] No errors` from
+the project's own PHPStan, and touch no file but the one named — so the difference is
+cost alone. There is no "invoked" column for the gated arm: a gate that refuses `Edit`
+makes the tool the only way through, and counting skill loads under it measures nothing.
+
+The pre-repair figure for the ungated arm on B was 17.0 turns at $0.217. Two and a half
+turns of that arm's cost were the broken analyser, not the task.
+
+### Where the gated arm's turns go
+
+Across its sixteen B and C transcripts: 98 `apply` calls, **54 of them refused**, and
+every run opened with one `Edit` the gate denied. Turns follow refusals — Pearson
+r = 0.74 over the sixteen runs, roughly one and a half turns per refused `apply` on top
+of a base of fifteen. The one run with no refusal took 12 turns, under the ungated median. The
+floor is real; the tool's contract is what keeps the arm off it.
+
+The refusals are one intent tried five ways. For the change the task names inside
+`resetLockout()` — replace `$this->rateLimitCache->remove($key)` with
+`$this->clearAttempts($key)` — runs sent `match`/`replace` fields, `replace_statement`
+on the method's selector, `replace_node`, `replace_child` with a guessed property path,
+and `insert_before`. The engine takes that edit only through `inspect` and a line and
+column, and that loop is the cost. The largest single class, eight `INVALID_RESULT`s,
+is an engine defect rather than a caller mistake: `ClassMethod` extends `Stmt`, so
+`replace_statement` accepts a method as its target, swaps it for a statement, and the
+file only fails at the reparse gate.
+
+An earlier gated arm's figures are void for a different reason: `cfg-hook3` pointed at a
+worktree removed after its pull request merged, so the hook script was missing and
+Claude Code denied every operation. All sixteen runs changed nothing and burned 17 to 40
+turns saying so — with `subtype` `success` and `is_error` `false` in every result.
+`run.sh` now refuses an arm whose hook scripts are not there.
 
 ## What the invoking runs still spend
 
