@@ -44,7 +44,9 @@ configuring formatting.
    and legacy `valid` mean parser success, and follow `checkIds` to top-level `verify`.
    Failed checks need repair; skipped or unrun checks remain outstanding where required.
 6. A passed configured command satisfies that same check on unchanged inputs. Repeat it
-   after relevant changes, or run additional checks required by the task. Use supplied
+   after relevant changes, or run additional checks required by the task. `alreadyRun`
+   names the project checks that passed on the written files: while nothing else changed,
+   do not rerun those by hand. Use supplied
    exact-byte evidence for its stated scope instead of rereading solely to reconfirm it.
    Neither passing tests nor byte preservation proves reference completeness. Report
    changed symbols and checks actually run; distinguish declarations from call sites.

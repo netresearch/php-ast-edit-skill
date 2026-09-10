@@ -528,6 +528,74 @@ try {
             );
         },
     );
+    verificationCase(
+        'a passing project check is named as already run, and only then',
+        function () use ($dir): void {
+            $pass = [PHP_BINARY, '-r', 'exit(0);'];
+            $fail = [PHP_BINARY, '-r', 'exit(1);'];
+            $shapes = [
+                'project passes' => [[['scope' => 'project', 'command' => $pass]], true],
+                'only changed files' => [
+                    [
+                        [
+                            'scope' => 'changed_files',
+                            'command' => [...$pass, RepositoryConfig::FILES_PLACEHOLDER],
+                        ],
+                    ],
+                    false,
+                ],
+                'a check fails' => [
+                    [
+                        ['scope' => 'project', 'command' => $pass],
+                        ['scope' => 'project', 'command' => $fail],
+                    ],
+                    false,
+                ],
+                'nothing declared' => [[], false],
+            ];
+
+            $case = 0;
+
+            foreach ($shapes as $label => [$verify, $named]) {
+                $root = $dir . '/already-' . ++$case;
+                mkdir($root);
+                verificationConfig($root, $verify);
+                $path = $root . DIRECTORY_SEPARATOR . 'a.php';
+
+                foreach (['full', 'compact', 'agent'] as $report) {
+                    file_put_contents($path, "<?php\nfunction a(): int { return 1; }\n");
+                    $result = (new Editor())->apply(
+                        [
+                            'report' => $report,
+                            'files' => [
+                                [
+                                    'path' => $path,
+                                    'edits' => [
+                                        [
+                                            'target' => ['select' => 'function:a'],
+                                            'operation' => 'set_name',
+                                            'value' => 'b',
+                                        ],
+                                    ],
+                                ],
+                            ],
+                        ],
+                    );
+                    verificationAssert(
+                        array_key_exists('alreadyRun', $result) === $named,
+                        $label . ' in ' . $report . ': alreadyRun ' . ($named ? 'missing' : 'present'),
+                    );
+
+                    if ($named) {
+                        verificationAssert(
+                            str_contains($result['alreadyRun'], 'exit(0);') && !str_contains($result['alreadyRun'], RepositoryConfig::FILES_PLACEHOLDER),
+                            $label . ' in ' . $report . ': alreadyRun does not name the project command',
+                        );
+                    }
+                }
+            }
+        },
+    );
 } finally {
     verificationClean($dir);
 }
