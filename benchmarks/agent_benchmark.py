@@ -95,7 +95,7 @@ def fixture_scope(state, files):
     Their bytes are pinned, which is why this is a digest and not a name list: a
     candidate asked to make the declared check pass can make it pass by rewriting it.
 
-    @return tuple[list[str], bool]
+    Returns the expected sorted names and whether the fixture's files are unchanged.
     """
     fixture = state.get("fixture", {})
     intact = all(
