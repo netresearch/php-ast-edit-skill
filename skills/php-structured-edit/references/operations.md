@@ -227,6 +227,17 @@ For each file, inspect:
 | `changed`, `changedLines`, `diff` | Measured final output, including a configured formatter |
 | `effects` | Operation effects and residual references; residual names may belong to another scope |
 | `warnings` | All accumulated warnings, omitted when empty; do not read only the first |
+
+A `warnings` entry starts with a code. Two are emitted by the engine itself:
+
+| Code | Meaning |
+| --- | --- |
+| `INCOMPLETE_RENAME` | A rename left occurrences of the old name in the file. They may belong to another scope; the engine does not decide that for you |
+| `PHP_LINT_SKIPPED` | The target PHP is newer than the running interpreter, so nothing checked the syntax the file will actually meet. Validate on the target runtime |
+
+The rest come from the printer and the repository configuration. In `agent` reports the
+same two conditions appear in `open` instead, as `REMAINING_IN_FILE` and
+`SYNTAX_UNCHECKED_ON_TARGET`.
 | `warning` | Legacy joined warning string for older consumers |
 | `parsed` | Output accepted by the selected PHP parser |
 | `valid` | Deprecated alias of `parsed`; **not** semantic validation |
