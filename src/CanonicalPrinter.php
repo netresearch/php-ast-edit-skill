@@ -45,6 +45,34 @@ final class CanonicalPrinter extends Standard
     /** The depth whose list a re-print is breaking, or null outside one. */
     private ?int $breakAtDepth = null;
 
+    /**
+     * The fewest calls a chain must have before it is worth putting on several lines.
+     *
+     * Two. A chain of two is the accessor shape `$this->service()->value()`, and it is the
+     * one a reader is most likely to prefer on one line — but it is also over the width
+     * only when it is genuinely long, because a short one never reaches this code. The
+     * threshold that matters is the width, not the link count.
+     */
+    private const MIN_CHAIN_LINKS = 2;
+
+    /**
+     * Whether a chain further out is already deciding how this one is printed.
+     *
+     * A chain is left-nested, so the outermost call renders first and every link below it
+     * is rendered from inside that call. Without this, each link would measure itself and
+     * break independently, and the receiver would be broken twice.
+     */
+    private bool $inChain = false;
+
+    /**
+     * Whether a chain is being measured flat, with the list hooks held back.
+     *
+     * The two hooks answer different questions and the list one answers first: it breaks
+     * a call's arguments, which makes the chain's first line short and hides that the
+     * chain itself is what does not fit.
+     */
+    private bool $flatChain = false;
+
     public function __construct(?PhpVersion $phpVersion = null, int $width = self::DEFAULT_WIDTH)
     {
         parent::__construct($phpVersion === null ? [] : ['phpVersion' => $phpVersion]);
@@ -119,12 +147,18 @@ final class CanonicalPrinter extends Standard
 
     protected function pExpr_MethodCall(Expr\MethodCall $node): string
     {
-        return $this->widthAware(fn (): string => parent::pExpr_MethodCall($node), $node->args);
+        return $this->chainAware(
+            $node,
+            fn (): string => $this->widthAware(fn (): string => parent::pExpr_MethodCall($node), $node->args),
+        );
     }
 
     protected function pExpr_NullsafeMethodCall(Expr\NullsafeMethodCall $node): string
     {
-        return $this->widthAware(fn (): string => parent::pExpr_NullsafeMethodCall($node), $node->args);
+        return $this->chainAware(
+            $node,
+            fn (): string => $this->widthAware(fn (): string => parent::pExpr_NullsafeMethodCall($node), $node->args),
+        );
     }
 
     protected function pExpr_StaticCall(Expr\StaticCall $node): string
@@ -173,6 +207,12 @@ final class CanonicalPrinter extends Standard
         try {
             $result = $print();
 
+            // A chain is being measured flat: breaking its lists now would answer the
+            // chain's question with the lists' answer.
+            if ($this->flatChain) {
+                return $result;
+            }
+
             // Nothing to break, already broken, or short enough. A re-print in
             // progress is left to finish: the depth it set is its own.
             if ($list === null || $list === [] || $this->breakAtDepth !== null) {
@@ -197,6 +237,109 @@ final class CanonicalPrinter extends Standard
             }
         } finally {
             --$this->listDepth;
+        }
+    }
+
+    /**
+     * Prints a method call, and prints its whole chain one call per line when the result
+     * does not fit.
+     *
+     * The list hooks cannot reach this. They break what is *inside* a call's parentheses,
+     * and a chain's length is the calls themselves: `$a->one()->two()->three()` has three
+     * argument lists and breaking any of them leaves the chain on one line. No formatter
+     * rule reaches it either — php-cs-fixer's `method_chaining_indentation` indents a chain
+     * that already spans lines and never introduces the break — so this is the printer's
+     * job or nobody's, the same argument the class comment makes for lists.
+     *
+     * Measured on a normalised 107-file TYPO3 extension at width 100, chains were 53 of
+     * the 410 lines that exceeded the declaration.
+     *
+     * @param callable(): string $print
+     */
+    private function chainAware(
+        Expr\MethodCall|Expr\NullsafeMethodCall $node,
+        callable $print,
+    ): string {
+        // A chain further out already owns this one; measuring again would break the
+        // receiver a second time, inside a rendering that is already multi-line.
+        if ($this->inChain) {
+            return $print();
+        }
+        $links = $this->chainLinks($node);
+
+        if (count($links) < self::MIN_CHAIN_LINKS) {
+            return $print();
+        }
+        // Measured flat, with the list hooks held back. A list inside the chain breaks
+        // readily — `->classes(` and its argument on separate lines — and that first line
+        // is short, so measuring the broken form would report the chain as fitting and
+        // leave a chain nobody asked to be broken there broken in the wrong place.
+        $this->inChain = true;
+        $this->flatChain = true;
+
+        try {
+            $flat = $print();
+        } finally {
+            $this->inChain = false;
+            $this->flatChain = false;
+        }
+
+        // What stands before the chain on its line — `return `, `$x = ` — is a level
+        // further up and out of reach, the same approximation the lists make, in the same
+        // direction: it breaks a little later than a document IR would.
+        if (!str_contains($flat, "\n") && $this->indentLevel + strlen($flat) <= $this->width) {
+            return $flat;
+        }
+
+        return $this->brokenChain($links);
+    }
+
+    /**
+     * The consecutive calls of the chain ending at `$node`, innermost first.
+     *
+     * Consecutive is the point: `$a->one() && $b->two()` is two calls and no chain, and a
+     * line break between them would say something untrue about the code.
+     *
+     * @return list<Expr\MethodCall|Expr\NullsafeMethodCall>
+     */
+    private function chainLinks(Expr\MethodCall|Expr\NullsafeMethodCall $node): array
+    {
+        $links = [];
+        $current = $node;
+
+        while ($current instanceof Expr\MethodCall || $current instanceof Expr\NullsafeMethodCall) {
+            array_unshift($links, $current);
+            $current = $current->var;
+        }
+
+        return $links;
+    }
+
+    /**
+     * The receiver on its own line, then one call per line, indented once.
+     *
+     * @param list<Expr\MethodCall|Expr\NullsafeMethodCall> $links
+     */
+    private function brokenChain(array $links): string
+    {
+        $this->inChain = true;
+
+        try {
+            $rendering = $this->pDereferenceLhs($links[0]->var);
+            $this->indent();
+
+            try {
+                foreach ($links as $link) {
+                    $arrow = $link instanceof Expr\NullsafeMethodCall ? '?->' : '->';
+                    $rendering .= $this->nl . $arrow . $this->pObjectProperty($link->name) . '(' . $this->pMaybeMultiline($link->args) . ')';
+                }
+            } finally {
+                $this->outdent();
+            }
+
+            return $rendering;
+        } finally {
+            $this->inChain = false;
         }
     }
 
