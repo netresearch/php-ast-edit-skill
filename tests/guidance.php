@@ -74,18 +74,18 @@ class Order
 }
 PHP;
 
-// An operation name that is not in the catalogue. `set_docblock` is the real case: six
-// edits away from `set_doc_comment`, so edit distance alone does not reach it, but it
-// shares the verb — which is the half the caller knew.
+// An operation name that is not in the catalogue. `set_docblock` was the measured case and is
+// now taken as a synonym outright (tests/scoped-replace.php); `set_doc_block` is the next
+// spelling of the same guess — seven edits from `set_doc_comment`, sharing only the verb.
 $unknown = guidanceRefusal(
     $subject,
     [
         'target' => ['select' => 'method:Order::sum'],
-        'operation' => 'set_docblock',
+        'operation' => 'set_doc_block',
         'value' => '/** x */',
     ],
 );
-guidanceCheck('an unknown operation is still named', str_contains($unknown, 'set_docblock'));
+guidanceCheck('an unknown operation is still named', str_contains($unknown, 'set_doc_block'));
 guidanceCheck(
     'an unknown operation suggests the catalogue entry it meant',
     str_contains($unknown, 'set_doc_comment'),

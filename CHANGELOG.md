@@ -6,6 +6,15 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Added
+
+- **`replace_expression` and `replace_statement` take a `match`.** With it, the target is a scope — `method:RateLimiter::resetLockout` — and every expression or statement inside it that is the same code as `match` is replaced, each with its own copy of `php`; the effect reports `replaced`. The comparison is structural, so spacing and quoting do not matter. Across sixteen gated agent sessions on a three-change task, "inside this method, replace X with Y" was tried five ways and refused each time; the engine took it only through `inspect` and a line and column, and 54 of 98 `apply` calls were refused. `--match` carries it in the flag form.
+- `set_docblock` and `update_docblock` are taken as `set_doc_comment`, and `set_doc_comment` reads `docComment` as its `value`. The engine refused both while naming, in the refusal, what the caller meant.
+
+### Fixed
+
+- **`replace_statement` no longer accepts a declaration.** A method, property or class is a `Stmt` to the parser, so the class check let the operation swap one for a statement; the file then failed only at the reparse gate with a syntax error on a line the caller never wrote. It is refused before mutation, and the refusal shows the `match` form.
+
 ## [0.8.0] - 2026-09-10
 
 ### Changed

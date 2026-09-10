@@ -16,7 +16,7 @@ final class Application
      *
      * @var list<string>
      */
-    private const OPERATION_FLAGS = ['php', 'value', 'alias', 'from', 'to', 'property', 'position', 'index'];
+    private const OPERATION_FLAGS = ['php', 'match', 'value', 'alias', 'from', 'to', 'property', 'position', 'index'];
 
     /**
      * Everything `apply --file` reads. Anything else is refused rather than dropped.
@@ -431,8 +431,8 @@ final class Application
         One edit against a named target is one call, with no payload file:
           php-ast-edit apply --file src/Foo.php --select method:Foo::bar \
               --op rename_variable --from nonce --to nonceValue
-        The operation's own arguments become flags: --php, --value, --alias, --from,
-        --to, --property, --position, --index, --parse-as. A file-level operation takes
+        The operation's own arguments become flags: --php, --match, --value, --alias,
+        --from, --to, --property, --position, --index, --parse-as. A file-level operation takes
         no target: php-ast-edit apply --file src/Foo.php --op add_use --value
         'Vendor\Package\Thing'. Several edits, or several files, stay in one apply
         request through JSON on stdin.

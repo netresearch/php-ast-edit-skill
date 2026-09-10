@@ -188,7 +188,7 @@ Shorthands over the primitives. They are ergonomics, not the coverage boundary.
 
 - `set_name` — set an identifier/name/variable or a node's static `name` property. Requires `value`.
 - `set_string` — set a `Scalar_String` value. Requires `value`.
-- `replace_expression` / `replace_statement` — replace one `Expr` / one `Stmt`. Requires `php`.
+- `replace_expression` / `replace_statement` — replace one `Expr` / one `Stmt`. Requires `php`. With `match`, the target is a scope instead — a method, function or class named by its selector — and every expression or statement inside it that is the same code as `match` is replaced, each with its own copy of `php`; the effect reports `replaced`. The comparison is structural: spacing and quoting in `match` do not matter, names, arguments and operators do. A match that finds nothing is refused, and so is `replace_statement` on a declaration without `match` — a method or class is a `Stmt` to the parser, and swapping one for a statement never parses. `replace_node` replaces a declaration whole.
 - `insert_before` / `insert_after` — insert around a node that already sits in a list. Requires `php`.
 - `delete` — alias of `delete_node`.
 - `replace_argument` / `add_argument` / `remove_argument` — zero-based call arguments. Require `index`; the first two require `php`.
