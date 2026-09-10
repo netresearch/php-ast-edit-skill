@@ -4,9 +4,11 @@ Haiku 4.5, isolated configurations, a real TYPO3 extension that declares both a
 `formatter` and a `verify` command. Method in [README.md](README.md).
 
 As of 2026-09-10 the gate wins on a single rename (p = 0.0034). On a task with three
-changes in one file it lost (p = 0.0012) to refused `apply` calls — 54 of 98 — and after
-the engine took the edits those refusals were attempting, it is at parity: 14.5 to 17.0
-turns against 13.0 without the skill, no longer measurably different in either direction.
+changes in one file it lost (p = 0.0012) to refused `apply` calls — 54 of 98. After the
+engine took the edits those refusals were attempting, no significant difference in turns
+or dollars against no skill remains (14.5 to 17.0 turns against 13.0; two-sided
+p = 0.34 to 0.62). That is an absence of evidence at n = 8, not an equivalence, and wall
+time is still significantly worse (p = 0.007 to 0.010).
 
 Read the confound section first. Every number taken before 2026-09-09 was measured
 against a subject whose own static analyser was broken by the measurement, and the
@@ -165,10 +167,24 @@ passes the oracle, reports `[OK] No errors` and touches only the named file.
 
 At `defa62f` the gate is significantly cheaper than before #62 — turns p = 0.013,
 dollars p = 0.0052 — and no longer measurably worse than no skill (turns p = 0.31,
-dollars p = 0.080). Wall time follows turns: across eight runs the API accounts for 557
-seconds against 400 without the skill, tools for 258 against 174. A cold project-wide
-PHPStan takes ten seconds and a warm one half a second, and the ungated arm pays the
-same cold run when it checks its own work.
+dollars p = 0.080).
+
+Wall time does not follow turns. It is significantly worse at both commits (two-sided
+p = 0.010 and 0.007, medians 91.7 and 104.4 seconds against 66.5), and most of the gap is
+checking, not editing. Across the eight `aa045f2` runs:
+
+| tool time, 8 runs | no skill | gate at `aa045f2` |
+| --- | --- | --- |
+| the model's own `composer ci:*` runs | 171 s in 18 | 303 s in 20 |
+| `verify` inside successful `apply` calls | — | 86 s in 26 |
+| refused `apply` calls | — | 4 s in 16 |
+
+Both arms end by running the project's static analysis and code style themselves. The
+gated arm adds `composer ci:check` three times and the unit suite four times, against
+none and once without the skill. The `verify` inside `apply` does not replace any of them here, because the
+subject declares that check with `scope: changed_files`: it analyses the one edited file,
+and the task asks whether the project still passes. Cache reads are not significantly
+different (p = 0.38).
 
 The fourth round did what it was built for and moved nothing else. The two classes it
 answers — a `match` asked for after `rename_method` had already done it, `add_member`
@@ -177,8 +193,10 @@ the third round (turns p = 0.68, dollars p = 0.67, two-sided). What is left is a
 tail: sixteen refusals of ten different shapes across eight runs, among them two
 operations that do not exist (`add_sibling_after`, `change_docblock`), `insert_into`
 without `property`, and a flag the CLI never had. Removing one shape per round does not
-move a median over eight runs whose own spread is several turns wide. The gate is at
-parity with no skill on this task, not ahead of it.
+move a median over eight runs whose own spread is several turns wide. Against no skill
+this round shows no significant difference in turns (p = 0.34) or dollars (p = 0.44); at
+n = 8 that bounds nothing tighter than the spread above, so the gate is not shown to be
+ahead on this task, and it is slower.
 
 ## What the invoking runs still spend
 
