@@ -36,13 +36,15 @@ interleaves the arms so drift lands on both.
 - **C** (`task-C.txt`): three changes in `Classes/Service/RateLimiterService.php` —
   rename a private method and its calls, add a private method and use it in
   `resetLockout()`, set a docblock — with the project's static analysis passing.
-  Oracle `oracle-C.sh`.
+  Oracle `oracle-C.sh`: the three changes by shape, and the project's unit suite passes.
 - **D** (`task-D.txt`): rename the public method
   `ExtensionConfigurationService::getConfiguration()` to `configuration()`, with its 29
-  calls in 12 files, and nothing else. Oracle `oracle-D.sh`: the declaration renamed, no
-  `->getConfiguration(` left, exactly 29 `->configuration(`, only those 12 files changed,
-  no new files. Checked before this round against an untouched tree (fails) and a tree
-  renamed by the engine (passes).
+  calls in 12 files, and nothing else. Nine more test files name the method in PHPUnit
+  mocks (`->method('getConfiguration')`, 67 literals). Oracle `oracle-D.sh`: the
+  declaration renamed, no `->getConfiguration(` left, exactly 29 `->configuration(`, only
+  PHP files under `Classes/` and `Tests/` changed, no new files, and the unit suite
+  (`phpunit -c Build/phpunit.xml --testsuite unit`) passes. Validated as listed under
+  Deviations.
 
 ## Size and order
 
@@ -74,3 +76,49 @@ inconclusive whatever its p-values say: a cheap arm that fails more often is not
 "Nachweislich günstiger" on a task means Holm rejects for that task on turns or dollars,
 with wall time not significantly worse (two-sided 0.05, reported). Anything else is
 reported as measured, including a result in the other direction.
+
+## Deviations
+
+### Round 1 stopped after 16 of 120 runs, 2026-09-10
+
+The first round started at 12:32 against tool commit `622ecfc` and was stopped at 13:11
+during run D05-gate. Its 16 complete runs (C01–C05 and D01–D04, both arms) and the
+interrupted one are kept outside the repository as `powered-aborted-1`. No analysis uses
+them.
+
+**Why.** Oracle D was wrong. It allowed only the twelve files with calls, but nine test
+files name the method as a string in PHPUnit mocks. A rename that leaves those strings
+fails 174 of the project's 682 unit tests. The oracle therefore failed five runs that
+renamed the mocks as well, and passed three that left them. Before the round it had been
+checked against an engine-renamed tree, and that tree was itself incomplete: the tool
+under test neither renamed the mock strings nor reported them. #68 fixes that gap. The
+rename now lists such literals under `renames.literals`, with the selector that one
+`replace_expression` takes to set them.
+
+**Seen before the stop:** exit statuses, oracle outcomes and diffs, plus one turn count
+(C01) that appeared in a progress line. No measure was compared between arms.
+
+**Changed for round 2:**
+
+- `oracle-D.sh` accepts changes to any PHP file under `Classes/` and `Tests/` and
+  requires the unit suite to pass; its shape checks stay.
+- `oracle-C.sh` requires the same unit suite, so both tasks share one definition of
+  correct.
+- The tool commit is main after #68.
+
+Tasks, prompts, N, order and analysis are unchanged, and the prompts do not mention the
+tests. A rename that breaks the project's own tests was wrong whether or not the prompt
+named them.
+
+**Revised oracles, validated before round 2** on the subject at `31275da`, one tree at a
+time. The old D oracle's outcome is given beside each round-1 run; the C oracle had
+passed all ten.
+
+| Tree | Revised oracle | Old oracle |
+| --- | --- | --- |
+| untouched (D, C) | fails, fails | — |
+| engine rename of the 29 calls only | fails | passed |
+| engine rename plus the listed mock literals | passes | — |
+| D01-free, D01-gate, D04-gate (mocks left) | fail | passed |
+| D02-free, D02-gate, D03-free, D03-gate, D04-free | pass | failed |
+| C01–C05, both arms | pass | passed |
