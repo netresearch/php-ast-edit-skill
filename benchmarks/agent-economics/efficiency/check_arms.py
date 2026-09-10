@@ -18,14 +18,17 @@ CHECK = "check.php"
 
 
 def load(path):
-    return json.loads(Path(path).read_text())
+    # Campaign directories are operator-selected local evidence; see benchmarks/TRUST.md.
+    return json.loads(Path(path).read_text())  # NOSONAR(S2083, S8707)
 
 
 def lines(path):
-    if not Path(path).exists():
+    if not Path(path).exists():  # NOSONAR(S6549)
         return []
     return [
-        json.loads(row) for row in Path(path).read_text().splitlines() if row.strip()
+        json.loads(row)
+        for row in Path(path).read_text().splitlines()  # NOSONAR(S2083, S8707)
+        if row.strip()
     ]
 
 
