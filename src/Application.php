@@ -684,6 +684,11 @@ final class Application
         }
 
         if (isset($options['declaration-only'])) {
+            if ($options['declaration-only'] !== true || $operation !== 'set_name') {
+                throw new EditException(
+                    '--declaration-only takes no value and belongs to --op set_name, where it keeps a rename to the method declaration alone.',
+                );
+            }
             $edit['declarationOnly'] = true;
         }
         $file = ['path' => $this->flagString($options, 'file', true), 'edits' => [$edit]];

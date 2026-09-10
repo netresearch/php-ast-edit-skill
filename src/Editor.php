@@ -128,7 +128,7 @@ final class Editor
             return $this->agentResult($transactions, $dryRun);
         }
         $compact = $report === 'compact';
-        $open = $this->open();
+        $open = $this->open($transactions);
         $result = [
             ...$open === null ? [] : ['open' => $open],
             'files' => array_map(
@@ -160,23 +160,29 @@ final class Editor
      * Measured: a gated run received 67 listed mock literals, saw the project's analysis
      * pass, and stopped — the literals sat in `renames` below the file reports, and 174 unit
      * tests failed. Static analysis does not read strings, so its pass is no evidence here.
+     * A file this apply edited is counted again on its final tree: literals set in the same
+     * transaction are no longer open.
+     *
+     * @param list<FileTransaction> $transactions
      */
-    private function open(): ?string
+    private function open(array $transactions): ?string
     {
         $open = [];
 
         foreach ($this->projectRenames as $i => $rename) {
-            $count = (int) ($rename['literalsCount'] ?? 0);
+            $method = (string) $rename['method'];
+            [$count, $files] = $this->remainingLiterals(
+                $rename['literals'] ?? [],
+                substr($method, (int) strrpos($method, ':') + 1),
+                $transactions,
+            );
 
             if ($count > 0) {
                 $open[] = sprintf(
                     '%d string literal(s) in %d file(s) still read %s (renames[%d].literals)',
                     $count,
-                    count(array_unique(array_column($rename['literals'], 'file'))),
-                    substr(
-                        (string) $rename['method'],
-                        (int) strrpos((string) $rename['method'], ':') + 1,
-                    ),
+                    $files,
+                    substr($method, (int) strrpos($method, ':') + 1),
                     $i,
                 );
             }
@@ -186,6 +192,33 @@ final class Editor
             'Not finished: %s. Static analysis does not read strings, so a passing check says nothing about them; a test that mocks or calls the method by name fails until those naming it are set.',
             implode('; ', $open),
         );
+    }
+
+    /**
+     * @param list<array{file: string, lines: list<int>}> $literals
+     * @param list<FileTransaction> $transactions
+     * @return array{0: int, 1: int} literals still reading `$name`, and the files they are in
+     */
+    private function remainingLiterals(array $literals, string $name, array $transactions): array
+    {
+        $perFile = [];
+
+        foreach ($literals as $entry) {
+            $perFile[$entry['file']] = ($perFile[$entry['file']] ?? 0) + count($entry['lines']);
+        }
+
+        foreach (array_keys($perFile) as $file) {
+            foreach ($transactions as $transaction) {
+                if ($transaction->mode === 'edit' && str_ends_with($this->canonicalPath($transaction->path), DIRECTORY_SEPARATOR . $file)) {
+                    $visitor = new NameLiterals($name);
+                    (new NodeTraverser($visitor))->traverse($transaction->roots);
+                    $perFile[$file] = count($visitor->found());
+                }
+            }
+        }
+        $perFile = array_filter($perFile);
+
+        return [array_sum($perFile), count($perFile)];
     }
 
     /**
@@ -440,7 +473,7 @@ final class Editor
         return [
             'reportVersion' => EditReport::AGENT_VERSION,
             'report' => 'agent',
-            ...$this->open() === null ? [] : ['open' => $this->open()],
+            ...$this->open($transactions) === null ? [] : ['open' => $this->open($transactions)],
             'outcome' => $outcome,
             'checks' => $checks,
             'checksPassed' => $declared ? $allPassed : null,
@@ -1768,9 +1801,11 @@ final class Editor
     private string $mutating = '';
 
     /**
-     * Calls that read a method name — `->name(`, `?->name(`, `::name(` — in the project's PHP
-     * files, or in the edited file alone where there is no project to list. Text, not types:
-     * it only decides whether a declaration-only rename would leave anything behind.
+     * Calls of a method name — `->name()`, `?->name()`, `::name()` — in the project's PHP
+     * files, or in the edited file alone where there is no project to list. Names, not
+     * types: it only decides whether a declaration-only rename would leave anything behind.
+     * A file is parsed only when its text names the method; a comment or string that does
+     * is not a call. A file that does not parse counts its textual hits, since they may be.
      *
      * @return array{0: int, 1: int} calls, and the files they are in
      */
@@ -1786,7 +1821,12 @@ final class Editor
         $holding = 0;
 
         foreach ($files === [] ? [$this->mutating] : $files as $file) {
-            $found = preg_match_all($pattern, (string) @file_get_contents($file));
+            $source = $this->readFile($file);
+            $found = preg_match_all($pattern, $source);
+
+            if ($found > 0) {
+                $found = $this->callNodes($source, $name) ?? $found;
+            }
 
             if ($found > 0) {
                 $calls += $found;
@@ -1795,6 +1835,25 @@ final class Editor
         }
 
         return [$calls, $holding];
+    }
+
+    /** Method and static calls of `$name` in `$source`, or null when it does not parse. */
+    private function callNodes(string $source, string $name): ?int
+    {
+        try {
+            $roots = $this->parser(null)->parse($source) ?? [];
+        } catch (\PhpParser\Error) {
+            return null;
+        }
+
+        return count(
+            (new NodeFinder())->find(
+                $roots,
+                static fn (
+                    Node $node,
+                ): bool => ($node instanceof Expr\MethodCall || $node instanceof Expr\NullsafeMethodCall || $node instanceof Expr\StaticCall) && $node->name instanceof Identifier && strcasecmp($node->name->toString(), $name) === 0,
+            ),
+        );
     }
 
     private function setName(NodeLocation $location, string $value, array &$roots): void

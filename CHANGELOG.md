@@ -8,7 +8,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Changed
 
-- `set_name` on a method declaration is refused with the `rename_method` edit that renames the declaration and its callers, ready to copy; `"declarationOnly": true` (`--declaration-only`) keeps the declaration-only change. A gated run renamed a public method with 29 callers that way, the project's analysis failed on every caller, and the run renamed them by hand in 51 tool calls.
+- `set_name` on a method declaration that the project calls by name is refused with the call count and the `rename_method` edit that renames the declaration and its callers, ready to copy; `"declarationOnly": true` (`--declaration-only`) keeps the declaration-only change. A gated run renamed a public method with 29 callers that way, the project's analysis failed on every caller, and the run renamed them by hand in 51 tool calls.
 - An apply whose project-wide rename left string literals reading the old name says so first, in `open`, in every report mode. A gated run received 67 listed mock literals, saw the analysis pass and stopped, and 174 unit tests failed: static analysis does not read strings.
 - A `match` that finds nothing while its replacement already stands in the scope is a reported no-op — `replaced: 0`, `alreadyPresent` — rather than a refusal. Four of eight gated runs asked `rename_method` to rename the call sites and then asked for the same rename by `match` in the same transaction.
 - `add_member` with a member as its target puts the new member directly after that one. Measured, a caller selected the method it wanted the new one beside and was refused for not naming the class. A `position` beside a member target is refused rather than ignored.

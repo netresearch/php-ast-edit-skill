@@ -83,7 +83,8 @@ as `checks: "none_declared"`, which is harder to misread. `agent` is versioned b
   for PHP strings such as mock `->method('old')`: a `replace_expression` on a listed
   `select` with `match`/`php` sets every literal of that entry; `set_string` on its `refs`
   sets only those that mean the method. An apply that leaves such literals says so first,
-  in `open`. `set_name` on a method declaration is refused unless `"declarationOnly": true`.
+  in `open`. `set_name` on a method declaration something calls is refused unless
+  `"declarationOnly": true`.
 - SQL/HTML/JSON inside a PHP literal: `set_string` on its `Scalar_String` node.
 - Class import: `add_use` with `value` and no `target`; already-imported is a reported
   no-op, a taken name an error. Add it in the same transaction as the code that needs it.

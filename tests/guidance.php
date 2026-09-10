@@ -182,6 +182,28 @@ guidanceCheck(
         ],
     ) === '',
 );
+// A comment or a string that reads like a call is not one.
+guidanceCheck(
+    'text that only looks like a call does not refuse the rename',
+    guidanceRefusal(
+        "<?php\nclass Order\n{\n    public function sum(): int\n    {\n        // \$this->sum() once lived here\n        return strlen('Order::sum()');\n    }\n}\n",
+        [
+            'target' => ['select' => 'method:Order::sum'],
+            'operation' => 'set_name',
+            'value' => 'total',
+        ],
+    ) === '',
+);
+
+foreach (['--op set_string --value x --declaration-only', '--op set_name --value x --declaration-only=false'] as $flags) {
+    $misplaced = shell_exec(
+        escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg(dirname(__DIR__) . '/bin/php-ast-edit') . ' apply --file x.php --select method:A::b ' . $flags . ' 2>&1',
+    ) ?? '';
+    guidanceCheck(
+        '--declaration-only is refused outside a valueless set_name: ' . $flags,
+        str_contains($misplaced, '--declaration-only takes no value and belongs to --op set_name'),
+    );
+}
 guidanceCheck(
     'set_name on a method declaration hands over the rename_method edit',
     str_contains(
