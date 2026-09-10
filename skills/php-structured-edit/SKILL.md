@@ -77,8 +77,9 @@ as `checks: "none_declared"`, which is harder to misread. `agent` is versioned b
   Delete: `mode: delete` with the snapshot hash.
 - Local rename: `rename_variable` on the enclosing function-like scope with `from`/`to`.
   Binding collisions are rejected; dynamic variables remain limited.
-- Method rename: `rename_method` with `to`; assess unresolved receivers and inheritance
-  limits. Cross-file resolution requires project-aware tools. Use `set_name` for an
+- Method rename: `rename_method` with `to` on `method:Class::name`. Public and inherited
+  methods are renamed across the project through Phpactor (`doctor` shows its setup);
+  read `renames.notRenamed` for YAML, TypoScript and Fluid mentions. Use `set_name` for an
   intentionally declaration-only change.
 - SQL/HTML/JSON inside a PHP literal: `set_string` on its `Scalar_String` node.
 - Class import: `add_use` with `value` and no `target`; already-imported is a reported

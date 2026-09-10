@@ -208,7 +208,22 @@ Shorthands over the primitives. They are ergonomics, not the coverage boundary.
   treated as calls to the child declaration. Inheritance, other receivers, and external
   callers require further analysis; read effect counts and warnings. The convenience operation accepts a private method or a method in a final class, with
   no extends/implements/trait composition; magic methods and unsafe late-static dispatch
-  are refused. Calls in the declaring class's property hooks are included. This operation does not perform project-wide type resolution. A transaction may still contain several files.
+  are refused. Calls in the declaring class's property hooks are included.
+
+  Any other method — public or protected in a class that can be extended, or in a class
+  with a parent, an interface or a trait — is renamed across the project when the edit
+  names it by selector (`method:Class::name`). The hierarchy comes from the project's
+  sources and Composer's class tables (the autoloader is never run); the call sites come
+  from Phpactor 2026.07.22.0, pinned by digest and located through `"phpactor"` in
+  `.php-ast-edit.json` or `PHP_AST_EDIT_PHPACTOR`. `doctor` reports it under `resolver`.
+  Every declaration and call site becomes a guarded `set_name` in one transaction, and the
+  result carries `renames`: `method`, `declarations`, `references`, `files`, `hierarchy`,
+  and `notRenamed` — mentions of the old name outside PHP, plus Fluid property reads
+  (`{item.label}` for `getLabel()`), which are listed and not changed. Refused before
+  anything is written: a declaration of the method outside the project (a vendor base
+  class, a PHP interface such as `JsonSerializable`), an ancestor found nowhere, a trait
+  declaring the method, the new name taken anywhere in the hierarchy, and any call whose
+  receiver type Phpactor could not determine.
 - `rename_variable` — rename a variable in a selected method, function, closure, or arrow
   function. Takes `from` and `to`, with or without `$`. Renames matching variable/parameter
   nodes and associated explicit captures; unrelated property and string names stay intact.
