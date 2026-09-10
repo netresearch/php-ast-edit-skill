@@ -60,7 +60,9 @@ for i in $(seq 1 "$N"); do
   if (( i % 2 )); then tasks=(C D); else tasks=(D C); fi
 
   for t in "${tasks[@]}"; do
-    phase=$(( i + (t == D ? 1 : 0) ))
+    offset=0
+    [[ "$t" == D ]] && offset=1
+    phase=$(( i + offset ))
     if (( phase % 2 )); then arms=(free gate); else arms=(gate free); fi
 
     for arm in "${arms[@]}"; do
