@@ -80,8 +80,13 @@ Verification also runs for eligible format-preserving edits. Excluded paths skip
 canonical formatter and do not trigger verification. Read the actual results instead of
 running the same checks again unchanged. `"report": "compact"` returns each verification
 result once in top-level `verify`, linked by file `checkIds`; `"report": "agent"` names
-every execution in `verifications` with the command and directory it ran in, which is what
-says whether a check has already covered the current bytes.
+every execution in `verifications` with the command and directory it ran in.
+
+`command` and `cwd` identify an execution. They do not say which bytes it saw. Before
+reusing a passed result, join `verifications[].id` through each file's `checkIds` and
+compare that file's `afterSha256` against the bytes on disk now — a later edit to any file
+the check covered makes the earlier pass stale. `proofExcludes` names the inputs the engine
+cannot observe at all.
 
 The stable formatting state is the composition of the canonical printer and the project
 formatter. To check it in CI, start from a **clean committed checkout**, run both tools,
