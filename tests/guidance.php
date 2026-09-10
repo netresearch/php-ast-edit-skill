@@ -159,6 +159,41 @@ guidanceCheck(
     str_contains($constant, 'Order::RATE'),
 );
 
+// set_name on a method declaration renames nothing that calls it. A gated run did that on a
+// method with 29 callers and then renamed them one by one; the refusal carries the edit that
+// renames both, ready to copy.
+$declaration = guidanceRefusal(
+    "<?php\nclass Order\n{\n    public function sum(): int\n    {\n        return 1;\n    }\n\n    public function twice(): int\n    {\n        return \$this->sum() * 2;\n    }\n}\n",
+    ['target' => ['select' => 'method:Order::sum'], 'operation' => 'set_name', 'value' => 'total'],
+);
+guidanceCheck(
+    'set_name on a method declaration counts the calls it would leave behind',
+    str_contains($declaration, '1 call(s) in 1 file(s)'),
+);
+// A method nothing calls loses nothing by a declaration-only rename.
+guidanceCheck(
+    'set_name on a method nobody calls is not refused',
+    guidanceRefusal(
+        $subject,
+        [
+            'target' => ['select' => 'method:Order::tax'],
+            'operation' => 'set_name',
+            'value' => 'levy',
+        ],
+    ) === '',
+);
+guidanceCheck(
+    'set_name on a method declaration hands over the rename_method edit',
+    str_contains(
+        $declaration,
+        '{"target": {"select": "method:Order::sum"}, "operation": "rename_method", "to": "total"}',
+    ),
+);
+guidanceCheck(
+    'set_name on a method declaration names the declaration-only opt-in',
+    str_contains($declaration, '"declarationOnly": true'),
+);
+
 // The two apply forms are alternatives. Mixing them used to report that the flag form
 // requires --op, which is true and answers nothing: the caller had a whole document and
 // did not want the flag form at all.

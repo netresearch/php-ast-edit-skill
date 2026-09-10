@@ -33,6 +33,7 @@ final class Application
         'sha256',
         'report',
         'dry-run',
+        'declaration-only',
         ...self::OPERATION_FLAGS,
     ];
 
@@ -532,7 +533,7 @@ final class Application
                 continue;
             }
 
-            if (in_array($arg, ['dry-run'], true)) {
+            if (in_array($arg, ['dry-run', 'declaration-only'], true)) {
                 $options[$arg] = true;
 
                 continue;
@@ -680,6 +681,10 @@ final class Application
 
         if ($parseAs !== null) {
             $edit['parseAs'] = $parseAs;
+        }
+
+        if (isset($options['declaration-only'])) {
+            $edit['declarationOnly'] = true;
         }
         $file = ['path' => $this->flagString($options, 'file', true), 'edits' => [$edit]];
 

@@ -128,7 +128,9 @@ final class Editor
             return $this->agentResult($transactions, $dryRun);
         }
         $compact = $report === 'compact';
+        $open = $this->open();
         $result = [
+            ...$open === null ? [] : ['open' => $open],
             'files' => array_map(
                 fn (FileTransaction $file): array => $this->report($file, $dryRun, $compact),
                 $transactions,
@@ -150,6 +152,40 @@ final class Editor
         }
 
         return $result;
+    }
+
+    /**
+     * What a project-wide rename left for the caller, said before anything else.
+     *
+     * Measured: a gated run received 67 listed mock literals, saw the project's analysis
+     * pass, and stopped — the literals sat in `renames` below the file reports, and 174 unit
+     * tests failed. Static analysis does not read strings, so its pass is no evidence here.
+     */
+    private function open(): ?string
+    {
+        $open = [];
+
+        foreach ($this->projectRenames as $i => $rename) {
+            $count = (int) ($rename['literalsCount'] ?? 0);
+
+            if ($count > 0) {
+                $open[] = sprintf(
+                    '%d string literal(s) in %d file(s) still read %s (renames[%d].literals)',
+                    $count,
+                    count(array_unique(array_column($rename['literals'], 'file'))),
+                    substr(
+                        (string) $rename['method'],
+                        (int) strrpos((string) $rename['method'], ':') + 1,
+                    ),
+                    $i,
+                );
+            }
+        }
+
+        return $open === [] ? null : sprintf(
+            'Not finished: %s. Static analysis does not read strings, so a passing check says nothing about them; a test that mocks or calls the method by name fails until those naming it are set.',
+            implode('; ', $open),
+        );
     }
 
     /**
@@ -404,6 +440,7 @@ final class Editor
         return [
             'reportVersion' => EditReport::AGENT_VERSION,
             'report' => 'agent',
+            ...$this->open() === null ? [] : ['open' => $this->open()],
             'outcome' => $outcome,
             'checks' => $checks,
             'checksPassed' => $declared ? $allPassed : null,
@@ -683,6 +720,7 @@ final class Editor
                 );
             }
             $this->lastEffect = [];
+            $this->mutating = $transaction->path;
             $this->applyOperation(
                 $entry['location'],
                 $entry['edit'],
@@ -1068,6 +1106,7 @@ final class Editor
                 return true;
                 // ---- Convenience shorthands over the primitives ------------------------------
             case 'set_name':
+                $this->refuseDeclarationOnlyRename($location, $edit, $roots);
                 $this->setName($location, $this->requiredString($edit, 'value'), $roots);
 
                 return true;
@@ -1667,6 +1706,95 @@ final class Editor
         if (!$node instanceof $class) {
             throw new EditException($message . ' Got ' . $node->getType() . '.');
         }
+    }
+
+    /**
+     * `set_name` on a method declaration renames the declaration and nothing that calls it.
+     *
+     * Measured: a gated run asked for exactly that on a public method with 29 callers, the
+     * project's analysis failed on every caller, and the run then renamed them one by one in
+     * 51 tool calls, the last through `sed` around the hook. `rename_method` does all of it
+     * in one edit. Where the declaration alone is meant, `declarationOnly` says so; the
+     * project-wide rename marks its own declaration edits the same way. A method nothing
+     * calls loses nothing, so it is renamed as asked.
+     *
+     * @param array<string, mixed> $edit
+     * @param list<Stmt> $roots
+     */
+    private function refuseDeclarationOnlyRename(
+        NodeLocation $location,
+        array $edit,
+        array $roots,
+    ): void {
+        $node = $location->node;
+        $method = match (true) {
+            $node instanceof Stmt\ClassMethod => $node,
+            $node instanceof Identifier && $location->parent instanceof Stmt\ClassMethod && $location->property === 'name' => $location->parent,
+            default => null,
+        };
+
+        if ($method === null || ($edit['declarationOnly'] ?? false) === true) {
+            return;
+        }
+        [$calls, $files] = $this->callsByName($method->name->toString());
+
+        if ($calls === 0) {
+            return;
+        }
+        $owner = null;
+
+        foreach ($this->locator->ancestry($roots, $method->getStartFilePos()) as $around) {
+            if ($around->node instanceof Stmt\ClassLike && $around->node->name !== null) {
+                $owner = $around->node->name->toString();
+
+                break;
+            }
+        }
+        $select = 'method:' . ($owner === null ? '' : $owner . '::') . $method->name->toString();
+
+        throw new EditException(
+            sprintf(
+                'set_name on %s renames the declaration only; %d call(s) in %d file(s) would keep the old name. rename_method renames the declaration and its callers across the project: {"target": {"select": "%s"}, "operation": "rename_method", "to": %s}. If the declaration alone is meant, add "declarationOnly": true.',
+                $select,
+                $calls,
+                $files,
+                $select,
+                json_encode($this->requiredString($edit, 'value')),
+            ),
+        );
+    }
+
+    /** The file an edit is being applied to, for checks that look beyond its tree. */
+    private string $mutating = '';
+
+    /**
+     * Calls that read a method name — `->name(`, `?->name(`, `::name(` — in the project's PHP
+     * files, or in the edited file alone where there is no project to list. Text, not types:
+     * it only decides whether a declaration-only rename would leave anything behind.
+     *
+     * @return array{0: int, 1: int} calls, and the files they are in
+     */
+    private function callsByName(string $name): array
+    {
+        try {
+            $files = ProjectIndex::for($this->mutating)->phpFiles();
+        } catch (EditException) {
+            $files = [];
+        }
+        $pattern = '/(?:->|::)\s*' . preg_quote($name, '/') . '\s*\(/i';
+        $calls = 0;
+        $holding = 0;
+
+        foreach ($files === [] ? [$this->mutating] : $files as $file) {
+            $found = preg_match_all($pattern, (string) @file_get_contents($file));
+
+            if ($found > 0) {
+                $calls += $found;
+                ++$holding;
+            }
+        }
+
+        return [$calls, $holding];
     }
 
     private function setName(NodeLocation $location, string $value, array &$roots): void
@@ -2317,7 +2445,7 @@ final class Editor
         'move_node' => ['requires' => ['into'], 'optional' => ['position']],
         'set_doc_comment' => ['requires' => ['value'], 'optional' => []],
         'remove_doc_comment' => ['requires' => [], 'optional' => []],
-        'set_name' => ['requires' => ['value'], 'optional' => []],
+        'set_name' => ['requires' => ['value'], 'optional' => ['declarationOnly']],
         'set_string' => ['requires' => ['value'], 'optional' => []],
         'replace_expression' => ['requires' => ['php'], 'optional' => ['match']],
         'replace_statement' => ['requires' => ['php'], 'optional' => ['match']],

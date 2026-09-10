@@ -181,6 +181,10 @@ try {
                 );
             }
             projectAssert(
+                !isset($result['open']),
+                'open without literals: ' . json_encode($result['open'] ?? null),
+            );
+            projectAssert(
                 ($rename['notRenamed'] ?? []) === ['config/Services.yaml:4'],
                 'yaml mention not listed: ' . json_encode($rename['notRenamed'] ?? null),
             );
@@ -445,6 +449,13 @@ try {
                     ],
                 ] && ($rename['literalsCount'] ?? null) === 5,
                 json_encode($rename),
+            );
+            projectAssert(
+                array_key_first($result) === 'open' && str_contains(
+                    (string) $result['open'],
+                    '5 string literal(s) in 3 file(s) still read fetch (renames[0].literals)',
+                ),
+                json_encode($result['open'] ?? null),
             );
             projectAssert(
                 str_contains(
