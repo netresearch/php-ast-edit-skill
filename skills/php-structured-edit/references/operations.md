@@ -190,11 +190,11 @@ Shorthands over the primitives. They are ergonomics, not the coverage boundary.
 
 - `set_name` — set an identifier/name/variable or a node's static `name` property. Requires `value`.
 - `set_string` — set a `Scalar_String` value. Requires `value`.
-- `replace_expression` / `replace_statement` — replace one `Expr` / one `Stmt`. Requires `php`. With `match`, the target is a scope instead — a method, function or class named by its selector — and every expression or statement inside it that is the same code as `match` is replaced, each with its own copy of `php`; the effect reports `replaced`. The comparison is structural: spacing and quoting in `match` do not matter, names, arguments and operators do. A match that finds nothing is refused, and so is `replace_statement` on a declaration without `match` — a method or class is a `Stmt` to the parser, and swapping one for a statement never parses. `replace_node` replaces a declaration whole.
+- `replace_expression` / `replace_statement` — replace one `Expr` / one `Stmt`. Requires `php`. With `match`, the target is a scope instead — a method, function or class named by its selector — and every expression or statement inside it that is the same code as `match` is replaced, each with its own copy of `php`; the effect reports `replaced`. The comparison is structural: spacing and quoting in `match` do not matter, names, arguments and operators do. A match that finds nothing is refused — unless the replacement already stands in the scope, as it does after a `rename_method` earlier in the same transaction: then the edit is a no-op reported as `replaced: 0` with `alreadyPresent`, and so is `replace_statement` on a declaration without `match` — a method or class is a `Stmt` to the parser, and swapping one for a statement never parses. `replace_node` replaces a declaration whole.
 - `insert_before` / `insert_after` — insert around a node that already sits in a list. Requires `php`.
 - `delete` — alias of `delete_node`.
 - `replace_argument` / `add_argument` / `remove_argument` — zero-based call arguments. Require `index`; the first two require `php`.
-- `add_member` — append a class/interface/trait/enum member. Requires `php`.
+- `add_member` — append a class/interface/trait/enum member. Requires `php`. With a member as the target instead of the class, the new member goes directly after that one; `position` then has nothing to say and is refused.
 - `add_parameter` — append a parameter. Requires `php`.
 - `add_attribute` — append an attribute group. Requires `php`.
 - `set_return_type` / `set_type` — set the `returnType` / `type` slot. Require type `php`.

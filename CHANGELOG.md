@@ -6,6 +6,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Changed
+
+- A `match` that finds nothing while its replacement already stands in the scope is a reported no-op — `replaced: 0`, `alreadyPresent` — rather than a refusal. Four of eight gated runs asked `rename_method` to rename the call sites and then asked for the same rename by `match` in the same transaction.
+- `add_member` with a member as its target puts the new member directly after that one. Measured, a caller selected the method it wanted the new one beside and was refused for not naming the class. A `position` beside a member target is refused rather than ignored.
+
 ### Added
 
 - **`replace_expression` and `replace_statement` take a `match`.** With it, the target is a scope — `method:RateLimiter::resetLockout` — and every expression or statement inside it that is the same code as `match` is replaced, each with its own copy of `php`; the effect reports `replaced`. The comparison is structural, so spacing and quoting do not matter. Across sixteen gated agent sessions on a three-change task, "inside this method, replace X with Y" was tried five ways and refused each time; the engine took it only through `inspect` and a line and column, and 54 of 98 `apply` calls were refused. `--match` carries it in the flag form.
