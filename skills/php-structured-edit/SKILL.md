@@ -79,7 +79,9 @@ as `checks: "none_declared"`, which is harder to misread. `agent` is versioned b
   Binding collisions are rejected; dynamic variables remain limited.
 - Method rename: `rename_method` with `to` on `method:Class::name`. Public and inherited
   methods are renamed across the project through Phpactor (`doctor` shows its setup);
-  read `renames.notRenamed` for YAML, TypoScript and Fluid mentions. Use `set_name` for an
+  read `renames.notRenamed` for YAML, TypoScript and Fluid mentions, and `renames.literals`
+  for PHP strings such as mock `->method('old')`: one `replace_expression` per listed
+  `select` with `match`/`php` sets those that mean the method. Use `set_name` for an
   intentionally declaration-only change.
 - SQL/HTML/JSON inside a PHP literal: `set_string` on its `Scalar_String` node.
 - Class import: `add_use` with `value` and no `target`; already-imported is a reported

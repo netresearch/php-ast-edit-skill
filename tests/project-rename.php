@@ -405,6 +405,80 @@ try {
     );
 
     projectCase(
+        'string literals that read the old name are listed by scope, and the listed edits set them',
+        function () use ($hierarchy): void {
+            $root = projectFixture(
+                'literals',
+                [
+                    ...$hierarchy,
+                    'tests/FetchTest.php' => "<?php\nnamespace App\\Tests;\nfinal class FetchTest\n{\n    public function testIt(object \$mock, object \$c): array\n    {\n        \$mock->method('fetch');\n\n        return [[\$c, 'fetch'], 'fetcher', 'Fetch'];\n    }\n}\n",
+                    'config/callables.php' => "<?php\nreturn ['fetch'];\n",
+                ],
+            );
+            $result = projectRename($root, BASE_FILE, 'method:Base::fetch', 'load', new CallsByName());
+            $rename = $result['renames'][0] ?? [];
+            projectAssert(
+                ($rename['literals'] ?? null) == [
+                    [
+                        'file' => 'config/callables.php',
+                        'refs' => ['stmts[0].expr.items[0].value'],
+                        'lines' => [2],
+                    ],
+                    [
+                        'file' => 'tests/FetchTest.php',
+                        'select' => 'class:FetchTest',
+                        'lines' => [7, 9],
+                    ],
+                ] && ($rename['literalsCount'] ?? null) === 3,
+                json_encode($rename),
+            );
+            projectAssert(
+                str_contains(
+                    (string) ($rename['literalsMeans'] ?? ''),
+                    "match \"'fetch'\", php \"'load'\"",
+                ),
+                (string) ($rename['literalsMeans'] ?? 'no literalsMeans'),
+            );
+            (new Editor(null))->apply(
+                [
+                    'files' => [
+                        [
+                            'path' => $root . '/tests/FetchTest.php',
+                            'edits' => [
+                                [
+                                    'target' => ['select' => $rename['literals'][1]['select']],
+                                    'operation' => 'replace_expression',
+                                    'match' => "'fetch'",
+                                    'php' => "'load'",
+                                ],
+                            ],
+                        ],
+                        [
+                            'path' => $root . '/config/callables.php',
+                            'edits' => [
+                                [
+                                    'target' => ['ref' => $rename['literals'][0]['refs'][0]],
+                                    'operation' => 'set_string',
+                                    'value' => 'load',
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            );
+            $test = (string) file_get_contents($root . '/tests/FetchTest.php');
+            projectAssert(
+                substr_count($test, "'load'") === 2 && str_contains($test, "'fetcher', 'Fetch'") && !str_contains($test, "'fetch'"),
+                $test,
+            );
+            projectAssert(
+                (string) file_get_contents($root . '/config/callables.php') === "<?php\nreturn ['load'];\n",
+                (string) file_get_contents($root . '/config/callables.php'),
+            );
+        },
+    );
+
+    projectCase(
         'a PHAR that is not the pinned release is refused, and doctor says so',
         function () use ($hierarchy): void {
             $root = projectFixture(

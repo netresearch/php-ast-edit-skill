@@ -5,8 +5,12 @@ declare(strict_types=1);
 namespace Netresearch\PhpAstEdit;
 
 use Netresearch\PhpAstEdit\Exception\EditException;
+use PhpParser\Node;
 use PhpParser\Node\Expr;
+use PhpParser\Node\Scalar\String_;
 use PhpParser\Node\Stmt;
+use PhpParser\NodeTraverser;
+use PhpParser\NodeVisitorAbstract;
 
 /**
  * A method rename the file alone cannot decide: every declaration and call site across the
@@ -24,9 +28,10 @@ use PhpParser\Node\Stmt;
  * - the new name already taken anywhere in the hierarchy;
  * - a call Phpactor could not attribute to a class (`risky`), which may be one of ours.
  *
- * Mentions of the old name outside PHP — Services.yaml, TCA, TypoScript, Fluid property
- * access — are not renamed and not refused; they are listed, because only a person or a
- * model reading them can say whether they meant this method.
+ * Mentions of the old name outside PHP — Services.yaml, TypoScript, Fluid property access —
+ * and PHP string literals that read it — a PHPUnit `->method('fetch')`, a callable — are not
+ * renamed and not refused; they are listed, because only a person or a model reading them
+ * can say whether they meant this method.
  */
 final class ProjectRename
 {
@@ -193,6 +198,7 @@ final class ProjectRename
             $files[$file] = ['sha256' => hash('sha256', $source), 'edits' => $edits];
         }
         [$mentions, $total] = $this->mentions($index, $from);
+        [$literals, $literalCount, $unread] = $this->literals($index, $from);
 
         return [
             'files' => $files,
@@ -208,8 +214,18 @@ final class ProjectRename
                 'resolver' => $resolver,
                 'notRenamed' => $mentions,
                 'notRenamedCount' => $total,
-                'notRenamedMeans' => 'Mentions of the old name outside PHP — configuration, TCA, TypoScript, Fluid templates. They were not changed; each needs reading.',
+                'notRenamedMeans' => 'Mentions of the old name outside PHP — configuration, TypoScript, Fluid templates. They were not changed; each needs reading.',
                 'ancestorsSeen' => $hierarchy,
+                ...$literals === [] ? [] : [
+                    'literals' => $literals,
+                    'literalsCount' => $literalCount,
+                    'literalsMeans' => sprintf(
+                        "PHP string literals that read %1\$s, such as a PHPUnit ->method('%1\$s') or a callable. Not changed: which class each one names is not known here, and another class may have a method of that name. For those that mean this method, one apply with a replace_expression per entry — target.select as listed, match \"'%1\$s'\", php \"'%2\$s'\" — sets every one in that scope; an entry with refs takes set_string on each ref.",
+                        $from,
+                        $to,
+                    ),
+                ],
+                ...$unread === [] ? [] : ['literalsUnread' => $unread],
             ],
         ];
     }
@@ -471,5 +487,99 @@ final class ProjectRename
         }
 
         return [$listed, $total];
+    }
+
+    /**
+     * PHP string literals that read the old name: `->method('fetch')` in a PHPUnit mock, a
+     * callable `[$service, 'fetch']`, `method_exists($x, 'fetch')`. Which class each one
+     * names takes dataflow the engine does not have, and a vendor class may declare a method
+     * of the same name, so none is changed. They are grouped by the declaration that holds
+     * them, because that is the scope one `replace_expression` with `match` can name to set
+     * them all; a literal outside any declaration comes with its ref for `set_string`.
+     *
+     * Measured on a TYPO3 extension: renaming a service getter left 67 mock literals in nine
+     * test files, and 174 of its 682 unit tests failed until they were changed as well.
+     *
+     * @return array{0: list<array<string, mixed>>, 1: int, 2: list<string>}
+     */
+    private function literals(ProjectIndex $index, string $from): array
+    {
+        $groups = [];
+        $total = 0;
+        $unread = [];
+
+        foreach ($index->phpFiles() as $file) {
+            if (filesize($file) > 1000000 || !str_contains((string) file_get_contents($file), $from)) {
+                continue;
+            }
+            $relative = substr($file, strlen($index->root) + 1);
+
+            try {
+                [, $roots] = ($this->parse)($file);
+            } catch (EditException|\PhpParser\Error) {
+                $unread[] = $relative;
+
+                continue;
+            }
+            $visitor = new class ($from) extends NodeVisitorAbstract {
+                /** @var list<array{0: ?string, 1: String_}> */
+                public array $found = [];
+
+                /** @var list<?string> the outermost named declaration, once per level entered */
+                private array $scopes = [];
+
+                public function __construct(private readonly string $from) {}
+
+                public function enterNode(Node $node): ?int
+                {
+                    if ($node instanceof Stmt\ClassLike || $node instanceof Stmt\Function_) {
+                        $this->scopes[] = $this->scopes === [] ? self::selector($node) : end($this->scopes);
+                    }
+
+                    if ($node instanceof String_ && $node->value === $this->from) {
+                        $this->found[] = [$this->scopes === [] ? null : end($this->scopes), $node];
+                    }
+
+                    return null;
+                }
+
+                public function leaveNode(Node $node): ?int
+                {
+                    if ($node instanceof Stmt\ClassLike || $node instanceof Stmt\Function_) {
+                        array_pop($this->scopes);
+                    }
+
+                    return null;
+                }
+
+                private static function selector(Stmt\ClassLike|Stmt\Function_ $node): ?string
+                {
+                    $kind = match (true) {
+                        $node instanceof Stmt\Function_ => 'function',
+                        $node instanceof Stmt\Interface_ => 'interface',
+                        $node instanceof Stmt\Trait_ => 'trait',
+                        $node instanceof Stmt\Enum_ => 'enum',
+                        default => 'class',
+                    };
+
+                    return $node->name === null ? null : $kind . ':' . $node->name->toString();
+                }
+            };
+            (new NodeTraverser($visitor))->traverse($roots);
+
+            foreach ($visitor->found as [$select, $node]) {
+                ++$total;
+                $key = $relative . "\x00" . $select;
+                $groups[$key] ??= ['file' => $relative] + ($select === null ? ['refs' => []] : ['select' => $select]) + ['lines' => []];
+                $groups[$key]['lines'][] = $node->getStartLine();
+
+                if ($select === null) {
+                    $groups[$key]['refs'][] = $this->locator->locate($roots, $node->getStartFilePos(), 'Scalar_String')->path;
+                }
+            }
+        }
+        ksort($groups);
+
+        return [array_values($groups), $total, $unread];
     }
 }
