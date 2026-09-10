@@ -3,9 +3,10 @@
 Haiku 4.5, isolated configurations, a real TYPO3 extension that declares both a
 `formatter` and a `verify` command. Method in [README.md](README.md).
 
-As of 2026-09-10 the gate wins on a single rename (p = 0.0034) and loses on a task with
-three changes in one file (p = 0.0012). The loss is refused `apply` calls — 54 of 98 —
-not AST editing: the one gated run with none of them finished under the ungated median.
+As of 2026-09-10 the gate wins on a single rename (p = 0.0034). On a task with three
+changes in one file it lost (p = 0.0012) to refused `apply` calls — 54 of 98 — and after
+the engine took the edits those refusals were attempting, it is at parity: 14.5 to 17.0
+turns against 13.0 without the skill, no longer measurably different in either direction.
 
 Read the confound section first. Every number taken before 2026-09-09 was measured
 against a subject whose own static analyser was broken by the measurement, and the
@@ -129,8 +130,8 @@ turns of that arm's cost were the broken analyser, not the task.
 Across its sixteen B and C transcripts: 98 `apply` calls, **54 of them refused**, and
 every run opened with one `Edit` the gate denied. Turns follow refusals — Pearson
 r = 0.74 over the sixteen runs, roughly one and a half turns per refused `apply` on top
-of a base of fifteen. The one run with no refusal took 12 turns, under the ungated median. The
-floor is real; the tool's contract is what keeps the arm off it.
+of a base of fifteen. The one run with no refusal took 12 turns, under the ungated
+median. The floor is real; the tool's contract is what keeps the arm off it.
 
 The refusals are one intent tried five ways. For the change the task names inside
 `resetLockout()` — replace `$this->rateLimitCache->remove($key)` with
@@ -147,6 +148,37 @@ worktree removed after its pull request merged, so the hook script was missing a
 Claude Code denied every operation. All sixteen runs changed nothing and burned 17 to 40
 turns saying so — with `subtype` `success` and `is_error` `false` in every result.
 `run.sh` now refuses an arm whose hook scripts are not there.
+
+### Closing it, one refusal class at a time
+
+Each round below is the same gated arm on task C, n = 8, against a frozen commit, and
+each commit answers the refusals the round before it left. Every tree in every round
+passes the oracle, reports `[OK] No errors` and touches only the named file.
+
+| gate against | turns | usd | wall s | apply calls | refused |
+| --- | --- | --- | --- | --- | --- |
+| `main` before #62 | 22.0 | 0.261 | 101.1 | 54 | 29 |
+| `9088a31` — `match` inside a named scope | 16.5 | 0.218 | 112.7 | 36 | 17 |
+| `defa62f` — lone unknown field, qualified selectors | **14.5** | **0.198** | 91.7 | 35 | 11 |
+| `aa045f2` — idempotent `match`, member beside a member | 17.0 | 0.206 | 104.4 | 42 | 16 |
+| no skill | 13.0 | 0.172 | 66.5 | — | — |
+
+At `defa62f` the gate is significantly cheaper than before #62 — turns p = 0.013,
+dollars p = 0.0052 — and no longer measurably worse than no skill (turns p = 0.31,
+dollars p = 0.080). Wall time follows turns: across eight runs the API accounts for 557
+seconds against 400 without the skill, tools for 258 against 174. A cold project-wide
+PHPStan takes ten seconds and a warm one half a second, and the ungated arm pays the
+same cold run when it checks its own work.
+
+The fourth round did what it was built for and moved nothing else. The two classes it
+answers — a `match` asked for after `rename_method` had already done it, `add_member`
+aimed at a method — do not recur in its transcripts, and the arm is no different from
+the third round (turns p = 0.68, dollars p = 0.67, two-sided). What is left is a long
+tail: sixteen refusals of ten different shapes across eight runs, among them two
+operations that do not exist (`add_sibling_after`, `change_docblock`), `insert_into`
+without `property`, and a flag the CLI never had. Removing one shape per round does not
+move a median over eight runs whose own spread is several turns wide. The gate is at
+parity with no skill on this task, not ahead of it.
 
 ## What the invoking runs still spend
 
