@@ -34,6 +34,7 @@ final class Application
         'report',
         'dry-run',
         'declaration-only',
+        'mocks',
         ...self::OPERATION_FLAGS,
     ];
 
@@ -533,7 +534,7 @@ final class Application
                 continue;
             }
 
-            if (in_array($arg, ['dry-run', 'declaration-only'], true)) {
+            if (in_array($arg, ['dry-run', 'declaration-only', 'mocks'], true)) {
                 $options[$arg] = true;
 
                 continue;
@@ -690,6 +691,15 @@ final class Application
                 );
             }
             $edit['declarationOnly'] = true;
+        }
+
+        if (isset($options['mocks'])) {
+            if ($options['mocks'] !== true || $operation !== 'rename_method') {
+                throw new EditException(
+                    '--mocks takes no value and belongs to --op rename_method, where it also sets the method names PHPUnit mocks list.',
+                );
+            }
+            $edit['mocks'] = true;
         }
         $file = ['path' => $this->flagString($options, 'file', true), 'edits' => [$edit]];
 

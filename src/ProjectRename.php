@@ -60,6 +60,7 @@ final class ProjectRename
         NodeLocation $location,
         string $to,
         string $reason,
+        bool $mocks = false,
     ): array {
         $method = $location->node;
         $owner = $location->parent;
@@ -199,6 +200,14 @@ final class ProjectRename
             $files[$file] = ['sha256' => hash('sha256', $source), 'edits' => $edits];
         }
         [$mentions, $total] = $this->mentions($index, $from);
+        [$literals, $literalCount, $unread, $mockEdits] = $this->literals($index, $from, $mocks ? $to : null);
+        $mocksSet = 0;
+
+        foreach ($mockEdits as $file => $entry) {
+            $files[$file] ??= ['sha256' => $entry['sha256'], 'edits' => []];
+            array_push($files[$file]['edits'], ...$entry['edits']);
+            $mocksSet += count($entry['edits']);
+        }
 
         return [
             'files' => $files,
@@ -216,16 +225,24 @@ final class ProjectRename
                 'notRenamedCount' => $total,
                 'notRenamedMeans' => 'Mentions of the old name outside PHP — configuration, TypoScript, Fluid templates. They were not changed; each needs reading.',
                 'ancestorsSeen' => $hierarchy,
-                ...$this->literalReport($index, $from, $to),
+                ...$mocks ? ['mocksSet' => $mocksSet] : [],
+                ...$this->literalReport($literals, $literalCount, $unread, $from, $to),
             ],
         ];
     }
 
     /** @return array<string, mixed> the `literals` fields of the report, empty when there are none */
-    private function literalReport(ProjectIndex $index, string $from, string $to): array
-    {
-        [$literals, $count, $unread] = $this->literals($index, $from);
-
+    /**
+     * @param list<array<string, mixed>> $literals
+     * @param list<string> $unread
+     */
+    private function literalReport(
+        array $literals,
+        int $count,
+        array $unread,
+        string $from,
+        string $to,
+    ): array {
         return [
             ...$literals === [] ? [] : [
                 'literals' => $literals,
@@ -512,13 +529,17 @@ final class ProjectRename
      * Measured on a TYPO3 extension: renaming a service getter left 67 mock literals in nine
      * test files, and 174 of its 682 unit tests failed until they were changed as well.
      *
-     * @return array{0: list<array<string, mixed>>, 1: int, 2: list<string>}
+     * With `$mocksTo`, the literals a PHPUnit mock's method list holds are set to it instead
+     * of listed: the caller asked for that shape by name, and the rest stays listed.
+     *
+     * @return array{0: list<array<string, mixed>>, 1: int, 2: list<string>, 3: array<string, array{sha256: string, edits: list<array<string, mixed>>}>}
      */
-    private function literals(ProjectIndex $index, string $from): array
+    private function literals(ProjectIndex $index, string $from, ?string $mocksTo): array
     {
         $groups = [];
         $total = 0;
         $unread = [];
+        $mockEdits = [];
 
         foreach ($index->phpFiles() as $file) {
             $relative = substr($file, strlen($index->root) + 1);
@@ -536,17 +557,58 @@ final class ProjectRename
 
             // Every project file already parsed when the index was built, or the rename was
             // refused; a parse error cannot reach this point.
-            [, $roots] = ($this->parse)($file);
+            [$source, $roots] = ($this->parse)($file);
             $visitor = new NameLiterals($from);
             (new NodeTraverser($visitor))->traverse($roots);
-
             $found = $visitor->found();
+
+            if ($mocksTo !== null) {
+                $edits = $this->mockEdits($visitor, $found, $roots, $from, $mocksTo);
+                $found = array_values(
+                    array_filter($found, static fn (array $hit): bool => !$visitor->isMock($hit[1])),
+                );
+
+                if ($edits !== []) {
+                    $mockEdits[$file] = ['sha256' => hash('sha256', $source), 'edits' => $edits];
+                }
+            }
             $total += count($found);
             $this->group($groups, $relative, $found, $roots);
         }
         ksort($groups);
 
-        return [array_values($groups), $total, $unread];
+        return [array_values($groups), $total, $unread, $mockEdits];
+    }
+
+    /**
+     * @param list<array{0: ?string, 1: String_}> $found
+     * @param list<Stmt> $roots
+     * @return list<array<string, mixed>>
+     */
+    private function mockEdits(
+        NameLiterals $visitor,
+        array $found,
+        array $roots,
+        string $from,
+        string $to,
+    ): array {
+        $edits = [];
+
+        foreach ($found as [, $node]) {
+            if ($visitor->isMock($node)) {
+                $edits[] = [
+                    'operation' => 'set_string',
+                    'target' => [
+                        'ref' => $this->locator->locate($roots, $node->getStartFilePos(), 'Scalar_String')->path,
+                        'kind' => 'Scalar_String',
+                    ],
+                    'expect' => ['value' => $from, 'type' => 'Scalar_String'],
+                    'value' => $to,
+                ];
+            }
+        }
+
+        return $edits;
     }
 
     /**

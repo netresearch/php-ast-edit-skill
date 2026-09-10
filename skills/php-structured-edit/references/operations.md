@@ -237,6 +237,15 @@ Shorthands over the primitives. They are ergonomics, not the coverage boundary.
   class, a PHP interface such as `JsonSerializable`), an ancestor found nowhere, a trait
   declaring the method, the new name taken anywhere in the hierarchy, and any call whose
   receiver type Phpactor could not determine.
+
+  With `"mocks": true` (`--mocks`), the project-wide rename also sets the literals a PHPUnit
+  mock lists the method by: the first argument of `->method()`, the entries of
+  `->onlyMethods()`, `->addMethods()` and `->setMethods()`, the method list of
+  `createPartialMock()` and the keys of `createConfiguredMock()`. It counts them as
+  `mocksSet`. Which class a mock stands for is not resolved, so a mock of another class
+  with a method of the same name is set too; everything else — data provider names,
+  callables, enum values — stays listed under `literals`. A rename one file decides
+  (a private method, a final class without a hierarchy) has no mocks to set.
 - `rename_variable` — rename a variable in a selected method, function, closure, or arrow
   function. Takes `from` and `to`, with or without `$`. Renames matching variable/parameter
   nodes and associated explicit captures; unrelated property and string names stay intact.
