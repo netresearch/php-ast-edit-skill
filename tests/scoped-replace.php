@@ -502,6 +502,88 @@ exec(
 );
 scopedCheck('contexts --operation answers for a synonym', $contextsStatus === 0);
 
+// --- From the run against defa62f ---------------------------------------------------------
+// rename_method renames the call sites; a second edit asking for the same rename by `match`
+// then finds nothing to replace — but its end state holds, so it is a reported no-op.
+$renameThenMatch = (static function () use ($dir, $subject): array {
+    $path = $dir . '/Twice.php';
+    file_put_contents($path, $subject);
+
+    try {
+        $result = (new Editor())->apply(
+            [
+                'files' => [
+                    [
+                        'path' => $path,
+                        'edits' => [
+                            [
+                                'target' => ['select' => 'method:RateLimiter::lockoutKeyFor'],
+                                'operation' => 'rename_method',
+                                'to' => 'keyFor',
+                            ],
+                            [
+                                'target' => ['select' => 'method:RateLimiter::resetLockout'],
+                                'operation' => 'replace_expression',
+                                'match' => '$this->lockoutKeyFor($username, $ip)',
+                                'php' => '$this->keyFor($username, $ip)',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        );
+        $error = '';
+    } catch (EditException $e) {
+        $result = null;
+        $error = $e->getMessage();
+    }
+    $code = (string) file_get_contents($path);
+    @unlink($path);
+
+    return ['result' => $result, 'error' => $error, 'code' => $code];
+})();
+scopedCheck(
+    'a match whose replacement already stands is not refused',
+    $renameThenMatch['error'] === '',
+);
+scopedCheck(
+    'the rename is applied',
+    str_contains($renameThenMatch['code'], '$this->keyFor($username, $ip)'),
+);
+$secondEffect = $renameThenMatch['result']['files'][0]['effects'][1] ?? [];
+scopedCheck(
+    'and the no-op is reported as such',
+    ($secondEffect['replaced'] ?? null) === 0 && ($secondEffect['alreadyPresent'] ?? null) === 1,
+);
+
+// add_member aimed at a member puts the new one right after it.
+$beside = scopedApply(
+    $subject,
+    [
+        'target' => ['select' => 'method:RateLimiter::recordSuccess'],
+        'operation' => 'add_member',
+        'php' => 'private function forget(string $key): void {}',
+    ],
+);
+scopedCheck('add_member on a method target is accepted', $beside['error'] === '');
+scopedCheck(
+    'and places the new member directly after it',
+    ($a = strpos($beside['code'], 'function recordSuccess(')) !== false && ($b = strpos($beside['code'], 'function forget(')) !== false && ($c = strpos($beside['code'], 'function clearAttempts(')) !== false && $a < $b && $b < $c,
+);
+$besideWithPosition = scopedApply(
+    $subject,
+    [
+        'target' => ['select' => 'method:RateLimiter::recordSuccess'],
+        'operation' => 'add_member',
+        'php' => 'private function forget(string $key): void {}',
+        'position' => 'start',
+    ],
+);
+scopedCheck(
+    'a position beside a member target is refused, not ignored',
+    str_contains($besideWithPosition['error'], 'target the class'),
+);
+
 rmdir($dir);
 
 if ($failed !== []) {

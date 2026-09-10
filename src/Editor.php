@@ -1005,10 +1005,28 @@ final class Editor
         switch ($operation) {
             // ---- Semantic convenience ----------------------------------------------------
             case 'add_member':
+                // A member as target means "next to this one": measured, a caller selected the
+                // method it wanted the new one beside and met a refusal for not naming the class.
+                if (!$node instanceof Stmt\ClassLike && $location->parent instanceof Stmt\ClassLike && $location->property === 'stmts') {
+                    if (isset($edit['position'])) {
+                        throw new EditException(
+                            'add_member with a member as its target puts the new member directly after that member, so position has nothing to say. For start, end or an index, target the class.',
+                        );
+                    }
+                    $location->insertAfter(
+                        $snippets->parseFirst(
+                            $this->memberContexts($location->parent),
+                            $this->requiredString($edit, 'php'),
+                        ),
+                        $roots,
+                    );
+
+                    return true;
+                }
                 $this->assertType(
                     $node,
                     Stmt\ClassLike::class,
-                    'add_member requires a class-like target.',
+                    'add_member requires a class-like target, or a member to put the new one after.',
                 );
                 $location->insertInto(
                     'stmts',
@@ -2395,6 +2413,25 @@ final class Editor
             }
         };
         (new NodeTraverser($finder))->traverse([$root]);
+
+        // Nothing to replace, but the replacement already stands in scope: the edit's end state
+        // holds, so it is a reported no-op, as add_use is for an import that is already there.
+        // Measured four times in eight runs: rename_method renamed the call sites, and a second
+        // edit in the same transaction asked for the very rename by `match` and found nothing.
+        if ($finder->found->count() === 0) {
+            $present = new $finder(
+                $root,
+                $context === 'expr' ? Expr::class : Stmt::class,
+                $snippets->parseOne($context, $php),
+            );
+            (new NodeTraverser($present))->traverse([$root]);
+
+            if ($present->found->count() > 0) {
+                $this->lastEffect = ['replaced' => 0, 'alreadyPresent' => $present->found->count()];
+
+                return;
+            }
+        }
 
         if ($finder->found->count() === 0) {
             throw new EditException(
