@@ -516,10 +516,18 @@ final class ProjectRename
         $unread = [];
 
         foreach ($index->phpFiles() as $file) {
-            if (filesize($file) > 1000000 || !str_contains((string) file_get_contents($file), $from)) {
+            $relative = substr($file, strlen($index->root) + 1);
+            $content = filesize($file) > 1000000 ? false : file_get_contents($file);
+
+            if ($content === false) {
+                $unread[] = $relative;
+
                 continue;
             }
-            $relative = substr($file, strlen($index->root) + 1);
+
+            if (!str_contains($content, $from)) {
+                continue;
+            }
 
             try {
                 [, $roots] = ($this->parse)($file);
@@ -531,8 +539,9 @@ final class ProjectRename
             $visitor = new NameLiterals($from);
             (new NodeTraverser($visitor))->traverse($roots);
 
-            $total += count($visitor->found);
-            $this->group($groups, $relative, $visitor->found, $roots);
+            $found = $visitor->found();
+            $total += count($found);
+            $this->group($groups, $relative, $found, $roots);
         }
         ksort($groups);
 

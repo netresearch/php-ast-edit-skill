@@ -225,7 +225,9 @@ Shorthands over the primitives. They are ergonomics, not the coverage boundary.
   and `literalsCount`; they are not changed, because which class a string names is not
   known. For those that mean the method, one `apply` with a `replace_expression` per entry
   (`target.select` as listed, `match: "'old'"`, `php: "'new'"`) sets all of them; a literal
-  outside any declaration comes with `refs` for `set_string`. Refused before
+  outside any declaration, or in a declaration whose selector the file uses twice, comes
+  with `refs` for `set_string`. `literalsUnread` names PHP files the scan could not read or
+  parse, or skipped above 1 MB. Refused before
   anything is written: a declaration of the method outside the project (a vendor base
   class, a PHP interface such as `JsonSerializable`), an ancestor found nowhere, a trait
   declaring the method, the new name taken anywhere in the hierarchy, and any call whose

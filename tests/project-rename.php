@@ -414,6 +414,7 @@ try {
                     ...$hierarchy,
                     'tests/FetchTest.php' => "<?php\nnamespace App\\Tests;\nfinal class FetchTest\n{\n    public function testIt(object \$mock, object \$c): array\n    {\n        \$mock->method('fetch');\n\n        return [[\$c, 'fetch'], 'fetcher', 'Fetch'];\n    }\n}\n",
                     CALLABLES_FILE => "<?php\nreturn ['fetch'];\n",
+                    'tests/Twin.php' => "<?php\nnamespace A {\nfinal class Twin\n{\n    public const M = 'fetch';\n}\n}\nnamespace B {\nfinal class Twin\n{\n    public const M = 'fetch';\n}\n}\n",
                 ],
             );
             $result = projectRename($root, BASE_FILE, 'method:Base::fetch', 'load', new CallsByName());
@@ -430,7 +431,15 @@ try {
                         'select' => 'class:FetchTest',
                         'lines' => [7, 9],
                     ],
-                ] && ($rename['literalsCount'] ?? null) === 3,
+                    [
+                        'file' => 'tests/Twin.php',
+                        'refs' => [
+                            'stmts[0].stmts[0].stmts[0].consts[0].value',
+                            'stmts[1].stmts[0].stmts[0].consts[0].value',
+                        ],
+                        'lines' => [5, 11],
+                    ],
+                ] && ($rename['literalsCount'] ?? null) === 5,
                 json_encode($rename),
             );
             projectAssert(
