@@ -134,6 +134,12 @@ final class Doctor
             $findings[] = 'No verify commands declared in ' . RepositoryConfig::FILE . '. This repository carries a static analyser, so an agent editing it will run one — as a separate call, after the write, deciding for itself that it was needed. Declared, it runs inside `apply` on the files that changed and the result carries checksPassed: "verify": [' . json_encode($suggestedVerify, JSON_UNESCAPED_SLASHES) . '].';
         }
 
+        // Beside the findings for the same reason as the resolver below: a repository whose
+        // chains run past its own `max_line_length` is still ready for canonical editing.
+        // Naming the overrun is the point — nothing here can remove it, and a finding would
+        // report a repository as not ready for something no run of this tool will fix.
+        $overWidth = $declaredWidth['width'] === null ? null : $this->overWidth($root, $config, $declaredWidth['width']);
+
         // Reported beside the findings rather than among them: `status` answers whether the
         // repository is ready for canonical editing, and a missing resolver does not change
         // that. It changes which renames the engine can decide.
@@ -154,6 +160,20 @@ final class Doctor
             ],
             'declaredWidth' => $declaredWidth['width'],
             'widthSource' => $declaredWidth['source'],
+            'overWidth' => $overWidth === null ? null : [
+                ...$overWidth,
+                'advice' => $overWidth['total'] === 0 ? null : sprintf(
+                    '%d lines exceed the declared width of %d, %d of them method chains. The printer '
+                    . 'breaks every comma-separated list at that width and does not break chains; no '
+                    . 'formatter rule does either, because php-cs-fixer\'s method_chaining_indentation '
+                    . 'only indents a chain that already spans lines. Longest line: %d. Normalising '
+                    . 'will not remove these.',
+                    $overWidth['total'],
+                    $declaredWidth['width'],
+                    $overWidth['chains'],
+                    $overWidth['longest'],
+                ),
+            ],
             'missingRules' => $missingRules,
             'unrecoverable' => self::UNRECOVERABLE_SHARE,
             'formatters' => $formatters,
@@ -166,6 +186,68 @@ final class Doctor
             'editorconfig' => $editorconfig,
             'findings' => $findings,
         ];
+    }
+
+    /**
+     * The lines the repository cannot hold under the width it declared, and how many of
+     * them are method chains.
+     *
+     * `doctor` answers whether a repository is ready for canonical editing, and this is the
+     * one place where the honest answer is "it will still exceed its own declaration".
+     * Reported rather than fixed: the printer breaks every comma-separated list at the
+     * declared width and gives up on chains, and no formatter rule covers them either —
+     * php-cs-fixer's `method_chaining_indentation` indents a chain that already spans lines
+     * and never introduces the break.
+     *
+     * A chain is two or more `->call(` links on the line. One link is an ordinary call whose
+     * argument list is long, and the printer already breaks those, so counting it here would
+     * blame the construct the printer handles.
+     *
+     * @return array{total: int, chains: int, longest: int}
+     */
+    private function overWidth(string $root, RepositoryConfig $config, int $width): array
+    {
+        $total = $chains = $longest = 0;
+
+        if (!is_dir($root)) {
+            return ['total' => 0, 'chains' => 0, 'longest' => 0];
+        }
+        $iterator = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($root, \FilesystemIterator::SKIP_DOTS),
+        );
+
+        foreach ($iterator as $entry) {
+            if (!$entry->isFile() || $entry->getExtension() !== 'php') {
+                continue;
+            }
+            $path = $entry->getPathname();
+
+            // Nobody's dependencies are ours to hold to this repository's width.
+            if (preg_match('#(^|/)(vendor|node_modules|\.Build|\.git)/#', $path) === 1 || $config->excludes($path)) {
+                continue;
+            }
+            $contents = @file_get_contents($path);
+
+            if ($contents === false) {
+                continue;
+            }
+
+            foreach (explode("\n", $contents) as $line) {
+                $length = mb_strlen(rtrim($line, "\r"));
+
+                if ($length <= $width) {
+                    continue;
+                }
+                ++$total;
+                $longest = max($longest, $length);
+
+                if (preg_match_all('/->\w+\s*\(/', $line) >= 2) {
+                    ++$chains;
+                }
+            }
+        }
+
+        return ['total' => $total, 'chains' => $chains, 'longest' => $longest];
     }
 
     private function resolverAdvice(string $status, ?string $phar): ?string
