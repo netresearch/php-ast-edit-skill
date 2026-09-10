@@ -262,6 +262,66 @@ class LegacyRecoveryTests(unittest.TestCase):
             runner.recovered_measurement(base, evidence, folder)
 
 
+class CheckArmTests(unittest.TestCase):
+    """The two check arms must differ by the declaration and by nothing else."""
+
+    def work(self):
+        temporary = tempfile.TemporaryDirectory(prefix="php-ast-check-arm-")
+        self.addCleanup(temporary.cleanup)
+        return Path(temporary.name)
+
+    def test_only_the_integrated_arm_declares_the_check(self):
+        for arm, expected in [
+            ("check_manual", [runner.CHECK_SCRIPT]),
+            ("check_integrated", [runner.CHECK_SCRIPT, ".php-ast-edit.json"]),
+            ("full_skill", []),
+            ("contextual_patch", []),
+        ]:
+            work = self.work()
+            with self.subTest(arm=arm):
+                self.assertEqual(runner.check_fixture(work, arm), expected)
+                # Every returned name is added to the fixture commit, so one that was
+                # never written would leave `git add` failing rather than silently
+                # dropping the treatment.
+                self.assertEqual(
+                    sorted(path.name for path in work.iterdir()), sorted(expected)
+                )
+
+    def test_the_declared_command_is_the_one_the_task_clause_names(self):
+        declared = runner.CHECK_CONFIG["verify"][0]
+        self.assertEqual(declared["scope"], "project")
+        self.assertIn(
+            " ".join(declared["command"]),
+            runner.CHECK_CLAUSE,
+            "A clause naming a different command would make the arms two tasks.",
+        )
+
+    def test_no_instruction_text_distinguishes_the_check_arms(self):
+        base = Path(tempfile.mkdtemp(prefix="php-ast-check-variants-"))
+        self.addCleanup(lambda: shutil.rmtree(base, ignore_errors=True))
+        skill = base / "runtime/skills/php-structured-edit"
+        skill.mkdir(parents=True)
+        (skill / "SKILL.md").write_text("Fixture skill body.\n")
+        instructions = runner.variants(base)
+        self.assertEqual(instructions["check_manual"], instructions["check_integrated"])
+        for arm in runner.CHECK_ARMS:
+            with self.subTest(arm=arm):
+                self.assertNotIn("alreadyRun", instructions[arm])
+                self.assertNotIn(".php-ast-edit.json", instructions[arm])
+
+    def test_the_check_fails_on_a_file_that_does_not_parse(self):
+        """A check nothing can fail would make every treatment run vacuous."""
+        work = self.work()
+        runner.check_fixture(work, "check_manual")
+        (work / "Good.php").write_text("<?php\n\nclass Good {}\n")
+        passing = runner.invoke(["php", runner.CHECK_SCRIPT], work)
+        self.assertEqual(passing.returncode, 0, passing.stdout + passing.stderr)
+        (work / "Broken.php").write_text("<?php\n\nclass Broken {\n")
+        failing = runner.invoke(["php", runner.CHECK_SCRIPT], work)
+        self.assertEqual(failing.returncode, 1, failing.stdout + failing.stderr)
+        self.assertIn("Broken.php", failing.stdout)
+
+
 class NativeTimingTests(unittest.TestCase):
     def event(self, identifier, metadata):
         return {
