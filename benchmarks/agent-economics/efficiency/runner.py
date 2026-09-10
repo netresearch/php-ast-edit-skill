@@ -1,4 +1,4 @@
-"""Prepare and run the bounded four-arm experiment; prepare/validate call no models."""
+"""Prepare and run the bounded arm experiment; prepare/validate call no models."""
 
 import argparse
 import fcntl
@@ -254,17 +254,23 @@ def variants(base):
     }
 
 
-def balanced_order(task_ids, seed, arms=ARMS):
+def balanced_order(task_ids, seed, arms=ARMS, model_keys=tuple(MODELS)):
     require(
         arms and len(arms) == len(set(arms)) and set(arms) <= set(ARMS),
         "Invalid or duplicate arms",
+    )
+    require(
+        model_keys
+        and len(model_keys) == len(set(model_keys))
+        and set(model_keys) <= set(MODELS),
+        "Invalid or duplicate model keys",
     )
     # A fixed seed orders samples reproducibly; it makes no security decisions.
     rng = random.Random(seed)
     blocks = [
         (task, model, repeat)
         for task in task_ids
-        for model in MODELS
+        for model in model_keys
         for repeat in range(1, 4)
     ]
     rng.shuffle(blocks)  # NOSONAR(S2245)
@@ -363,7 +369,11 @@ def prepare_fixture(base, row, template, instructions):
     shutil.copytree(Path(template["workspace"]), work)
     extra = check_fixture(work, row["variant"])
     initial = load(base / "templates" / row["task_id"] / STATE)
-    state = {**initial, "work": str(work)}
+    state = {
+        **initial,
+        "work": str(work),
+        "fixture": {name: digest(work / name) for name in extra},
+    }
     save(evidence / STATE, state)
     save(evidence / INITIAL_HASHES, initial["baseline"])
     shutil.copytree(work, evidence / "initial")
@@ -430,7 +440,8 @@ def create_campaign_directory(output):
 
 def prepare(args):
     arms = tuple(args.arms.split(","))
-    planned_order = balanced_order(args.tasks.split(","), args.seed, arms)
+    model_keys = tuple(args.models.split(","))
+    planned_order = balanced_order(args.tasks.split(","), args.seed, arms, model_keys)
     base = create_campaign_directory(args.output)
     started = time.monotonic()
     commit, status = snapshot(args, base)
@@ -456,6 +467,7 @@ def prepare(args):
         "source_status": status,
         "execution_allowed": not args.development,
         "models": MODELS,
+        "model_keys": model_keys,
         "arms": arms,
         "task_ids": task_ids,
         "repetitions": 3,
@@ -1050,6 +1062,7 @@ def main():
     parser.add_argument("--manifest", "--tasks-json", type=Path)
     parser.add_argument("--tasks", default="local-variable,multi-file-members")
     parser.add_argument("--arms", default=",".join(ARMS))
+    parser.add_argument("--models", default=",".join(MODELS))
     parser.add_argument("--seed", type=int, default=20260906)
     parser.add_argument("--campaign-budget-usd", type=float, default=8.0)
     parser.add_argument(

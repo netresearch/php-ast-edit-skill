@@ -29,7 +29,11 @@ class CampaignDirectoryTests(unittest.TestCase):
 
     def args(self, output):
         return SimpleNamespace(
-            arms="compact_full,compact_focused", tasks="fixture", seed=1, output=output
+            arms="compact_full,compact_focused",
+            models=",".join(runner.MODELS),
+            tasks="fixture",
+            seed=1,
+            output=output,
         )
 
     def test_private_directory_exists_before_any_snapshot_or_command(self):
@@ -260,6 +264,18 @@ class LegacyRecoveryTests(unittest.TestCase):
         base, evidence, folder = self.fixture(timed_out=True)
         with self.assertRaisesRegex(ValueError, "Cannot recover timed-out candidate"):
             runner.recovered_measurement(base, evidence, folder)
+
+
+class ScheduleSelectionTests(unittest.TestCase):
+    def test_the_schedule_holds_only_the_selected_models(self):
+        rows = runner.balanced_order(["fixture"], seed=1, model_keys=("haiku",))
+        self.assertEqual({row["model_key"] for row in rows}, {"haiku"})
+        self.assertEqual(len(rows), 3 * len(runner.ARMS))
+
+    def test_an_unknown_model_key_is_refused(self):
+        for keys in [("gpt",), ("haiku", "haiku"), ()]:
+            with self.subTest(keys=keys), self.assertRaises(ValueError):
+                runner.balanced_order(["fixture"], seed=1, model_keys=keys)
 
 
 class CheckArmTests(unittest.TestCase):

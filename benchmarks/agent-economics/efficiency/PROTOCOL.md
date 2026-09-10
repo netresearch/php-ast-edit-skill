@@ -1,4 +1,4 @@
-# Four-arm agent efficiency experiment
+# Agent efficiency experiment
 
 This prospective experiment separates a compact tool interface from a focused code
 view. Preparation and validation make no model calls. Historical pilot evidence is
@@ -37,6 +37,37 @@ flag**. The inherited effort override is removed. Comparisons are within each mo
 the models are not claimed to have identical reasoning settings. Every init and
 primary response must report the exact requested ID. Auxiliary native model usage,
 if present, remains included in all-model totals and is shown separately.
+
+## The check arms
+
+Two later arms, `check_manual` and `check_integrated`, ask a separate question: with
+the project's check declared, does the model still run it by hand after an `apply`
+that already ran and passed it? They share the whole treatment above and both use the
+complete current `SKILL.md`, unchanged and identical between them.
+
+| Assigned arm | Fixture | Task clause |
+| --- | --- | --- |
+| `check_manual` | `check.php` | `Make sure \`php check.php\` still passes.` |
+| `check_integrated` | `check.php` and a `.php-ast-edit.json` declaring `{"verify": [{"scope": "project", "command": ["php", "check.php"]}]}` | the same clause |
+
+The arms differ in that one file. No instruction text and no prompt clause names the
+declaration, the report field or the engine's checking at all: what the integrated
+arm's model learns about the check having run, it learns from the report `apply`
+returns, which is the deployed situation. `check.php` parses every PHP file in the
+tree in-process and exits non-zero on the first file that does not; both fixture
+files enter the fixture commit, so neither can appear in `diff.patch` as something a
+model left behind.
+
+The check is cheap on purpose. This measures whether the report stops the repeat run,
+not what a repeat run of a real static analyser would have cost.
+
+Report, in this order: the share of integrated runs whose `apply` reports actually
+carried `alreadyRun` — a run without it received no treatment and is named, not
+silently dropped; then the share of runs per arm that invoked `php check.php` after
+their last passing `apply`, and the count per run; then rounds, tokens and wall time.
+
+`--models` restricts the schedule to named model keys, so a pilot can run one model
+before the pair.
 
 ## Isolation, order and limits
 
@@ -232,7 +263,7 @@ frozen manifest and operator review within the already authorized aggregate budg
 
 ### Separate directed-read ablation
 
-The original four-arm observations retain the agent's own selector choices, including
+The original four arms' observations retain the agent's own selector choices, including
 whole-class selections that do not test a narrow projection. A separate, predeclared
 follow-up can add an exact initial method selector to each public task prompt, with
 the same addition in both compact arms and no operation or recovery hints. It retains
@@ -240,8 +271,8 @@ the original observations rather than replacing or selecting successful trials.
 
 Use `--arms compact_full,compact_focused` with a separate frozen task manifest and
 output directory. Two tasks, two models and three repetitions then produce 24 runs.
-Preparation accepts any nonempty, duplicate-free subset of the four existing arms;
-the default four-arm schedule is unchanged. Selected arms are recorded in config,
+Preparation accepts any nonempty, duplicate-free subset of the declared arms;
+the default schedule is unchanged. Selected arms are recorded in config,
 and arm rotations remain balanced across task/model/repetition blocks. The runtime
 and adapter bytes must match the prior phases, and the remaining aggregate budget
 must be supplied explicitly. Preparing this follow-up does not authorize execution.
