@@ -228,7 +228,7 @@ final class ProjectRename
                 'literals' => $literals,
                 'literalsCount' => $count,
                 'literalsMeans' => sprintf(
-                    "PHP string literals that read %1\$s, such as a PHPUnit ->method('%1\$s') or a callable. Not changed: which class each one names is not known here, and another class may have a method of that name. For those that mean this method, one apply with a replace_expression per entry — target.select as listed, match \"'%1\$s'\", php \"'%2\$s'\" — sets every one in that scope; an entry with refs takes set_string on each ref.",
+                    "PHP string literals that read %1\$s, such as a PHPUnit ->method('%1\$s') or a callable. Not changed: which class each one names is not known here, and another class may have a method of that name. Where every literal of an entry means this method, a replace_expression on it — target.select as listed, match \"'%1\$s'\", php \"'%2\$s'\" — sets all of them; otherwise, or where an entry has no select, set_string on the refs that do (lines and refs are in the same order).",
                     $from,
                     $to,
                 ),
@@ -502,7 +502,9 @@ final class ProjectRename
      * names takes dataflow the engine does not have, and a vendor class may declare a method
      * of the same name, so none is changed. They are grouped by the declaration that holds
      * them, because that is the scope one `replace_expression` with `match` can name to set
-     * them all; a literal outside any declaration comes with its ref for `set_string`.
+     * every one of them; each also comes with its ref, so `set_string` can set only some —
+     * a data provider's name or a backed enum value that happens to read the same is not
+     * the method.
      *
      * Measured on a TYPO3 extension: renaming a service getter left 67 mock literals in nine
      * test files, and 174 of its 682 unit tests failed until they were changed as well.
@@ -529,13 +531,9 @@ final class ProjectRename
                 continue;
             }
 
-            try {
-                [, $roots] = ($this->parse)($file);
-            } catch (EditException|\PhpParser\Error) {
-                $unread[] = $relative;
-
-                continue;
-            }
+            // Every project file already parsed when the index was built, or the rename was
+            // refused; a parse error cannot reach this point.
+            [, $roots] = ($this->parse)($file);
             $visitor = new NameLiterals($from);
             (new NodeTraverser($visitor))->traverse($roots);
 
@@ -557,12 +555,9 @@ final class ProjectRename
     {
         foreach ($found as [$select, $node]) {
             $key = $relative . "\x00" . $select;
-            $groups[$key] ??= ['file' => $relative] + ($select === null ? ['refs' => []] : ['select' => $select]) + ['lines' => []];
+            $groups[$key] ??= ['file' => $relative] + ($select === null ? [] : ['select' => $select]) + ['lines' => [], 'refs' => []];
             $groups[$key]['lines'][] = $node->getStartLine();
-
-            if ($select === null) {
-                $groups[$key]['refs'][] = $this->locator->locate($roots, $node->getStartFilePos(), 'Scalar_String')->path;
-            }
+            $groups[$key]['refs'][] = $this->locator->locate($roots, $node->getStartFilePos(), 'Scalar_String')->path;
         }
     }
 }

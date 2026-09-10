@@ -430,6 +430,10 @@ try {
                         'file' => 'tests/FetchTest.php',
                         'select' => 'class:FetchTest',
                         'lines' => [7, 9],
+                        'refs' => [
+                            'stmts[0].stmts[0].stmts[0].stmts[0].expr.args[0].value',
+                            'stmts[0].stmts[0].stmts[0].stmts[1].expr.items[0].value.items[1].value',
+                        ],
                     ],
                     [
                         'file' => 'tests/Twin.php',
@@ -464,6 +468,17 @@ try {
                             ],
                         ],
                         [
+                            // One of two: a ref sets a literal alone, where the scope would set both.
+                            'path' => $root . '/tests/Twin.php',
+                            'edits' => [
+                                [
+                                    'target' => ['ref' => $rename['literals'][2]['refs'][0]],
+                                    'operation' => 'set_string',
+                                    'value' => 'load',
+                                ],
+                            ],
+                        ],
+                        [
                             'path' => $root . '/' . CALLABLES_FILE,
                             'edits' => [
                                 [
@@ -480,6 +495,11 @@ try {
             projectAssert(
                 substr_count($test, "'load'") === 2 && str_contains($test, "'fetcher', 'Fetch'") && !str_contains($test, "'fetch'"),
                 $test,
+            );
+            $twin = (string) file_get_contents($root . '/tests/Twin.php');
+            projectAssert(
+                strpos($twin, "'load'") < strpos($twin, "'fetch'") && substr_count($twin, "'fetch'") === 1,
+                $twin,
             );
             projectAssert(
                 (string) file_get_contents($root . '/' . CALLABLES_FILE) === "<?php\nreturn ['load'];\n",
