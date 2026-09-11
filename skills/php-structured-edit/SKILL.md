@@ -77,10 +77,16 @@ as `checks: "none_declared"`, which is harder to misread. `agent` is versioned b
   Delete: `mode: delete` with the snapshot hash.
 - Local rename: `rename_variable` on the enclosing function-like scope with `from`/`to`.
   Binding collisions are rejected; dynamic variables remain limited.
-- Method rename: `rename_method` with `to` on `method:Class::name`. Public and inherited
+- Method rename: `rename_method` with `to` on `method:Class::name`, plus `"mocks": true`
+  when the tests mock the method: it also sets `->method('old')`, `onlyMethods`/`addMethods`/
+  `setMethods` lists and `createPartialMock`/`createConfiguredMock` names. Public and inherited
   methods are renamed across the project through Phpactor (`doctor` shows its setup);
-  read `renames.notRenamed` for YAML, TypoScript and Fluid mentions. Use `set_name` for an
-  intentionally declaration-only change.
+  read `renames.notRenamed` for YAML, TypoScript and Fluid mentions, and `renames.literals`
+  for PHP strings such as mock `->method('old')`: a `replace_expression` on a listed
+  `select` with `match`/`php` sets every literal of that entry; `set_string` on its `refs`
+  sets only those that mean the method. An apply that leaves such literals says so first,
+  in `open`. `set_name` on a method declaration something calls is refused unless
+  `"declarationOnly": true`.
 - SQL/HTML/JSON inside a PHP literal: `set_string` on its `Scalar_String` node.
 - Class import: `add_use` with `value` and no `target`; already-imported is a reported
   no-op, a taken name an error. Add it in the same transaction as the code that needs it.

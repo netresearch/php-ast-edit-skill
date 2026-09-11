@@ -189,6 +189,10 @@ An edit that lacks exactly one required argument and carries exactly one field i
 Shorthands over the primitives. They are ergonomics, not the coverage boundary.
 
 - `set_name` — set an identifier/name/variable or a node's static `name` property. Requires `value`.
+  On a method declaration that the project calls by name it would rename the declaration
+  and none of the calls, so it is refused with the call count and the `rename_method` edit
+  to use instead; `declarationOnly: true` (`--declaration-only` in the flag form) keeps
+  the declaration-only change. A method nothing calls is renamed as asked.
 - `set_string` — set a `Scalar_String` value. Requires `value`.
 - `replace_expression` / `replace_statement` — replace one `Expr` / one `Stmt`. Requires `php`. With `match`, the target is a scope instead — a method, function or class named by its selector — and every expression or statement inside it that is the same code as `match` is replaced, each with its own copy of `php`; the effect reports `replaced`. The comparison is structural: spacing and quoting in `match` do not matter, names, arguments and operators do. A match that finds nothing is refused — unless the replacement already stands in the scope, as it does after a `rename_method` earlier in the same transaction: then the edit is a no-op reported as `replaced: 0` with `alreadyPresent`, and so is `replace_statement` on a declaration without `match` — a method or class is a `Stmt` to the parser, and swapping one for a statement never parses. `replace_node` replaces a declaration whole.
 - `insert_before` / `insert_after` — insert around a node that already sits in a list. Requires `php`.
@@ -219,11 +223,29 @@ Shorthands over the primitives. They are ergonomics, not the coverage boundary.
   Every declaration and call site becomes a guarded `set_name` in one transaction, and the
   result carries `renames`: `method`, `declarations`, `references`, `files`, `hierarchy`,
   and `notRenamed` — mentions of the old name outside PHP, plus Fluid property reads
-  (`{item.label}` for `getLabel()`), which are listed and not changed. Refused before
+  (`{item.label}` for `getLabel()`), which are listed and not changed. PHP string literals
+  that read the old name — a PHPUnit `->method('old')`, a callable `[$x, 'old']` — are
+  listed under `literals`, one entry per file and declaration with its `select`, `lines`
+  and `refs` in the same order, and `literalsCount`; they are not changed, because which
+  class a string names is not known. A `replace_expression` on an entry (`target.select`
+  as listed, `match: "'old'"`, `php: "'new'"`) sets every literal of that entry — right
+  when all of them mean the method. Where some do not (a data provider's name, a backed
+  enum value), or where an entry has no `select` (a literal outside any declaration, or a
+  selector the file uses twice), `set_string` on the refs that do. `literalsUnread` names
+  PHP files the scan could not read or skipped above 1 MB. Refused before
   anything is written: a declaration of the method outside the project (a vendor base
   class, a PHP interface such as `JsonSerializable`), an ancestor found nowhere, a trait
   declaring the method, the new name taken anywhere in the hierarchy, and any call whose
   receiver type Phpactor could not determine.
+
+  With `"mocks": true` (`--mocks`), the project-wide rename also sets the literals a PHPUnit
+  mock lists the method by: the first argument of `->method()`, the entries of
+  `->onlyMethods()`, `->addMethods()` and `->setMethods()`, the method list of
+  `createPartialMock()` and the keys of `createConfiguredMock()`. It counts them as
+  `mocksSet`. Which class a mock stands for is not resolved, so a mock of another class
+  with a method of the same name is set too; everything else — data provider names,
+  callables, enum values — stays listed under `literals`. A rename one file decides
+  (a private method, a final class without a hierarchy) has no mocks to set.
 - `rename_variable` — rename a variable in a selected method, function, closure, or arrow
   function. Takes `from` and `to`, with or without `$`. Renames matching variable/parameter
   nodes and associated explicit captures; unrelated property and string names stay intact.
