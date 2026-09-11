@@ -27,8 +27,8 @@ That figure is two effects, and both are worth knowing separately:
 
 ## Installation
 
-The source checkout below follows development `main`. Published v0.7.0 archives
-remain unchanged; repaired release assets require a subsequent publication.
+The source checkout below follows development `main`. Release archives are versioned
+snapshots; changes listed as Unreleased require a source checkout until published.
 
 Requirements: PHP 8.2+ with JSON and tokenizer, Composer 2.2+, and Git. The executable example also uses Bash and `jq`. Installation needs network access; local editing does not.
 
@@ -44,9 +44,31 @@ The example creates a temporary PHP class **through the CLI**, adds a method usi
 
 Use `bin/php-ast-edit` inside a source checkout. Use `vendor/bin/php-ast-edit` when installed into another project through Composer. Installing agent instructions alone does not necessarily install the executable. See [installation](docs/installation.md) for Composer VCS, release archives, and skill setup.
 
+## Rename a method by intention
+
+Available on development `main`:
+
+```bash
+php-ast-edit rename --method 'App\Checkout::submit' --to placeOrder
+```
+
+The command discovers the declaration and submits one guarded transaction. Non-private
+methods resolve their hierarchy and callers through the configured Phpactor resolver,
+including public methods in final classes. Project checks run through the existing
+write pipeline. The default agent report carries their verdict and unresolved mentions;
+use `--report compact` to include the diff.
+
+Use `--path` to name another project root, `--file` to narrow declaration discovery,
+and `--dry-run` to preview. `--file` does not limit which resolved callers change.
+Ambiguous declarations, stale hashes and unresolved reference types are refused.
+Private methods retain the lexical scope and its reported limitations. See the
+[command contract](skills/php-structured-edit/references/operations.md#direct-method-rename)
+for options, mocks and verification semantics.
+
 ## Context requirements
 
-Provide the file paths, intended change, and any source snapshot used to select targets.
+Provide the intended change and any source snapshot used to select targets. `rename`
+accepts a method symbol; other operations use file paths and selectors or structural refs.
 The engine requires a writable working tree and the local dependencies above. Project
 formatting and verification commands are optional configuration.
 

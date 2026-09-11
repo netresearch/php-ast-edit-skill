@@ -189,7 +189,7 @@ final class Editor
         }
 
         return $open === [] ? null : sprintf(
-            'Not finished: %s. Static analysis does not read strings, so a passing check says nothing about them; a test that mocks or calls the method by name fails until those naming it are set.',
+            'Review method-name literals: %s. They may name the renamed method or be unrelated data. Update only confirmed references; preserve unrelated literals. Passing checks alone do not classify these strings.',
             implode('; ', $open),
         );
     }
@@ -278,7 +278,7 @@ final class Editor
             $here = $this->canonicalPath($spec['path']);
 
             foreach ($spec['edits'] as $edit) {
-                $plan = is_array($edit) ? $this->projectRename($spec['path'], $this->acceptSynonyms($edit)) : null;
+                $plan = is_array($edit) ? $this->projectRename($spec, $this->acceptSynonyms($edit)) : null;
 
                 if ($plan === null) {
                     $edits[] = $edit;
@@ -325,34 +325,47 @@ final class Editor
         return [...$files, ...array_values($extra)];
     }
 
-    /**
-     * The project-wide plan for one rename_method edit, or null when the file decides it.
-     *
-     * @param array<string, mixed> $edit
-     * @return array{files: array<string, array{sha256: string, edits: list<array<string, mixed>>}>, report: array<string, mixed>}|null
-     */
-    private function projectRename(string $path, array $edit): ?array
+    private function projectRename(array $spec, array $edit): ?array
     {
         $target = $edit['target'] ?? null;
 
-        if (($edit['operation'] ?? null) !== 'rename_method' || !is_string($edit['to'] ?? null) || !is_array($target) || !is_string($target['select'] ?? null)) {
+        if (($edit['operation'] ?? null) !== 'rename_method' || !is_string($edit['to'] ?? null)) {
             return null;
         }
-        // Checked before the path is chosen: a rename one file decides would ignore it.
         $mocks = array_key_exists('mocks', $edit) ? $edit['mocks'] : false;
+        $project = array_key_exists('project', $edit) ? $edit['project'] : false;
 
         if (!is_bool($mocks)) {
             throw new EditException(
                 'rename_method "mocks" is true or false: true also sets the method names PHPUnit mocks list.',
             );
         }
-        [, , $roots] = $this->parseFile($path, null);
-        $location = $this->locator->resolveSelect($roots, $target['select']);
+
+        if (!is_bool($project)) {
+            throw new EditException(
+                'rename_method "project" is true or false: true resolves callers across the project.',
+            );
+        }
+
+        if (!is_array($target) || !is_string($target['select'] ?? null) && !is_string($target['ref'] ?? null)) {
+            if ($project || $mocks) {
+                throw new EditException(
+                    'rename_method project or mocks requires target.select or target.ref.',
+                );
+            }
+
+            return null;
+        }
+        $path = $spec['path'];
+        [$source, , $roots] = $this->parseFile($path, null);
+        $this->assertSha($spec, $path, hash('sha256', $source));
+        $location = is_string($target['ref'] ?? null) ? $this->locator->resolveRef($roots, $target['ref']) : $this->locator->resolveSelect($roots, $target['select']);
+        $this->assertKind($location, $target['kind'] ?? null);
 
         if (!$location->node instanceof Stmt\ClassMethod) {
             return null;
         }
-        $reason = RenameMethod::projectWideBecause($location->node, $location->parent);
+        $reason = $project ? 'project scope was requested' : RenameMethod::projectWideBecause($location->node, $location->parent);
 
         if ($reason === null) {
             return null;
@@ -2539,7 +2552,7 @@ final class Editor
         'add_use' => ['requires' => ['value'], 'optional' => ['alias']],
         'set_extends' => ['requires' => ['php'], 'optional' => ['position']],
         'rename_variable' => ['requires' => ['from', 'to'], 'optional' => []],
-        'rename_method' => ['requires' => ['to'], 'optional' => ['mocks']],
+        'rename_method' => ['requires' => ['to'], 'optional' => ['mocks', 'project']],
     ];
 
     /**

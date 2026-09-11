@@ -328,12 +328,7 @@ final class ProjectIndex
             if ($name === null) {
                 continue;
             }
-            $this->classes[strtolower($name)] ??= [
-                'name' => $name,
-                'file' => realpath($file) ?: $file,
-                'node' => $node,
-                'project' => $project,
-            ];
+            $this->remember($name, $file, $node, $project);
         }
     }
 
@@ -432,5 +427,24 @@ final class ProjectIndex
         }
 
         return null;
+    }
+
+    private function remember(string $name, string $file, Stmt\ClassLike $node, bool $project): void
+    {
+        $key = strtolower($name);
+        $physicalFile = realpath($file) ?: $file;
+        $previous = $this->classes[$key] ?? null;
+
+        if ($previous !== null && ($previous['file'] !== $physicalFile || $previous['node']->getStartFilePos() !== $node->getStartFilePos())) {
+            throw new EditException(
+                sprintf(
+                    'Duplicate class-like %s in %s and %s makes the project hierarchy ambiguous. Exclude inactive copies before a project-wide rename.',
+                    $name,
+                    $previous['file'],
+                    $physicalFile,
+                ),
+            );
+        }
+        $this->classes[$key] ??= ['name' => $name, 'file' => $physicalFile, 'node' => $node, 'project' => $project];
     }
 }

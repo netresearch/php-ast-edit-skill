@@ -2,6 +2,7 @@
 
 ## Contents
 
+- [Direct method rename](#direct-method-rename) — one symbol, one guarded transaction
 - [Selectors](#selectors) — named declarations without a coordinate lookup
 - [Inspect](#inspect) — node ancestry, structural refs, slots
 - [Apply document](#apply-document) — schema, file modes, transaction semantics
@@ -11,6 +12,39 @@
 - [Convenience operations](#convenience-operations) — the ergonomic layer above it
 - [Result fields](#result-fields) — full, compact and agent reports, checks and warnings
 - [Snippet style](#snippet-style)
+
+## Direct method rename
+
+```bash
+php-ast-edit rename --method 'App\Checkout::submit' --to placeOrder
+```
+
+This command finds an actual declaration in the Git project's tracked and unignored
+PHP files, respecting project exclusions. It parses exact bytes, refuses multiple
+matches and passes a structural ref plus SHA-256 to the same transaction engine as
+`apply`. Class and method matching follow PHP's case-insensitive naming. Qualify the
+class when short names collide; an inherited-only receiver is not a declaration.
+
+Options: `--path DIRECTORY` names the project root (omitting it discovers the
+enclosing project from the current directory); `--file FILE`
+narrows declaration discovery within that root, while resolved callers elsewhere
+may still change. `--sha256 HASH` adds a caller snapshot precondition. `--dry-run`
+does not write or run configured verification. Unknown options are refused.
+
+Project expansion refuses duplicate fully qualified class-like declarations,
+including when `--file` selects one copy. Exclude inactive copies in the project
+configuration before retrying; selecting a file cannot resolve an ambiguous hierarchy.
+
+Non-private methods request `rename_method` with `project: true`, so final classes
+also resolve external callers through Phpactor. Private methods use existing lexical
+resolution unless `--mocks` requests project processing. Resolver limitations and
+unresolved PHP literals or non-PHP mentions remain in the report. `--mocks` has the
+same class-independent PHPUnit-name matching as the operation below.
+
+The default `--report agent` shows observed outcomes, checks and open work.
+`--report full` and `--report compact` include the diff. Exit codes are unchanged:
+0 completed, 1 written with failed checks, 2 refused, 3 unexpected error. No declared
+checks remains `none_declared`/null; it never becomes a passing verification claim.
 
 ## Selectors
 
@@ -216,7 +250,12 @@ Shorthands over the primitives. They are ergonomics, not the coverage boundary.
 
   Any other method — public or protected in a class that can be extended, or in a class
   with a parent, an interface or a trait — is renamed across the project when the edit
-  names it by selector (`method:Class::name`). The hierarchy comes from the project's
+  names it by selector (`method:Class::name`) or a structural `ref`. Optional
+  `"project": true` explicitly resolves callers across the project, including public
+  methods of final classes that the default lexical path cannot follow outside the file.
+  `project` and `mocks` must be booleans; requesting either requires a selector or ref.
+  A supplied file hash and target kind are checked before reference discovery.
+  The hierarchy comes from the project's
   sources and Composer's class tables (the autoloader is never run); the call sites come
   from Phpactor 2026.07.22.0, pinned by digest and located through `"phpactor"` in
   `.php-ast-edit.json` or `PHP_AST_EDIT_PHPACTOR`. `doctor` reports it under `resolver`.

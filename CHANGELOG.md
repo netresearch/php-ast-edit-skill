@@ -6,8 +6,16 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Added
+
+- `rename --method Class::old --to new` discovers a unique project declaration, captures its source hash and submits one transaction with existing verification. It accepts qualified names, `--path`, an optional declaration `--file`, caller `--sha256`, `--mocks`, report modes and dry-run. Non-private methods explicitly resolve project callers, including final classes. Ambiguous, excluded, symlinked and inherited-only declarations are refused.
+- `rename_method` accepts structural refs for project expansion and an optional boolean `project` to request project scope explicitly. Source guards and target kinds are checked before discovery; malformed `mocks`/`project` values are rejected on every target route.
+
 ### Changed
 
+- Shorten the loaded skill and lead with the direct method command. Keep operation and report details in the linked reference. The interface and instruction bundle is measured separately from the earlier v0.8.0 pilot.
+- Remaining method-name strings now request classification rather than declaring the task unfinished. They may be callbacks or deliberately preserved data; the report still lists every observed occurrence and warns that passing checks do not classify them.
+- Project hierarchy indexing refuses duplicate fully qualified class-like declarations instead of silently choosing the first file. A declaration `--file` cannot disambiguate project references; exclude inactive copies before retrying.
 - Use an already supplied executable directly and pass the skill's example transaction through standard input. The Haiku pilot showed unnecessary executable lookup, payload-file cleanup and one retained payload despite the requested PHP edit. These are usability changes, not a measured savings claim: a bundled follow-up with additional method-rename instructions increased agent work, and the extra paragraph was withdrawn.
 
 ## [0.8.0] - 2026-09-11
