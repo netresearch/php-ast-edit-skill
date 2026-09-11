@@ -17,9 +17,10 @@ php-ast-edit rename --method 'Checkout::submit' --to placeOrder
 
 Name the declaring class and method. The command discovers the file, captures its
 hash, resolves the hierarchy and callers, and submits one transaction with configured
-checks. Do not enumerate callers or submit one rename per declaration. Use a fully
-qualified class when ambiguous, `--path` for another project, or `--file` to narrow
-declaration discovery. Non-private methods require Phpactor, including final classes;
+checks. Do not enumerate callers or submit one rename per declaration. Qualify the
+class when ambiguous. For another project, pass one positional project path or
+`--path`; use `--file` to narrow declaration discovery. Non-private methods require
+Phpactor, including final classes;
 missing or uncertain resolution is refused. `--dry-run` previews without writing.
 
 In the default compact report, review `diff`, `renames`, `open`, `verify` and

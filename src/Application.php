@@ -59,7 +59,7 @@ final class Application
     {
         try {
             $command = $argv[1] ?? 'help';
-            $options = $this->options(array_slice($argv, 2));
+            $options = $this->options(array_slice($argv, 2), $command === 'rename');
 
             return match ($command) {
                 'inspect' => $this->inspect($options),
@@ -413,7 +413,7 @@ final class Application
         php-ast-edit — AST-based PHP edits for coding agents
         
         Commands:
-          php-ast-edit rename --method Class::old --to new [--path DIRECTORY]
+          php-ast-edit rename [PROJECT_DIRECTORY] --method Class::old --to new [--path DIRECTORY]
               [--file FILE] [--sha256 HASH] [--mocks] [--report agent|full|compact] [--dry-run]
           php-ast-edit inspect --file FILE (--offset N | --line N --column N) [--kind TYPE] [--php-version 8.4]
           php-ast-edit apply [--input FILE|-] [--dry-run]
@@ -430,6 +430,7 @@ final class Application
         not the caller changes. Non-private methods use Phpactor across the project,
         including final classes. The default compact report includes the diff, checks
         and unresolved mentions. Use --report agent when no inline diff is needed.
+        Use one positional PROJECT_DIRECTORY as an alias for --path; do not combine both forms.
         Use a selector when the target has a name; inspect only when coordinates are needed:
           {"files":[{"path":"src/Foo.php","edits":[{"target":{"select":"method:Foo::bar"},
             "operation":"set_return_type","php":"string|int"}]}]}
@@ -517,15 +518,18 @@ final class Application
         return $target;
     }
 
-    private function options(array $args): array
+    private function options(array $args, bool $allowPositionalPath = false): array
     {
         $options = [];
+        $positional = null;
 
         for ($i = 0, $count = count($args); $i < $count; ++$i) {
             $arg = $args[$i];
 
             if (!str_starts_with($arg, '--')) {
-                throw new EditException('Unexpected argument: ' . $arg);
+                $positional = $this->positionalPath($arg, $positional, $allowPositionalPath);
+
+                continue;
             }
             $arg = substr($arg, 2);
 
@@ -546,6 +550,15 @@ final class Application
                 throw new EditException('--' . $arg . ' requires a value.');
             }
             $options[$arg] = $args[++$i];
+        }
+
+        if ($positional !== null) {
+            if (array_key_exists('path', $options)) {
+                throw new EditException(
+                    'rename accepts either a positional project path or --path, not both.',
+                );
+            }
+            $options['path'] = $positional;
         }
 
         return $options;
@@ -795,5 +808,18 @@ final class Application
     private function rename(array $options): int
     {
         return $this->execute((new MethodRenameCommand())->document($options), isset($options['dry-run']));
+    }
+
+    private function positionalPath(string $arg, ?string $current, bool $allowed): string
+    {
+        if (!$allowed) {
+            throw new EditException('Unexpected argument: ' . $arg);
+        }
+
+        if ($current !== null) {
+            throw new EditException('rename accepts at most one positional project path.');
+        }
+
+        return $arg;
     }
 }

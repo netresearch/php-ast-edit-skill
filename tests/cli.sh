@@ -298,6 +298,146 @@ expect "a flag the JSON form cannot carry is refused" "2" "$mixed_code"
 expect "and that message names it too" "1" "$(grep -c -- '--select' "$CONTRACTDIR/mixed.out")"
 expect "and it left that file alone too" "1" "$(grep -c "$CONTRACT_UNTOUCHED" "$CONTRACTDIR/mixed.php")"
 
+# ---- rename project-path forms ----------------------------------------------------------
+# A bare project path is an alias for --path on rename only. Keep each fixture pristine so
+# the parser contract, including refusal-before-write, is tested independently.
+RENAMEDIR="$WORK/rename-paths"
+mkdir -p "$RENAMEDIR"
+rename_fixture() {
+  local dir="$1"
+  mkdir -p "$dir"
+  printf '{"canonical":false}' > "$dir/.php-ast-edit.json"
+  printf '{"files":[{"path":"%s/F.php","mode":"create","php":"<?php class F { private function run(): string { return \\\"run\\\"; } }"}]}' \
+    "$dir" | $BIN apply > /dev/null
+  (cd "$dir" && git init -q && git add F.php)
+}
+RENAME_METHOD='private function execute'
+
+rename_fixture "$RENAMEDIR/after-flags"
+$BIN rename --method F::run --to execute "$RENAMEDIR/after-flags" > /dev/null
+expect "rename accepts an absolute positional path after its options" "1" \
+  "$(grep -c "$RENAME_METHOD" "$RENAMEDIR/after-flags/F.php")"
+
+rename_fixture "$RENAMEDIR/dot"
+(cd "$RENAMEDIR/dot" && "$ROOT/bin/php-ast-edit" rename --method F::run --to execute . > /dev/null)
+expect "rename accepts the recorded dot path form" "1" \
+  "$(grep -c "$RENAME_METHOD" "$RENAMEDIR/dot/F.php")"
+
+rename_fixture "$RENAMEDIR/before-flags"
+$BIN rename "$RENAMEDIR/before-flags" --method F::run --to execute > /dev/null
+expect "rename accepts a positional path before its options" "1" \
+  "$(grep -c "$RENAME_METHOD" "$RENAMEDIR/before-flags/F.php")"
+
+rename_fixture "$RENAMEDIR/flag"
+$BIN rename --method F::run --to execute --path "$RENAMEDIR/flag" > /dev/null
+expect "rename keeps the explicit --path form" "1" \
+  "$(grep -c "$RENAME_METHOD" "$RENAMEDIR/flag/F.php")"
+
+rename_fixture "$RENAMEDIR/dir with spaces"
+$BIN rename "$RENAMEDIR/dir with spaces" --method F::run --to execute > /dev/null
+expect "rename preserves spaces in a positional path" "1" \
+  "$(grep -c "$RENAME_METHOD" "$RENAMEDIR/dir with spaces/F.php")"
+
+rename_fixture "$RENAMEDIR/conflict-positional-first"
+conflict_before="$(sha256sum "$RENAMEDIR/conflict-positional-first/F.php")"
+set +e
+$BIN rename "$RENAMEDIR/conflict-positional-first" --method F::run --to execute \
+  --path "$RENAMEDIR/conflict-positional-first" > /dev/null 2> "$RENAMEDIR/conflict-a.err"
+conflict_a_code=$?
+set -e
+expect "rename rejects positional plus --path in that order" "2" "$conflict_a_code"
+expect "and writes nothing for the first conflict" "$conflict_before" \
+  "$(sha256sum "$RENAMEDIR/conflict-positional-first/F.php")"
+expect "the first conflict explains the ambiguous path" "1" \
+  "$(grep -c 'not both' "$RENAMEDIR/conflict-a.err")"
+
+rename_fixture "$RENAMEDIR/conflict-option-first"
+conflict_before="$(sha256sum "$RENAMEDIR/conflict-option-first/F.php")"
+set +e
+$BIN rename --method F::run --to execute --path "$RENAMEDIR/conflict-option-first" \
+  "$RENAMEDIR/conflict-option-first" > /dev/null 2> "$RENAMEDIR/conflict-b.err"
+conflict_b_code=$?
+set -e
+expect "rename rejects positional plus --path in reverse order" "2" "$conflict_b_code"
+expect "and writes nothing for the reverse conflict" "$conflict_before" \
+  "$(sha256sum "$RENAMEDIR/conflict-option-first/F.php")"
+
+rename_fixture "$RENAMEDIR/multiple"
+rename_fixture "$RENAMEDIR/other"
+multiple_before="$(sha256sum "$RENAMEDIR/multiple/F.php")"
+other_before="$(sha256sum "$RENAMEDIR/other/F.php")"
+set +e
+$BIN rename "$RENAMEDIR/multiple" "$RENAMEDIR/other" --method F::run --to execute \
+  > /dev/null 2> "$RENAMEDIR/multiple.err"
+multiple_code=$?
+set -e
+expect "rename rejects multiple positional paths" "2" "$multiple_code"
+expect "and writes nothing for multiple paths" "$multiple_before" \
+  "$(sha256sum "$RENAMEDIR/multiple/F.php")"
+expect "and does not select the second path" "$other_before" \
+  "$(sha256sum "$RENAMEDIR/other/F.php")"
+
+rename_fixture "$RENAMEDIR/empty"
+empty_before="$(sha256sum "$RENAMEDIR/empty/F.php")"
+set +e
+(cd "$RENAMEDIR/empty" && "$ROOT/bin/php-ast-edit" rename "" --method F::run --to execute \
+  > /dev/null 2> "$RENAMEDIR/empty.err")
+empty_code=$?
+set -e
+expect "rename rejects an empty positional path" "2" "$empty_code"
+expect "and writes nothing for an empty path" "$empty_before" \
+  "$(sha256sum "$RENAMEDIR/empty/F.php")"
+
+rename_fixture "$RENAMEDIR/0"
+(cd "$RENAMEDIR" && "$ROOT/bin/php-ast-edit" rename 0 --method F::run --to execute > /dev/null)
+expect "rename preserves a relative positional path named zero" "1" \
+  "$(grep -c "$RENAME_METHOD" "$RENAMEDIR/0/F.php")"
+
+rename_fixture "$RENAMEDIR/dot-root"
+dot_before="$(sha256sum "$RENAMEDIR/dot-root/F.php")"
+mkdir -p "$RENAMEDIR/dot-root/src"
+set +e
+(cd "$RENAMEDIR/dot-root/src" && "$ROOT/bin/php-ast-edit" rename --method F::run --to execute . \
+  > /dev/null 2> "$RENAMEDIR/dot-root/dot.err")
+dot_code=$?
+set -e
+expect "rename rejects a dot path that is only a project subdirectory" "2" "$dot_code"
+expect "and writes nothing for a non-root dot path" "$dot_before" \
+  "$(sha256sum "$RENAMEDIR/dot-root/F.php")"
+
+rename_fixture "$RENAMEDIR/equal-conflict"
+equal_before="$(sha256sum "$RENAMEDIR/equal-conflict/F.php")"
+set +e
+$BIN rename "$RENAMEDIR/equal-conflict" --method F::run --to execute \
+  --path="$RENAMEDIR/equal-conflict" > /dev/null 2> "$RENAMEDIR/equal-conflict.err"
+equal_code=$?
+set -e
+expect "rename rejects positional plus --path=value" "2" "$equal_code"
+expect "and writes nothing for --path=value conflict" "$equal_before" \
+  "$(sha256sum "$RENAMEDIR/equal-conflict/F.php")"
+
+rename_fixture "$RENAMEDIR/dry-run"
+$BIN rename "$RENAMEDIR/dry-run" --method F::run --to execute --dry-run > /dev/null
+expect "rename positional dry-run leaves the declaration unchanged" "1" \
+  "$(grep -c 'private function run' "$RENAMEDIR/dry-run/F.php")"
+
+set +e
+$BIN rename "$RENAMEDIR/missing path" --method F::run --to execute \
+  > /dev/null 2> "$RENAMEDIR/missing.err"
+missing_code=$?
+set -e
+expect "rename reports an invalid positional path" "2" "$missing_code"
+expect "the invalid path is not mistaken for an option" "0" \
+  "$(grep -c 'Unexpected argument' "$RENAMEDIR/missing.err")"
+
+set +e
+$BIN validate "$RENAMEDIR/after-flags/F.php" > /dev/null 2> "$RENAMEDIR/other-command.err"
+other_command_code=$?
+set -e
+expect "other commands still reject positional arguments" "2" "$other_command_code"
+expect "other-command rejection remains parser-level" "1" \
+  "$(grep -c 'Unexpected argument' "$RENAMEDIR/other-command.err")"
+
 if [[ "$fail" -ne 0 ]]; then
   echo "FAIL: CLI surface check failed." >&2
   exit 1
