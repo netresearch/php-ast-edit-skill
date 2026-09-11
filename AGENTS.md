@@ -100,6 +100,7 @@ PHP CLI plus Agent Skill for AST-native PHP source mutations.
 6. **Bump the version only in a PR, tag only after that PR merges.**
 7. **Every `references/*.md` stays reachable from `SKILL.md`** — orphaned reference files fail the audit.
 8. **`SKILL.md` body stays under 500 lines** (warning past 300) — the limit `skill-repo-skill`'s `validate-skill.sh` actually enforces; detail belongs in `references/`.
+9. **A `doctor` observation that no run of this tool can fix goes beside the findings, never among them.** `status` answers one question — is this repository set up for the contract — and every entry in `findings` flips it to `warn`. Something the repository cannot change by running `normalize`, `format` or `apply` is therefore a field of its own with its own advice, the way `resolver` and `overWidth` are. Reported as a finding it would call a correctly-prepared repository unprepared: this repository itself carries hundreds of lines over its own declared width — run `bin/php-ast-edit doctor --path .` for today's count — and is `ready`, which is the truth. The rule is easy to break because a finding is the obvious place to put something worth saying — an earlier draft of `overWidth` did exactly that and flipped a fixture from `ready` to `warn`; `tests/formatting.php` catches it.
 
 ## CI
 
