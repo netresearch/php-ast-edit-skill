@@ -16,6 +16,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Shorten the loaded skill and lead with the direct method command. Keep operation and report details in the linked reference. The interface and instruction bundle is measured separately from the earlier v0.8.0 pilot.
 - Remaining method-name strings now request classification rather than declaring the task unfinished. They may be callbacks or deliberately preserved data; the report still lists every observed occurrence and warns that passing checks do not classify them.
 - Project hierarchy indexing refuses duplicate fully qualified class-like declarations instead of silently choosing the first file. A declaration `--file` cannot disambiguate project references; exclude inactive copies before retrying.
+
+## [0.8.1] - 2026-09-11
+
+### Changed
+
 - Use an already supplied executable directly and pass the skill's example transaction through standard input. The Haiku pilot showed unnecessary executable lookup, payload-file cleanup and one retained payload despite the requested PHP edit. These are usability changes, not a measured savings claim: a bundled follow-up with additional method-rename instructions increased agent work, and the extra paragraph was withdrawn.
 
 ## [0.8.0] - 2026-09-11
@@ -243,7 +248,8 @@ The historical figures below come from reported controlled runs comparing succes
 - `php-structured-edit` Agent Skill with the operation reference and a wrapper resolving the repository binary, `vendor/bin`, a local PHAR, or `PATH`.
 - PHAR build via `scripts/build-phar.php`.
 
-[Unreleased]: https://github.com/netresearch/php-ast-edit-skill/compare/v0.8.0...HEAD
+[Unreleased]: https://github.com/netresearch/php-ast-edit-skill/compare/v0.8.1...HEAD
+[0.8.1]: https://github.com/netresearch/php-ast-edit-skill/compare/v0.8.0...v0.8.1
 [0.8.0]: https://github.com/netresearch/php-ast-edit-skill/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/netresearch/php-ast-edit-skill/compare/v0.6.1...v0.7.0
 [0.6.1]: https://github.com/netresearch/php-ast-edit-skill/compare/v0.6.0...v0.6.1
