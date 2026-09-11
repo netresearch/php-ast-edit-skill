@@ -279,6 +279,103 @@ class ScheduleSelectionTests(unittest.TestCase):
                 runner.balanced_order(["fixture"], seed=1, model_keys=keys)
 
 
+class ExperimentalArmTests(unittest.TestCase):
+    def test_minimal_intent_is_opt_in_and_uses_generic_instructions(self):
+        rows = runner.balanced_order(
+            ["fixture"], seed=1, arms=("minimal_intent",), model_keys=("haiku",)
+        )
+        self.assertEqual(len(rows), 3)
+        self.assertEqual({row["variant"] for row in rows}, {"minimal_intent"})
+        base = Path(tempfile.mkdtemp(prefix="php-ast-minimal-intent-"))
+        self.addCleanup(lambda: shutil.rmtree(base, ignore_errors=True))
+        skill = base / "runtime/skills/php-structured-edit"
+        skill.mkdir(parents=True)
+        (skill / "SKILL.md").write_text("Fixture skill body.\n")
+        text = runner.variants(base)["minimal_intent"]
+        self.assertGreaterEqual(len(text.split()), 60)
+        self.assertLessEqual(len(text.split()), 80)
+        self.assertIn("rename --method 'Class::old' --to new", text)
+        self.assertIn("configured checks", text)
+        self.assertIn("no guarantee", text)
+        for task_specific in ("Product", "CrossFile", "src/", "check.php"):
+            self.assertNotIn(task_specific, text)
+
+    def test_minimal_intent_does_not_change_the_default_arm_set(self):
+        self.assertEqual(
+            runner.SUPPORTED_ARMS, runner.ARMS + ("minimal_intent", "delegated_intent")
+        )
+        rows = runner.balanced_order(["fixture"], seed=1, model_keys=("haiku",))
+        self.assertEqual({row["variant"] for row in rows}, set(runner.ARMS))
+        self.assertEqual(len(rows), 3 * len(runner.ARMS))
+
+    def test_delegated_intent_extends_minimal_instructions_only(self):
+        base = Path(tempfile.mkdtemp(prefix="php-ast-delegated-intent-"))
+        self.addCleanup(lambda: shutil.rmtree(base, ignore_errors=True))
+        skill = base / "runtime/skills/php-structured-edit"
+        skill.mkdir(parents=True)
+        (skill / "SKILL.md").write_text("Fixture skill body.\n")
+        instructions = runner.variants(base)
+        addition = (
+            "When the task names the class and method to rename, invoke the command before "
+            "reading or searching PHP for declaration or caller discovery. Invoke it "
+            "once for the named method family; it handles supported declarations and callers "
+            "together. Do not queue separate renames for each implementation or caller. Read "
+            "source yourself only when needed for another requirement, a failed command, or "
+            "unresolved warnings."
+        )
+        self.assertEqual(
+            instructions["delegated_intent"],
+            instructions["minimal_intent"] + " " + addition,
+        )
+        self.assertEqual(runner.common_instructions("minimal_intent"), runner.COMMON)
+        self.assertEqual(
+            runner.common_instructions("delegated_intent"), runner.DELEGATED_COMMON
+        )
+        self.assertIn(
+            "Ensure relevant source is read before editing; for a supported method rename, the command performs this discovery.",
+            runner.common_instructions("delegated_intent"),
+        )
+        self.assertNotIn("Ensure relevant source is read before editing", runner.COMMON)
+
+    def test_delegated_system_append_and_fixture_are_scoped(self):
+        base = Path(tempfile.mkdtemp(prefix="php-ast-delegated-system-"))
+        self.addCleanup(lambda: shutil.rmtree(base, ignore_errors=True))
+        skill = base / "runtime/skills/php-structured-edit"
+        skill.mkdir(parents=True)
+        (skill / "SKILL.md").write_text("Fixture skill body.\n")
+        instructions = runner.variants(base)
+        for arm in runner.ARMS:
+            with self.subTest(arm=arm):
+                self.assertEqual(
+                    runner.system_instructions(arm, instructions[arm]),
+                    runner.COMMON + "\n" + instructions[arm],
+                )
+        delegated = runner.system_instructions(
+            "delegated_intent", instructions["delegated_intent"]
+        )
+        self.assertTrue(delegated.startswith(runner.DELEGATED_COMMON + "\n"))
+        self.assertNotIn(
+            runner.COMMON + "\n" + instructions["delegated_intent"], delegated
+        )
+        work = base / "work"
+        work.mkdir()
+        self.assertEqual(runner.check_fixture(work, "delegated_intent"), [])
+        self.assertEqual(list(work.iterdir()), [])
+
+    def test_unknown_experimental_arm_is_refused(self):
+        delegated = runner.balanced_order(
+            ["fixture"], seed=1, arms=("delegated_intent",), model_keys=("haiku",)
+        )
+        self.assertEqual(len(delegated), 3)
+        with self.assertRaises(ValueError):
+            runner.balanced_order(
+                ["fixture"],
+                seed=1,
+                arms=("minimal_intent_typo",),
+                model_keys=("haiku",),
+            )
+
+
 class EvidenceRelocationTests(unittest.TestCase):
     """An unpacked evidence archive must summarize, and a missing one must not."""
 

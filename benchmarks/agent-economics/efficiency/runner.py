@@ -39,6 +39,10 @@ ARMS = (
     "check_manual",
     "check_integrated",
 )
+# Experimental arms are opt-in so the established default schedule and its
+# validation remain unchanged for released protocols.
+EXPERIMENTAL_ARMS = ("minimal_intent", "delegated_intent")
+SUPPORTED_ARMS = ARMS + EXPERIMENTAL_ARMS
 # The two arms that carry a project check. Both get `check.php` and the same task clause;
 # only `check_integrated` declares the check to the engine, so the one variable between
 # them is whether `apply` runs it and reports the verdict.
@@ -94,6 +98,10 @@ Dependencies are installed. Bash, Read, Edit and Write are available. Documented
 and skill paths may be accessed as needed. No repository-wide AST-only rule applies
 to these disposable fixtures. Follow this run's editing instructions below.
 """
+DELEGATED_COMMON = COMMON.replace(
+    "Read relevant source before editing.",
+    "Ensure relevant source is read before editing; for a supported method rename, the command performs this discovery.",
+)
 BASELINE = """Use competent ordinary contextual editing: Edit or contextual patches,
 normal source discovery, batching when useful, and relevant checks. Do not use
 php-ast-edit or php-ast-agent for this run.
@@ -241,9 +249,20 @@ def variants(base):
         f"Relative references resolve beneath {skill}.\n\n"
         + (skill / "SKILL.md").read_text()
     )
+    minimal_intent = (
+        "Use the already supplied `php-ast-edit` executable for PHP writes. For a method "
+        "rename, invoke `php-ast-edit rename --method 'Class::old' --to new`; provide the project path "
+        "when the command requires it. The command resolves supported project callers "
+        "and runs configured checks. Review the returned diff, warnings, and checks. Do "
+        "extra work only for remaining requirements or unresolved warnings; preserve guards "
+        "and unrelated files. It makes no guarantee for unsupported or unresolved cases."
+    )
     return {
         "contextual_patch": BASELINE,
         "full_skill": full,
+        "minimal_intent": minimal_intent,
+        "delegated_intent": minimal_intent
+        + " When the task names the class and method to rename, invoke the command before reading or searching PHP for declaration or caller discovery. Invoke it once for the named method family; it handles supported declarations and callers together. Do not queue separate renames for each implementation or caller. Read source yourself only when needed for another requirement, a failed command, or unresolved warnings.",
         "compact_full": COMPACT.replace("MODE", "full"),
         "compact_focused": COMPACT.replace("MODE", "focused"),
         # Identical text in both check arms: nothing in an instruction may name the
@@ -254,9 +273,17 @@ def variants(base):
     }
 
 
+def common_instructions(variant):
+    return DELEGATED_COMMON if variant == "delegated_intent" else COMMON
+
+
+def system_instructions(variant, instructions):
+    return common_instructions(variant) + "\n" + instructions
+
+
 def balanced_order(task_ids, seed, arms=ARMS, model_keys=tuple(MODELS)):
     require(
-        arms and len(arms) == len(set(arms)) and set(arms) <= set(ARMS),
+        arms and len(arms) == len(set(arms)) and set(arms) <= set(SUPPORTED_ARMS),
         "Invalid or duplicate arms",
     )
     require(
@@ -397,7 +424,9 @@ def prepare_fixture(base, row, template, instructions):
         work,
     )
     (evidence / BASELINE_COMMIT).write_text(checked(["git", "rev-parse", "HEAD"], work))
-    (evidence / "system-append.txt").write_text(COMMON + "\n" + instructions)
+    (evidence / "system-append.txt").write_text(
+        system_instructions(row["variant"], instructions)
+    )
     prompt = template["prompt"]
 
     if row["variant"] in CHECK_ARMS:
@@ -484,6 +513,9 @@ def prepare(args):
         "billing_note": "Native list-price estimates under existing authentication, not proof of charges",
         "variant_instructions": instructions,
         "common_instructions": COMMON,
+        "common_instructions_by_variant": {
+            arm: common_instructions(arm) for arm in instructions
+        },
         "instruction_words": {
             arm: len(text.split()) for arm, text in instructions.items()
         },

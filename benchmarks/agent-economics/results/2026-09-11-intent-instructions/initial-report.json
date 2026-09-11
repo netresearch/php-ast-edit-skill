@@ -1,0 +1,5753 @@
+{
+  "attempted": 18,
+  "campaign": "/tmp/php-ast-intent-instruction-campaign-20260911",
+  "cells": [
+    {
+      "all_observed": {
+        "medians": {
+          "cache_creation_input_tokens": {
+            "denominator": 3,
+            "median": 6424,
+            "n": 3
+          },
+          "cache_read_input_tokens": {
+            "denominator": 3,
+            "median": 55234,
+            "n": 3
+          },
+          "cost_usd": {
+            "denominator": 3,
+            "median": 0.030742400000000003,
+            "n": 3
+          },
+          "diff_lines": {
+            "denominator": 3,
+            "median": 2,
+            "n": 3
+          },
+          "failed_tool_calls": {
+            "denominator": 3,
+            "median": 0,
+            "n": 3
+          },
+          "input_tokens": {
+            "denominator": 3,
+            "median": 41,
+            "n": 3
+          },
+          "native_turns": {
+            "denominator": 3,
+            "median": 8,
+            "n": 3
+          },
+          "output_tokens": {
+            "denominator": 3,
+            "median": 1912,
+            "n": 3
+          },
+          "tool_calls": {
+            "denominator": 3,
+            "median": 7,
+            "n": 3
+          },
+          "tool_execution_ms": {
+            "denominator": 3,
+            "median": null,
+            "n": 0
+          },
+          "total_tokens": {
+            "denominator": 3,
+            "median": 61734,
+            "n": 3
+          },
+          "visible_primary_rounds": {
+            "denominator": 3,
+            "median": 5,
+            "n": 3
+          },
+          "wall_ms": {
+            "denominator": 3,
+            "median": 24711.74880999024,
+            "n": 3
+          }
+        },
+        "n": 3
+      },
+      "arm": "full_skill",
+      "attempted": 3,
+      "failed_intent_calls": {
+        "denominator": 3,
+        "median": 0,
+        "n": 3
+      },
+      "intent_calls": {
+        "denominator": 3,
+        "median": 1,
+        "n": 3
+      },
+      "intent_observations": {
+        "denominator": 3,
+        "known": 3,
+        "unknown": 0
+      },
+      "medians_all_observed": {
+        "cache_creation_input_tokens": {
+          "denominator": 3,
+          "median": 6424,
+          "n": 3
+        },
+        "cache_read_input_tokens": {
+          "denominator": 3,
+          "median": 55234,
+          "n": 3
+        },
+        "cost_usd": {
+          "denominator": 3,
+          "median": 0.030742400000000003,
+          "n": 3
+        },
+        "diff_lines": {
+          "denominator": 3,
+          "median": 2,
+          "n": 3
+        },
+        "failed_tool_calls": {
+          "denominator": 3,
+          "median": 0,
+          "n": 3
+        },
+        "input_tokens": {
+          "denominator": 3,
+          "median": 41,
+          "n": 3
+        },
+        "native_turns": {
+          "denominator": 3,
+          "median": 8,
+          "n": 3
+        },
+        "output_tokens": {
+          "denominator": 3,
+          "median": 1912,
+          "n": 3
+        },
+        "tool_calls": {
+          "denominator": 3,
+          "median": 7,
+          "n": 3
+        },
+        "tool_execution_ms": {
+          "denominator": 3,
+          "median": null,
+          "n": 0
+        },
+        "total_tokens": {
+          "denominator": 3,
+          "median": 61734,
+          "n": 3
+        },
+        "visible_primary_rounds": {
+          "denominator": 3,
+          "median": 5,
+          "n": 3
+        },
+        "wall_ms": {
+          "denominator": 3,
+          "median": 24711.74880999024,
+          "n": 3
+        }
+      },
+      "medians_successful": {
+        "cache_creation_input_tokens": {
+          "denominator": 3,
+          "median": 6424,
+          "n": 3
+        },
+        "cache_read_input_tokens": {
+          "denominator": 3,
+          "median": 55234,
+          "n": 3
+        },
+        "cost_usd": {
+          "denominator": 3,
+          "median": 0.030742400000000003,
+          "n": 3
+        },
+        "diff_lines": {
+          "denominator": 3,
+          "median": 2,
+          "n": 3
+        },
+        "failed_tool_calls": {
+          "denominator": 3,
+          "median": 0,
+          "n": 3
+        },
+        "input_tokens": {
+          "denominator": 3,
+          "median": 41,
+          "n": 3
+        },
+        "native_turns": {
+          "denominator": 3,
+          "median": 8,
+          "n": 3
+        },
+        "output_tokens": {
+          "denominator": 3,
+          "median": 1912,
+          "n": 3
+        },
+        "tool_calls": {
+          "denominator": 3,
+          "median": 7,
+          "n": 3
+        },
+        "tool_execution_ms": {
+          "denominator": 3,
+          "median": null,
+          "n": 0
+        },
+        "total_tokens": {
+          "denominator": 3,
+          "median": 61734,
+          "n": 3
+        },
+        "visible_primary_rounds": {
+          "denominator": 3,
+          "median": 5,
+          "n": 3
+        },
+        "wall_ms": {
+          "denominator": 3,
+          "median": 24711.74880999024,
+          "n": 3
+        }
+      },
+      "scheduled": 3,
+      "successful": 3,
+      "successful_observed": {
+        "medians": {
+          "cache_creation_input_tokens": {
+            "denominator": 3,
+            "median": 6424,
+            "n": 3
+          },
+          "cache_read_input_tokens": {
+            "denominator": 3,
+            "median": 55234,
+            "n": 3
+          },
+          "cost_usd": {
+            "denominator": 3,
+            "median": 0.030742400000000003,
+            "n": 3
+          },
+          "diff_lines": {
+            "denominator": 3,
+            "median": 2,
+            "n": 3
+          },
+          "failed_tool_calls": {
+            "denominator": 3,
+            "median": 0,
+            "n": 3
+          },
+          "input_tokens": {
+            "denominator": 3,
+            "median": 41,
+            "n": 3
+          },
+          "native_turns": {
+            "denominator": 3,
+            "median": 8,
+            "n": 3
+          },
+          "output_tokens": {
+            "denominator": 3,
+            "median": 1912,
+            "n": 3
+          },
+          "tool_calls": {
+            "denominator": 3,
+            "median": 7,
+            "n": 3
+          },
+          "tool_execution_ms": {
+            "denominator": 3,
+            "median": null,
+            "n": 0
+          },
+          "total_tokens": {
+            "denominator": 3,
+            "median": 61734,
+            "n": 3
+          },
+          "visible_primary_rounds": {
+            "denominator": 3,
+            "median": 5,
+            "n": 3
+          },
+          "wall_ms": {
+            "denominator": 3,
+            "median": 24711.74880999024,
+            "n": 3
+          }
+        },
+        "n": 3
+      },
+      "task_id": "method-and-literal",
+      "unattempted": 0
+    },
+    {
+      "all_observed": {
+        "medians": {
+          "cache_creation_input_tokens": {
+            "denominator": 3,
+            "median": 5517,
+            "n": 3
+          },
+          "cache_read_input_tokens": {
+            "denominator": 3,
+            "median": 74244,
+            "n": 3
+          },
+          "cost_usd": {
+            "denominator": 3,
+            "median": 0.0310075,
+            "n": 3
+          },
+          "diff_lines": {
+            "denominator": 3,
+            "median": 2,
+            "n": 3
+          },
+          "failed_tool_calls": {
+            "denominator": 3,
+            "median": 1,
+            "n": 3
+          },
+          "input_tokens": {
+            "denominator": 3,
+            "median": 57,
+            "n": 3
+          },
+          "native_turns": {
+            "denominator": 3,
+            "median": 11,
+            "n": 3
+          },
+          "output_tokens": {
+            "denominator": 3,
+            "median": 2121,
+            "n": 3
+          },
+          "tool_calls": {
+            "denominator": 3,
+            "median": 10,
+            "n": 3
+          },
+          "tool_execution_ms": {
+            "denominator": 3,
+            "median": null,
+            "n": 0
+          },
+          "total_tokens": {
+            "denominator": 3,
+            "median": 82944,
+            "n": 3
+          },
+          "visible_primary_rounds": {
+            "denominator": 3,
+            "median": 7,
+            "n": 3
+          },
+          "wall_ms": {
+            "denominator": 3,
+            "median": 27175.50241400022,
+            "n": 3
+          }
+        },
+        "n": 3
+      },
+      "arm": "minimal_intent",
+      "attempted": 3,
+      "failed_intent_calls": {
+        "denominator": 3,
+        "median": 0,
+        "n": 3
+      },
+      "intent_calls": {
+        "denominator": 3,
+        "median": 1,
+        "n": 3
+      },
+      "intent_observations": {
+        "denominator": 3,
+        "known": 3,
+        "unknown": 0
+      },
+      "medians_all_observed": {
+        "cache_creation_input_tokens": {
+          "denominator": 3,
+          "median": 5517,
+          "n": 3
+        },
+        "cache_read_input_tokens": {
+          "denominator": 3,
+          "median": 74244,
+          "n": 3
+        },
+        "cost_usd": {
+          "denominator": 3,
+          "median": 0.0310075,
+          "n": 3
+        },
+        "diff_lines": {
+          "denominator": 3,
+          "median": 2,
+          "n": 3
+        },
+        "failed_tool_calls": {
+          "denominator": 3,
+          "median": 1,
+          "n": 3
+        },
+        "input_tokens": {
+          "denominator": 3,
+          "median": 57,
+          "n": 3
+        },
+        "native_turns": {
+          "denominator": 3,
+          "median": 11,
+          "n": 3
+        },
+        "output_tokens": {
+          "denominator": 3,
+          "median": 2121,
+          "n": 3
+        },
+        "tool_calls": {
+          "denominator": 3,
+          "median": 10,
+          "n": 3
+        },
+        "tool_execution_ms": {
+          "denominator": 3,
+          "median": null,
+          "n": 0
+        },
+        "total_tokens": {
+          "denominator": 3,
+          "median": 82944,
+          "n": 3
+        },
+        "visible_primary_rounds": {
+          "denominator": 3,
+          "median": 7,
+          "n": 3
+        },
+        "wall_ms": {
+          "denominator": 3,
+          "median": 27175.50241400022,
+          "n": 3
+        }
+      },
+      "medians_successful": {
+        "cache_creation_input_tokens": {
+          "denominator": 3,
+          "median": 5517,
+          "n": 3
+        },
+        "cache_read_input_tokens": {
+          "denominator": 3,
+          "median": 74244,
+          "n": 3
+        },
+        "cost_usd": {
+          "denominator": 3,
+          "median": 0.0310075,
+          "n": 3
+        },
+        "diff_lines": {
+          "denominator": 3,
+          "median": 2,
+          "n": 3
+        },
+        "failed_tool_calls": {
+          "denominator": 3,
+          "median": 1,
+          "n": 3
+        },
+        "input_tokens": {
+          "denominator": 3,
+          "median": 57,
+          "n": 3
+        },
+        "native_turns": {
+          "denominator": 3,
+          "median": 11,
+          "n": 3
+        },
+        "output_tokens": {
+          "denominator": 3,
+          "median": 2121,
+          "n": 3
+        },
+        "tool_calls": {
+          "denominator": 3,
+          "median": 10,
+          "n": 3
+        },
+        "tool_execution_ms": {
+          "denominator": 3,
+          "median": null,
+          "n": 0
+        },
+        "total_tokens": {
+          "denominator": 3,
+          "median": 82944,
+          "n": 3
+        },
+        "visible_primary_rounds": {
+          "denominator": 3,
+          "median": 7,
+          "n": 3
+        },
+        "wall_ms": {
+          "denominator": 3,
+          "median": 27175.50241400022,
+          "n": 3
+        }
+      },
+      "scheduled": 3,
+      "successful": 3,
+      "successful_observed": {
+        "medians": {
+          "cache_creation_input_tokens": {
+            "denominator": 3,
+            "median": 5517,
+            "n": 3
+          },
+          "cache_read_input_tokens": {
+            "denominator": 3,
+            "median": 74244,
+            "n": 3
+          },
+          "cost_usd": {
+            "denominator": 3,
+            "median": 0.0310075,
+            "n": 3
+          },
+          "diff_lines": {
+            "denominator": 3,
+            "median": 2,
+            "n": 3
+          },
+          "failed_tool_calls": {
+            "denominator": 3,
+            "median": 1,
+            "n": 3
+          },
+          "input_tokens": {
+            "denominator": 3,
+            "median": 57,
+            "n": 3
+          },
+          "native_turns": {
+            "denominator": 3,
+            "median": 11,
+            "n": 3
+          },
+          "output_tokens": {
+            "denominator": 3,
+            "median": 2121,
+            "n": 3
+          },
+          "tool_calls": {
+            "denominator": 3,
+            "median": 10,
+            "n": 3
+          },
+          "tool_execution_ms": {
+            "denominator": 3,
+            "median": null,
+            "n": 0
+          },
+          "total_tokens": {
+            "denominator": 3,
+            "median": 82944,
+            "n": 3
+          },
+          "visible_primary_rounds": {
+            "denominator": 3,
+            "median": 7,
+            "n": 3
+          },
+          "wall_ms": {
+            "denominator": 3,
+            "median": 27175.50241400022,
+            "n": 3
+          }
+        },
+        "n": 3
+      },
+      "task_id": "method-and-literal",
+      "unattempted": 0
+    },
+    {
+      "all_observed": {
+        "medians": {
+          "cache_creation_input_tokens": {
+            "denominator": 3,
+            "median": 4596,
+            "n": 3
+          },
+          "cache_read_input_tokens": {
+            "denominator": 3,
+            "median": 80657,
+            "n": 3
+          },
+          "cost_usd": {
+            "denominator": 3,
+            "median": 0.0281957,
+            "n": 3
+          },
+          "diff_lines": {
+            "denominator": 3,
+            "median": 2,
+            "n": 3
+          },
+          "failed_tool_calls": {
+            "denominator": 3,
+            "median": 1,
+            "n": 3
+          },
+          "input_tokens": {
+            "denominator": 3,
+            "median": 65,
+            "n": 3
+          },
+          "native_turns": {
+            "denominator": 3,
+            "median": 11,
+            "n": 3
+          },
+          "output_tokens": {
+            "denominator": 3,
+            "median": 1943,
+            "n": 3
+          },
+          "tool_calls": {
+            "denominator": 3,
+            "median": 10,
+            "n": 3
+          },
+          "tool_execution_ms": {
+            "denominator": 3,
+            "median": null,
+            "n": 0
+          },
+          "total_tokens": {
+            "denominator": 3,
+            "median": 87840,
+            "n": 3
+          },
+          "visible_primary_rounds": {
+            "denominator": 3,
+            "median": 8,
+            "n": 3
+          },
+          "wall_ms": {
+            "denominator": 3,
+            "median": 16901.475893013412,
+            "n": 3
+          }
+        },
+        "n": 3
+      },
+      "arm": "contextual_patch",
+      "attempted": 3,
+      "failed_intent_calls": {
+        "denominator": 3,
+        "median": null,
+        "n": 0
+      },
+      "intent_calls": {
+        "denominator": 3,
+        "median": null,
+        "n": 0
+      },
+      "intent_observations": {
+        "denominator": 3,
+        "known": 0,
+        "unknown": 3
+      },
+      "medians_all_observed": {
+        "cache_creation_input_tokens": {
+          "denominator": 3,
+          "median": 4596,
+          "n": 3
+        },
+        "cache_read_input_tokens": {
+          "denominator": 3,
+          "median": 80657,
+          "n": 3
+        },
+        "cost_usd": {
+          "denominator": 3,
+          "median": 0.0281957,
+          "n": 3
+        },
+        "diff_lines": {
+          "denominator": 3,
+          "median": 2,
+          "n": 3
+        },
+        "failed_tool_calls": {
+          "denominator": 3,
+          "median": 1,
+          "n": 3
+        },
+        "input_tokens": {
+          "denominator": 3,
+          "median": 65,
+          "n": 3
+        },
+        "native_turns": {
+          "denominator": 3,
+          "median": 11,
+          "n": 3
+        },
+        "output_tokens": {
+          "denominator": 3,
+          "median": 1943,
+          "n": 3
+        },
+        "tool_calls": {
+          "denominator": 3,
+          "median": 10,
+          "n": 3
+        },
+        "tool_execution_ms": {
+          "denominator": 3,
+          "median": null,
+          "n": 0
+        },
+        "total_tokens": {
+          "denominator": 3,
+          "median": 87840,
+          "n": 3
+        },
+        "visible_primary_rounds": {
+          "denominator": 3,
+          "median": 8,
+          "n": 3
+        },
+        "wall_ms": {
+          "denominator": 3,
+          "median": 16901.475893013412,
+          "n": 3
+        }
+      },
+      "medians_successful": {
+        "cache_creation_input_tokens": {
+          "denominator": 3,
+          "median": 4596,
+          "n": 3
+        },
+        "cache_read_input_tokens": {
+          "denominator": 3,
+          "median": 80657,
+          "n": 3
+        },
+        "cost_usd": {
+          "denominator": 3,
+          "median": 0.0281957,
+          "n": 3
+        },
+        "diff_lines": {
+          "denominator": 3,
+          "median": 2,
+          "n": 3
+        },
+        "failed_tool_calls": {
+          "denominator": 3,
+          "median": 1,
+          "n": 3
+        },
+        "input_tokens": {
+          "denominator": 3,
+          "median": 65,
+          "n": 3
+        },
+        "native_turns": {
+          "denominator": 3,
+          "median": 11,
+          "n": 3
+        },
+        "output_tokens": {
+          "denominator": 3,
+          "median": 1943,
+          "n": 3
+        },
+        "tool_calls": {
+          "denominator": 3,
+          "median": 10,
+          "n": 3
+        },
+        "tool_execution_ms": {
+          "denominator": 3,
+          "median": null,
+          "n": 0
+        },
+        "total_tokens": {
+          "denominator": 3,
+          "median": 87840,
+          "n": 3
+        },
+        "visible_primary_rounds": {
+          "denominator": 3,
+          "median": 8,
+          "n": 3
+        },
+        "wall_ms": {
+          "denominator": 3,
+          "median": 16901.475893013412,
+          "n": 3
+        }
+      },
+      "scheduled": 3,
+      "successful": 3,
+      "successful_observed": {
+        "medians": {
+          "cache_creation_input_tokens": {
+            "denominator": 3,
+            "median": 4596,
+            "n": 3
+          },
+          "cache_read_input_tokens": {
+            "denominator": 3,
+            "median": 80657,
+            "n": 3
+          },
+          "cost_usd": {
+            "denominator": 3,
+            "median": 0.0281957,
+            "n": 3
+          },
+          "diff_lines": {
+            "denominator": 3,
+            "median": 2,
+            "n": 3
+          },
+          "failed_tool_calls": {
+            "denominator": 3,
+            "median": 1,
+            "n": 3
+          },
+          "input_tokens": {
+            "denominator": 3,
+            "median": 65,
+            "n": 3
+          },
+          "native_turns": {
+            "denominator": 3,
+            "median": 11,
+            "n": 3
+          },
+          "output_tokens": {
+            "denominator": 3,
+            "median": 1943,
+            "n": 3
+          },
+          "tool_calls": {
+            "denominator": 3,
+            "median": 10,
+            "n": 3
+          },
+          "tool_execution_ms": {
+            "denominator": 3,
+            "median": null,
+            "n": 0
+          },
+          "total_tokens": {
+            "denominator": 3,
+            "median": 87840,
+            "n": 3
+          },
+          "visible_primary_rounds": {
+            "denominator": 3,
+            "median": 8,
+            "n": 3
+          },
+          "wall_ms": {
+            "denominator": 3,
+            "median": 16901.475893013412,
+            "n": 3
+          }
+        },
+        "n": 3
+      },
+      "task_id": "method-and-literal",
+      "unattempted": 0
+    },
+    {
+      "all_observed": {
+        "medians": {
+          "cache_creation_input_tokens": {
+            "denominator": 3,
+            "median": 10536,
+            "n": 3
+          },
+          "cache_read_input_tokens": {
+            "denominator": 3,
+            "median": 190199,
+            "n": 3
+          },
+          "cost_usd": {
+            "denominator": 3,
+            "median": 0.058934300000000016,
+            "n": 3
+          },
+          "diff_lines": {
+            "denominator": 3,
+            "median": 14,
+            "n": 3
+          },
+          "failed_tool_calls": {
+            "denominator": 3,
+            "median": 1,
+            "n": 3
+          },
+          "input_tokens": {
+            "denominator": 3,
+            "median": 105,
+            "n": 3
+          },
+          "native_turns": {
+            "denominator": 3,
+            "median": 27,
+            "n": 3
+          },
+          "output_tokens": {
+            "denominator": 3,
+            "median": 3935,
+            "n": 3
+          },
+          "tool_calls": {
+            "denominator": 3,
+            "median": 26,
+            "n": 3
+          },
+          "tool_execution_ms": {
+            "denominator": 3,
+            "median": null,
+            "n": 0
+          },
+          "total_tokens": {
+            "denominator": 3,
+            "median": 204758,
+            "n": 3
+          },
+          "visible_primary_rounds": {
+            "denominator": 3,
+            "median": 13,
+            "n": 3
+          },
+          "wall_ms": {
+            "denominator": 3,
+            "median": 45364.39910897752,
+            "n": 3
+          }
+        },
+        "n": 3
+      },
+      "arm": "full_skill",
+      "attempted": 3,
+      "failed_intent_calls": {
+        "denominator": 3,
+        "median": 0,
+        "n": 3
+      },
+      "intent_calls": {
+        "denominator": 3,
+        "median": 1,
+        "n": 3
+      },
+      "intent_observations": {
+        "denominator": 3,
+        "known": 3,
+        "unknown": 0
+      },
+      "medians_all_observed": {
+        "cache_creation_input_tokens": {
+          "denominator": 3,
+          "median": 10536,
+          "n": 3
+        },
+        "cache_read_input_tokens": {
+          "denominator": 3,
+          "median": 190199,
+          "n": 3
+        },
+        "cost_usd": {
+          "denominator": 3,
+          "median": 0.058934300000000016,
+          "n": 3
+        },
+        "diff_lines": {
+          "denominator": 3,
+          "median": 14,
+          "n": 3
+        },
+        "failed_tool_calls": {
+          "denominator": 3,
+          "median": 1,
+          "n": 3
+        },
+        "input_tokens": {
+          "denominator": 3,
+          "median": 105,
+          "n": 3
+        },
+        "native_turns": {
+          "denominator": 3,
+          "median": 27,
+          "n": 3
+        },
+        "output_tokens": {
+          "denominator": 3,
+          "median": 3935,
+          "n": 3
+        },
+        "tool_calls": {
+          "denominator": 3,
+          "median": 26,
+          "n": 3
+        },
+        "tool_execution_ms": {
+          "denominator": 3,
+          "median": null,
+          "n": 0
+        },
+        "total_tokens": {
+          "denominator": 3,
+          "median": 204758,
+          "n": 3
+        },
+        "visible_primary_rounds": {
+          "denominator": 3,
+          "median": 13,
+          "n": 3
+        },
+        "wall_ms": {
+          "denominator": 3,
+          "median": 45364.39910897752,
+          "n": 3
+        }
+      },
+      "medians_successful": {
+        "cache_creation_input_tokens": {
+          "denominator": 3,
+          "median": 10536,
+          "n": 3
+        },
+        "cache_read_input_tokens": {
+          "denominator": 3,
+          "median": 190199,
+          "n": 3
+        },
+        "cost_usd": {
+          "denominator": 3,
+          "median": 0.058934300000000016,
+          "n": 3
+        },
+        "diff_lines": {
+          "denominator": 3,
+          "median": 14,
+          "n": 3
+        },
+        "failed_tool_calls": {
+          "denominator": 3,
+          "median": 1,
+          "n": 3
+        },
+        "input_tokens": {
+          "denominator": 3,
+          "median": 105,
+          "n": 3
+        },
+        "native_turns": {
+          "denominator": 3,
+          "median": 27,
+          "n": 3
+        },
+        "output_tokens": {
+          "denominator": 3,
+          "median": 3935,
+          "n": 3
+        },
+        "tool_calls": {
+          "denominator": 3,
+          "median": 26,
+          "n": 3
+        },
+        "tool_execution_ms": {
+          "denominator": 3,
+          "median": null,
+          "n": 0
+        },
+        "total_tokens": {
+          "denominator": 3,
+          "median": 204758,
+          "n": 3
+        },
+        "visible_primary_rounds": {
+          "denominator": 3,
+          "median": 13,
+          "n": 3
+        },
+        "wall_ms": {
+          "denominator": 3,
+          "median": 45364.39910897752,
+          "n": 3
+        }
+      },
+      "scheduled": 3,
+      "successful": 3,
+      "successful_observed": {
+        "medians": {
+          "cache_creation_input_tokens": {
+            "denominator": 3,
+            "median": 10536,
+            "n": 3
+          },
+          "cache_read_input_tokens": {
+            "denominator": 3,
+            "median": 190199,
+            "n": 3
+          },
+          "cost_usd": {
+            "denominator": 3,
+            "median": 0.058934300000000016,
+            "n": 3
+          },
+          "diff_lines": {
+            "denominator": 3,
+            "median": 14,
+            "n": 3
+          },
+          "failed_tool_calls": {
+            "denominator": 3,
+            "median": 1,
+            "n": 3
+          },
+          "input_tokens": {
+            "denominator": 3,
+            "median": 105,
+            "n": 3
+          },
+          "native_turns": {
+            "denominator": 3,
+            "median": 27,
+            "n": 3
+          },
+          "output_tokens": {
+            "denominator": 3,
+            "median": 3935,
+            "n": 3
+          },
+          "tool_calls": {
+            "denominator": 3,
+            "median": 26,
+            "n": 3
+          },
+          "tool_execution_ms": {
+            "denominator": 3,
+            "median": null,
+            "n": 0
+          },
+          "total_tokens": {
+            "denominator": 3,
+            "median": 204758,
+            "n": 3
+          },
+          "visible_primary_rounds": {
+            "denominator": 3,
+            "median": 13,
+            "n": 3
+          },
+          "wall_ms": {
+            "denominator": 3,
+            "median": 45364.39910897752,
+            "n": 3
+          }
+        },
+        "n": 3
+      },
+      "task_id": "cross-file-rename-clarified",
+      "unattempted": 0
+    },
+    {
+      "all_observed": {
+        "medians": {
+          "cache_creation_input_tokens": {
+            "denominator": 3,
+            "median": 9775,
+            "n": 3
+          },
+          "cache_read_input_tokens": {
+            "denominator": 3,
+            "median": 141067,
+            "n": 3
+          },
+          "cost_usd": {
+            "denominator": 3,
+            "median": 0.0522687,
+            "n": 3
+          },
+          "diff_lines": {
+            "denominator": 3,
+            "median": 14,
+            "n": 3
+          },
+          "failed_tool_calls": {
+            "denominator": 3,
+            "median": 2,
+            "n": 3
+          },
+          "input_tokens": {
+            "denominator": 3,
+            "median": 89,
+            "n": 3
+          },
+          "native_turns": {
+            "denominator": 3,
+            "median": 25,
+            "n": 3
+          },
+          "output_tokens": {
+            "denominator": 3,
+            "median": 3943,
+            "n": 3
+          },
+          "tool_calls": {
+            "denominator": 3,
+            "median": 24,
+            "n": 3
+          },
+          "tool_execution_ms": {
+            "denominator": 3,
+            "median": null,
+            "n": 0
+          },
+          "total_tokens": {
+            "denominator": 3,
+            "median": 154635,
+            "n": 3
+          },
+          "visible_primary_rounds": {
+            "denominator": 3,
+            "median": 11,
+            "n": 3
+          },
+          "wall_ms": {
+            "denominator": 3,
+            "median": 43648.22483100579,
+            "n": 3
+          }
+        },
+        "n": 3
+      },
+      "arm": "minimal_intent",
+      "attempted": 3,
+      "failed_intent_calls": {
+        "denominator": 3,
+        "median": 1,
+        "n": 3
+      },
+      "intent_calls": {
+        "denominator": 3,
+        "median": 2,
+        "n": 3
+      },
+      "intent_observations": {
+        "denominator": 3,
+        "known": 3,
+        "unknown": 0
+      },
+      "medians_all_observed": {
+        "cache_creation_input_tokens": {
+          "denominator": 3,
+          "median": 9775,
+          "n": 3
+        },
+        "cache_read_input_tokens": {
+          "denominator": 3,
+          "median": 141067,
+          "n": 3
+        },
+        "cost_usd": {
+          "denominator": 3,
+          "median": 0.0522687,
+          "n": 3
+        },
+        "diff_lines": {
+          "denominator": 3,
+          "median": 14,
+          "n": 3
+        },
+        "failed_tool_calls": {
+          "denominator": 3,
+          "median": 2,
+          "n": 3
+        },
+        "input_tokens": {
+          "denominator": 3,
+          "median": 89,
+          "n": 3
+        },
+        "native_turns": {
+          "denominator": 3,
+          "median": 25,
+          "n": 3
+        },
+        "output_tokens": {
+          "denominator": 3,
+          "median": 3943,
+          "n": 3
+        },
+        "tool_calls": {
+          "denominator": 3,
+          "median": 24,
+          "n": 3
+        },
+        "tool_execution_ms": {
+          "denominator": 3,
+          "median": null,
+          "n": 0
+        },
+        "total_tokens": {
+          "denominator": 3,
+          "median": 154635,
+          "n": 3
+        },
+        "visible_primary_rounds": {
+          "denominator": 3,
+          "median": 11,
+          "n": 3
+        },
+        "wall_ms": {
+          "denominator": 3,
+          "median": 43648.22483100579,
+          "n": 3
+        }
+      },
+      "medians_successful": {
+        "cache_creation_input_tokens": {
+          "denominator": 3,
+          "median": 9775,
+          "n": 3
+        },
+        "cache_read_input_tokens": {
+          "denominator": 3,
+          "median": 141067,
+          "n": 3
+        },
+        "cost_usd": {
+          "denominator": 3,
+          "median": 0.0522687,
+          "n": 3
+        },
+        "diff_lines": {
+          "denominator": 3,
+          "median": 14,
+          "n": 3
+        },
+        "failed_tool_calls": {
+          "denominator": 3,
+          "median": 2,
+          "n": 3
+        },
+        "input_tokens": {
+          "denominator": 3,
+          "median": 89,
+          "n": 3
+        },
+        "native_turns": {
+          "denominator": 3,
+          "median": 25,
+          "n": 3
+        },
+        "output_tokens": {
+          "denominator": 3,
+          "median": 3943,
+          "n": 3
+        },
+        "tool_calls": {
+          "denominator": 3,
+          "median": 24,
+          "n": 3
+        },
+        "tool_execution_ms": {
+          "denominator": 3,
+          "median": null,
+          "n": 0
+        },
+        "total_tokens": {
+          "denominator": 3,
+          "median": 154635,
+          "n": 3
+        },
+        "visible_primary_rounds": {
+          "denominator": 3,
+          "median": 11,
+          "n": 3
+        },
+        "wall_ms": {
+          "denominator": 3,
+          "median": 43648.22483100579,
+          "n": 3
+        }
+      },
+      "scheduled": 3,
+      "successful": 3,
+      "successful_observed": {
+        "medians": {
+          "cache_creation_input_tokens": {
+            "denominator": 3,
+            "median": 9775,
+            "n": 3
+          },
+          "cache_read_input_tokens": {
+            "denominator": 3,
+            "median": 141067,
+            "n": 3
+          },
+          "cost_usd": {
+            "denominator": 3,
+            "median": 0.0522687,
+            "n": 3
+          },
+          "diff_lines": {
+            "denominator": 3,
+            "median": 14,
+            "n": 3
+          },
+          "failed_tool_calls": {
+            "denominator": 3,
+            "median": 2,
+            "n": 3
+          },
+          "input_tokens": {
+            "denominator": 3,
+            "median": 89,
+            "n": 3
+          },
+          "native_turns": {
+            "denominator": 3,
+            "median": 25,
+            "n": 3
+          },
+          "output_tokens": {
+            "denominator": 3,
+            "median": 3943,
+            "n": 3
+          },
+          "tool_calls": {
+            "denominator": 3,
+            "median": 24,
+            "n": 3
+          },
+          "tool_execution_ms": {
+            "denominator": 3,
+            "median": null,
+            "n": 0
+          },
+          "total_tokens": {
+            "denominator": 3,
+            "median": 154635,
+            "n": 3
+          },
+          "visible_primary_rounds": {
+            "denominator": 3,
+            "median": 11,
+            "n": 3
+          },
+          "wall_ms": {
+            "denominator": 3,
+            "median": 43648.22483100579,
+            "n": 3
+          }
+        },
+        "n": 3
+      },
+      "task_id": "cross-file-rename-clarified",
+      "unattempted": 0
+    },
+    {
+      "all_observed": {
+        "medians": {
+          "cache_creation_input_tokens": {
+            "denominator": 3,
+            "median": 6923,
+            "n": 3
+          },
+          "cache_read_input_tokens": {
+            "denominator": 3,
+            "median": 102457,
+            "n": 3
+          },
+          "cost_usd": {
+            "denominator": 3,
+            "median": 0.0396747,
+            "n": 3
+          },
+          "diff_lines": {
+            "denominator": 3,
+            "median": 10,
+            "n": 3
+          },
+          "failed_tool_calls": {
+            "denominator": 3,
+            "median": 1,
+            "n": 3
+          },
+          "input_tokens": {
+            "denominator": 3,
+            "median": 73,
+            "n": 3
+          },
+          "native_turns": {
+            "denominator": 3,
+            "median": 21,
+            "n": 3
+          },
+          "output_tokens": {
+            "denominator": 3,
+            "median": 3151,
+            "n": 3
+          },
+          "tool_calls": {
+            "denominator": 3,
+            "median": 20,
+            "n": 3
+          },
+          "tool_execution_ms": {
+            "denominator": 3,
+            "median": null,
+            "n": 0
+          },
+          "total_tokens": {
+            "denominator": 3,
+            "median": 112555,
+            "n": 3
+          },
+          "visible_primary_rounds": {
+            "denominator": 3,
+            "median": 9,
+            "n": 3
+          },
+          "wall_ms": {
+            "denominator": 3,
+            "median": 32523.21584400488,
+            "n": 3
+          }
+        },
+        "n": 3
+      },
+      "arm": "contextual_patch",
+      "attempted": 3,
+      "failed_intent_calls": {
+        "denominator": 3,
+        "median": null,
+        "n": 0
+      },
+      "intent_calls": {
+        "denominator": 3,
+        "median": null,
+        "n": 0
+      },
+      "intent_observations": {
+        "denominator": 3,
+        "known": 0,
+        "unknown": 3
+      },
+      "medians_all_observed": {
+        "cache_creation_input_tokens": {
+          "denominator": 3,
+          "median": 6923,
+          "n": 3
+        },
+        "cache_read_input_tokens": {
+          "denominator": 3,
+          "median": 102457,
+          "n": 3
+        },
+        "cost_usd": {
+          "denominator": 3,
+          "median": 0.0396747,
+          "n": 3
+        },
+        "diff_lines": {
+          "denominator": 3,
+          "median": 10,
+          "n": 3
+        },
+        "failed_tool_calls": {
+          "denominator": 3,
+          "median": 1,
+          "n": 3
+        },
+        "input_tokens": {
+          "denominator": 3,
+          "median": 73,
+          "n": 3
+        },
+        "native_turns": {
+          "denominator": 3,
+          "median": 21,
+          "n": 3
+        },
+        "output_tokens": {
+          "denominator": 3,
+          "median": 3151,
+          "n": 3
+        },
+        "tool_calls": {
+          "denominator": 3,
+          "median": 20,
+          "n": 3
+        },
+        "tool_execution_ms": {
+          "denominator": 3,
+          "median": null,
+          "n": 0
+        },
+        "total_tokens": {
+          "denominator": 3,
+          "median": 112555,
+          "n": 3
+        },
+        "visible_primary_rounds": {
+          "denominator": 3,
+          "median": 9,
+          "n": 3
+        },
+        "wall_ms": {
+          "denominator": 3,
+          "median": 32523.21584400488,
+          "n": 3
+        }
+      },
+      "medians_successful": {
+        "cache_creation_input_tokens": {
+          "denominator": 3,
+          "median": 6923,
+          "n": 3
+        },
+        "cache_read_input_tokens": {
+          "denominator": 3,
+          "median": 102457,
+          "n": 3
+        },
+        "cost_usd": {
+          "denominator": 3,
+          "median": 0.0396747,
+          "n": 3
+        },
+        "diff_lines": {
+          "denominator": 3,
+          "median": 10,
+          "n": 3
+        },
+        "failed_tool_calls": {
+          "denominator": 3,
+          "median": 1,
+          "n": 3
+        },
+        "input_tokens": {
+          "denominator": 3,
+          "median": 73,
+          "n": 3
+        },
+        "native_turns": {
+          "denominator": 3,
+          "median": 21,
+          "n": 3
+        },
+        "output_tokens": {
+          "denominator": 3,
+          "median": 3151,
+          "n": 3
+        },
+        "tool_calls": {
+          "denominator": 3,
+          "median": 20,
+          "n": 3
+        },
+        "tool_execution_ms": {
+          "denominator": 3,
+          "median": null,
+          "n": 0
+        },
+        "total_tokens": {
+          "denominator": 3,
+          "median": 112555,
+          "n": 3
+        },
+        "visible_primary_rounds": {
+          "denominator": 3,
+          "median": 9,
+          "n": 3
+        },
+        "wall_ms": {
+          "denominator": 3,
+          "median": 32523.21584400488,
+          "n": 3
+        }
+      },
+      "scheduled": 3,
+      "successful": 3,
+      "successful_observed": {
+        "medians": {
+          "cache_creation_input_tokens": {
+            "denominator": 3,
+            "median": 6923,
+            "n": 3
+          },
+          "cache_read_input_tokens": {
+            "denominator": 3,
+            "median": 102457,
+            "n": 3
+          },
+          "cost_usd": {
+            "denominator": 3,
+            "median": 0.0396747,
+            "n": 3
+          },
+          "diff_lines": {
+            "denominator": 3,
+            "median": 10,
+            "n": 3
+          },
+          "failed_tool_calls": {
+            "denominator": 3,
+            "median": 1,
+            "n": 3
+          },
+          "input_tokens": {
+            "denominator": 3,
+            "median": 73,
+            "n": 3
+          },
+          "native_turns": {
+            "denominator": 3,
+            "median": 21,
+            "n": 3
+          },
+          "output_tokens": {
+            "denominator": 3,
+            "median": 3151,
+            "n": 3
+          },
+          "tool_calls": {
+            "denominator": 3,
+            "median": 20,
+            "n": 3
+          },
+          "tool_execution_ms": {
+            "denominator": 3,
+            "median": null,
+            "n": 0
+          },
+          "total_tokens": {
+            "denominator": 3,
+            "median": 112555,
+            "n": 3
+          },
+          "visible_primary_rounds": {
+            "denominator": 3,
+            "median": 9,
+            "n": 3
+          },
+          "wall_ms": {
+            "denominator": 3,
+            "median": 32523.21584400488,
+            "n": 3
+          }
+        },
+        "n": 3
+      },
+      "task_id": "cross-file-rename-clarified",
+      "unattempted": 0
+    }
+  ],
+  "config": {
+    "arms": [
+      "contextual_patch",
+      "full_skill",
+      "minimal_intent"
+    ],
+    "cache_condition": "unknown; fresh independent sessions",
+    "cli_version": "2.1.268 (Claude Code)",
+    "model_keys": [
+      "haiku"
+    ],
+    "models": {
+      "haiku": {
+        "effort": null,
+        "id": "claude-haiku-4-5-20251001"
+      },
+      "sonnet": {
+        "effort": "medium",
+        "id": "claude-sonnet-4-6"
+      }
+    },
+    "repetitions": 3,
+    "source_commit": "3ab4f83f22d1831dd7ae8ddce7d255be0ba8441e",
+    "task_ids": [
+      "method-and-literal",
+      "cross-file-rename-clarified"
+    ]
+  },
+  "interpretation": "Descriptive per-run and median observations only; unknown evidence remains null and no significance or universal claim is computed.",
+  "runs": [
+    {
+      "accounting_errors": [],
+      "all_model_usage": {
+        "claude-haiku-4-5-20251001": {
+          "cacheCreationInputTokens": 13004,
+          "cacheReadInputTokens": 33243,
+          "canonicalModel": "claude-haiku-4-5",
+          "contextWindow": 200000,
+          "costBasis": "list",
+          "costUSD": 0.037595300000000005,
+          "inputTokens": 33,
+          "maxOutputTokens": 32000,
+          "outputTokens": 1646,
+          "provider": "firstParty",
+          "thinkingTokens": 967,
+          "webSearchRequests": 0
+        }
+      },
+      "arm": "full_skill",
+      "attempted": true,
+      "correctness": true,
+      "engine": {
+        "apply_calls": 0,
+        "apply_records": [],
+        "errors": [],
+        "failed_engine_apply": 0
+      },
+      "engine_audit_present": true,
+      "evidence": "/tmp/php-ast-intent-instruction-campaign-20260911/runs/run001/evidence",
+      "evidence_errors": [],
+      "evidence_path": "/tmp/php-ast-intent-instruction-campaign-20260911/runs/run001/evidence",
+      "failed_intent_calls": 0,
+      "intent_calls": 1,
+      "intent_errors": [],
+      "intent_observation": "known",
+      "intent_records": [
+        {
+          "argv": [
+            "rename",
+            "--method",
+            "Product::findByUid",
+            "--to",
+            "resolveByUid"
+          ],
+          "call_id": "87299ad8c8854cada79e41661860e6de",
+          "exit_code": 0,
+          "paired": true
+        }
+      ],
+      "intent_unknown": false,
+      "measurement_present": true,
+      "metrics": {
+        "cache_creation_input_tokens": 13004,
+        "cache_read_input_tokens": 33243,
+        "cost_usd": 0.037595300000000005,
+        "diff_lines": 2,
+        "failed_tool_calls": 0,
+        "input_tokens": 33,
+        "native_turns": 6,
+        "output_tokens": 1646,
+        "raw_failed_tool_calls": 0,
+        "tool_calls": 5,
+        "tool_execution_coverage": "not_exposed",
+        "tool_execution_ms": null,
+        "total_tokens": 47926,
+        "visible_primary_rounds": 4,
+        "wall_ms": 22097.176412004046
+      },
+      "model_key": "haiku",
+      "native_duration_api_ms": 17580,
+      "native_duration_ms": 20624,
+      "native_is_error": false,
+      "native_result_present": null,
+      "native_subtype": "success",
+      "oracle_passed": true,
+      "primary_rounds_exact": true,
+      "process_exit_code": 0,
+      "raw_present": true,
+      "repetition": 3,
+      "reported_model": "claude-haiku-4-5-20251001",
+      "response_input_coverage": "complete",
+      "review_queue": [
+        {
+          "call_id": "toolu_01YPfDhC8gVb8tCZFQowHbaL",
+          "command": null,
+          "id": "toolu_01YPfDhC8gVb8tCZFQowHbaL",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01QxAqg1cD7CNpuRHhmLZQbp",
+          "command": null,
+          "id": "toolu_01QxAqg1cD7CNpuRHhmLZQbp",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01YLgFVbGN2ksUUHT5ktbpoG",
+          "command": null,
+          "id": "toolu_01YLgFVbGN2ksUUHT5ktbpoG",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01S9BvD7KKHTAsgz5xFvAYp3",
+          "command": "php-ast-edit rename --method 'Product::findByUid' --to resolveByUid",
+          "id": "toolu_01S9BvD7KKHTAsgz5xFvAYp3",
+          "is_error": false,
+          "result_present": true,
+          "tool": "Bash"
+        },
+        {
+          "call_id": "toolu_01WjpPcmrpNxS3AEUnwSovRc",
+          "command": null,
+          "id": "toolu_01WjpPcmrpNxS3AEUnwSovRc",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        }
+      ],
+      "run_id": "run001",
+      "task_id": "method-and-literal",
+      "timed_out": false,
+      "tool_timing_status": "not_exposed",
+      "variant": "full_skill",
+      "work": "/tmp/php-ast-intent-instruction-campaign-20260911/runs/run001/work"
+    },
+    {
+      "accounting_errors": [],
+      "all_model_usage": {
+        "claude-haiku-4-5-20251001": {
+          "cacheCreationInputTokens": 6522,
+          "cacheReadInputTokens": 74244,
+          "canonicalModel": "claude-haiku-4-5",
+          "contextWindow": 200000,
+          "costBasis": "list",
+          "costUSD": 0.0311304,
+          "inputTokens": 57,
+          "maxOutputTokens": 32000,
+          "outputTokens": 2121,
+          "provider": "firstParty",
+          "thinkingTokens": 1120,
+          "webSearchRequests": 0
+        }
+      },
+      "arm": "minimal_intent",
+      "attempted": true,
+      "correctness": true,
+      "engine": {
+        "apply_calls": 0,
+        "apply_records": [],
+        "errors": [],
+        "failed_engine_apply": 0
+      },
+      "engine_audit_present": true,
+      "evidence": "/tmp/php-ast-intent-instruction-campaign-20260911/runs/run002/evidence",
+      "evidence_errors": [],
+      "evidence_path": "/tmp/php-ast-intent-instruction-campaign-20260911/runs/run002/evidence",
+      "failed_intent_calls": 0,
+      "intent_calls": 1,
+      "intent_errors": [],
+      "intent_observation": "known",
+      "intent_records": [
+        {
+          "argv": [
+            "rename",
+            "--method",
+            "Product::findByUid",
+            "--to",
+            "resolveByUid"
+          ],
+          "call_id": "fcb23a5d0ce44c7ab440c11263207f96",
+          "exit_code": 0,
+          "paired": true
+        }
+      ],
+      "intent_unknown": false,
+      "measurement_present": true,
+      "metrics": {
+        "cache_creation_input_tokens": 6522,
+        "cache_read_input_tokens": 74244,
+        "cost_usd": 0.0311304,
+        "diff_lines": 2,
+        "failed_tool_calls": 1,
+        "input_tokens": 57,
+        "native_turns": 11,
+        "output_tokens": 2121,
+        "raw_failed_tool_calls": 1,
+        "tool_calls": 10,
+        "tool_execution_coverage": "not_exposed",
+        "tool_execution_ms": null,
+        "total_tokens": 82944,
+        "visible_primary_rounds": 7,
+        "wall_ms": 27175.50241400022
+      },
+      "model_key": "haiku",
+      "native_duration_api_ms": 22888,
+      "native_duration_ms": 25745,
+      "native_is_error": false,
+      "native_result_present": null,
+      "native_subtype": "success",
+      "oracle_passed": true,
+      "primary_rounds_exact": true,
+      "process_exit_code": 0,
+      "raw_present": true,
+      "repetition": 3,
+      "reported_model": "claude-haiku-4-5-20251001",
+      "response_input_coverage": "complete",
+      "review_queue": [
+        {
+          "call_id": "toolu_01Q3jEH7jEhsFbZXcJeAQQUD",
+          "command": null,
+          "id": "toolu_01Q3jEH7jEhsFbZXcJeAQQUD",
+          "is_error": true,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01KG9QWG973eE4udAo6nkF58",
+          "command": "ls -la /tmp/php-ast-intent-instruction-campaign-20260911/runs/run002/work",
+          "id": "toolu_01KG9QWG973eE4udAo6nkF58",
+          "is_error": false,
+          "result_present": true,
+          "tool": "Bash"
+        },
+        {
+          "call_id": "toolu_01HT9ASEXuYdM8WzrsTruG2Z",
+          "command": null,
+          "id": "toolu_01HT9ASEXuYdM8WzrsTruG2Z",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01WXZ54hGDQb4nnVdsXtYe8m",
+          "command": null,
+          "id": "toolu_01WXZ54hGDQb4nnVdsXtYe8m",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01PJR8Dh7w7RgDWzfbVLRvVA",
+          "command": null,
+          "id": "toolu_01PJR8Dh7w7RgDWzfbVLRvVA",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01J7LwHHAs8brjBLfNDUEKA3",
+          "command": "php-ast-edit rename --method 'Product::findByUid' --to resolveByUid",
+          "id": "toolu_01J7LwHHAs8brjBLfNDUEKA3",
+          "is_error": false,
+          "result_present": true,
+          "tool": "Bash"
+        },
+        {
+          "call_id": "toolu_01Tdr73wKUuq8Emy8qhNRtQv",
+          "command": null,
+          "id": "toolu_01Tdr73wKUuq8Emy8qhNRtQv",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_012dXZkSroPbbLqGCU4Cputa",
+          "command": "php check.php && echo \"Exit code: $?\"",
+          "id": "toolu_012dXZkSroPbbLqGCU4Cputa",
+          "is_error": false,
+          "result_present": true,
+          "tool": "Bash"
+        },
+        {
+          "call_id": "toolu_01VxXfU36cwKtSefdQbZFAWY",
+          "command": "git status",
+          "id": "toolu_01VxXfU36cwKtSefdQbZFAWY",
+          "is_error": false,
+          "result_present": true,
+          "tool": "Bash"
+        },
+        {
+          "call_id": "toolu_015TT1PokXQvxK3Nso3fBTon",
+          "command": "git diff Product.php",
+          "id": "toolu_015TT1PokXQvxK3Nso3fBTon",
+          "is_error": false,
+          "result_present": true,
+          "tool": "Bash"
+        }
+      ],
+      "run_id": "run002",
+      "task_id": "method-and-literal",
+      "timed_out": false,
+      "tool_timing_status": "not_exposed",
+      "variant": "minimal_intent",
+      "work": "/tmp/php-ast-intent-instruction-campaign-20260911/runs/run002/work"
+    },
+    {
+      "accounting_errors": [],
+      "all_model_usage": {
+        "claude-haiku-4-5-20251001": {
+          "cacheCreationInputTokens": 5175,
+          "cacheReadInputTokens": 80657,
+          "canonicalModel": "claude-haiku-4-5",
+          "contextWindow": 200000,
+          "costBasis": "list",
+          "costUSD": 0.0281957,
+          "inputTokens": 65,
+          "maxOutputTokens": 32000,
+          "outputTokens": 1943,
+          "provider": "firstParty",
+          "thinkingTokens": 781,
+          "webSearchRequests": 0
+        }
+      },
+      "arm": "contextual_patch",
+      "attempted": true,
+      "correctness": true,
+      "engine": {
+        "apply_calls": null,
+        "apply_records": [],
+        "errors": [],
+        "failed_engine_apply": null
+      },
+      "engine_audit_present": false,
+      "evidence": "/tmp/php-ast-intent-instruction-campaign-20260911/runs/run003/evidence",
+      "evidence_errors": [],
+      "evidence_path": "/tmp/php-ast-intent-instruction-campaign-20260911/runs/run003/evidence",
+      "failed_intent_calls": null,
+      "intent_calls": null,
+      "intent_errors": [],
+      "intent_observation": "unknown_missing_audit",
+      "intent_records": [],
+      "intent_unknown": true,
+      "measurement_present": true,
+      "metrics": {
+        "cache_creation_input_tokens": 5175,
+        "cache_read_input_tokens": 80657,
+        "cost_usd": 0.0281957,
+        "diff_lines": 2,
+        "failed_tool_calls": 1,
+        "input_tokens": 65,
+        "native_turns": 11,
+        "output_tokens": 1943,
+        "raw_failed_tool_calls": 1,
+        "tool_calls": 10,
+        "tool_execution_coverage": "not_exposed",
+        "tool_execution_ms": null,
+        "total_tokens": 87840,
+        "visible_primary_rounds": 8,
+        "wall_ms": 16901.475893013412
+      },
+      "model_key": "haiku",
+      "native_duration_api_ms": 15435,
+      "native_duration_ms": 15599,
+      "native_is_error": false,
+      "native_result_present": null,
+      "native_subtype": "success",
+      "oracle_passed": true,
+      "primary_rounds_exact": true,
+      "process_exit_code": 0,
+      "raw_present": true,
+      "repetition": 3,
+      "reported_model": "claude-haiku-4-5-20251001",
+      "response_input_coverage": "complete",
+      "review_queue": [
+        {
+          "call_id": "toolu_01VLLrQwbRfpLNhSqSQKYGia",
+          "command": null,
+          "id": "toolu_01VLLrQwbRfpLNhSqSQKYGia",
+          "is_error": true,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01BSasU9WVcuxqYXQYZMRkPo",
+          "command": "ls -la /tmp/php-ast-intent-instruction-campaign-20260911/runs/run003/work",
+          "id": "toolu_01BSasU9WVcuxqYXQYZMRkPo",
+          "is_error": false,
+          "result_present": true,
+          "tool": "Bash"
+        },
+        {
+          "call_id": "toolu_01PxycnRKatKow1iUqKXJ5y1",
+          "command": null,
+          "id": "toolu_01PxycnRKatKow1iUqKXJ5y1",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01EJ8awpkDFYQ3xZjc18FSU9",
+          "command": null,
+          "id": "toolu_01EJ8awpkDFYQ3xZjc18FSU9",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01CPCVJHv73rXpq9Aojq4WBX",
+          "command": null,
+          "id": "toolu_01CPCVJHv73rXpq9Aojq4WBX",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_0185QYB8ioTN9dWxTFrm81t6",
+          "command": null,
+          "id": "toolu_0185QYB8ioTN9dWxTFrm81t6",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Edit"
+        },
+        {
+          "call_id": "toolu_01FCMsR5cTbrm5YJ9yJvYyrt",
+          "command": null,
+          "id": "toolu_01FCMsR5cTbrm5YJ9yJvYyrt",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Edit"
+        },
+        {
+          "call_id": "toolu_01DNrYNUwpPPRUhhzL3LciZA",
+          "command": "php check.php && echo \"Check passed\"",
+          "id": "toolu_01DNrYNUwpPPRUhhzL3LciZA",
+          "is_error": false,
+          "result_present": true,
+          "tool": "Bash"
+        },
+        {
+          "call_id": "toolu_01PhWbENoGps5ufBQFnsEvKn",
+          "command": "md5sum check.php .php-ast-edit.json",
+          "id": "toolu_01PhWbENoGps5ufBQFnsEvKn",
+          "is_error": false,
+          "result_present": true,
+          "tool": "Bash"
+        },
+        {
+          "call_id": "toolu_01W3mzQ19u5WbLT87ng6P3Kw",
+          "command": "cat Product.php",
+          "id": "toolu_01W3mzQ19u5WbLT87ng6P3Kw",
+          "is_error": false,
+          "result_present": true,
+          "tool": "Bash"
+        }
+      ],
+      "run_id": "run003",
+      "task_id": "method-and-literal",
+      "timed_out": false,
+      "tool_timing_status": "not_exposed",
+      "variant": "contextual_patch",
+      "work": "/tmp/php-ast-intent-instruction-campaign-20260911/runs/run003/work"
+    },
+    {
+      "accounting_errors": [],
+      "all_model_usage": {
+        "claude-haiku-4-5-20251001": {
+          "cacheCreationInputTokens": 10536,
+          "cacheReadInputTokens": 190373,
+          "canonicalModel": "claude-haiku-4-5",
+          "contextWindow": 200000,
+          "costBasis": "list",
+          "costUSD": 0.058934300000000016,
+          "inputTokens": 105,
+          "maxOutputTokens": 32000,
+          "outputTokens": 3744,
+          "provider": "firstParty",
+          "thinkingTokens": 1547,
+          "webSearchRequests": 0
+        }
+      },
+      "arm": "full_skill",
+      "attempted": true,
+      "correctness": true,
+      "engine": {
+        "apply_calls": 0,
+        "apply_records": [],
+        "errors": [],
+        "failed_engine_apply": 0
+      },
+      "engine_audit_present": true,
+      "evidence": "/tmp/php-ast-intent-instruction-campaign-20260911/runs/run004/evidence",
+      "evidence_errors": [],
+      "evidence_path": "/tmp/php-ast-intent-instruction-campaign-20260911/runs/run004/evidence",
+      "failed_intent_calls": 0,
+      "intent_calls": 1,
+      "intent_errors": [],
+      "intent_observation": "known",
+      "intent_records": [
+        {
+          "argv": [
+            "rename",
+            "--method",
+            "Contract::fetch",
+            "--to",
+            "load"
+          ],
+          "call_id": "ae4e48a699054e23a2cbcd589e3468f9",
+          "exit_code": 0,
+          "paired": true
+        }
+      ],
+      "intent_unknown": false,
+      "measurement_present": true,
+      "metrics": {
+        "cache_creation_input_tokens": 10536,
+        "cache_read_input_tokens": 190373,
+        "cost_usd": 0.058934300000000016,
+        "diff_lines": 14,
+        "failed_tool_calls": 1,
+        "input_tokens": 105,
+        "native_turns": 27,
+        "output_tokens": 3744,
+        "raw_failed_tool_calls": 1,
+        "tool_calls": 26,
+        "tool_execution_coverage": "not_exposed",
+        "tool_execution_ms": null,
+        "total_tokens": 204758,
+        "visible_primary_rounds": 13,
+        "wall_ms": 45266.56370499404
+      },
+      "model_key": "haiku",
+      "native_duration_api_ms": 40784,
+      "native_duration_ms": 43862,
+      "native_is_error": false,
+      "native_result_present": null,
+      "native_subtype": "success",
+      "oracle_passed": true,
+      "primary_rounds_exact": true,
+      "process_exit_code": 0,
+      "raw_present": true,
+      "repetition": 1,
+      "reported_model": "claude-haiku-4-5-20251001",
+      "response_input_coverage": "complete",
+      "review_queue": [
+        {
+          "call_id": "toolu_01PG3RwsewYfGc7iVGGnVJ63",
+          "command": null,
+          "id": "toolu_01PG3RwsewYfGc7iVGGnVJ63",
+          "is_error": true,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_012ym5Q2gJcAWFspgsrEdkJH",
+          "command": "ls -la /tmp/php-ast-intent-instruction-campaign-20260911/runs/run004/work/",
+          "id": "toolu_012ym5Q2gJcAWFspgsrEdkJH",
+          "is_error": false,
+          "result_present": true,
+          "tool": "Bash"
+        },
+        {
+          "call_id": "toolu_01TsTQpsUFaLQ2GzidoZrLBc",
+          "command": null,
+          "id": "toolu_01TsTQpsUFaLQ2GzidoZrLBc",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_016W1okZGspSxBRkh4PdXXR6",
+          "command": null,
+          "id": "toolu_016W1okZGspSxBRkh4PdXXR6",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01TbMA6Hwai2mrmMgNjP4xFd",
+          "command": null,
+          "id": "toolu_01TbMA6Hwai2mrmMgNjP4xFd",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01Gir9fxqX6c2XF2MFeKQEnU",
+          "command": null,
+          "id": "toolu_01Gir9fxqX6c2XF2MFeKQEnU",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01X87ji6yVBwBvGh37Dkbw16",
+          "command": null,
+          "id": "toolu_01X87ji6yVBwBvGh37Dkbw16",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_019hdHyvNfuwhfwmp2zKYwff",
+          "command": null,
+          "id": "toolu_019hdHyvNfuwhfwmp2zKYwff",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01BqM9ACztwN14G24Bq9iwVu",
+          "command": null,
+          "id": "toolu_01BqM9ACztwN14G24Bq9iwVu",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_0188wZ1ZZqquLHsHx7oi2zHi",
+          "command": null,
+          "id": "toolu_0188wZ1ZZqquLHsHx7oi2zHi",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01HVscS8ythJ7Sp7LpfwJaHc",
+          "command": null,
+          "id": "toolu_01HVscS8ythJ7Sp7LpfwJaHc",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01DEKrhtku5Hc6QCZ9KZuyiK",
+          "command": null,
+          "id": "toolu_01DEKrhtku5Hc6QCZ9KZuyiK",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01NWGJVLNnYouDzB5wP4tsDd",
+          "command": null,
+          "id": "toolu_01NWGJVLNnYouDzB5wP4tsDd",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_012SMpWbBqSW5xa5vXC6i7cQ",
+          "command": "php-ast-edit rename --method 'Contract::fetch' --to load",
+          "id": "toolu_012SMpWbBqSW5xa5vXC6i7cQ",
+          "is_error": false,
+          "result_present": true,
+          "tool": "Bash"
+        },
+        {
+          "call_id": "toolu_01EWPpEwZXkmgKsCAC4mUW8r",
+          "command": null,
+          "id": "toolu_01EWPpEwZXkmgKsCAC4mUW8r",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01Vp3nJArPViwH7caH6TeuPG",
+          "command": null,
+          "id": "toolu_01Vp3nJArPViwH7caH6TeuPG",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_017nhAaLDFeNxpB247jem4uS",
+          "command": null,
+          "id": "toolu_017nhAaLDFeNxpB247jem4uS",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01WJiYpSDRqwDaVNbrtCTQ9d",
+          "command": null,
+          "id": "toolu_01WJiYpSDRqwDaVNbrtCTQ9d",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_015qZkC4Peb9bqD1fD2S2vnx",
+          "command": null,
+          "id": "toolu_015qZkC4Peb9bqD1fD2S2vnx",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01HA75TyCaLKPiWbqcPhJkbU",
+          "command": null,
+          "id": "toolu_01HA75TyCaLKPiWbqcPhJkbU",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_019wPVNzVh2gaW1CdD7mems6",
+          "command": null,
+          "id": "toolu_019wPVNzVh2gaW1CdD7mems6",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01CtVCj1yePvmxbbfX2WjRpr",
+          "command": "php check.php && echo \"Check passed!\"",
+          "id": "toolu_01CtVCj1yePvmxbbfX2WjRpr",
+          "is_error": false,
+          "result_present": true,
+          "tool": "Bash"
+        },
+        {
+          "call_id": "toolu_01GFUSjnNZuwkj3y6YG9mub1",
+          "command": "git status",
+          "id": "toolu_01GFUSjnNZuwkj3y6YG9mub1",
+          "is_error": false,
+          "result_present": true,
+          "tool": "Bash"
+        },
+        {
+          "call_id": "toolu_01WWhdQs7De1hMgDR3YeozfT",
+          "command": "git diff src/",
+          "id": "toolu_01WWhdQs7De1hMgDR3YeozfT",
+          "is_error": false,
+          "result_present": true,
+          "tool": "Bash"
+        },
+        {
+          "call_id": "toolu_01TenthKQJbiGeeh8HBbRbMc",
+          "command": "git diff autoload.php check.php composer.json .php-ast-edit.json config/services.yaml src/Other.php src/OtherConsumer.php",
+          "id": "toolu_01TenthKQJbiGeeh8HBbRbMc",
+          "is_error": false,
+          "result_present": true,
+          "tool": "Bash"
+        },
+        {
+          "call_id": "toolu_01FxJbVXVsWqKLyyEVPUMzMJ",
+          "command": "php check.php && echo \"\u2713 All checks pass\"",
+          "id": "toolu_01FxJbVXVsWqKLyyEVPUMzMJ",
+          "is_error": false,
+          "result_present": true,
+          "tool": "Bash"
+        }
+      ],
+      "run_id": "run004",
+      "task_id": "cross-file-rename-clarified",
+      "timed_out": false,
+      "tool_timing_status": "not_exposed",
+      "variant": "full_skill",
+      "work": "/tmp/php-ast-intent-instruction-campaign-20260911/runs/run004/work"
+    },
+    {
+      "accounting_errors": [],
+      "all_model_usage": {
+        "claude-haiku-4-5-20251001": {
+          "cacheCreationInputTokens": 9961,
+          "cacheReadInputTokens": 105923,
+          "canonicalModel": "claude-haiku-4-5",
+          "contextWindow": 200000,
+          "costBasis": "list",
+          "costUSD": 0.050834300000000006,
+          "inputTokens": 65,
+          "maxOutputTokens": 32000,
+          "outputTokens": 4051,
+          "provider": "firstParty",
+          "thinkingTokens": 1676,
+          "webSearchRequests": 0
+        }
+      },
+      "arm": "minimal_intent",
+      "attempted": true,
+      "correctness": true,
+      "engine": {
+        "apply_calls": 0,
+        "apply_records": [],
+        "errors": [],
+        "failed_engine_apply": 0
+      },
+      "engine_audit_present": true,
+      "evidence": "/tmp/php-ast-intent-instruction-campaign-20260911/runs/run005/evidence",
+      "evidence_errors": [],
+      "evidence_path": "/tmp/php-ast-intent-instruction-campaign-20260911/runs/run005/evidence",
+      "failed_intent_calls": 2,
+      "intent_calls": 3,
+      "intent_errors": [],
+      "intent_observation": "known",
+      "intent_records": [
+        {
+          "argv": [
+            "rename",
+            "--method",
+            "Pilot\\CrossFile\\Contract::fetch",
+            "--to",
+            "load"
+          ],
+          "call_id": "46e2a1b42ab74de086205c22d876cab2",
+          "exit_code": 0,
+          "paired": true
+        },
+        {
+          "argv": [
+            "rename",
+            "--method",
+            "Pilot\\CrossFile\\Base::fetch",
+            "--to",
+            "load"
+          ],
+          "call_id": "2bb92a4a9cec46f3921bfbd475ceb6a8",
+          "exit_code": 2,
+          "paired": true
+        },
+        {
+          "argv": [
+            "rename",
+            "--method",
+            "Pilot\\CrossFile\\Child::fetch",
+            "--to",
+            "load"
+          ],
+          "call_id": "078f5286460e434581467a48013e46b7",
+          "exit_code": 2,
+          "paired": true
+        }
+      ],
+      "intent_unknown": false,
+      "measurement_present": true,
+      "metrics": {
+        "cache_creation_input_tokens": 9961,
+        "cache_read_input_tokens": 105923,
+        "cost_usd": 0.050834300000000006,
+        "diff_lines": 14,
+        "failed_tool_calls": 3,
+        "input_tokens": 65,
+        "native_turns": 28,
+        "output_tokens": 4051,
+        "raw_failed_tool_calls": 3,
+        "tool_calls": 27,
+        "tool_execution_coverage": "not_exposed",
+        "tool_execution_ms": null,
+        "total_tokens": 120000,
+        "visible_primary_rounds": 8,
+        "wall_ms": 43648.22483100579
+      },
+      "model_key": "haiku",
+      "native_duration_api_ms": 39537,
+      "native_duration_ms": 42338,
+      "native_is_error": false,
+      "native_result_present": null,
+      "native_subtype": "success",
+      "oracle_passed": true,
+      "primary_rounds_exact": true,
+      "process_exit_code": 0,
+      "raw_present": true,
+      "repetition": 1,
+      "reported_model": "claude-haiku-4-5-20251001",
+      "response_input_coverage": "complete",
+      "review_queue": [
+        {
+          "call_id": "toolu_01NMMG8geYBZgVUoV8zvQEhz",
+          "command": null,
+          "id": "toolu_01NMMG8geYBZgVUoV8zvQEhz",
+          "is_error": true,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01KuBNKiTvVpoXsYuQnmBRR6",
+          "command": null,
+          "id": "toolu_01KuBNKiTvVpoXsYuQnmBRR6",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01CCHEmkgcV3ByxzPHNq9ECH",
+          "command": null,
+          "id": "toolu_01CCHEmkgcV3ByxzPHNq9ECH",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01CoKkiyrFwyEQpmg9f9Py2p",
+          "command": null,
+          "id": "toolu_01CoKkiyrFwyEQpmg9f9Py2p",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01FCw4ZPkZzjJMBHbXhB8UzQ",
+          "command": null,
+          "id": "toolu_01FCw4ZPkZzjJMBHbXhB8UzQ",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01FFVS1vhrKVMGaUeJUUrxyX",
+          "command": null,
+          "id": "toolu_01FFVS1vhrKVMGaUeJUUrxyX",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_012dnr7j6SSn7CmSSLoZw6cc",
+          "command": null,
+          "id": "toolu_012dnr7j6SSn7CmSSLoZw6cc",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01JnPwmm2ChjqY1BYA95dJhe",
+          "command": null,
+          "id": "toolu_01JnPwmm2ChjqY1BYA95dJhe",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01BDCCA7gDiQvzBuGswRUPxA",
+          "command": null,
+          "id": "toolu_01BDCCA7gDiQvzBuGswRUPxA",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01KYHVMhjEmLyKMvXsas75bq",
+          "command": null,
+          "id": "toolu_01KYHVMhjEmLyKMvXsas75bq",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01F3t9H9UR831A9KdNTv4nHo",
+          "command": null,
+          "id": "toolu_01F3t9H9UR831A9KdNTv4nHo",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01DgTjWhagQPFTo1sugKLcdM",
+          "command": null,
+          "id": "toolu_01DgTjWhagQPFTo1sugKLcdM",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01ANAj7d3GECAw8ChBSmfV69",
+          "command": "php-ast-edit rename --method 'Pilot\\CrossFile\\Contract::fetch' --to load",
+          "id": "toolu_01ANAj7d3GECAw8ChBSmfV69",
+          "is_error": false,
+          "result_present": true,
+          "tool": "Bash"
+        },
+        {
+          "call_id": "toolu_01RosSH1pSiKcsjbkpKDad7g",
+          "command": "php-ast-edit rename --method 'Pilot\\CrossFile\\Base::fetch' --to load",
+          "id": "toolu_01RosSH1pSiKcsjbkpKDad7g",
+          "is_error": true,
+          "result_present": true,
+          "tool": "Bash"
+        },
+        {
+          "call_id": "toolu_01JNoz9qtoP2Vu2yEvD4CWMQ",
+          "command": "php-ast-edit rename --method 'Pilot\\CrossFile\\Child::fetch' --to load",
+          "id": "toolu_01JNoz9qtoP2Vu2yEvD4CWMQ",
+          "is_error": true,
+          "result_present": true,
+          "tool": "Bash"
+        },
+        {
+          "call_id": "toolu_01QPs7xFvDmcC2JEVU4aYbyy",
+          "command": null,
+          "id": "toolu_01QPs7xFvDmcC2JEVU4aYbyy",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01Bws4LxRfjtwSm3UvCT81vL",
+          "command": null,
+          "id": "toolu_01Bws4LxRfjtwSm3UvCT81vL",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01PWdrJvpzZt9gc9em8fwY2Z",
+          "command": null,
+          "id": "toolu_01PWdrJvpzZt9gc9em8fwY2Z",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_017MT4X7F1RfRGn3mhyzLc4C",
+          "command": null,
+          "id": "toolu_017MT4X7F1RfRGn3mhyzLc4C",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01EBJGwsaF6p2hDypHtkodYx",
+          "command": null,
+          "id": "toolu_01EBJGwsaF6p2hDypHtkodYx",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_013BvDrbL3pGpJGqakakHb2c",
+          "command": null,
+          "id": "toolu_013BvDrbL3pGpJGqakakHb2c",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01UH6SJe32sKd6mZRF8z8GnK",
+          "command": "php check.php && echo \"Check passed\"",
+          "id": "toolu_01UH6SJe32sKd6mZRF8z8GnK",
+          "is_error": false,
+          "result_present": true,
+          "tool": "Bash"
+        },
+        {
+          "call_id": "toolu_01KeCW2nYuKjwdcpsubHP3Hp",
+          "command": null,
+          "id": "toolu_01KeCW2nYuKjwdcpsubHP3Hp",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01UFsYzG9JbeyCHgSXJ4tqqP",
+          "command": null,
+          "id": "toolu_01UFsYzG9JbeyCHgSXJ4tqqP",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_013JkADEpP8qtcYGkHry6T4t",
+          "command": null,
+          "id": "toolu_013JkADEpP8qtcYGkHry6T4t",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01TrSvxMvCX28LJFziJsKjyv",
+          "command": null,
+          "id": "toolu_01TrSvxMvCX28LJFziJsKjyv",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_013GfMJ2J8NwHtrkqiKWJivK",
+          "command": null,
+          "id": "toolu_013GfMJ2J8NwHtrkqiKWJivK",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        }
+      ],
+      "run_id": "run005",
+      "task_id": "cross-file-rename-clarified",
+      "timed_out": false,
+      "tool_timing_status": "not_exposed",
+      "variant": "minimal_intent",
+      "work": "/tmp/php-ast-intent-instruction-campaign-20260911/runs/run005/work"
+    },
+    {
+      "accounting_errors": [],
+      "all_model_usage": {
+        "claude-haiku-4-5-20251001": {
+          "cacheCreationInputTokens": 6923,
+          "cacheReadInputTokens": 102457,
+          "canonicalModel": "claude-haiku-4-5",
+          "contextWindow": 200000,
+          "costBasis": "list",
+          "costUSD": 0.0396747,
+          "inputTokens": 73,
+          "maxOutputTokens": 32000,
+          "outputTokens": 3102,
+          "provider": "firstParty",
+          "thinkingTokens": 942,
+          "webSearchRequests": 0
+        }
+      },
+      "arm": "contextual_patch",
+      "attempted": true,
+      "correctness": true,
+      "engine": {
+        "apply_calls": null,
+        "apply_records": [],
+        "errors": [],
+        "failed_engine_apply": null
+      },
+      "engine_audit_present": false,
+      "evidence": "/tmp/php-ast-intent-instruction-campaign-20260911/runs/run006/evidence",
+      "evidence_errors": [],
+      "evidence_path": "/tmp/php-ast-intent-instruction-campaign-20260911/runs/run006/evidence",
+      "failed_intent_calls": null,
+      "intent_calls": null,
+      "intent_errors": [],
+      "intent_observation": "unknown_missing_audit",
+      "intent_records": [],
+      "intent_unknown": true,
+      "measurement_present": true,
+      "metrics": {
+        "cache_creation_input_tokens": 6923,
+        "cache_read_input_tokens": 102457,
+        "cost_usd": 0.0396747,
+        "diff_lines": 10,
+        "failed_tool_calls": 1,
+        "input_tokens": 73,
+        "native_turns": 21,
+        "output_tokens": 3102,
+        "raw_failed_tool_calls": 1,
+        "tool_calls": 20,
+        "tool_execution_coverage": "not_exposed",
+        "tool_execution_ms": null,
+        "total_tokens": 112555,
+        "visible_primary_rounds": 9,
+        "wall_ms": 32523.21584400488
+      },
+      "model_key": "haiku",
+      "native_duration_api_ms": 31026,
+      "native_duration_ms": 31165,
+      "native_is_error": false,
+      "native_result_present": null,
+      "native_subtype": "success",
+      "oracle_passed": true,
+      "primary_rounds_exact": true,
+      "process_exit_code": 0,
+      "raw_present": true,
+      "repetition": 1,
+      "reported_model": "claude-haiku-4-5-20251001",
+      "response_input_coverage": "complete",
+      "review_queue": [
+        {
+          "call_id": "toolu_01WVfgut9BReEfdA7ysR4muR",
+          "command": null,
+          "id": "toolu_01WVfgut9BReEfdA7ysR4muR",
+          "is_error": true,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01P7nQo1PoEVFJYRvF3dj2KN",
+          "command": "ls -la /tmp/php-ast-intent-instruction-campaign-20260911/runs/run006/work",
+          "id": "toolu_01P7nQo1PoEVFJYRvF3dj2KN",
+          "is_error": false,
+          "result_present": true,
+          "tool": "Bash"
+        },
+        {
+          "call_id": "toolu_01RWHxsAiasRgvgaVeSz4pSj",
+          "command": null,
+          "id": "toolu_01RWHxsAiasRgvgaVeSz4pSj",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01MdiAmnsPMyXMdSf7kF5UTM",
+          "command": null,
+          "id": "toolu_01MdiAmnsPMyXMdSf7kF5UTM",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01CsVR3o2tjWfBUBxXDTqE82",
+          "command": null,
+          "id": "toolu_01CsVR3o2tjWfBUBxXDTqE82",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01Xz8NCdRHrJjxcGco1G5Cui",
+          "command": null,
+          "id": "toolu_01Xz8NCdRHrJjxcGco1G5Cui",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01BtEHa1dv9ZZpveptQDr2RP",
+          "command": null,
+          "id": "toolu_01BtEHa1dv9ZZpveptQDr2RP",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01QYtthnwFtt3N3QKfV5eYfy",
+          "command": null,
+          "id": "toolu_01QYtthnwFtt3N3QKfV5eYfy",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01RnF48QBH9kFUYjsbsgkwZC",
+          "command": null,
+          "id": "toolu_01RnF48QBH9kFUYjsbsgkwZC",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_019avzYnMhYWQeV2ouehyqVu",
+          "command": null,
+          "id": "toolu_019avzYnMhYWQeV2ouehyqVu",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_017KaimxUuyxdowrGJn1zafZ",
+          "command": null,
+          "id": "toolu_017KaimxUuyxdowrGJn1zafZ",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01TQmELV4QK6tXwVfZohuAa5",
+          "command": null,
+          "id": "toolu_01TQmELV4QK6tXwVfZohuAa5",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01193x6vymW1A4dszgt3dC4q",
+          "command": null,
+          "id": "toolu_01193x6vymW1A4dszgt3dC4q",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01CfcRhv7ckfqFUXVo69eCqs",
+          "command": null,
+          "id": "toolu_01CfcRhv7ckfqFUXVo69eCqs",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Edit"
+        },
+        {
+          "call_id": "toolu_01RBKGr1SY8VMN51d6KqeaUU",
+          "command": null,
+          "id": "toolu_01RBKGr1SY8VMN51d6KqeaUU",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Edit"
+        },
+        {
+          "call_id": "toolu_017cRS6AnjQqGMEZX5SnW4Py",
+          "command": null,
+          "id": "toolu_017cRS6AnjQqGMEZX5SnW4Py",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Edit"
+        },
+        {
+          "call_id": "toolu_01G1DeGETV6yHju4CGWf5KC6",
+          "command": null,
+          "id": "toolu_01G1DeGETV6yHju4CGWf5KC6",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Edit"
+        },
+        {
+          "call_id": "toolu_01YSnUHWN3VyQ1cNEWSro1nw",
+          "command": "php check.php && echo \"Check passed\"",
+          "id": "toolu_01YSnUHWN3VyQ1cNEWSro1nw",
+          "is_error": false,
+          "result_present": true,
+          "tool": "Bash"
+        },
+        {
+          "call_id": "toolu_01GFhG6afkhr1sSDJRDhWtcT",
+          "command": "git diff --name-only",
+          "id": "toolu_01GFhG6afkhr1sSDJRDhWtcT",
+          "is_error": false,
+          "result_present": true,
+          "tool": "Bash"
+        },
+        {
+          "call_id": "toolu_0129CuXVPzSaTFpb4A28a4kD",
+          "command": "git diff src/Contract.php src/Base.php src/Child.php src/Consumer.php",
+          "id": "toolu_0129CuXVPzSaTFpb4A28a4kD",
+          "is_error": false,
+          "result_present": true,
+          "tool": "Bash"
+        }
+      ],
+      "run_id": "run006",
+      "task_id": "cross-file-rename-clarified",
+      "timed_out": false,
+      "tool_timing_status": "not_exposed",
+      "variant": "contextual_patch",
+      "work": "/tmp/php-ast-intent-instruction-campaign-20260911/runs/run006/work"
+    },
+    {
+      "accounting_errors": [],
+      "all_model_usage": {
+        "claude-haiku-4-5-20251001": {
+          "cacheCreationInputTokens": 8349,
+          "cacheReadInputTokens": 137489,
+          "canonicalModel": "claude-haiku-4-5",
+          "contextWindow": 200000,
+          "costBasis": "list",
+          "costUSD": 0.05116090000000001,
+          "inputTokens": 89,
+          "maxOutputTokens": 32000,
+          "outputTokens": 4125,
+          "provider": "firstParty",
+          "thinkingTokens": 1677,
+          "webSearchRequests": 0
+        }
+      },
+      "arm": "contextual_patch",
+      "attempted": true,
+      "correctness": true,
+      "engine": {
+        "apply_calls": null,
+        "apply_records": [],
+        "errors": [],
+        "failed_engine_apply": null
+      },
+      "engine_audit_present": false,
+      "evidence": "/tmp/php-ast-intent-instruction-campaign-20260911/runs/run007/evidence",
+      "evidence_errors": [],
+      "evidence_path": "/tmp/php-ast-intent-instruction-campaign-20260911/runs/run007/evidence",
+      "failed_intent_calls": null,
+      "intent_calls": null,
+      "intent_errors": [],
+      "intent_observation": "unknown_missing_audit",
+      "intent_records": [],
+      "intent_unknown": true,
+      "measurement_present": true,
+      "metrics": {
+        "cache_creation_input_tokens": 8349,
+        "cache_read_input_tokens": 137489,
+        "cost_usd": 0.05116090000000001,
+        "diff_lines": 10,
+        "failed_tool_calls": 1,
+        "input_tokens": 89,
+        "native_turns": 26,
+        "output_tokens": 4125,
+        "raw_failed_tool_calls": 1,
+        "tool_calls": 25,
+        "tool_execution_coverage": "not_exposed",
+        "tool_execution_ms": null,
+        "total_tokens": 150052,
+        "visible_primary_rounds": 11,
+        "wall_ms": 44765.60694500222
+      },
+      "model_key": "haiku",
+      "native_duration_api_ms": 43299,
+      "native_duration_ms": 43464,
+      "native_is_error": false,
+      "native_result_present": null,
+      "native_subtype": "success",
+      "oracle_passed": true,
+      "primary_rounds_exact": true,
+      "process_exit_code": 0,
+      "raw_present": true,
+      "repetition": 3,
+      "reported_model": "claude-haiku-4-5-20251001",
+      "response_input_coverage": "complete",
+      "review_queue": [
+        {
+          "call_id": "toolu_01RTyWkWEW52Y7n9RnQQSxmv",
+          "command": null,
+          "id": "toolu_01RTyWkWEW52Y7n9RnQQSxmv",
+          "is_error": true,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01XKhmiGP1BVPrkrFhDNvMZn",
+          "command": null,
+          "id": "toolu_01XKhmiGP1BVPrkrFhDNvMZn",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01Jc9QoNvxyEWv7H8PyxqWRj",
+          "command": null,
+          "id": "toolu_01Jc9QoNvxyEWv7H8PyxqWRj",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01TQ2Apsx7yLpeRrhGtxQp4E",
+          "command": null,
+          "id": "toolu_01TQ2Apsx7yLpeRrhGtxQp4E",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01Q2YoSusLPLY4jHRHwBx7Nj",
+          "command": null,
+          "id": "toolu_01Q2YoSusLPLY4jHRHwBx7Nj",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01KE17osvhZ1scaWfLvVwCpv",
+          "command": null,
+          "id": "toolu_01KE17osvhZ1scaWfLvVwCpv",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_015s2J4Ez9T6MhFvtqTLzHDb",
+          "command": null,
+          "id": "toolu_015s2J4Ez9T6MhFvtqTLzHDb",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01VgaFePqp4WeY3MiAv6GMcB",
+          "command": null,
+          "id": "toolu_01VgaFePqp4WeY3MiAv6GMcB",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01EKazGZXjH6T8KerHtXbAWV",
+          "command": null,
+          "id": "toolu_01EKazGZXjH6T8KerHtXbAWV",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01XKGS6MS56vw9zCpH9TyW4P",
+          "command": null,
+          "id": "toolu_01XKGS6MS56vw9zCpH9TyW4P",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_0147uhkK45qE71MtyP5U9wZ3",
+          "command": null,
+          "id": "toolu_0147uhkK45qE71MtyP5U9wZ3",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01ASWP8Wtr424VseN3Es29C2",
+          "command": null,
+          "id": "toolu_01ASWP8Wtr424VseN3Es29C2",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01MMe82vkv4BU5JqonJ5WLTY",
+          "command": null,
+          "id": "toolu_01MMe82vkv4BU5JqonJ5WLTY",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Edit"
+        },
+        {
+          "call_id": "toolu_01Hz89YzALNB7MdZYnFzLH6q",
+          "command": null,
+          "id": "toolu_01Hz89YzALNB7MdZYnFzLH6q",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Edit"
+        },
+        {
+          "call_id": "toolu_01HgUwpVAu1M5RjuuFWbHVbi",
+          "command": null,
+          "id": "toolu_01HgUwpVAu1M5RjuuFWbHVbi",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Edit"
+        },
+        {
+          "call_id": "toolu_01MSHRXBHyFQKPcF8fAU5u73",
+          "command": null,
+          "id": "toolu_01MSHRXBHyFQKPcF8fAU5u73",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Edit"
+        },
+        {
+          "call_id": "toolu_015c2hZ7puQoSb2fFYajutef",
+          "command": "php check.php && echo \"\u2713 check.php passed\"",
+          "id": "toolu_015c2hZ7puQoSb2fFYajutef",
+          "is_error": false,
+          "result_present": true,
+          "tool": "Bash"
+        },
+        {
+          "call_id": "toolu_01JJ9w89wDarSJKj2CKuQSZW",
+          "command": "git diff src/",
+          "id": "toolu_01JJ9w89wDarSJKj2CKuQSZW",
+          "is_error": false,
+          "result_present": true,
+          "tool": "Bash"
+        },
+        {
+          "call_id": "toolu_01T8HYF5VuRzS7LADYvJzkw4",
+          "command": "git status --short",
+          "id": "toolu_01T8HYF5VuRzS7LADYvJzkw4",
+          "is_error": false,
+          "result_present": true,
+          "tool": "Bash"
+        },
+        {
+          "call_id": "toolu_01JpLS7crYdd3PRBKmecmgMw",
+          "command": "git diff src/Other.php src/OtherConsumer.php",
+          "id": "toolu_01JpLS7crYdd3PRBKmecmgMw",
+          "is_error": false,
+          "result_present": true,
+          "tool": "Bash"
+        },
+        {
+          "call_id": "toolu_01TEEi9YxSd2PGGw87U2UnF5",
+          "command": "git diff check.php .php-ast-edit.json composer.json config/services.yaml autoload.php",
+          "id": "toolu_01TEEi9YxSd2PGGw87U2UnF5",
+          "is_error": false,
+          "result_present": true,
+          "tool": "Bash"
+        },
+        {
+          "call_id": "toolu_01CxFEvBEoE3EVa8zU13yW7q",
+          "command": null,
+          "id": "toolu_01CxFEvBEoE3EVa8zU13yW7q",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01GVu95KWMfAGrRhWVVRaJY1",
+          "command": null,
+          "id": "toolu_01GVu95KWMfAGrRhWVVRaJY1",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01YJUiWxfj71Py1GBrtv1q1i",
+          "command": null,
+          "id": "toolu_01YJUiWxfj71Py1GBrtv1q1i",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01Wv6GpAXw7trEJpJPGx2d9L",
+          "command": null,
+          "id": "toolu_01Wv6GpAXw7trEJpJPGx2d9L",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        }
+      ],
+      "run_id": "run007",
+      "task_id": "cross-file-rename-clarified",
+      "timed_out": false,
+      "tool_timing_status": "not_exposed",
+      "variant": "contextual_patch",
+      "work": "/tmp/php-ast-intent-instruction-campaign-20260911/runs/run007/work"
+    },
+    {
+      "accounting_errors": [],
+      "all_model_usage": {
+        "claude-haiku-4-5-20251001": {
+          "cacheCreationInputTokens": 10198,
+          "cacheReadInputTokens": 152721,
+          "canonicalModel": "claude-haiku-4-5",
+          "contextWindow": 200000,
+          "costBasis": "list",
+          "costUSD": 0.055432100000000005,
+          "inputTokens": 89,
+          "maxOutputTokens": 32000,
+          "outputTokens": 3935,
+          "provider": "firstParty",
+          "thinkingTokens": 1513,
+          "webSearchRequests": 0
+        }
+      },
+      "arm": "full_skill",
+      "attempted": true,
+      "correctness": true,
+      "engine": {
+        "apply_calls": 0,
+        "apply_records": [],
+        "errors": [],
+        "failed_engine_apply": 0
+      },
+      "engine_audit_present": true,
+      "evidence": "/tmp/php-ast-intent-instruction-campaign-20260911/runs/run008/evidence",
+      "evidence_errors": [],
+      "evidence_path": "/tmp/php-ast-intent-instruction-campaign-20260911/runs/run008/evidence",
+      "failed_intent_calls": 0,
+      "intent_calls": 1,
+      "intent_errors": [],
+      "intent_observation": "known",
+      "intent_records": [
+        {
+          "argv": [
+            "rename",
+            "--method",
+            "Contract::fetch",
+            "--to",
+            "load",
+            "--report",
+            "agent"
+          ],
+          "call_id": "4809051525a349b8aeebfd18a7e6845b",
+          "exit_code": 0,
+          "paired": true
+        }
+      ],
+      "intent_unknown": false,
+      "measurement_present": true,
+      "metrics": {
+        "cache_creation_input_tokens": 10198,
+        "cache_read_input_tokens": 152721,
+        "cost_usd": 0.055432100000000005,
+        "diff_lines": 14,
+        "failed_tool_calls": 1,
+        "input_tokens": 89,
+        "native_turns": 27,
+        "output_tokens": 3935,
+        "raw_failed_tool_calls": 1,
+        "tool_calls": 26,
+        "tool_execution_coverage": "not_exposed",
+        "tool_execution_ms": null,
+        "total_tokens": 166943,
+        "visible_primary_rounds": 11,
+        "wall_ms": 45364.39910897752
+      },
+      "model_key": "haiku",
+      "native_duration_api_ms": 41147,
+      "native_duration_ms": 44007,
+      "native_is_error": false,
+      "native_result_present": null,
+      "native_subtype": "success",
+      "oracle_passed": true,
+      "primary_rounds_exact": true,
+      "process_exit_code": 0,
+      "raw_present": true,
+      "repetition": 3,
+      "reported_model": "claude-haiku-4-5-20251001",
+      "response_input_coverage": "complete",
+      "review_queue": [
+        {
+          "call_id": "toolu_01CEQ9NCuW72L8kzf9Tj7Ess",
+          "command": "ls -la /tmp/php-ast-intent-instruction-campaign-20260911/runs/run008/work/",
+          "id": "toolu_01CEQ9NCuW72L8kzf9Tj7Ess",
+          "is_error": false,
+          "result_present": true,
+          "tool": "Bash"
+        },
+        {
+          "call_id": "toolu_013LLu1jquEk2maRirhUht9e",
+          "command": null,
+          "id": "toolu_013LLu1jquEk2maRirhUht9e",
+          "is_error": true,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01HAhh9Jr8jSzxKJVhBeSpvv",
+          "command": null,
+          "id": "toolu_01HAhh9Jr8jSzxKJVhBeSpvv",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01BVs9dXhGoHwEJRM25sjLDp",
+          "command": null,
+          "id": "toolu_01BVs9dXhGoHwEJRM25sjLDp",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_012hZiir8gogz5tDF2H7vGPx",
+          "command": null,
+          "id": "toolu_012hZiir8gogz5tDF2H7vGPx",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01S5aTz45dppKFAvcV2K9EvF",
+          "command": null,
+          "id": "toolu_01S5aTz45dppKFAvcV2K9EvF",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01DNBU44SnmpGb7ihENHhDFq",
+          "command": null,
+          "id": "toolu_01DNBU44SnmpGb7ihENHhDFq",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01CSaoWh6tw37Fnipon33GY6",
+          "command": null,
+          "id": "toolu_01CSaoWh6tw37Fnipon33GY6",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_0153DT276pfk6qN6PW9xG7fM",
+          "command": null,
+          "id": "toolu_0153DT276pfk6qN6PW9xG7fM",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01TWu9zH5rYBK3qDM4LnFonj",
+          "command": null,
+          "id": "toolu_01TWu9zH5rYBK3qDM4LnFonj",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_0129LxDdTGnZxk4vJupUUaBA",
+          "command": null,
+          "id": "toolu_0129LxDdTGnZxk4vJupUUaBA",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01RKHeq3Vnn6zA8kNywfhHEv",
+          "command": null,
+          "id": "toolu_01RKHeq3Vnn6zA8kNywfhHEv",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01Y4YN5LTqgqM2p8aZTkXdGd",
+          "command": null,
+          "id": "toolu_01Y4YN5LTqgqM2p8aZTkXdGd",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01JyfHqpFGbMRh4FmKkJ6Pwp",
+          "command": "php-ast-edit rename --method 'Contract::fetch' --to load --report agent",
+          "id": "toolu_01JyfHqpFGbMRh4FmKkJ6Pwp",
+          "is_error": false,
+          "result_present": true,
+          "tool": "Bash"
+        },
+        {
+          "call_id": "toolu_01BCknpreHuHivDsQbWQqCzw",
+          "command": null,
+          "id": "toolu_01BCknpreHuHivDsQbWQqCzw",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_019xozNTQG9425WjxiRYoeGj",
+          "command": null,
+          "id": "toolu_019xozNTQG9425WjxiRYoeGj",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01XpXeLfyw86yRS4VY6V2EfF",
+          "command": null,
+          "id": "toolu_01XpXeLfyw86yRS4VY6V2EfF",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01TMCvncvMiwd9vHf19HUvbY",
+          "command": null,
+          "id": "toolu_01TMCvncvMiwd9vHf19HUvbY",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01LdRuV1Y6oBxtGszuqM1pV6",
+          "command": null,
+          "id": "toolu_01LdRuV1Y6oBxtGszuqM1pV6",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_016woSWBCTXxEP95HCmLA5j1",
+          "command": null,
+          "id": "toolu_016woSWBCTXxEP95HCmLA5j1",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01TSyyR8VegUQJvWoppsy2qS",
+          "command": null,
+          "id": "toolu_01TSyyR8VegUQJvWoppsy2qS",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01T1PrvqXpqbWmhmXjhA2S3j",
+          "command": null,
+          "id": "toolu_01T1PrvqXpqbWmhmXjhA2S3j",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_0157VtRZASXGqgw4YBjsLhH8",
+          "command": null,
+          "id": "toolu_0157VtRZASXGqgw4YBjsLhH8",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01Y6v4LW4WohNrq3zjpD8XpX",
+          "command": null,
+          "id": "toolu_01Y6v4LW4WohNrq3zjpD8XpX",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01XeELB6iQZMnbJb7SSZLG5w",
+          "command": "php check.php && echo \"\u2713 Check passed\"",
+          "id": "toolu_01XeELB6iQZMnbJb7SSZLG5w",
+          "is_error": false,
+          "result_present": true,
+          "tool": "Bash"
+        },
+        {
+          "call_id": "toolu_01LK9V6qXinCVSMQzEWd7c5s",
+          "command": "git diff --no-color",
+          "id": "toolu_01LK9V6qXinCVSMQzEWd7c5s",
+          "is_error": false,
+          "result_present": true,
+          "tool": "Bash"
+        }
+      ],
+      "run_id": "run008",
+      "task_id": "cross-file-rename-clarified",
+      "timed_out": false,
+      "tool_timing_status": "not_exposed",
+      "variant": "full_skill",
+      "work": "/tmp/php-ast-intent-instruction-campaign-20260911/runs/run008/work"
+    },
+    {
+      "accounting_errors": [],
+      "all_model_usage": {
+        "claude-haiku-4-5-20251001": {
+          "cacheCreationInputTokens": 9775,
+          "cacheReadInputTokens": 174746,
+          "canonicalModel": "claude-haiku-4-5",
+          "contextWindow": 200000,
+          "costBasis": "list",
+          "costUSD": 0.056844600000000016,
+          "inputTokens": 105,
+          "maxOutputTokens": 32000,
+          "outputTokens": 3943,
+          "provider": "firstParty",
+          "thinkingTokens": 1735,
+          "webSearchRequests": 0
+        }
+      },
+      "arm": "minimal_intent",
+      "attempted": true,
+      "correctness": true,
+      "engine": {
+        "apply_calls": 0,
+        "apply_records": [],
+        "errors": [],
+        "failed_engine_apply": 0
+      },
+      "engine_audit_present": true,
+      "evidence": "/tmp/php-ast-intent-instruction-campaign-20260911/runs/run009/evidence",
+      "evidence_errors": [],
+      "evidence_path": "/tmp/php-ast-intent-instruction-campaign-20260911/runs/run009/evidence",
+      "failed_intent_calls": 0,
+      "intent_calls": 1,
+      "intent_errors": [],
+      "intent_observation": "known",
+      "intent_records": [
+        {
+          "argv": [
+            "rename",
+            "--method",
+            "Contract::fetch",
+            "--to",
+            "load"
+          ],
+          "call_id": "0c42cc6ec14c49229bceeb5dd72d8e56",
+          "exit_code": 0,
+          "paired": true
+        }
+      ],
+      "intent_unknown": false,
+      "measurement_present": true,
+      "metrics": {
+        "cache_creation_input_tokens": 9775,
+        "cache_read_input_tokens": 174746,
+        "cost_usd": 0.056844600000000016,
+        "diff_lines": 14,
+        "failed_tool_calls": 1,
+        "input_tokens": 105,
+        "native_turns": 25,
+        "output_tokens": 3943,
+        "raw_failed_tool_calls": 1,
+        "tool_calls": 24,
+        "tool_execution_coverage": "not_exposed",
+        "tool_execution_ms": null,
+        "total_tokens": 188569,
+        "visible_primary_rounds": 13,
+        "wall_ms": 46966.75805700943
+      },
+      "model_key": "haiku",
+      "native_duration_api_ms": 42648,
+      "native_duration_ms": 45539,
+      "native_is_error": false,
+      "native_result_present": null,
+      "native_subtype": "success",
+      "oracle_passed": true,
+      "primary_rounds_exact": true,
+      "process_exit_code": 0,
+      "raw_present": true,
+      "repetition": 3,
+      "reported_model": "claude-haiku-4-5-20251001",
+      "response_input_coverage": "complete",
+      "review_queue": [
+        {
+          "call_id": "toolu_01UEDyUgu5km6Ah7uFz6JpgX",
+          "command": null,
+          "id": "toolu_01UEDyUgu5km6Ah7uFz6JpgX",
+          "is_error": true,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01CrdhfCa9DGuh7cJKQWVGc5",
+          "command": "ls -la /tmp/php-ast-intent-instruction-campaign-20260911/runs/run009/work",
+          "id": "toolu_01CrdhfCa9DGuh7cJKQWVGc5",
+          "is_error": false,
+          "result_present": true,
+          "tool": "Bash"
+        },
+        {
+          "call_id": "toolu_011AprpiyDCreukb2jZKBUUo",
+          "command": null,
+          "id": "toolu_011AprpiyDCreukb2jZKBUUo",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_0142Mr9DZCj6SGZ91uQUnjhT",
+          "command": null,
+          "id": "toolu_0142Mr9DZCj6SGZ91uQUnjhT",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_016zGXgKe621Y6NjUxDRwqcx",
+          "command": null,
+          "id": "toolu_016zGXgKe621Y6NjUxDRwqcx",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01Dd8fJABYsTPufJNoQoqa8B",
+          "command": null,
+          "id": "toolu_01Dd8fJABYsTPufJNoQoqa8B",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01Eb9xvLhYeW1DMtLUryxhYH",
+          "command": null,
+          "id": "toolu_01Eb9xvLhYeW1DMtLUryxhYH",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01N7kYiZWJneXr1nnqdy8NNd",
+          "command": null,
+          "id": "toolu_01N7kYiZWJneXr1nnqdy8NNd",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_014NLCpput6KFr8NaeYgZop5",
+          "command": null,
+          "id": "toolu_014NLCpput6KFr8NaeYgZop5",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_0117TfDg9MnoUMYpoc8yyvbd",
+          "command": null,
+          "id": "toolu_0117TfDg9MnoUMYpoc8yyvbd",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01XUsLG1QUWkzVKQJr4qfu3T",
+          "command": null,
+          "id": "toolu_01XUsLG1QUWkzVKQJr4qfu3T",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01MrWe7i1fH4M36JbFP4PRog",
+          "command": null,
+          "id": "toolu_01MrWe7i1fH4M36JbFP4PRog",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01P3sjKAs3SHxWjYDYk1pPzV",
+          "command": "which php-ast-edit",
+          "id": "toolu_01P3sjKAs3SHxWjYDYk1pPzV",
+          "is_error": false,
+          "result_present": true,
+          "tool": "Bash"
+        },
+        {
+          "call_id": "toolu_01XErhpwuQDkGmuTL6zmxzTa",
+          "command": "/tmp/php-ast-intent-instruction-campaign-20260911/tools/php-ast-edit rename --method 'Contract::fetch' --to load",
+          "id": "toolu_01XErhpwuQDkGmuTL6zmxzTa",
+          "is_error": false,
+          "result_present": true,
+          "tool": "Bash"
+        },
+        {
+          "call_id": "toolu_013xWwJFCbnDRX31dMPdjNoG",
+          "command": null,
+          "id": "toolu_013xWwJFCbnDRX31dMPdjNoG",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_011jWTo4oYkWsrhGiHk4D46N",
+          "command": null,
+          "id": "toolu_011jWTo4oYkWsrhGiHk4D46N",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01SPvf369V6RkqJNdSdph7Lq",
+          "command": null,
+          "id": "toolu_01SPvf369V6RkqJNdSdph7Lq",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01BzuYgbQmVJzcL8uYcXp2Xb",
+          "command": null,
+          "id": "toolu_01BzuYgbQmVJzcL8uYcXp2Xb",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_016x5Munpbafo8tnXzAnbGEN",
+          "command": null,
+          "id": "toolu_016x5Munpbafo8tnXzAnbGEN",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_012Nk6GVx4n7icrSN1wvk9at",
+          "command": null,
+          "id": "toolu_012Nk6GVx4n7icrSN1wvk9at",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_011Fd2VWTBqiGmTspuxonbvL",
+          "command": "php check.php && echo \"Check passed!\"",
+          "id": "toolu_011Fd2VWTBqiGmTspuxonbvL",
+          "is_error": false,
+          "result_present": true,
+          "tool": "Bash"
+        },
+        {
+          "call_id": "toolu_01XutyUZuJLPkZUksg1pNPUZ",
+          "command": "git diff --name-only",
+          "id": "toolu_01XutyUZuJLPkZUksg1pNPUZ",
+          "is_error": false,
+          "result_present": true,
+          "tool": "Bash"
+        },
+        {
+          "call_id": "toolu_01SEXWykKcgRVn57zmN9Fw5a",
+          "command": "git diff src/Other.php src/OtherConsumer.php",
+          "id": "toolu_01SEXWykKcgRVn57zmN9Fw5a",
+          "is_error": false,
+          "result_present": true,
+          "tool": "Bash"
+        },
+        {
+          "call_id": "toolu_01CaDi8vtpBuUAFCPwGQKXys",
+          "command": "git diff check.php .php-ast-edit.json composer.json config/services.yaml autoload.php",
+          "id": "toolu_01CaDi8vtpBuUAFCPwGQKXys",
+          "is_error": false,
+          "result_present": true,
+          "tool": "Bash"
+        }
+      ],
+      "run_id": "run009",
+      "task_id": "cross-file-rename-clarified",
+      "timed_out": false,
+      "tool_timing_status": "not_exposed",
+      "variant": "minimal_intent",
+      "work": "/tmp/php-ast-intent-instruction-campaign-20260911/runs/run009/work"
+    },
+    {
+      "accounting_errors": [],
+      "all_model_usage": {
+        "claude-haiku-4-5-20251001": {
+          "cacheCreationInputTokens": 5517,
+          "cacheReadInputTokens": 85385,
+          "canonicalModel": "claude-haiku-4-5",
+          "contextWindow": 200000,
+          "costBasis": "list",
+          "costUSD": 0.0310075,
+          "inputTokens": 65,
+          "maxOutputTokens": 32000,
+          "outputTokens": 2274,
+          "provider": "firstParty",
+          "thinkingTokens": 1152,
+          "webSearchRequests": 0
+        }
+      },
+      "arm": "minimal_intent",
+      "attempted": true,
+      "correctness": true,
+      "engine": {
+        "apply_calls": 0,
+        "apply_records": [],
+        "errors": [],
+        "failed_engine_apply": 0
+      },
+      "engine_audit_present": true,
+      "evidence": "/tmp/php-ast-intent-instruction-campaign-20260911/runs/run010/evidence",
+      "evidence_errors": [],
+      "evidence_path": "/tmp/php-ast-intent-instruction-campaign-20260911/runs/run010/evidence",
+      "failed_intent_calls": 0,
+      "intent_calls": 1,
+      "intent_errors": [],
+      "intent_observation": "known",
+      "intent_records": [
+        {
+          "argv": [
+            "rename",
+            "--method",
+            "Product::findByUid",
+            "--to",
+            "resolveByUid"
+          ],
+          "call_id": "2a3e9cd41979402d9c6de75e4c819c97",
+          "exit_code": 0,
+          "paired": true
+        }
+      ],
+      "intent_unknown": false,
+      "measurement_present": true,
+      "metrics": {
+        "cache_creation_input_tokens": 5517,
+        "cache_read_input_tokens": 85385,
+        "cost_usd": 0.0310075,
+        "diff_lines": 2,
+        "failed_tool_calls": 1,
+        "input_tokens": 65,
+        "native_turns": 11,
+        "output_tokens": 2274,
+        "raw_failed_tool_calls": 1,
+        "tool_calls": 10,
+        "tool_execution_coverage": "not_exposed",
+        "tool_execution_ms": null,
+        "total_tokens": 93241,
+        "visible_primary_rounds": 8,
+        "wall_ms": 28919.789678999223
+      },
+      "model_key": "haiku",
+      "native_duration_api_ms": 24799,
+      "native_duration_ms": 27572,
+      "native_is_error": false,
+      "native_result_present": null,
+      "native_subtype": "success",
+      "oracle_passed": true,
+      "primary_rounds_exact": true,
+      "process_exit_code": 0,
+      "raw_present": true,
+      "repetition": 2,
+      "reported_model": "claude-haiku-4-5-20251001",
+      "response_input_coverage": "complete",
+      "review_queue": [
+        {
+          "call_id": "toolu_01N5j84AYHC8q7VWrr5LoyTY",
+          "command": null,
+          "id": "toolu_01N5j84AYHC8q7VWrr5LoyTY",
+          "is_error": true,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_011zLy31QiiK8BzNK9CNkt14",
+          "command": "ls -la /tmp/php-ast-intent-instruction-campaign-20260911/runs/run010/work",
+          "id": "toolu_011zLy31QiiK8BzNK9CNkt14",
+          "is_error": false,
+          "result_present": true,
+          "tool": "Bash"
+        },
+        {
+          "call_id": "toolu_01BEZnzc1SygGSuf1uakt6oN",
+          "command": null,
+          "id": "toolu_01BEZnzc1SygGSuf1uakt6oN",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_017Z3zXB1V24RK64Vx1699LS",
+          "command": null,
+          "id": "toolu_017Z3zXB1V24RK64Vx1699LS",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_0188LTKHT3yspMRP9KwitmrD",
+          "command": null,
+          "id": "toolu_0188LTKHT3yspMRP9KwitmrD",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01NFgGVhTT1hKd3rXnaWkVEw",
+          "command": "php-ast-edit rename --method 'Product::findByUid' --to resolveByUid",
+          "id": "toolu_01NFgGVhTT1hKd3rXnaWkVEw",
+          "is_error": false,
+          "result_present": true,
+          "tool": "Bash"
+        },
+        {
+          "call_id": "toolu_01E1psSGCareK8B2DMk1SmeY",
+          "command": null,
+          "id": "toolu_01E1psSGCareK8B2DMk1SmeY",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01Rdi15DrQmFj6KJTszTQ6i7",
+          "command": "php check.php",
+          "id": "toolu_01Rdi15DrQmFj6KJTszTQ6i7",
+          "is_error": false,
+          "result_present": true,
+          "tool": "Bash"
+        },
+        {
+          "call_id": "toolu_015BePZZMf54noK6rdhhF7CN",
+          "command": null,
+          "id": "toolu_015BePZZMf54noK6rdhhF7CN",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01LPSW6T3WpzRvsxFvpYvtMG",
+          "command": null,
+          "id": "toolu_01LPSW6T3WpzRvsxFvpYvtMG",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        }
+      ],
+      "run_id": "run010",
+      "task_id": "method-and-literal",
+      "timed_out": false,
+      "tool_timing_status": "not_exposed",
+      "variant": "minimal_intent",
+      "work": "/tmp/php-ast-intent-instruction-campaign-20260911/runs/run010/work"
+    },
+    {
+      "accounting_errors": [],
+      "all_model_usage": {
+        "claude-haiku-4-5-20251001": {
+          "cacheCreationInputTokens": 4596,
+          "cacheReadInputTokens": 84095,
+          "canonicalModel": "claude-haiku-4-5",
+          "contextWindow": 200000,
+          "costBasis": "list",
+          "costUSD": 0.0284015,
+          "inputTokens": 65,
+          "maxOutputTokens": 32000,
+          "outputTokens": 2147,
+          "provider": "firstParty",
+          "thinkingTokens": 881,
+          "webSearchRequests": 0
+        }
+      },
+      "arm": "contextual_patch",
+      "attempted": true,
+      "correctness": true,
+      "engine": {
+        "apply_calls": null,
+        "apply_records": [],
+        "errors": [],
+        "failed_engine_apply": null
+      },
+      "engine_audit_present": false,
+      "evidence": "/tmp/php-ast-intent-instruction-campaign-20260911/runs/run011/evidence",
+      "evidence_errors": [],
+      "evidence_path": "/tmp/php-ast-intent-instruction-campaign-20260911/runs/run011/evidence",
+      "failed_intent_calls": null,
+      "intent_calls": null,
+      "intent_errors": [],
+      "intent_observation": "unknown_missing_audit",
+      "intent_records": [],
+      "intent_unknown": true,
+      "measurement_present": true,
+      "metrics": {
+        "cache_creation_input_tokens": 4596,
+        "cache_read_input_tokens": 84095,
+        "cost_usd": 0.0284015,
+        "diff_lines": 2,
+        "failed_tool_calls": 1,
+        "input_tokens": 65,
+        "native_turns": 12,
+        "output_tokens": 2147,
+        "raw_failed_tool_calls": 1,
+        "tool_calls": 11,
+        "tool_execution_coverage": "not_exposed",
+        "tool_execution_ms": null,
+        "total_tokens": 90903,
+        "visible_primary_rounds": 8,
+        "wall_ms": 23660.15174900531
+      },
+      "model_key": "haiku",
+      "native_duration_api_ms": 21972,
+      "native_duration_ms": 22075,
+      "native_is_error": false,
+      "native_result_present": null,
+      "native_subtype": "success",
+      "oracle_passed": true,
+      "primary_rounds_exact": true,
+      "process_exit_code": 0,
+      "raw_present": true,
+      "repetition": 2,
+      "reported_model": "claude-haiku-4-5-20251001",
+      "response_input_coverage": "complete",
+      "review_queue": [
+        {
+          "call_id": "toolu_01KLhveb4SvNuQ4xNE7ZSN6s",
+          "command": null,
+          "id": "toolu_01KLhveb4SvNuQ4xNE7ZSN6s",
+          "is_error": true,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_0172ch4psPJyewx3PfWV2oZu",
+          "command": "ls -la /tmp/php-ast-intent-instruction-campaign-20260911/runs/run011/work",
+          "id": "toolu_0172ch4psPJyewx3PfWV2oZu",
+          "is_error": false,
+          "result_present": true,
+          "tool": "Bash"
+        },
+        {
+          "call_id": "toolu_01235d9XA2Ni1Vcamu1R9Jr1",
+          "command": null,
+          "id": "toolu_01235d9XA2Ni1Vcamu1R9Jr1",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01Huz8dCukJMywNWk9FLmQqA",
+          "command": null,
+          "id": "toolu_01Huz8dCukJMywNWk9FLmQqA",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01ELB2ANgPAt1bpWcKZPmekr",
+          "command": null,
+          "id": "toolu_01ELB2ANgPAt1bpWcKZPmekr",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01Gi6nXhGU6coKM4REjqAMNy",
+          "command": null,
+          "id": "toolu_01Gi6nXhGU6coKM4REjqAMNy",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Edit"
+        },
+        {
+          "call_id": "toolu_01B9fYBCjD1Kh4XXcFEevC7c",
+          "command": "php check.php",
+          "id": "toolu_01B9fYBCjD1Kh4XXcFEevC7c",
+          "is_error": false,
+          "result_present": true,
+          "tool": "Bash"
+        },
+        {
+          "call_id": "toolu_01SrhVRbSy9CEpGaEAPwdL9o",
+          "command": null,
+          "id": "toolu_01SrhVRbSy9CEpGaEAPwdL9o",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_014yH8U9zZ1CC13h8Px3hqFn",
+          "command": "md5sum /tmp/php-ast-intent-instruction-campaign-20260911/runs/run011/work/check.php /tmp/php-ast-intent-instruction-campaign-20260911/runs/run011/work/.php-ast-edit.json",
+          "id": "toolu_014yH8U9zZ1CC13h8Px3hqFn",
+          "is_error": false,
+          "result_present": true,
+          "tool": "Bash"
+        },
+        {
+          "call_id": "toolu_01JnmKNHyQK7SUsesYgJyHqS",
+          "command": "git status",
+          "id": "toolu_01JnmKNHyQK7SUsesYgJyHqS",
+          "is_error": false,
+          "result_present": true,
+          "tool": "Bash"
+        },
+        {
+          "call_id": "toolu_01EhxfC9cctiYcWUuKXvesyi",
+          "command": "git diff Product.php",
+          "id": "toolu_01EhxfC9cctiYcWUuKXvesyi",
+          "is_error": false,
+          "result_present": true,
+          "tool": "Bash"
+        }
+      ],
+      "run_id": "run011",
+      "task_id": "method-and-literal",
+      "timed_out": false,
+      "tool_timing_status": "not_exposed",
+      "variant": "contextual_patch",
+      "work": "/tmp/php-ast-intent-instruction-campaign-20260911/runs/run011/work"
+    },
+    {
+      "accounting_errors": [],
+      "all_model_usage": {
+        "claude-haiku-4-5-20251001": {
+          "cacheCreationInputTokens": 4547,
+          "cacheReadInputTokens": 55234,
+          "canonicalModel": "claude-haiku-4-5",
+          "contextWindow": 200000,
+          "costBasis": "list",
+          "costUSD": 0.0242184,
+          "inputTokens": 41,
+          "maxOutputTokens": 32000,
+          "outputTokens": 1912,
+          "provider": "firstParty",
+          "thinkingTokens": 1119,
+          "webSearchRequests": 0
+        }
+      },
+      "arm": "full_skill",
+      "attempted": true,
+      "correctness": true,
+      "engine": {
+        "apply_calls": 0,
+        "apply_records": [],
+        "errors": [],
+        "failed_engine_apply": 0
+      },
+      "engine_audit_present": true,
+      "evidence": "/tmp/php-ast-intent-instruction-campaign-20260911/runs/run012/evidence",
+      "evidence_errors": [],
+      "evidence_path": "/tmp/php-ast-intent-instruction-campaign-20260911/runs/run012/evidence",
+      "failed_intent_calls": 0,
+      "intent_calls": 1,
+      "intent_errors": [],
+      "intent_observation": "known",
+      "intent_records": [
+        {
+          "argv": [
+            "rename",
+            "--method",
+            "Product::findByUid",
+            "--to",
+            "resolveByUid"
+          ],
+          "call_id": "a61cac080637469c9235a306f417cfa2",
+          "exit_code": 0,
+          "paired": true
+        }
+      ],
+      "intent_unknown": false,
+      "measurement_present": true,
+      "metrics": {
+        "cache_creation_input_tokens": 4547,
+        "cache_read_input_tokens": 55234,
+        "cost_usd": 0.0242184,
+        "diff_lines": 2,
+        "failed_tool_calls": 0,
+        "input_tokens": 41,
+        "native_turns": 8,
+        "output_tokens": 1912,
+        "raw_failed_tool_calls": 0,
+        "tool_calls": 7,
+        "tool_execution_coverage": "not_exposed",
+        "tool_execution_ms": null,
+        "total_tokens": 61734,
+        "visible_primary_rounds": 5,
+        "wall_ms": 24711.74880999024
+      },
+      "model_key": "haiku",
+      "native_duration_api_ms": 20521,
+      "native_duration_ms": 23211,
+      "native_is_error": false,
+      "native_result_present": null,
+      "native_subtype": "success",
+      "oracle_passed": true,
+      "primary_rounds_exact": true,
+      "process_exit_code": 0,
+      "raw_present": true,
+      "repetition": 2,
+      "reported_model": "claude-haiku-4-5-20251001",
+      "response_input_coverage": "complete",
+      "review_queue": [
+        {
+          "call_id": "toolu_01QvNMVTka6v8xVPQ8K1kgET",
+          "command": null,
+          "id": "toolu_01QvNMVTka6v8xVPQ8K1kgET",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_018b8q7NDGJKJ7oCS4Ct58Xi",
+          "command": null,
+          "id": "toolu_018b8q7NDGJKJ7oCS4Ct58Xi",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_019W2tLRBxekEHQrfczUM4yL",
+          "command": null,
+          "id": "toolu_019W2tLRBxekEHQrfczUM4yL",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01RKzDtbBb5QCUhF3zdikw8w",
+          "command": "php-ast-edit rename --method 'Product::findByUid' --to resolveByUid",
+          "id": "toolu_01RKzDtbBb5QCUhF3zdikw8w",
+          "is_error": false,
+          "result_present": true,
+          "tool": "Bash"
+        },
+        {
+          "call_id": "toolu_0159yYmBijZA3NhyY9na28Er",
+          "command": "git status",
+          "id": "toolu_0159yYmBijZA3NhyY9na28Er",
+          "is_error": false,
+          "result_present": true,
+          "tool": "Bash"
+        },
+        {
+          "call_id": "toolu_01JSux2cBLTeZTs5cCNacotY",
+          "command": null,
+          "id": "toolu_01JSux2cBLTeZTs5cCNacotY",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_015wMSYN7b9nrMBFB7J6V9hN",
+          "command": "php check.php && echo \"PASS\"",
+          "id": "toolu_015wMSYN7b9nrMBFB7J6V9hN",
+          "is_error": false,
+          "result_present": true,
+          "tool": "Bash"
+        }
+      ],
+      "run_id": "run012",
+      "task_id": "method-and-literal",
+      "timed_out": false,
+      "tool_timing_status": "not_exposed",
+      "variant": "full_skill",
+      "work": "/tmp/php-ast-intent-instruction-campaign-20260911/runs/run012/work"
+    },
+    {
+      "accounting_errors": [],
+      "all_model_usage": {
+        "claude-haiku-4-5-20251001": {
+          "cacheCreationInputTokens": 9774,
+          "cacheReadInputTokens": 141067,
+          "canonicalModel": "claude-haiku-4-5",
+          "contextWindow": 200000,
+          "costBasis": "list",
+          "costUSD": 0.0522687,
+          "inputTokens": 89,
+          "maxOutputTokens": 32000,
+          "outputTokens": 3705,
+          "provider": "firstParty",
+          "thinkingTokens": 1510,
+          "webSearchRequests": 0
+        }
+      },
+      "arm": "minimal_intent",
+      "attempted": true,
+      "correctness": true,
+      "engine": {
+        "apply_calls": 0,
+        "apply_records": [],
+        "errors": [],
+        "failed_engine_apply": 0
+      },
+      "engine_audit_present": true,
+      "evidence": "/tmp/php-ast-intent-instruction-campaign-20260911/runs/run013/evidence",
+      "evidence_errors": [],
+      "evidence_path": "/tmp/php-ast-intent-instruction-campaign-20260911/runs/run013/evidence",
+      "failed_intent_calls": 1,
+      "intent_calls": 2,
+      "intent_errors": [],
+      "intent_observation": "known",
+      "intent_records": [
+        {
+          "argv": [
+            "rename",
+            "--method",
+            "Pilot\\CrossFile\\Contract::fetch",
+            "--to",
+            "load",
+            "."
+          ],
+          "call_id": "604ed12d83984b0abe4a6cda2fe1e4fd",
+          "exit_code": 2,
+          "paired": true
+        },
+        {
+          "argv": [
+            "rename",
+            "--method",
+            "Pilot\\CrossFile\\Contract::fetch",
+            "--to",
+            "load"
+          ],
+          "call_id": "9eb0a6a7ffaa449fb17a4884c39d368c",
+          "exit_code": 0,
+          "paired": true
+        }
+      ],
+      "intent_unknown": false,
+      "measurement_present": true,
+      "metrics": {
+        "cache_creation_input_tokens": 9774,
+        "cache_read_input_tokens": 141067,
+        "cost_usd": 0.0522687,
+        "diff_lines": 14,
+        "failed_tool_calls": 2,
+        "input_tokens": 89,
+        "native_turns": 25,
+        "output_tokens": 3705,
+        "raw_failed_tool_calls": 2,
+        "tool_calls": 24,
+        "tool_execution_coverage": "not_exposed",
+        "tool_execution_ms": null,
+        "total_tokens": 154635,
+        "visible_primary_rounds": 11,
+        "wall_ms": 43301.2247220031
+      },
+      "model_key": "haiku",
+      "native_duration_api_ms": 39083,
+      "native_duration_ms": 41940,
+      "native_is_error": false,
+      "native_result_present": null,
+      "native_subtype": "success",
+      "oracle_passed": true,
+      "primary_rounds_exact": true,
+      "process_exit_code": 0,
+      "raw_present": true,
+      "repetition": 2,
+      "reported_model": "claude-haiku-4-5-20251001",
+      "response_input_coverage": "complete",
+      "review_queue": [
+        {
+          "call_id": "toolu_019NBiUtotQmBsuMxHCHDs3f",
+          "command": null,
+          "id": "toolu_019NBiUtotQmBsuMxHCHDs3f",
+          "is_error": true,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01Wxe5yoromDWmnWsiKZNsj3",
+          "command": "ls -la /tmp/php-ast-intent-instruction-campaign-20260911/runs/run013/work/",
+          "id": "toolu_01Wxe5yoromDWmnWsiKZNsj3",
+          "is_error": false,
+          "result_present": true,
+          "tool": "Bash"
+        },
+        {
+          "call_id": "toolu_019RmUVR57ksnCef6grhXTnR",
+          "command": null,
+          "id": "toolu_019RmUVR57ksnCef6grhXTnR",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01KeU3EL12mKKV85PM94eGb9",
+          "command": null,
+          "id": "toolu_01KeU3EL12mKKV85PM94eGb9",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01AuwPjSkfVnoBrKdMgEeVDz",
+          "command": null,
+          "id": "toolu_01AuwPjSkfVnoBrKdMgEeVDz",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01EFNpEeLzoLtXCLxXs4WzBa",
+          "command": null,
+          "id": "toolu_01EFNpEeLzoLtXCLxXs4WzBa",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_011DmYWWVfdsv3BG4aEGdxJk",
+          "command": null,
+          "id": "toolu_011DmYWWVfdsv3BG4aEGdxJk",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01CXFLqqzoZdJ84vKzboA3jt",
+          "command": null,
+          "id": "toolu_01CXFLqqzoZdJ84vKzboA3jt",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01N4DicsSBiBwhKdrMyVSzer",
+          "command": null,
+          "id": "toolu_01N4DicsSBiBwhKdrMyVSzer",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01Fyf1UqFLHxsjXzzM8jnBKK",
+          "command": null,
+          "id": "toolu_01Fyf1UqFLHxsjXzzM8jnBKK",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01BqAvD2Hj1X98uWxFd4X8MG",
+          "command": null,
+          "id": "toolu_01BqAvD2Hj1X98uWxFd4X8MG",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01Ya2UMUY65Cd7wqhSCNhK66",
+          "command": null,
+          "id": "toolu_01Ya2UMUY65Cd7wqhSCNhK66",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01Nxx5xj4d3gGPWPpYZKajwX",
+          "command": null,
+          "id": "toolu_01Nxx5xj4d3gGPWPpYZKajwX",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01Drrv8TsvmHPcUXy9YXTJQ4",
+          "command": "php-ast-edit rename --method 'Pilot\\CrossFile\\Contract::fetch' --to load .",
+          "id": "toolu_01Drrv8TsvmHPcUXy9YXTJQ4",
+          "is_error": true,
+          "result_present": true,
+          "tool": "Bash"
+        },
+        {
+          "call_id": "toolu_01Tz7QKojHu4nNEsBJ4hMsgz",
+          "command": "php-ast-edit rename --method 'Pilot\\CrossFile\\Contract::fetch' --to load",
+          "id": "toolu_01Tz7QKojHu4nNEsBJ4hMsgz",
+          "is_error": false,
+          "result_present": true,
+          "tool": "Bash"
+        },
+        {
+          "call_id": "toolu_012rsGSEhKDZ54PHhAG3GbRT",
+          "command": null,
+          "id": "toolu_012rsGSEhKDZ54PHhAG3GbRT",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_019wgk2U9xWDGVeYLPWe8wLz",
+          "command": null,
+          "id": "toolu_019wgk2U9xWDGVeYLPWe8wLz",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01MKf6pi5qWeV4Ki9Qs1g8fj",
+          "command": null,
+          "id": "toolu_01MKf6pi5qWeV4Ki9Qs1g8fj",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01TCLUpan9bAtshu4MwLRABw",
+          "command": null,
+          "id": "toolu_01TCLUpan9bAtshu4MwLRABw",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01HioVH6TAeaP3aeKeWEsMHj",
+          "command": null,
+          "id": "toolu_01HioVH6TAeaP3aeKeWEsMHj",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01MoigqXi5ZfBfxZHuCnUPx1",
+          "command": null,
+          "id": "toolu_01MoigqXi5ZfBfxZHuCnUPx1",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_017qmVivWsBHPMwCi4uvQDZo",
+          "command": "php check.php && echo \"\u2713 Check passed\"",
+          "id": "toolu_017qmVivWsBHPMwCi4uvQDZo",
+          "is_error": false,
+          "result_present": true,
+          "tool": "Bash"
+        },
+        {
+          "call_id": "toolu_01KMAegRKhYDu75C5rronnKo",
+          "command": "git diff .php-ast-edit.json composer.json config/services.yaml check.php autoload.php",
+          "id": "toolu_01KMAegRKhYDu75C5rronnKo",
+          "is_error": false,
+          "result_present": true,
+          "tool": "Bash"
+        },
+        {
+          "call_id": "toolu_01LQPXxC3cYGb5PqCBAHDs4o",
+          "command": "git status --short",
+          "id": "toolu_01LQPXxC3cYGb5PqCBAHDs4o",
+          "is_error": false,
+          "result_present": true,
+          "tool": "Bash"
+        }
+      ],
+      "run_id": "run013",
+      "task_id": "cross-file-rename-clarified",
+      "timed_out": false,
+      "tool_timing_status": "not_exposed",
+      "variant": "minimal_intent",
+      "work": "/tmp/php-ast-intent-instruction-campaign-20260911/runs/run013/work"
+    },
+    {
+      "accounting_errors": [],
+      "all_model_usage": {
+        "claude-haiku-4-5-20251001": {
+          "cacheCreationInputTokens": 6754,
+          "cacheReadInputTokens": 88522,
+          "canonicalModel": "claude-haiku-4-5",
+          "contextWindow": 200000,
+          "costBasis": "list",
+          "costUSD": 0.038180200000000004,
+          "inputTokens": 65,
+          "maxOutputTokens": 32000,
+          "outputTokens": 3151,
+          "provider": "firstParty",
+          "thinkingTokens": 1125,
+          "webSearchRequests": 0
+        }
+      },
+      "arm": "contextual_patch",
+      "attempted": true,
+      "correctness": true,
+      "engine": {
+        "apply_calls": null,
+        "apply_records": [],
+        "errors": [],
+        "failed_engine_apply": null
+      },
+      "engine_audit_present": false,
+      "evidence": "/tmp/php-ast-intent-instruction-campaign-20260911/runs/run014/evidence",
+      "evidence_errors": [],
+      "evidence_path": "/tmp/php-ast-intent-instruction-campaign-20260911/runs/run014/evidence",
+      "failed_intent_calls": null,
+      "intent_calls": null,
+      "intent_errors": [],
+      "intent_observation": "unknown_missing_audit",
+      "intent_records": [],
+      "intent_unknown": true,
+      "measurement_present": true,
+      "metrics": {
+        "cache_creation_input_tokens": 6754,
+        "cache_read_input_tokens": 88522,
+        "cost_usd": 0.038180200000000004,
+        "diff_lines": 10,
+        "failed_tool_calls": 1,
+        "input_tokens": 65,
+        "native_turns": 20,
+        "output_tokens": 3151,
+        "raw_failed_tool_calls": 1,
+        "tool_calls": 19,
+        "tool_execution_coverage": "not_exposed",
+        "tool_execution_ms": null,
+        "total_tokens": 98492,
+        "visible_primary_rounds": 8,
+        "wall_ms": 32278.03859600681
+      },
+      "model_key": "haiku",
+      "native_duration_api_ms": 30752,
+      "native_duration_ms": 30876,
+      "native_is_error": false,
+      "native_result_present": null,
+      "native_subtype": "success",
+      "oracle_passed": true,
+      "primary_rounds_exact": true,
+      "process_exit_code": 0,
+      "raw_present": true,
+      "repetition": 2,
+      "reported_model": "claude-haiku-4-5-20251001",
+      "response_input_coverage": "complete",
+      "review_queue": [
+        {
+          "call_id": "toolu_01Keu82BLRCzfwd8YTuL25tu",
+          "command": null,
+          "id": "toolu_01Keu82BLRCzfwd8YTuL25tu",
+          "is_error": true,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_013SYxybCE71ke3ZtaCj3g8F",
+          "command": "ls -la /tmp/php-ast-intent-instruction-campaign-20260911/runs/run014/work",
+          "id": "toolu_013SYxybCE71ke3ZtaCj3g8F",
+          "is_error": false,
+          "result_present": true,
+          "tool": "Bash"
+        },
+        {
+          "call_id": "toolu_017JpqfYNdwXBWmfmvHkCJiB",
+          "command": null,
+          "id": "toolu_017JpqfYNdwXBWmfmvHkCJiB",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01YVYqj4aUhh3Lfo6CfkYeeU",
+          "command": null,
+          "id": "toolu_01YVYqj4aUhh3Lfo6CfkYeeU",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01VotGwmy8VTAwXLFBccWPH5",
+          "command": null,
+          "id": "toolu_01VotGwmy8VTAwXLFBccWPH5",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01NjrLQxi8icKTozRQ9wNbGB",
+          "command": null,
+          "id": "toolu_01NjrLQxi8icKTozRQ9wNbGB",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01JTxVEa9mdFkrG6mounMz9N",
+          "command": null,
+          "id": "toolu_01JTxVEa9mdFkrG6mounMz9N",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_0128uPFWGGucb5oDbokpiGfr",
+          "command": null,
+          "id": "toolu_0128uPFWGGucb5oDbokpiGfr",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01Nvh5rLYipBtCVFA6562d2K",
+          "command": null,
+          "id": "toolu_01Nvh5rLYipBtCVFA6562d2K",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_013pJUvAi7FZxjn1PgouVKuq",
+          "command": null,
+          "id": "toolu_013pJUvAi7FZxjn1PgouVKuq",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01SDbkpT7y6JMVJxA4BK36w4",
+          "command": null,
+          "id": "toolu_01SDbkpT7y6JMVJxA4BK36w4",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01E7qRuzhpXBCW2MXVjgcswP",
+          "command": null,
+          "id": "toolu_01E7qRuzhpXBCW2MXVjgcswP",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01J64Ci1qXMV8DrbBJWLL1k7",
+          "command": null,
+          "id": "toolu_01J64Ci1qXMV8DrbBJWLL1k7",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01VxYSaR4dbxwsRaAFXoAeXT",
+          "command": null,
+          "id": "toolu_01VxYSaR4dbxwsRaAFXoAeXT",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Edit"
+        },
+        {
+          "call_id": "toolu_01RKoWCaifZeYtmMN1PXfXUH",
+          "command": null,
+          "id": "toolu_01RKoWCaifZeYtmMN1PXfXUH",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Edit"
+        },
+        {
+          "call_id": "toolu_01Cv5Bm8XMGvf7yFDuSa2bmZ",
+          "command": null,
+          "id": "toolu_01Cv5Bm8XMGvf7yFDuSa2bmZ",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Edit"
+        },
+        {
+          "call_id": "toolu_01Ve2fjZXztAXtyvFmGxdwor",
+          "command": null,
+          "id": "toolu_01Ve2fjZXztAXtyvFmGxdwor",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Edit"
+        },
+        {
+          "call_id": "toolu_01RL4PfS3aGMpiPojVJmhaio",
+          "command": "php check.php && echo \"Check passed!\"",
+          "id": "toolu_01RL4PfS3aGMpiPojVJmhaio",
+          "is_error": false,
+          "result_present": true,
+          "tool": "Bash"
+        },
+        {
+          "call_id": "toolu_019o5NmhrJ8gPLRuExydF5LX",
+          "command": "git diff",
+          "id": "toolu_019o5NmhrJ8gPLRuExydF5LX",
+          "is_error": false,
+          "result_present": true,
+          "tool": "Bash"
+        }
+      ],
+      "run_id": "run014",
+      "task_id": "cross-file-rename-clarified",
+      "timed_out": false,
+      "tool_timing_status": "not_exposed",
+      "variant": "contextual_patch",
+      "work": "/tmp/php-ast-intent-instruction-campaign-20260911/runs/run014/work"
+    },
+    {
+      "accounting_errors": [],
+      "all_model_usage": {
+        "claude-haiku-4-5-20251001": {
+          "cacheCreationInputTokens": 10670,
+          "cacheReadInputTokens": 190199,
+          "canonicalModel": "claude-haiku-4-5",
+          "contextWindow": 200000,
+          "costBasis": "list",
+          "costUSD": 0.06261490000000001,
+          "inputTokens": 105,
+          "maxOutputTokens": 32000,
+          "outputTokens": 4430,
+          "provider": "firstParty",
+          "thinkingTokens": 1937,
+          "webSearchRequests": 0
+        }
+      },
+      "arm": "full_skill",
+      "attempted": true,
+      "correctness": true,
+      "engine": {
+        "apply_calls": 0,
+        "apply_records": [],
+        "errors": [],
+        "failed_engine_apply": 0
+      },
+      "engine_audit_present": true,
+      "evidence": "/tmp/php-ast-intent-instruction-campaign-20260911/runs/run015/evidence",
+      "evidence_errors": [],
+      "evidence_path": "/tmp/php-ast-intent-instruction-campaign-20260911/runs/run015/evidence",
+      "failed_intent_calls": 0,
+      "intent_calls": 1,
+      "intent_errors": [],
+      "intent_observation": "known",
+      "intent_records": [
+        {
+          "argv": [
+            "rename",
+            "--method",
+            "Contract::fetch",
+            "--to",
+            "load"
+          ],
+          "call_id": "0e5efbcb04604aa1a81cfa031341f806",
+          "exit_code": 0,
+          "paired": true
+        }
+      ],
+      "intent_unknown": false,
+      "measurement_present": true,
+      "metrics": {
+        "cache_creation_input_tokens": 10670,
+        "cache_read_input_tokens": 190199,
+        "cost_usd": 0.06261490000000001,
+        "diff_lines": 14,
+        "failed_tool_calls": 1,
+        "input_tokens": 105,
+        "native_turns": 26,
+        "output_tokens": 4430,
+        "raw_failed_tool_calls": 1,
+        "tool_calls": 25,
+        "tool_execution_coverage": "not_exposed",
+        "tool_execution_ms": null,
+        "total_tokens": 205404,
+        "visible_primary_rounds": 13,
+        "wall_ms": 52020.9324840107
+      },
+      "model_key": "haiku",
+      "native_duration_api_ms": 47821,
+      "native_duration_ms": 50614,
+      "native_is_error": false,
+      "native_result_present": null,
+      "native_subtype": "success",
+      "oracle_passed": true,
+      "primary_rounds_exact": true,
+      "process_exit_code": 0,
+      "raw_present": true,
+      "repetition": 2,
+      "reported_model": "claude-haiku-4-5-20251001",
+      "response_input_coverage": "complete",
+      "review_queue": [
+        {
+          "call_id": "toolu_017MGFzqtuuXu5n65tZARfuz",
+          "command": null,
+          "id": "toolu_017MGFzqtuuXu5n65tZARfuz",
+          "is_error": true,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_011h4hicVjnxRkEZWTVNzdhJ",
+          "command": "find /tmp/php-ast-intent-instruction-campaign-20260911/runs/run015/work -type f -name \"*.php\" -o -name \"*.json\" -o -name \"*.yaml\" | sort",
+          "id": "toolu_011h4hicVjnxRkEZWTVNzdhJ",
+          "is_error": false,
+          "result_present": true,
+          "tool": "Bash"
+        },
+        {
+          "call_id": "toolu_01U7pZ5RnfTZap56QZvWr6sh",
+          "command": null,
+          "id": "toolu_01U7pZ5RnfTZap56QZvWr6sh",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01CsEjTSCL14gD32xJyk4HcQ",
+          "command": null,
+          "id": "toolu_01CsEjTSCL14gD32xJyk4HcQ",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01Neq7vVyg27xiEf4JmtXBQk",
+          "command": null,
+          "id": "toolu_01Neq7vVyg27xiEf4JmtXBQk",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01RCUbYyFxg5kDm8kfDAxCE5",
+          "command": null,
+          "id": "toolu_01RCUbYyFxg5kDm8kfDAxCE5",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01KQMPfPUDEvnZz6xanvvDQt",
+          "command": null,
+          "id": "toolu_01KQMPfPUDEvnZz6xanvvDQt",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01F8fLG3AdGQeMUicHvE5AkW",
+          "command": null,
+          "id": "toolu_01F8fLG3AdGQeMUicHvE5AkW",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01Lsy3ut3tf8TxwewkV5NMqV",
+          "command": null,
+          "id": "toolu_01Lsy3ut3tf8TxwewkV5NMqV",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_0124rZU9B2PmMxuEDq8DdstE",
+          "command": null,
+          "id": "toolu_0124rZU9B2PmMxuEDq8DdstE",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01N3YdTYKxyidNHm1ANNpjP2",
+          "command": null,
+          "id": "toolu_01N3YdTYKxyidNHm1ANNpjP2",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_017Cz9sytTdGf5thmZUjxx6E",
+          "command": "php-ast-edit rename --method 'Contract::fetch' --to load",
+          "id": "toolu_017Cz9sytTdGf5thmZUjxx6E",
+          "is_error": false,
+          "result_present": true,
+          "tool": "Bash"
+        },
+        {
+          "call_id": "toolu_01YHL1YLcYA4veu8eENckqSF",
+          "command": null,
+          "id": "toolu_01YHL1YLcYA4veu8eENckqSF",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01LmHzcumYoLs1xj9VXtCew8",
+          "command": null,
+          "id": "toolu_01LmHzcumYoLs1xj9VXtCew8",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01TieuMETe6deGPrhD2ki8y8",
+          "command": null,
+          "id": "toolu_01TieuMETe6deGPrhD2ki8y8",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01RqTnDybeCDFo88V2M8PwuV",
+          "command": null,
+          "id": "toolu_01RqTnDybeCDFo88V2M8PwuV",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01XUwS13cBRrhwrGDys6WPsG",
+          "command": null,
+          "id": "toolu_01XUwS13cBRrhwrGDys6WPsG",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01JfedFr24om82W8rUBuQ5rx",
+          "command": null,
+          "id": "toolu_01JfedFr24om82W8rUBuQ5rx",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01XKc2Lhg8wcMeGD4zvGXam5",
+          "command": null,
+          "id": "toolu_01XKc2Lhg8wcMeGD4zvGXam5",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01NdzMYdd5CsBURyD4MorLeP",
+          "command": "php check.php && echo \"Check passed!\"",
+          "id": "toolu_01NdzMYdd5CsBURyD4MorLeP",
+          "is_error": false,
+          "result_present": true,
+          "tool": "Bash"
+        },
+        {
+          "call_id": "toolu_01WfizD4rVDUtuTuHBvejmts",
+          "command": null,
+          "id": "toolu_01WfizD4rVDUtuTuHBvejmts",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01VbYLitCwodRtg6cYPH4gRP",
+          "command": null,
+          "id": "toolu_01VbYLitCwodRtg6cYPH4gRP",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_012VjZdVF58FommiF7jpCwej",
+          "command": null,
+          "id": "toolu_012VjZdVF58FommiF7jpCwej",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_012DZcwaGPLtgh1F6ZfrZQzY",
+          "command": null,
+          "id": "toolu_012DZcwaGPLtgh1F6ZfrZQzY",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01TfJfTgRWnn769voqyBNntP",
+          "command": "git status",
+          "id": "toolu_01TfJfTgRWnn769voqyBNntP",
+          "is_error": false,
+          "result_present": true,
+          "tool": "Bash"
+        }
+      ],
+      "run_id": "run015",
+      "task_id": "cross-file-rename-clarified",
+      "timed_out": false,
+      "tool_timing_status": "not_exposed",
+      "variant": "full_skill",
+      "work": "/tmp/php-ast-intent-instruction-campaign-20260911/runs/run015/work"
+    },
+    {
+      "accounting_errors": [],
+      "all_model_usage": {
+        "claude-haiku-4-5-20251001": {
+          "cacheCreationInputTokens": 3108,
+          "cacheReadInputTokens": 48509,
+          "canonicalModel": "claude-haiku-4-5",
+          "contextWindow": 200000,
+          "costBasis": "list",
+          "costUSD": 0.018712899999999998,
+          "inputTokens": 41,
+          "maxOutputTokens": 32000,
+          "outputTokens": 1521,
+          "provider": "firstParty",
+          "thinkingTokens": 621,
+          "webSearchRequests": 0
+        }
+      },
+      "arm": "contextual_patch",
+      "attempted": true,
+      "correctness": true,
+      "engine": {
+        "apply_calls": null,
+        "apply_records": [],
+        "errors": [],
+        "failed_engine_apply": null
+      },
+      "engine_audit_present": false,
+      "evidence": "/tmp/php-ast-intent-instruction-campaign-20260911/runs/run016/evidence",
+      "evidence_errors": [],
+      "evidence_path": "/tmp/php-ast-intent-instruction-campaign-20260911/runs/run016/evidence",
+      "failed_intent_calls": null,
+      "intent_calls": null,
+      "intent_errors": [],
+      "intent_observation": "unknown_missing_audit",
+      "intent_records": [],
+      "intent_unknown": true,
+      "measurement_present": true,
+      "metrics": {
+        "cache_creation_input_tokens": 3108,
+        "cache_read_input_tokens": 48509,
+        "cost_usd": 0.018712899999999998,
+        "diff_lines": 2,
+        "failed_tool_calls": 0,
+        "input_tokens": 41,
+        "native_turns": 7,
+        "output_tokens": 1521,
+        "raw_failed_tool_calls": 0,
+        "tool_calls": 6,
+        "tool_execution_coverage": "not_exposed",
+        "tool_execution_ms": null,
+        "total_tokens": 53179,
+        "visible_primary_rounds": 5,
+        "wall_ms": 14141.38576600817
+      },
+      "model_key": "haiku",
+      "native_duration_api_ms": 12502,
+      "native_duration_ms": 12614,
+      "native_is_error": false,
+      "native_result_present": null,
+      "native_subtype": "success",
+      "oracle_passed": true,
+      "primary_rounds_exact": true,
+      "process_exit_code": 0,
+      "raw_present": true,
+      "repetition": 1,
+      "reported_model": "claude-haiku-4-5-20251001",
+      "response_input_coverage": "complete",
+      "review_queue": [
+        {
+          "call_id": "toolu_016wA1192kDhVoi7F82fT9cg",
+          "command": null,
+          "id": "toolu_016wA1192kDhVoi7F82fT9cg",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01DvLCLbzFh6aawrDDnoPFmF",
+          "command": null,
+          "id": "toolu_01DvLCLbzFh6aawrDDnoPFmF",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01Sk4LStYgkmkAdtgBZN9tcY",
+          "command": null,
+          "id": "toolu_01Sk4LStYgkmkAdtgBZN9tcY",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_015bgq5j39huccNGfLEvWXT3",
+          "command": null,
+          "id": "toolu_015bgq5j39huccNGfLEvWXT3",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Edit"
+        },
+        {
+          "call_id": "toolu_01CwVMoumF1UUvrUxbze44uB",
+          "command": "php check.php",
+          "id": "toolu_01CwVMoumF1UUvrUxbze44uB",
+          "is_error": false,
+          "result_present": true,
+          "tool": "Bash"
+        },
+        {
+          "call_id": "toolu_018Uj57QrtEajPuzCP9TSPxS",
+          "command": "git diff check.php .php-ast-edit.json",
+          "id": "toolu_018Uj57QrtEajPuzCP9TSPxS",
+          "is_error": false,
+          "result_present": true,
+          "tool": "Bash"
+        }
+      ],
+      "run_id": "run016",
+      "task_id": "method-and-literal",
+      "timed_out": false,
+      "tool_timing_status": "not_exposed",
+      "variant": "contextual_patch",
+      "work": "/tmp/php-ast-intent-instruction-campaign-20260911/runs/run016/work"
+    },
+    {
+      "accounting_errors": [],
+      "all_model_usage": {
+        "claude-haiku-4-5-20251001": {
+          "cacheCreationInputTokens": 6424,
+          "cacheReadInputTokens": 67904,
+          "canonicalModel": "claude-haiku-4-5",
+          "contextWindow": 200000,
+          "costBasis": "list",
+          "costUSD": 0.030742400000000003,
+          "inputTokens": 49,
+          "maxOutputTokens": 32000,
+          "outputTokens": 2211,
+          "provider": "firstParty",
+          "thinkingTokens": 1045,
+          "webSearchRequests": 0
+        }
+      },
+      "arm": "full_skill",
+      "attempted": true,
+      "correctness": true,
+      "engine": {
+        "apply_calls": 0,
+        "apply_records": [],
+        "errors": [],
+        "failed_engine_apply": 0
+      },
+      "engine_audit_present": true,
+      "evidence": "/tmp/php-ast-intent-instruction-campaign-20260911/runs/run017/evidence",
+      "evidence_errors": [],
+      "evidence_path": "/tmp/php-ast-intent-instruction-campaign-20260911/runs/run017/evidence",
+      "failed_intent_calls": 0,
+      "intent_calls": 2,
+      "intent_errors": [],
+      "intent_observation": "known",
+      "intent_records": [
+        {
+          "argv": [
+            "rename",
+            "--method",
+            "Product::findByUid",
+            "--to",
+            "resolveByUid",
+            "--dry-run"
+          ],
+          "call_id": "5544cf896de74e8f962e7bac36ed8653",
+          "exit_code": 0,
+          "paired": true
+        },
+        {
+          "argv": [
+            "rename",
+            "--method",
+            "Product::findByUid",
+            "--to",
+            "resolveByUid"
+          ],
+          "call_id": "1ea01c438c464a06b5af0d6b13994223",
+          "exit_code": 0,
+          "paired": true
+        }
+      ],
+      "intent_unknown": false,
+      "measurement_present": true,
+      "metrics": {
+        "cache_creation_input_tokens": 6424,
+        "cache_read_input_tokens": 67904,
+        "cost_usd": 0.030742400000000003,
+        "diff_lines": 2,
+        "failed_tool_calls": 1,
+        "input_tokens": 49,
+        "native_turns": 12,
+        "output_tokens": 2211,
+        "raw_failed_tool_calls": 1,
+        "tool_calls": 11,
+        "tool_execution_coverage": "not_exposed",
+        "tool_execution_ms": null,
+        "total_tokens": 76588,
+        "visible_primary_rounds": 6,
+        "wall_ms": 28218.133743008366
+      },
+      "model_key": "haiku",
+      "native_duration_api_ms": 23889,
+      "native_duration_ms": 26832,
+      "native_is_error": false,
+      "native_result_present": null,
+      "native_subtype": "success",
+      "oracle_passed": true,
+      "primary_rounds_exact": true,
+      "process_exit_code": 0,
+      "raw_present": true,
+      "repetition": 1,
+      "reported_model": "claude-haiku-4-5-20251001",
+      "response_input_coverage": "complete",
+      "review_queue": [
+        {
+          "call_id": "toolu_01QvPqu8SMq3n9TgGM1sprjq",
+          "command": null,
+          "id": "toolu_01QvPqu8SMq3n9TgGM1sprjq",
+          "is_error": true,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01NvawWizbF4X294ensXPdA2",
+          "command": "find /tmp/php-ast-intent-instruction-campaign-20260911/runs/run017/work -type f -name \"*.php\" -o -name \".php-ast-edit.json\"",
+          "id": "toolu_01NvawWizbF4X294ensXPdA2",
+          "is_error": false,
+          "result_present": true,
+          "tool": "Bash"
+        },
+        {
+          "call_id": "toolu_01KDHdUUGPj35xKEvGJqhPza",
+          "command": null,
+          "id": "toolu_01KDHdUUGPj35xKEvGJqhPza",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_012wdndZAPn41owbTHTrNdHP",
+          "command": null,
+          "id": "toolu_012wdndZAPn41owbTHTrNdHP",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01TDDFE2cLoz6iuTHSrAPY48",
+          "command": null,
+          "id": "toolu_01TDDFE2cLoz6iuTHSrAPY48",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_014gbJLJb7wgVEqRqeggVdX8",
+          "command": "php-ast-edit rename --method 'Product::findByUid' --to resolveByUid --dry-run",
+          "id": "toolu_014gbJLJb7wgVEqRqeggVdX8",
+          "is_error": false,
+          "result_present": true,
+          "tool": "Bash"
+        },
+        {
+          "call_id": "toolu_018ZFGrLHSfKav16SqbgmpgC",
+          "command": "php-ast-edit rename --method 'Product::findByUid' --to resolveByUid",
+          "id": "toolu_018ZFGrLHSfKav16SqbgmpgC",
+          "is_error": false,
+          "result_present": true,
+          "tool": "Bash"
+        },
+        {
+          "call_id": "toolu_01VconRHwuv1PGSUSu7Vj8FN",
+          "command": null,
+          "id": "toolu_01VconRHwuv1PGSUSu7Vj8FN",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01J91A5sNwQ7MaK6BGofbaU5",
+          "command": null,
+          "id": "toolu_01J91A5sNwQ7MaK6BGofbaU5",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_019168uGShbcWwCTL8rpqYJC",
+          "command": null,
+          "id": "toolu_019168uGShbcWwCTL8rpqYJC",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01PHEYLjV2QHXh31yRWefnkN",
+          "command": "php check.php && echo \"\u2713 Check passed\"",
+          "id": "toolu_01PHEYLjV2QHXh31yRWefnkN",
+          "is_error": false,
+          "result_present": true,
+          "tool": "Bash"
+        }
+      ],
+      "run_id": "run017",
+      "task_id": "method-and-literal",
+      "timed_out": false,
+      "tool_timing_status": "not_exposed",
+      "variant": "full_skill",
+      "work": "/tmp/php-ast-intent-instruction-campaign-20260911/runs/run017/work"
+    },
+    {
+      "accounting_errors": [],
+      "all_model_usage": {
+        "claude-haiku-4-5-20251001": {
+          "cacheCreationInputTokens": 4224,
+          "cacheReadInputTokens": 38667,
+          "canonicalModel": "claude-haiku-4-5",
+          "contextWindow": 200000,
+          "costBasis": "list",
+          "costUSD": 0.020067700000000004,
+          "inputTokens": 33,
+          "maxOutputTokens": 32000,
+          "outputTokens": 1544,
+          "provider": "firstParty",
+          "thinkingTokens": 723,
+          "webSearchRequests": 0
+        }
+      },
+      "arm": "minimal_intent",
+      "attempted": true,
+      "correctness": true,
+      "engine": {
+        "apply_calls": 0,
+        "apply_records": [],
+        "errors": [],
+        "failed_engine_apply": 0
+      },
+      "engine_audit_present": true,
+      "evidence": "/tmp/php-ast-intent-instruction-campaign-20260911/runs/run018/evidence",
+      "evidence_errors": [],
+      "evidence_path": "/tmp/php-ast-intent-instruction-campaign-20260911/runs/run018/evidence",
+      "failed_intent_calls": 0,
+      "intent_calls": 1,
+      "intent_errors": [],
+      "intent_observation": "known",
+      "intent_records": [
+        {
+          "argv": [
+            "rename",
+            "--method",
+            "Product::findByUid",
+            "--to",
+            "resolveByUid"
+          ],
+          "call_id": "420d94a4595a4d508b668debda32a6c3",
+          "exit_code": 0,
+          "paired": true
+        }
+      ],
+      "intent_unknown": false,
+      "measurement_present": true,
+      "metrics": {
+        "cache_creation_input_tokens": 4224,
+        "cache_read_input_tokens": 38667,
+        "cost_usd": 0.020067700000000004,
+        "diff_lines": 2,
+        "failed_tool_calls": 0,
+        "input_tokens": 33,
+        "native_turns": 7,
+        "output_tokens": 1544,
+        "raw_failed_tool_calls": 0,
+        "tool_calls": 6,
+        "tool_execution_coverage": "not_exposed",
+        "tool_execution_ms": null,
+        "total_tokens": 44468,
+        "visible_primary_rounds": 4,
+        "wall_ms": 20154.176668991568
+      },
+      "model_key": "haiku",
+      "native_duration_api_ms": 15972,
+      "native_duration_ms": 18686,
+      "native_is_error": false,
+      "native_result_present": null,
+      "native_subtype": "success",
+      "oracle_passed": true,
+      "primary_rounds_exact": true,
+      "process_exit_code": 0,
+      "raw_present": true,
+      "repetition": 1,
+      "reported_model": "claude-haiku-4-5-20251001",
+      "response_input_coverage": "complete",
+      "review_queue": [
+        {
+          "call_id": "toolu_01CG9Z2XktwqJFveYYq2ja11",
+          "command": null,
+          "id": "toolu_01CG9Z2XktwqJFveYYq2ja11",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_016SBvoHr9PdKb8MTVXJCU99",
+          "command": null,
+          "id": "toolu_016SBvoHr9PdKb8MTVXJCU99",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_011UhfaLD1oPGHXKZT552o5c",
+          "command": null,
+          "id": "toolu_011UhfaLD1oPGHXKZT552o5c",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_01BYTMxQTGWTA4gtpTRoKxcB",
+          "command": "php-ast-edit rename --method 'Product::findByUid' --to resolveByUid",
+          "id": "toolu_01BYTMxQTGWTA4gtpTRoKxcB",
+          "is_error": false,
+          "result_present": true,
+          "tool": "Bash"
+        },
+        {
+          "call_id": "toolu_01Svi1pCezebujLWYcBWZGwM",
+          "command": null,
+          "id": "toolu_01Svi1pCezebujLWYcBWZGwM",
+          "is_error": null,
+          "result_present": true,
+          "tool": "Read"
+        },
+        {
+          "call_id": "toolu_014iA15qSFiY1S35heQqPzUy",
+          "command": "php check.php && echo \"\u2713 check.php passed\"",
+          "id": "toolu_014iA15qSFiY1S35heQqPzUy",
+          "is_error": false,
+          "result_present": true,
+          "tool": "Bash"
+        }
+      ],
+      "run_id": "run018",
+      "task_id": "method-and-literal",
+      "timed_out": false,
+      "tool_timing_status": "not_exposed",
+      "variant": "minimal_intent",
+      "work": "/tmp/php-ast-intent-instruction-campaign-20260911/runs/run018/work"
+    }
+  ],
+  "scheduled": 18,
+  "schema_version": 1,
+  "unattempted": 0,
+  "unattempted_ids": []
+}

@@ -1,0 +1,1357 @@
+{
+  "schema_version": 1,
+  "audit_id": "intent-instructions-delegation-refinement-12-manual-review",
+  "audit_date": "2026-09-11",
+  "campaign_name": "php-ast-delegated-intent-campaign-20260911",
+  "frozen_source_commit": "38a2ae9a59f92a969c740c17e6975969d4f7c518",
+  "scope": "Read-only independent manual review of all 12 completed synthetic refinement attempts. This file was created outside the immutable campaign.",
+  "evidence_path_base": "Campaign root. Paths are relative to that root; native JSONL line numbers are one-based.",
+  "definitions": {
+    "gates": "Oracle correctness, actual candidate verification, observed PHP writer route, and unsupported completion claims are separate. A correct fixture can coexist with an incorrect explanation.",
+    "before_first_writer_related_request": "Native tool requests before the first php-ast-edit rename request, including a refused rename request.",
+    "writer_related_requests": "Rename requests including refused requests. CLI help is not a rename and is counted separately if it intervenes during recovery.",
+    "after_successful_mutation_result": "Native tool requests submitted after the result of the last successful actual source mutation.",
+    "file_content_reads": "Native Read calls on regular files or a Bash cat returning file contents. Directory failures, Git queries and engine inline diffs are separate; a zero count does not mean no source content was shown.",
+    "repeated_already_passed_check_calls": "Manual php check.php after the successful integrated project check over the written files, with no intervening source/dependency/check-tool change in the trace.",
+    "workflow_order": "Command-before-discovery observation is separate from fixture/route quality. The delegated arm changes both the common read requirement and the appended delegation instruction as one disclosed workflow bundle. Individual phrases have no separately measured effect.",
+    "completion_claims_passed": "No concrete unsupported completion claim was identified in this manual review; this is a bounded judgment rather than arbitrary semantic assurance."
+  },
+  "aggregate_observations": {
+    "completed_attempts": 12,
+    "oracle_passes": 12,
+    "candidate_verification_passes": 12,
+    "writer_route_passes": 12,
+    "completion_claim_review_passes": 11,
+    "completion_claim_review_failures": [
+      "run002"
+    ],
+    "successful_mutations": 12,
+    "failed_mutation_requests": 3,
+    "directory_read_errors": 3,
+    "cli_help_recovery_calls": 1,
+    "delegated_candidates": 6,
+    "delegated_command_before_php_discovery_runs": [
+      "run005"
+    ],
+    "delegated_runs_reading_php_before_command": 5,
+    "separate_family_renames_queued_in_either_arm": 0,
+    "file_content_reads_before_first_writer_request": {
+      "minimal_intent": 39,
+      "delegated_intent": 33
+    },
+    "post_write_calls": {
+      "minimal_intent": 32,
+      "delegated_intent": 42
+    },
+    "post_write_changed_file_content_reads": 28,
+    "post_write_unchanged_file_content_reads": 22,
+    "post_write_manual_check_repetitions": 10,
+    "runs_repeating_already_passed_checks": 9,
+    "post_write_git_queries": 14,
+    "native_list_price_usd": 0.4743222,
+    "combined_initial_and_refinement_native_list_price_usd": 1.1903387
+  },
+  "descriptive_cells": [
+    {
+      "task_id": "method-and-literal",
+      "arm": "minimal_intent",
+      "runs": [
+        "run002",
+        "run004",
+        "run006"
+      ],
+      "median_total_tokens": 55977,
+      "median_native_tool_calls": 7,
+      "median_visible_model_rounds": 5,
+      "median_candidate_wall_seconds": 22.707715141004883
+    },
+    {
+      "task_id": "method-and-literal",
+      "arm": "delegated_intent",
+      "runs": [
+        "run001",
+        "run003",
+        "run005"
+      ],
+      "median_total_tokens": 69407,
+      "median_native_tool_calls": 6,
+      "median_visible_model_rounds": 6,
+      "median_candidate_wall_seconds": 24.11084411200136
+    },
+    {
+      "task_id": "cross-file-rename-clarified",
+      "arm": "minimal_intent",
+      "runs": [
+        "run007",
+        "run009",
+        "run011"
+      ],
+      "median_total_tokens": 141019,
+      "median_native_tool_calls": 23,
+      "median_visible_model_rounds": 10,
+      "median_candidate_wall_seconds": 43.44448821700644
+    },
+    {
+      "task_id": "cross-file-rename-clarified",
+      "arm": "delegated_intent",
+      "runs": [
+        "run008",
+        "run010",
+        "run012"
+      ],
+      "median_total_tokens": 182360,
+      "median_native_tool_calls": 23,
+      "median_visible_model_rounds": 12,
+      "median_candidate_wall_seconds": 52.960433539003134
+    }
+  ],
+  "prospective_outcome": {
+    "status": "not_promising",
+    "reason": "Delegated median total tokens and candidate wall-time are higher than the contemporaneous minimal control on both tasks. The frozen threshold is not met.",
+    "criterion": "At least 15 percent lower median total tokens, no higher median wall-time and all quality gates passing on both tasks.",
+    "historical_comparisons": "Initial full-skill/contextual cells are separate historical context, not contemporaneous refinement controls. Do not pool campaign performance."
+  },
+  "caveats": [
+    "All 12 independent oracles, candidate checks and writer routes pass. Retained initial/final hashes and Git status confirm only Product.php or the four intended cross-file files changed. Each task has one identical final hash set across its six refinement attempts.",
+    "The output hashes match the corresponding initial campaign AST output. The same benign EOF changes remain: a final newline is added to Product.php; one trailing blank line is removed from each changed cross-file file. No unrelated file mutation was observed.",
+    "The initial common read-before-editing instruction remains unchanged for minimal. Delegated explicitly lets the command perform this discovery and requests invoking it before PHP discovery. Only delegated run005 follows that observed call order. The other five delegated candidates still read PHP and describe examining the structure first.",
+    "Preserving literals and unrelated files may justify source inspection. A pre-read count alone does not prove an unsafe action. Workflow non-adoption is reported separately from writer adherence and final correctness.",
+    "No run in either refinement arm queues distinct implementation/caller family renames. The disappearance of the initial run005 duplication cannot be attributed causally to the new instruction when the contemporaneous control also has no such event.",
+    "Refinement run002 correctly preserves the task's checker but misclassifies all old-name strings as non-method data. The protected method_exists negative assertion is a reflective method-name use. That false rationale is distinct from source correctness, and the initial campaign run005 general type-safety claim remains a separate historical failure.",
+    "All mutating engine results report checksPassed and alreadyRun for php check.php. Ten later manual checks in nine runs repeat those successful checks without intervening changes. Source reads concerning remaining warnings are not automatically redundant.",
+    "The cross-file candidate checker permits old and new method names. Its success does not replace the independent expected-change oracle.",
+    "Tool-execution time is unknown for all 12 attempts (not_exposed). No measured split into engine versus orchestration wall-time is available.",
+    "Three repetitions per arm/task cell are exploratory. Cache billing state is unknown. The disclosed compound instruction cannot isolate the effect of any one phrase.",
+    "This exhausts the one 12-attempt refinement allowed by the frozen protocol. The remaining dollar ceiling is not permission to replace attempts or run additional refinements."
+  ],
+  "runs": [
+    {
+      "run_id": "run001",
+      "arm": "delegated_intent",
+      "task_id": "method-and-literal",
+      "gates": {
+        "oracle": {
+          "status": "passed",
+          "evidence": {
+            "path": "runs/run001/evidence/oracle.json"
+          },
+          "scope": "Supplied fixture correctness, expected changes, runtime, protected files and file scope."
+        },
+        "candidate_verification": {
+          "status": "passed",
+          "source": "Successful integrated php check.php in the mutating engine result",
+          "evidence": {
+            "path": "runs/run001/evidence/engine-audit.jsonl"
+          }
+        },
+        "writer_route": {
+          "status": "passed",
+          "observed": "PHP mutations use php-ast-edit rename only",
+          "evidence": [
+            {
+              "path": "runs/run001/evidence/raw.jsonl",
+              "line": 22
+            }
+          ]
+        },
+        "completion_claims": {
+          "status": "passed",
+          "evidence": {
+            "path": "runs/run001/evidence/raw.jsonl",
+            "line": 49
+          },
+          "scope": "No concrete unsupported completion claim found in the manual trace review."
+        }
+      },
+      "writer": {
+        "successful_mutations": 1,
+        "failed_mutation_requests": 0,
+        "dry_run_requests": 0,
+        "fallback_php_writes_observed": 0,
+        "request_evidence": [
+          {
+            "path": "runs/run001/evidence/raw.jsonl",
+            "line": 22
+          }
+        ]
+      },
+      "workflow_observations": {
+        "php_source_read_before_first_rename": true,
+        "command_before_php_discovery_observed": false,
+        "rename_is_first_native_tool_request": false,
+        "separate_implementation_or_caller_renames_queued": 0,
+        "family_scope": "One named family per run. CLI syntax retries concern the same family.",
+        "interpretation": "The candidate reads PHP and describes examining the current structure before the command. The intended command-before-discovery order was not observed. Some preservation requirements can justify source reads; this observation is kept separate from task correctness and writer-route adherence."
+      },
+      "calls": {
+        "total": 9,
+        "before_first_writer_related_request": 4,
+        "file_content_reads_before_first_writer_related_request": 3,
+        "writer_related_requests": 1,
+        "non_writer_requests_between_first_writer_request_and_success": 0,
+        "after_successful_mutation_result": 4,
+        "post_write_file_content_reads_changed": 1,
+        "post_write_file_content_reads_unchanged": 0,
+        "post_write_manual_check_calls": 1,
+        "post_write_repeated_already_passed_check_calls": 1,
+        "post_write_git_queries": 2,
+        "post_write_file_digest_queries": 0
+      },
+      "manual_check_evidence": [
+        {
+          "path": "runs/run001/evidence/raw.jsonl",
+          "line": 33
+        }
+      ],
+      "intervening_non_writer_evidence": [],
+      "errors": [],
+      "claim_findings": [],
+      "evidence": {
+        "native": "runs/run001/evidence/raw.jsonl",
+        "measurement": "runs/run001/evidence/measurement.json",
+        "engine_audit": "runs/run001/evidence/engine-audit.jsonl",
+        "oracle": "runs/run001/evidence/oracle.json",
+        "diff": "runs/run001/evidence/diff.patch",
+        "initial_hashes": "runs/run001/evidence/initial-hashes.json",
+        "final_hashes": "runs/run001/evidence/final-hashes.json",
+        "git_status": "runs/run001/evidence/git-status.txt",
+        "instructions": "runs/run001/evidence/system-append.txt"
+      },
+      "notes": []
+    },
+    {
+      "run_id": "run002",
+      "arm": "minimal_intent",
+      "task_id": "method-and-literal",
+      "gates": {
+        "oracle": {
+          "status": "passed",
+          "evidence": {
+            "path": "runs/run002/evidence/oracle.json"
+          },
+          "scope": "Supplied fixture correctness, expected changes, runtime, protected files and file scope."
+        },
+        "candidate_verification": {
+          "status": "passed",
+          "source": "Successful integrated php check.php in the mutating engine result",
+          "evidence": {
+            "path": "runs/run002/evidence/engine-audit.jsonl"
+          }
+        },
+        "writer_route": {
+          "status": "passed",
+          "observed": "PHP mutations use php-ast-edit rename only",
+          "evidence": [
+            {
+              "path": "runs/run002/evidence/raw.jsonl",
+              "line": 18
+            }
+          ]
+        },
+        "completion_claims": {
+          "status": "failed",
+          "evidence": {
+            "path": "runs/run002/evidence/raw.jsonl",
+            "line": 25
+          },
+          "scope": "The task is correctly completed, but the final explanation misclassifies the reflective method-name string in the protected negative assertion."
+        }
+      },
+      "writer": {
+        "successful_mutations": 1,
+        "failed_mutation_requests": 0,
+        "dry_run_requests": 0,
+        "fallback_php_writes_observed": 0,
+        "request_evidence": [
+          {
+            "path": "runs/run002/evidence/raw.jsonl",
+            "line": 18
+          }
+        ]
+      },
+      "workflow_observations": {
+        "php_source_read_before_first_rename": true,
+        "command_before_php_discovery_observed": false,
+        "rename_is_first_native_tool_request": false,
+        "separate_implementation_or_caller_renames_queued": 0,
+        "family_scope": "One named family per run. CLI syntax retries concern the same family.",
+        "interpretation": "The unchanged minimal common instruction requires relevant source to be read before editing."
+      },
+      "calls": {
+        "total": 4,
+        "before_first_writer_related_request": 3,
+        "file_content_reads_before_first_writer_related_request": 3,
+        "writer_related_requests": 1,
+        "non_writer_requests_between_first_writer_request_and_success": 0,
+        "after_successful_mutation_result": 0,
+        "post_write_file_content_reads_changed": 0,
+        "post_write_file_content_reads_unchanged": 0,
+        "post_write_manual_check_calls": 0,
+        "post_write_repeated_already_passed_check_calls": 0,
+        "post_write_git_queries": 0,
+        "post_write_file_digest_queries": 0
+      },
+      "manual_check_evidence": [],
+      "intervening_non_writer_evidence": [],
+      "errors": [],
+      "claim_findings": [
+        {
+          "category": "misclassified_reflective_string",
+          "claim": "The tool correctly identified but did not modify the 3 string literals containing 'findByUid' (one in Product.php and two in check.php), since these are literal data values, not method references.",
+          "claim_evidence": {
+            "path": "runs/run002/evidence/raw.jsonl",
+            "line": 25
+          },
+          "counter_evidence": {
+            "path": "runs/run002/evidence/initial/check.php",
+            "line": 10
+          },
+          "explanation": "method_exists($product, 'findByUid') uses that string as a method name in a negative assertion. Preserving it is correct because the checker must assert absence of the old method and remain byte-identical, not because the string is unrelated to a method.",
+          "impact": "Incorrect rationale and an unsupported classification of reflective method-name strings; no incorrect source mutation and no fixture completion failure.",
+          "independent_peer_review": "A second reviewer confirmed this distinction against the completed trace and protected checker."
+        }
+      ],
+      "evidence": {
+        "native": "runs/run002/evidence/raw.jsonl",
+        "measurement": "runs/run002/evidence/measurement.json",
+        "engine_audit": "runs/run002/evidence/engine-audit.jsonl",
+        "oracle": "runs/run002/evidence/oracle.json",
+        "diff": "runs/run002/evidence/diff.patch",
+        "initial_hashes": "runs/run002/evidence/initial-hashes.json",
+        "final_hashes": "runs/run002/evidence/final-hashes.json",
+        "git_status": "runs/run002/evidence/git-status.txt",
+        "instructions": "runs/run002/evidence/system-append.txt"
+      },
+      "notes": []
+    },
+    {
+      "run_id": "run003",
+      "arm": "delegated_intent",
+      "task_id": "method-and-literal",
+      "gates": {
+        "oracle": {
+          "status": "passed",
+          "evidence": {
+            "path": "runs/run003/evidence/oracle.json"
+          },
+          "scope": "Supplied fixture correctness, expected changes, runtime, protected files and file scope."
+        },
+        "candidate_verification": {
+          "status": "passed",
+          "source": "Successful integrated php check.php in the mutating engine result",
+          "evidence": {
+            "path": "runs/run003/evidence/engine-audit.jsonl"
+          }
+        },
+        "writer_route": {
+          "status": "passed",
+          "observed": "PHP mutations use php-ast-edit rename only",
+          "evidence": [
+            {
+              "path": "runs/run003/evidence/raw.jsonl",
+              "line": 24
+            }
+          ]
+        },
+        "completion_claims": {
+          "status": "passed",
+          "evidence": {
+            "path": "runs/run003/evidence/raw.jsonl",
+            "line": 37
+          },
+          "scope": "No concrete unsupported completion claim found in the manual trace review."
+        }
+      },
+      "writer": {
+        "successful_mutations": 1,
+        "failed_mutation_requests": 0,
+        "dry_run_requests": 0,
+        "fallback_php_writes_observed": 0,
+        "request_evidence": [
+          {
+            "path": "runs/run003/evidence/raw.jsonl",
+            "line": 24
+          }
+        ]
+      },
+      "workflow_observations": {
+        "php_source_read_before_first_rename": true,
+        "command_before_php_discovery_observed": false,
+        "rename_is_first_native_tool_request": false,
+        "separate_implementation_or_caller_renames_queued": 0,
+        "family_scope": "One named family per run. CLI syntax retries concern the same family.",
+        "interpretation": "The candidate reads PHP and describes examining the current structure before the command. The intended command-before-discovery order was not observed. Some preservation requirements can justify source reads; this observation is kept separate from task correctness and writer-route adherence."
+      },
+      "calls": {
+        "total": 6,
+        "before_first_writer_related_request": 4,
+        "file_content_reads_before_first_writer_related_request": 3,
+        "writer_related_requests": 1,
+        "non_writer_requests_between_first_writer_request_and_success": 0,
+        "after_successful_mutation_result": 1,
+        "post_write_file_content_reads_changed": 1,
+        "post_write_file_content_reads_unchanged": 0,
+        "post_write_manual_check_calls": 0,
+        "post_write_repeated_already_passed_check_calls": 0,
+        "post_write_git_queries": 0,
+        "post_write_file_digest_queries": 0
+      },
+      "manual_check_evidence": [],
+      "intervening_non_writer_evidence": [],
+      "errors": [],
+      "claim_findings": [],
+      "evidence": {
+        "native": "runs/run003/evidence/raw.jsonl",
+        "measurement": "runs/run003/evidence/measurement.json",
+        "engine_audit": "runs/run003/evidence/engine-audit.jsonl",
+        "oracle": "runs/run003/evidence/oracle.json",
+        "diff": "runs/run003/evidence/diff.patch",
+        "initial_hashes": "runs/run003/evidence/initial-hashes.json",
+        "final_hashes": "runs/run003/evidence/final-hashes.json",
+        "git_status": "runs/run003/evidence/git-status.txt",
+        "instructions": "runs/run003/evidence/system-append.txt"
+      },
+      "notes": []
+    },
+    {
+      "run_id": "run004",
+      "arm": "minimal_intent",
+      "task_id": "method-and-literal",
+      "gates": {
+        "oracle": {
+          "status": "passed",
+          "evidence": {
+            "path": "runs/run004/evidence/oracle.json"
+          },
+          "scope": "Supplied fixture correctness, expected changes, runtime, protected files and file scope."
+        },
+        "candidate_verification": {
+          "status": "passed",
+          "source": "Successful integrated php check.php in the mutating engine result",
+          "evidence": {
+            "path": "runs/run004/evidence/engine-audit.jsonl"
+          }
+        },
+        "writer_route": {
+          "status": "passed",
+          "observed": "PHP mutations use php-ast-edit rename only",
+          "evidence": [
+            {
+              "path": "runs/run004/evidence/raw.jsonl",
+              "line": 24
+            }
+          ]
+        },
+        "completion_claims": {
+          "status": "passed",
+          "evidence": {
+            "path": "runs/run004/evidence/raw.jsonl",
+            "line": 36
+          },
+          "scope": "No concrete unsupported completion claim found in the manual trace review."
+        }
+      },
+      "writer": {
+        "successful_mutations": 1,
+        "failed_mutation_requests": 0,
+        "dry_run_requests": 0,
+        "fallback_php_writes_observed": 0,
+        "request_evidence": [
+          {
+            "path": "runs/run004/evidence/raw.jsonl",
+            "line": 24
+          }
+        ]
+      },
+      "workflow_observations": {
+        "php_source_read_before_first_rename": true,
+        "command_before_php_discovery_observed": false,
+        "rename_is_first_native_tool_request": false,
+        "separate_implementation_or_caller_renames_queued": 0,
+        "family_scope": "One named family per run. CLI syntax retries concern the same family.",
+        "interpretation": "The unchanged minimal common instruction requires relevant source to be read before editing."
+      },
+      "calls": {
+        "total": 7,
+        "before_first_writer_related_request": 5,
+        "file_content_reads_before_first_writer_related_request": 3,
+        "writer_related_requests": 1,
+        "non_writer_requests_between_first_writer_request_and_success": 0,
+        "after_successful_mutation_result": 1,
+        "post_write_file_content_reads_changed": 1,
+        "post_write_file_content_reads_unchanged": 0,
+        "post_write_manual_check_calls": 0,
+        "post_write_repeated_already_passed_check_calls": 0,
+        "post_write_git_queries": 0,
+        "post_write_file_digest_queries": 0
+      },
+      "manual_check_evidence": [],
+      "intervening_non_writer_evidence": [],
+      "errors": [
+        {
+          "kind": "directory_read_eisdir",
+          "evidence": {
+            "path": "runs/run004/evidence/raw.jsonl",
+            "line": 8
+          },
+          "detail": "Native Read was asked to read a directory; no failed PHP mutation."
+        }
+      ],
+      "claim_findings": [],
+      "evidence": {
+        "native": "runs/run004/evidence/raw.jsonl",
+        "measurement": "runs/run004/evidence/measurement.json",
+        "engine_audit": "runs/run004/evidence/engine-audit.jsonl",
+        "oracle": "runs/run004/evidence/oracle.json",
+        "diff": "runs/run004/evidence/diff.patch",
+        "initial_hashes": "runs/run004/evidence/initial-hashes.json",
+        "final_hashes": "runs/run004/evidence/final-hashes.json",
+        "git_status": "runs/run004/evidence/git-status.txt",
+        "instructions": "runs/run004/evidence/system-append.txt"
+      },
+      "notes": []
+    },
+    {
+      "run_id": "run005",
+      "arm": "delegated_intent",
+      "task_id": "method-and-literal",
+      "gates": {
+        "oracle": {
+          "status": "passed",
+          "evidence": {
+            "path": "runs/run005/evidence/oracle.json"
+          },
+          "scope": "Supplied fixture correctness, expected changes, runtime, protected files and file scope."
+        },
+        "candidate_verification": {
+          "status": "passed",
+          "source": "Successful integrated php check.php in the mutating engine result",
+          "evidence": {
+            "path": "runs/run005/evidence/engine-audit.jsonl"
+          }
+        },
+        "writer_route": {
+          "status": "passed",
+          "observed": "PHP mutations use php-ast-edit rename only",
+          "evidence": [
+            {
+              "path": "runs/run005/evidence/raw.jsonl",
+              "line": 7
+            }
+          ]
+        },
+        "completion_claims": {
+          "status": "passed",
+          "evidence": {
+            "path": "runs/run005/evidence/raw.jsonl",
+            "line": 34
+          },
+          "scope": "No concrete unsupported completion claim found in the manual trace review."
+        }
+      },
+      "writer": {
+        "successful_mutations": 1,
+        "failed_mutation_requests": 0,
+        "dry_run_requests": 0,
+        "fallback_php_writes_observed": 0,
+        "request_evidence": [
+          {
+            "path": "runs/run005/evidence/raw.jsonl",
+            "line": 7
+          }
+        ]
+      },
+      "workflow_observations": {
+        "php_source_read_before_first_rename": false,
+        "command_before_php_discovery_observed": true,
+        "rename_is_first_native_tool_request": true,
+        "separate_implementation_or_caller_renames_queued": 0,
+        "family_scope": "One named family per run. CLI syntax retries concern the same family.",
+        "interpretation": "The rename is the first native tool request; initial discovery was delegated."
+      },
+      "calls": {
+        "total": 5,
+        "before_first_writer_related_request": 0,
+        "file_content_reads_before_first_writer_related_request": 0,
+        "writer_related_requests": 1,
+        "non_writer_requests_between_first_writer_request_and_success": 0,
+        "after_successful_mutation_result": 4,
+        "post_write_file_content_reads_changed": 0,
+        "post_write_file_content_reads_unchanged": 0,
+        "post_write_manual_check_calls": 1,
+        "post_write_repeated_already_passed_check_calls": 1,
+        "post_write_git_queries": 3,
+        "post_write_file_digest_queries": 0
+      },
+      "manual_check_evidence": [
+        {
+          "path": "runs/run005/evidence/raw.jsonl",
+          "line": 20
+        }
+      ],
+      "intervening_non_writer_evidence": [],
+      "errors": [],
+      "claim_findings": [],
+      "evidence": {
+        "native": "runs/run005/evidence/raw.jsonl",
+        "measurement": "runs/run005/evidence/measurement.json",
+        "engine_audit": "runs/run005/evidence/engine-audit.jsonl",
+        "oracle": "runs/run005/evidence/oracle.json",
+        "diff": "runs/run005/evidence/diff.patch",
+        "initial_hashes": "runs/run005/evidence/initial-hashes.json",
+        "final_hashes": "runs/run005/evidence/final-hashes.json",
+        "git_status": "runs/run005/evidence/git-status.txt",
+        "instructions": "runs/run005/evidence/system-append.txt"
+      },
+      "notes": [
+        "No native file-content Read is performed. The returned engine report and later Git diffs still expose source content, so zero native Reads does not mean zero source information."
+      ]
+    },
+    {
+      "run_id": "run006",
+      "arm": "minimal_intent",
+      "task_id": "method-and-literal",
+      "gates": {
+        "oracle": {
+          "status": "passed",
+          "evidence": {
+            "path": "runs/run006/evidence/oracle.json"
+          },
+          "scope": "Supplied fixture correctness, expected changes, runtime, protected files and file scope."
+        },
+        "candidate_verification": {
+          "status": "passed",
+          "source": "Successful integrated php check.php in the mutating engine result",
+          "evidence": {
+            "path": "runs/run006/evidence/engine-audit.jsonl"
+          }
+        },
+        "writer_route": {
+          "status": "passed",
+          "observed": "PHP mutations use php-ast-edit rename only",
+          "evidence": [
+            {
+              "path": "runs/run006/evidence/raw.jsonl",
+              "line": 19
+            },
+            {
+              "path": "runs/run006/evidence/raw.jsonl",
+              "line": 23
+            }
+          ]
+        },
+        "completion_claims": {
+          "status": "passed",
+          "evidence": {
+            "path": "runs/run006/evidence/raw.jsonl",
+            "line": 37
+          },
+          "scope": "No concrete unsupported completion claim found in the manual trace review."
+        }
+      },
+      "writer": {
+        "successful_mutations": 1,
+        "failed_mutation_requests": 1,
+        "dry_run_requests": 0,
+        "fallback_php_writes_observed": 0,
+        "request_evidence": [
+          {
+            "path": "runs/run006/evidence/raw.jsonl",
+            "line": 19
+          },
+          {
+            "path": "runs/run006/evidence/raw.jsonl",
+            "line": 23
+          }
+        ]
+      },
+      "workflow_observations": {
+        "php_source_read_before_first_rename": true,
+        "command_before_php_discovery_observed": false,
+        "rename_is_first_native_tool_request": false,
+        "separate_implementation_or_caller_renames_queued": 0,
+        "family_scope": "One named family per run. CLI syntax retries concern the same family.",
+        "interpretation": "The unchanged minimal common instruction requires relevant source to be read before editing."
+      },
+      "calls": {
+        "total": 7,
+        "before_first_writer_related_request": 3,
+        "file_content_reads_before_first_writer_related_request": 3,
+        "writer_related_requests": 2,
+        "non_writer_requests_between_first_writer_request_and_success": 0,
+        "after_successful_mutation_result": 2,
+        "post_write_file_content_reads_changed": 1,
+        "post_write_file_content_reads_unchanged": 0,
+        "post_write_manual_check_calls": 1,
+        "post_write_repeated_already_passed_check_calls": 1,
+        "post_write_git_queries": 0,
+        "post_write_file_digest_queries": 0
+      },
+      "manual_check_evidence": [
+        {
+          "path": "runs/run006/evidence/raw.jsonl",
+          "line": 32
+        }
+      ],
+      "intervening_non_writer_evidence": [],
+      "errors": [
+        {
+          "kind": "invalid_positional_argument",
+          "exit_code": 2,
+          "evidence": {
+            "path": "runs/run006/evidence/raw.jsonl",
+            "line": 20
+          },
+          "detail": "A positional workspace path is rejected; the corrected retry omits it."
+        }
+      ],
+      "claim_findings": [],
+      "evidence": {
+        "native": "runs/run006/evidence/raw.jsonl",
+        "measurement": "runs/run006/evidence/measurement.json",
+        "engine_audit": "runs/run006/evidence/engine-audit.jsonl",
+        "oracle": "runs/run006/evidence/oracle.json",
+        "diff": "runs/run006/evidence/diff.patch",
+        "initial_hashes": "runs/run006/evidence/initial-hashes.json",
+        "final_hashes": "runs/run006/evidence/final-hashes.json",
+        "git_status": "runs/run006/evidence/git-status.txt",
+        "instructions": "runs/run006/evidence/system-append.txt"
+      },
+      "notes": []
+    },
+    {
+      "run_id": "run007",
+      "arm": "minimal_intent",
+      "task_id": "cross-file-rename-clarified",
+      "gates": {
+        "oracle": {
+          "status": "passed",
+          "evidence": {
+            "path": "runs/run007/evidence/oracle.json"
+          },
+          "scope": "Supplied fixture correctness, expected changes, runtime, protected files and file scope."
+        },
+        "candidate_verification": {
+          "status": "passed",
+          "source": "Successful integrated php check.php in the mutating engine result",
+          "evidence": {
+            "path": "runs/run007/evidence/engine-audit.jsonl"
+          }
+        },
+        "writer_route": {
+          "status": "passed",
+          "observed": "PHP mutations use php-ast-edit rename only",
+          "evidence": [
+            {
+              "path": "runs/run007/evidence/raw.jsonl",
+              "line": 41
+            }
+          ]
+        },
+        "completion_claims": {
+          "status": "passed",
+          "evidence": {
+            "path": "runs/run007/evidence/raw.jsonl",
+            "line": 73
+          },
+          "scope": "No concrete unsupported completion claim found in the manual trace review."
+        }
+      },
+      "writer": {
+        "successful_mutations": 1,
+        "failed_mutation_requests": 0,
+        "dry_run_requests": 0,
+        "fallback_php_writes_observed": 0,
+        "request_evidence": [
+          {
+            "path": "runs/run007/evidence/raw.jsonl",
+            "line": 41
+          }
+        ]
+      },
+      "workflow_observations": {
+        "php_source_read_before_first_rename": true,
+        "command_before_php_discovery_observed": false,
+        "rename_is_first_native_tool_request": false,
+        "separate_implementation_or_caller_renames_queued": 0,
+        "family_scope": "One named family per run. CLI syntax retries concern the same family.",
+        "interpretation": "The unchanged minimal common instruction requires relevant source to be read before editing."
+      },
+      "calls": {
+        "total": 20,
+        "before_first_writer_related_request": 12,
+        "file_content_reads_before_first_writer_related_request": 11,
+        "writer_related_requests": 1,
+        "non_writer_requests_between_first_writer_request_and_success": 0,
+        "after_successful_mutation_result": 7,
+        "post_write_file_content_reads_changed": 4,
+        "post_write_file_content_reads_unchanged": 2,
+        "post_write_manual_check_calls": 1,
+        "post_write_repeated_already_passed_check_calls": 1,
+        "post_write_git_queries": 0,
+        "post_write_file_digest_queries": 0
+      },
+      "manual_check_evidence": [
+        {
+          "path": "runs/run007/evidence/raw.jsonl",
+          "line": 67
+        }
+      ],
+      "intervening_non_writer_evidence": [],
+      "errors": [
+        {
+          "kind": "directory_read_eisdir",
+          "evidence": {
+            "path": "runs/run007/evidence/raw.jsonl",
+            "line": 8
+          },
+          "detail": "Native Read was asked to read a directory; no failed PHP mutation."
+        }
+      ],
+      "claim_findings": [],
+      "evidence": {
+        "native": "runs/run007/evidence/raw.jsonl",
+        "measurement": "runs/run007/evidence/measurement.json",
+        "engine_audit": "runs/run007/evidence/engine-audit.jsonl",
+        "oracle": "runs/run007/evidence/oracle.json",
+        "diff": "runs/run007/evidence/diff.patch",
+        "initial_hashes": "runs/run007/evidence/initial-hashes.json",
+        "final_hashes": "runs/run007/evidence/final-hashes.json",
+        "git_status": "runs/run007/evidence/git-status.txt",
+        "instructions": "runs/run007/evidence/system-append.txt"
+      },
+      "notes": []
+    },
+    {
+      "run_id": "run008",
+      "arm": "delegated_intent",
+      "task_id": "cross-file-rename-clarified",
+      "gates": {
+        "oracle": {
+          "status": "passed",
+          "evidence": {
+            "path": "runs/run008/evidence/oracle.json"
+          },
+          "scope": "Supplied fixture correctness, expected changes, runtime, protected files and file scope."
+        },
+        "candidate_verification": {
+          "status": "passed",
+          "source": "Successful integrated php check.php in the mutating engine result",
+          "evidence": {
+            "path": "runs/run008/evidence/engine-audit.jsonl"
+          }
+        },
+        "writer_route": {
+          "status": "passed",
+          "observed": "PHP mutations use php-ast-edit rename only",
+          "evidence": [
+            {
+              "path": "runs/run008/evidence/raw.jsonl",
+              "line": 44
+            },
+            {
+              "path": "runs/run008/evidence/raw.jsonl",
+              "line": 49
+            }
+          ]
+        },
+        "completion_claims": {
+          "status": "passed",
+          "evidence": {
+            "path": "runs/run008/evidence/raw.jsonl",
+            "line": 95
+          },
+          "scope": "No concrete unsupported completion claim found in the manual trace review."
+        }
+      },
+      "writer": {
+        "successful_mutations": 1,
+        "failed_mutation_requests": 1,
+        "dry_run_requests": 0,
+        "fallback_php_writes_observed": 0,
+        "request_evidence": [
+          {
+            "path": "runs/run008/evidence/raw.jsonl",
+            "line": 44
+          },
+          {
+            "path": "runs/run008/evidence/raw.jsonl",
+            "line": 49
+          }
+        ]
+      },
+      "workflow_observations": {
+        "php_source_read_before_first_rename": true,
+        "command_before_php_discovery_observed": false,
+        "rename_is_first_native_tool_request": false,
+        "separate_implementation_or_caller_renames_queued": 0,
+        "family_scope": "One named family per run. CLI syntax retries concern the same family.",
+        "interpretation": "The candidate reads PHP and describes examining the current structure before the command. The intended command-before-discovery order was not observed. Some preservation requirements can justify source reads; this observation is kept separate from task correctness and writer-route adherence."
+      },
+      "calls": {
+        "total": 23,
+        "before_first_writer_related_request": 10,
+        "file_content_reads_before_first_writer_related_request": 8,
+        "writer_related_requests": 2,
+        "non_writer_requests_between_first_writer_request_and_success": 0,
+        "after_successful_mutation_result": 11,
+        "post_write_file_content_reads_changed": 4,
+        "post_write_file_content_reads_unchanged": 6,
+        "post_write_manual_check_calls": 1,
+        "post_write_repeated_already_passed_check_calls": 1,
+        "post_write_git_queries": 0,
+        "post_write_file_digest_queries": 0
+      },
+      "manual_check_evidence": [
+        {
+          "path": "runs/run008/evidence/raw.jsonl",
+          "line": 61
+        }
+      ],
+      "intervening_non_writer_evidence": [],
+      "errors": [
+        {
+          "kind": "invalid_positional_argument",
+          "exit_code": 2,
+          "evidence": {
+            "path": "runs/run008/evidence/raw.jsonl",
+            "line": 45
+          },
+          "detail": "A positional dot is rejected; the corrected retry omits it."
+        }
+      ],
+      "claim_findings": [],
+      "evidence": {
+        "native": "runs/run008/evidence/raw.jsonl",
+        "measurement": "runs/run008/evidence/measurement.json",
+        "engine_audit": "runs/run008/evidence/engine-audit.jsonl",
+        "oracle": "runs/run008/evidence/oracle.json",
+        "diff": "runs/run008/evidence/diff.patch",
+        "initial_hashes": "runs/run008/evidence/initial-hashes.json",
+        "final_hashes": "runs/run008/evidence/final-hashes.json",
+        "git_status": "runs/run008/evidence/git-status.txt",
+        "instructions": "runs/run008/evidence/system-append.txt"
+      },
+      "notes": [
+        "Some untouched support files are first read after the write, not reread."
+      ]
+    },
+    {
+      "run_id": "run009",
+      "arm": "minimal_intent",
+      "task_id": "cross-file-rename-clarified",
+      "gates": {
+        "oracle": {
+          "status": "passed",
+          "evidence": {
+            "path": "runs/run009/evidence/oracle.json"
+          },
+          "scope": "Supplied fixture correctness, expected changes, runtime, protected files and file scope."
+        },
+        "candidate_verification": {
+          "status": "passed",
+          "source": "Successful integrated php check.php in the mutating engine result",
+          "evidence": {
+            "path": "runs/run009/evidence/engine-audit.jsonl"
+          }
+        },
+        "writer_route": {
+          "status": "passed",
+          "observed": "PHP mutations use php-ast-edit rename only",
+          "evidence": [
+            {
+              "path": "runs/run009/evidence/raw.jsonl",
+              "line": 33
+            },
+            {
+              "path": "runs/run009/evidence/raw.jsonl",
+              "line": 40
+            }
+          ]
+        },
+        "completion_claims": {
+          "status": "passed",
+          "evidence": {
+            "path": "runs/run009/evidence/raw.jsonl",
+            "line": 94
+          },
+          "scope": "No concrete unsupported completion claim found in the manual trace review."
+        }
+      },
+      "writer": {
+        "successful_mutations": 1,
+        "failed_mutation_requests": 1,
+        "dry_run_requests": 0,
+        "fallback_php_writes_observed": 0,
+        "request_evidence": [
+          {
+            "path": "runs/run009/evidence/raw.jsonl",
+            "line": 33
+          },
+          {
+            "path": "runs/run009/evidence/raw.jsonl",
+            "line": 40
+          }
+        ]
+      },
+      "workflow_observations": {
+        "php_source_read_before_first_rename": true,
+        "command_before_php_discovery_observed": false,
+        "rename_is_first_native_tool_request": false,
+        "separate_implementation_or_caller_renames_queued": 0,
+        "family_scope": "One named family per run. CLI syntax retries concern the same family.",
+        "interpretation": "The unchanged minimal common instruction requires relevant source to be read before editing."
+      },
+      "calls": {
+        "total": 24,
+        "before_first_writer_related_request": 8,
+        "file_content_reads_before_first_writer_related_request": 8,
+        "writer_related_requests": 2,
+        "non_writer_requests_between_first_writer_request_and_success": 1,
+        "after_successful_mutation_result": 13,
+        "post_write_file_content_reads_changed": 4,
+        "post_write_file_content_reads_unchanged": 7,
+        "post_write_manual_check_calls": 2,
+        "post_write_repeated_already_passed_check_calls": 2,
+        "post_write_git_queries": 0,
+        "post_write_file_digest_queries": 0
+      },
+      "manual_check_evidence": [
+        {
+          "path": "runs/run009/evidence/raw.jsonl",
+          "line": 67
+        },
+        {
+          "path": "runs/run009/evidence/raw.jsonl",
+          "line": 88
+        }
+      ],
+      "intervening_non_writer_evidence": [
+        {
+          "kind": "cli_help",
+          "evidence": {
+            "path": "runs/run009/evidence/raw.jsonl",
+            "line": 37
+          }
+        }
+      ],
+      "errors": [
+        {
+          "kind": "invalid_positional_argument",
+          "exit_code": 2,
+          "evidence": {
+            "path": "runs/run009/evidence/raw.jsonl",
+            "line": 34
+          },
+          "detail": "A positional dot is rejected; CLI help is read and the corrected retry uses --path."
+        }
+      ],
+      "claim_findings": [],
+      "evidence": {
+        "native": "runs/run009/evidence/raw.jsonl",
+        "measurement": "runs/run009/evidence/measurement.json",
+        "engine_audit": "runs/run009/evidence/engine-audit.jsonl",
+        "oracle": "runs/run009/evidence/oracle.json",
+        "diff": "runs/run009/evidence/diff.patch",
+        "initial_hashes": "runs/run009/evidence/initial-hashes.json",
+        "final_hashes": "runs/run009/evidence/final-hashes.json",
+        "git_status": "runs/run009/evidence/git-status.txt",
+        "instructions": "runs/run009/evidence/system-append.txt"
+      },
+      "notes": [
+        "Some untouched support files are first read after the write, not reread."
+      ]
+    },
+    {
+      "run_id": "run010",
+      "arm": "delegated_intent",
+      "task_id": "cross-file-rename-clarified",
+      "gates": {
+        "oracle": {
+          "status": "passed",
+          "evidence": {
+            "path": "runs/run010/evidence/oracle.json"
+          },
+          "scope": "Supplied fixture correctness, expected changes, runtime, protected files and file scope."
+        },
+        "candidate_verification": {
+          "status": "passed",
+          "source": "Successful integrated php check.php in the mutating engine result",
+          "evidence": {
+            "path": "runs/run010/evidence/engine-audit.jsonl"
+          }
+        },
+        "writer_route": {
+          "status": "passed",
+          "observed": "PHP mutations use php-ast-edit rename only",
+          "evidence": [
+            {
+              "path": "runs/run010/evidence/raw.jsonl",
+              "line": 48
+            }
+          ]
+        },
+        "completion_claims": {
+          "status": "passed",
+          "evidence": {
+            "path": "runs/run010/evidence/raw.jsonl",
+            "line": 95
+          },
+          "scope": "No concrete unsupported completion claim found in the manual trace review."
+        }
+      },
+      "writer": {
+        "successful_mutations": 1,
+        "failed_mutation_requests": 0,
+        "dry_run_requests": 0,
+        "fallback_php_writes_observed": 0,
+        "request_evidence": [
+          {
+            "path": "runs/run010/evidence/raw.jsonl",
+            "line": 48
+          }
+        ]
+      },
+      "workflow_observations": {
+        "php_source_read_before_first_rename": true,
+        "command_before_php_discovery_observed": false,
+        "rename_is_first_native_tool_request": false,
+        "separate_implementation_or_caller_renames_queued": 0,
+        "family_scope": "One named family per run. CLI syntax retries concern the same family.",
+        "interpretation": "The candidate reads PHP and describes examining the current structure before the command. The intended command-before-discovery order was not observed. Some preservation requirements can justify source reads; this observation is kept separate from task correctness and writer-route adherence."
+      },
+      "calls": {
+        "total": 23,
+        "before_first_writer_related_request": 12,
+        "file_content_reads_before_first_writer_related_request": 10,
+        "writer_related_requests": 1,
+        "non_writer_requests_between_first_writer_request_and_success": 0,
+        "after_successful_mutation_result": 10,
+        "post_write_file_content_reads_changed": 4,
+        "post_write_file_content_reads_unchanged": 2,
+        "post_write_manual_check_calls": 1,
+        "post_write_repeated_already_passed_check_calls": 1,
+        "post_write_git_queries": 3,
+        "post_write_file_digest_queries": 0
+      },
+      "manual_check_evidence": [
+        {
+          "path": "runs/run010/evidence/raw.jsonl",
+          "line": 78
+        }
+      ],
+      "intervening_non_writer_evidence": [],
+      "errors": [],
+      "claim_findings": [],
+      "evidence": {
+        "native": "runs/run010/evidence/raw.jsonl",
+        "measurement": "runs/run010/evidence/measurement.json",
+        "engine_audit": "runs/run010/evidence/engine-audit.jsonl",
+        "oracle": "runs/run010/evidence/oracle.json",
+        "diff": "runs/run010/evidence/diff.patch",
+        "initial_hashes": "runs/run010/evidence/initial-hashes.json",
+        "final_hashes": "runs/run010/evidence/final-hashes.json",
+        "git_status": "runs/run010/evidence/git-status.txt",
+        "instructions": "runs/run010/evidence/system-append.txt"
+      },
+      "notes": []
+    },
+    {
+      "run_id": "run011",
+      "arm": "minimal_intent",
+      "task_id": "cross-file-rename-clarified",
+      "gates": {
+        "oracle": {
+          "status": "passed",
+          "evidence": {
+            "path": "runs/run011/evidence/oracle.json"
+          },
+          "scope": "Supplied fixture correctness, expected changes, runtime, protected files and file scope."
+        },
+        "candidate_verification": {
+          "status": "passed",
+          "source": "Successful integrated php check.php in the mutating engine result",
+          "evidence": {
+            "path": "runs/run011/evidence/engine-audit.jsonl"
+          }
+        },
+        "writer_route": {
+          "status": "passed",
+          "observed": "PHP mutations use php-ast-edit rename only",
+          "evidence": [
+            {
+              "path": "runs/run011/evidence/raw.jsonl",
+              "line": 46
+            }
+          ]
+        },
+        "completion_claims": {
+          "status": "passed",
+          "evidence": {
+            "path": "runs/run011/evidence/raw.jsonl",
+            "line": 81
+          },
+          "scope": "No concrete unsupported completion claim found in the manual trace review."
+        }
+      },
+      "writer": {
+        "successful_mutations": 1,
+        "failed_mutation_requests": 0,
+        "dry_run_requests": 0,
+        "fallback_php_writes_observed": 0,
+        "request_evidence": [
+          {
+            "path": "runs/run011/evidence/raw.jsonl",
+            "line": 46
+          }
+        ]
+      },
+      "workflow_observations": {
+        "php_source_read_before_first_rename": true,
+        "command_before_php_discovery_observed": false,
+        "rename_is_first_native_tool_request": false,
+        "separate_implementation_or_caller_renames_queued": 0,
+        "family_scope": "One named family per run. CLI syntax retries concern the same family.",
+        "interpretation": "The unchanged minimal common instruction requires relevant source to be read before editing."
+      },
+      "calls": {
+        "total": 23,
+        "before_first_writer_related_request": 13,
+        "file_content_reads_before_first_writer_related_request": 11,
+        "writer_related_requests": 1,
+        "non_writer_requests_between_first_writer_request_and_success": 0,
+        "after_successful_mutation_result": 9,
+        "post_write_file_content_reads_changed": 4,
+        "post_write_file_content_reads_unchanged": 2,
+        "post_write_manual_check_calls": 1,
+        "post_write_repeated_already_passed_check_calls": 1,
+        "post_write_git_queries": 2,
+        "post_write_file_digest_queries": 0
+      },
+      "manual_check_evidence": [
+        {
+          "path": "runs/run011/evidence/raw.jsonl",
+          "line": 70
+        }
+      ],
+      "intervening_non_writer_evidence": [],
+      "errors": [
+        {
+          "kind": "directory_read_eisdir",
+          "evidence": {
+            "path": "runs/run011/evidence/raw.jsonl",
+            "line": 9
+          },
+          "detail": "Native Read was asked to read a directory; no failed PHP mutation."
+        }
+      ],
+      "claim_findings": [],
+      "evidence": {
+        "native": "runs/run011/evidence/raw.jsonl",
+        "measurement": "runs/run011/evidence/measurement.json",
+        "engine_audit": "runs/run011/evidence/engine-audit.jsonl",
+        "oracle": "runs/run011/evidence/oracle.json",
+        "diff": "runs/run011/evidence/diff.patch",
+        "initial_hashes": "runs/run011/evidence/initial-hashes.json",
+        "final_hashes": "runs/run011/evidence/final-hashes.json",
+        "git_status": "runs/run011/evidence/git-status.txt",
+        "instructions": "runs/run011/evidence/system-append.txt"
+      },
+      "notes": []
+    },
+    {
+      "run_id": "run012",
+      "arm": "delegated_intent",
+      "task_id": "cross-file-rename-clarified",
+      "gates": {
+        "oracle": {
+          "status": "passed",
+          "evidence": {
+            "path": "runs/run012/evidence/oracle.json"
+          },
+          "scope": "Supplied fixture correctness, expected changes, runtime, protected files and file scope."
+        },
+        "candidate_verification": {
+          "status": "passed",
+          "source": "Successful integrated php check.php in the mutating engine result",
+          "evidence": {
+            "path": "runs/run012/evidence/engine-audit.jsonl"
+          }
+        },
+        "writer_route": {
+          "status": "passed",
+          "observed": "PHP mutations use php-ast-edit rename only",
+          "evidence": [
+            {
+              "path": "runs/run012/evidence/raw.jsonl",
+              "line": 39
+            }
+          ]
+        },
+        "completion_claims": {
+          "status": "passed",
+          "evidence": {
+            "path": "runs/run012/evidence/raw.jsonl",
+            "line": 100
+          },
+          "scope": "No concrete unsupported completion claim found in the manual trace review."
+        }
+      },
+      "writer": {
+        "successful_mutations": 1,
+        "failed_mutation_requests": 0,
+        "dry_run_requests": 0,
+        "fallback_php_writes_observed": 0,
+        "request_evidence": [
+          {
+            "path": "runs/run012/evidence/raw.jsonl",
+            "line": 39
+          }
+        ]
+      },
+      "workflow_observations": {
+        "php_source_read_before_first_rename": true,
+        "command_before_php_discovery_observed": false,
+        "rename_is_first_native_tool_request": false,
+        "separate_implementation_or_caller_renames_queued": 0,
+        "family_scope": "One named family per run. CLI syntax retries concern the same family.",
+        "interpretation": "The candidate reads PHP and describes examining the current structure before the command. The intended command-before-discovery order was not observed. Some preservation requirements can justify source reads; this observation is kept separate from task correctness and writer-route adherence."
+      },
+      "calls": {
+        "total": 23,
+        "before_first_writer_related_request": 10,
+        "file_content_reads_before_first_writer_related_request": 9,
+        "writer_related_requests": 1,
+        "non_writer_requests_between_first_writer_request_and_success": 0,
+        "after_successful_mutation_result": 12,
+        "post_write_file_content_reads_changed": 4,
+        "post_write_file_content_reads_unchanged": 3,
+        "post_write_manual_check_calls": 1,
+        "post_write_repeated_already_passed_check_calls": 1,
+        "post_write_git_queries": 4,
+        "post_write_file_digest_queries": 0
+      },
+      "manual_check_evidence": [
+        {
+          "path": "runs/run012/evidence/raw.jsonl",
+          "line": 70
+        }
+      ],
+      "intervening_non_writer_evidence": [],
+      "errors": [],
+      "claim_findings": [],
+      "evidence": {
+        "native": "runs/run012/evidence/raw.jsonl",
+        "measurement": "runs/run012/evidence/measurement.json",
+        "engine_audit": "runs/run012/evidence/engine-audit.jsonl",
+        "oracle": "runs/run012/evidence/oracle.json",
+        "diff": "runs/run012/evidence/diff.patch",
+        "initial_hashes": "runs/run012/evidence/initial-hashes.json",
+        "final_hashes": "runs/run012/evidence/final-hashes.json",
+        "git_status": "runs/run012/evidence/git-status.txt",
+        "instructions": "runs/run012/evidence/system-append.txt"
+      },
+      "notes": []
+    }
+  ]
+}
