@@ -311,31 +311,32 @@ rename_fixture() {
     "$dir" | $BIN apply > /dev/null
   (cd "$dir" && git init -q && git add F.php)
 }
+RENAME_METHOD='private function execute'
 
 rename_fixture "$RENAMEDIR/after-flags"
 $BIN rename --method F::run --to execute "$RENAMEDIR/after-flags" > /dev/null
 expect "rename accepts an absolute positional path after its options" "1" \
-  "$(grep -c 'private function execute' "$RENAMEDIR/after-flags/F.php")"
+  "$(grep -c "$RENAME_METHOD" "$RENAMEDIR/after-flags/F.php")"
 
 rename_fixture "$RENAMEDIR/dot"
 (cd "$RENAMEDIR/dot" && "$ROOT/bin/php-ast-edit" rename --method F::run --to execute . > /dev/null)
 expect "rename accepts the recorded dot path form" "1" \
-  "$(grep -c 'private function execute' "$RENAMEDIR/dot/F.php")"
+  "$(grep -c "$RENAME_METHOD" "$RENAMEDIR/dot/F.php")"
 
 rename_fixture "$RENAMEDIR/before-flags"
 $BIN rename "$RENAMEDIR/before-flags" --method F::run --to execute > /dev/null
 expect "rename accepts a positional path before its options" "1" \
-  "$(grep -c 'private function execute' "$RENAMEDIR/before-flags/F.php")"
+  "$(grep -c "$RENAME_METHOD" "$RENAMEDIR/before-flags/F.php")"
 
 rename_fixture "$RENAMEDIR/flag"
 $BIN rename --method F::run --to execute --path "$RENAMEDIR/flag" > /dev/null
 expect "rename keeps the explicit --path form" "1" \
-  "$(grep -c 'private function execute' "$RENAMEDIR/flag/F.php")"
+  "$(grep -c "$RENAME_METHOD" "$RENAMEDIR/flag/F.php")"
 
 rename_fixture "$RENAMEDIR/dir with spaces"
 $BIN rename "$RENAMEDIR/dir with spaces" --method F::run --to execute > /dev/null
 expect "rename preserves spaces in a positional path" "1" \
-  "$(grep -c 'private function execute' "$RENAMEDIR/dir with spaces/F.php")"
+  "$(grep -c "$RENAME_METHOD" "$RENAMEDIR/dir with spaces/F.php")"
 
 rename_fixture "$RENAMEDIR/conflict-positional-first"
 conflict_before="$(sha256sum "$RENAMEDIR/conflict-positional-first/F.php")"
@@ -390,7 +391,7 @@ expect "and writes nothing for an empty path" "$empty_before" \
 rename_fixture "$RENAMEDIR/0"
 (cd "$RENAMEDIR" && "$ROOT/bin/php-ast-edit" rename 0 --method F::run --to execute > /dev/null)
 expect "rename preserves a relative positional path named zero" "1" \
-  "$(grep -c 'private function execute' "$RENAMEDIR/0/F.php")"
+  "$(grep -c "$RENAME_METHOD" "$RENAMEDIR/0/F.php")"
 
 rename_fixture "$RENAMEDIR/dot-root"
 dot_before="$(sha256sum "$RENAMEDIR/dot-root/F.php")"

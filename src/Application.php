@@ -527,14 +527,7 @@ final class Application
             $arg = $args[$i];
 
             if (!str_starts_with($arg, '--')) {
-                if (!$allowPositionalPath) {
-                    throw new EditException('Unexpected argument: ' . $arg);
-                }
-
-                if ($positional !== null) {
-                    throw new EditException('rename accepts at most one positional project path.');
-                }
-                $positional = $arg;
+                $positional = $this->positionalPath($arg, $positional, $allowPositionalPath);
 
                 continue;
             }
@@ -815,5 +808,18 @@ final class Application
     private function rename(array $options): int
     {
         return $this->execute((new MethodRenameCommand())->document($options), isset($options['dry-run']));
+    }
+
+    private function positionalPath(string $arg, ?string $current, bool $allowed): string
+    {
+        if (!$allowed) {
+            throw new EditException('Unexpected argument: ' . $arg);
+        }
+
+        if ($current !== null) {
+            throw new EditException('rename accepts at most one positional project path.');
+        }
+
+        return $arg;
     }
 }
