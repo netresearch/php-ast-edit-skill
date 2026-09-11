@@ -1,5 +1,11 @@
 # Complete-agent economics
 
+The [instruction and discovery experiments](results/2026-09-11-intent-instructions/REPORT.md)
+test whether a short command contract and explicit delegation of method-family
+discovery reduce the overhead observed with the direct rename command. The report
+separates final-code correctness, instruction adherence and unsupported completion
+claims, and retains the initial campaign and its single refinement independently.
+
 The [36-run v0.8.0 Haiku pilot](results/2026-09-11-v080-haiku/REPORT.md) compares
 ordinary contextual edits with the released full skill and a separate instruction
 follow-up. The small edit saved 31.1% of tokens; three changes in one file and the
