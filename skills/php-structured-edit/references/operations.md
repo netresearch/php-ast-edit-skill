@@ -357,8 +357,8 @@ change. A `changed_files` check is never named there; it did not see the project
 ### `"report": "agent"`
 
 The decision-shaped projection: what the write is known to have done, and what it left
-open. It answers what the next step needs, not what happened — so it drops the fields a
-caller can recover for itself, and it never states a claim it cannot support.
+open. It omits inline source and diff output; choose it when those fields are unnecessary
+for the next decision.
 
 | Field | Meaning |
 | --- | --- |
@@ -403,10 +403,17 @@ because it is true of every response and would be noise on all of them: whether 
 you were given is met does not follow from any of these fields.
 
 Absent by design: `diff`, `code`, `validation`, `verify`, and the legacy `warning` and
-`valid` duplicates. The diff is recoverable without re-running anything — `git diff --
-<path>` against the working tree, with `beforeSha256` naming the snapshot the edit started
-from. A file outside version control has no such record; that is the one case where this
-mode loses information `full` would have carried, and a reason to ask for `full` there.
+`valid` duplicates. `beforeSha256` identifies the input bytes; it does not store a
+retrievable snapshot. `git diff -- <path>` compares the working tree with the index, so
+earlier unstaged changes can appear alongside this transaction, staging can hide its
+changes, and subsequent edits can replace or extend them. Ordinary Git diff also omits
+untracked files. It cannot generally recover the last transaction's diff from its hash.
+
+Request `full` or `compact` before writing when the transaction's diff is needed, and
+retain that response. Existing output limits still apply: no inline diff is returned
+above 200 changed lines or when either the input or output file is absent. Retain your
+own before/after source copies if a complete comparison is required in those cases.
+Do not rerun an edit merely to obtain its diff.
 
 The top-level `checksPassed` is `true`, `false`, or `null` when no checks ran. A failing
 verification makes `apply` exit nonzero; examine the retained edit before repairing it.
