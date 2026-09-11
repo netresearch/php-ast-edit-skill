@@ -277,15 +277,25 @@ def variants(base):
 
 
 def common_instructions(variant):
-    return DELEGATED_COMMON if variant in ("delegated_intent", "exact_invocation") else COMMON
+    return (
+        DELEGATED_COMMON
+        if variant in ("delegated_intent", "exact_invocation")
+        else COMMON
+    )
 
 
 def system_instructions(variant, instructions):
     return common_instructions(variant) + "\n" + instructions
 
 
-def balanced_order(task_ids, seed, arms=ARMS, model_keys=tuple(MODELS),
-                   repetitions=3, balance_by_task=False):
+def balanced_order(
+    task_ids,
+    seed,
+    arms=ARMS,
+    model_keys=tuple(MODELS),
+    repetitions=3,
+    balance_by_task=False,
+):
     require(
         arms and len(arms) == len(set(arms)) and set(arms) <= set(SUPPORTED_ARMS),
         "Invalid or duplicate arms",
@@ -296,9 +306,14 @@ def balanced_order(task_ids, seed, arms=ARMS, model_keys=tuple(MODELS),
         and set(model_keys) <= set(MODELS),
         "Invalid or duplicate model keys",
     )
-    require(type(repetitions) is int and repetitions > 0, "Repetitions must be a positive integer")
-    require(not balance_by_task or repetitions % len(arms) == 0,
-            "Per-task balance requires repetitions divisible by the arm count")
+    require(
+        type(repetitions) is int and repetitions > 0,
+        "Repetitions must be a positive integer",
+    )
+    require(
+        not balance_by_task or repetitions % len(arms) == 0,
+        "Per-task balance requires repetitions divisible by the arm count",
+    )
     # A fixed seed orders samples reproducibly; it makes no security decisions.
     rng = random.Random(seed)
     blocks = [
@@ -339,30 +354,54 @@ def selected_intent(task):
     intent = task.get("intent")
     if "intent" not in task:
         return None
-    require(isinstance(intent, dict) and set(intent) == {"method", "file", "to", "path"},
-            "Intent needs exactly method, file, to and path")
-    require(all(isinstance(value, str) and value.strip() and "\0" not in value
-                for value in intent.values()), "Intent values must be nonempty strings")
+    require(
+        isinstance(intent, dict) and set(intent) == {"method", "file", "to", "path"},
+        "Intent needs exactly method, file, to and path",
+    )
+    require(
+        all(
+            isinstance(value, str) and value.strip() and "\0" not in value
+            for value in intent.values()
+        ),
+        "Intent values must be nonempty strings",
+    )
     file = Path(intent["file"])
-    require(not file.is_absolute() and ".." not in file.parts
-            and intent["file"] in {entry["path"] for entry in task["files"]},
-            "Intent file must be a contained task file")
+    require(
+        not file.is_absolute()
+        and ".." not in file.parts
+        and intent["file"] in {entry["path"] for entry in task["files"]},
+        "Intent file must be a contained task file",
+    )
     require(intent["path"] == ".", "Intent project path must be '.'")
     return dict(intent)
 
 
 def intent_prompt(template, variant):
     intent = template.get("intent")
-    require(variant != "exact_invocation" or intent is not None,
-            "Exact invocation requires selected intent metadata")
+    require(
+        variant != "exact_invocation" or intent is not None,
+        "Exact invocation requires selected intent metadata",
+    )
     if intent is None:
         return ""
-    text = ("\n\nSelected rename intent (provided equally to both arms):\n"
-            + json.dumps(intent, sort_keys=True)
-            + "\nYou may use the declaration file with --file.")
+    text = (
+        "\n\nSelected rename intent (provided equally to both arms):\n"
+        + json.dumps(intent, sort_keys=True)
+        + "\nYou may use the declaration file with --file."
+    )
     if variant == "exact_invocation":
-        command = ["php-ast-edit", "rename", "--method", intent["method"],
-                   "--to", intent["to"], "--path", intent["path"], "--file", intent["file"]]
+        command = [
+            "php-ast-edit",
+            "rename",
+            "--method",
+            intent["method"],
+            "--to",
+            intent["to"],
+            "--path",
+            intent["path"],
+            "--file",
+            intent["file"],
+        ]
         text += "\n\nReady-to-run invocation:\n" + shlex.join(command)
     return text
 
@@ -386,7 +425,11 @@ def exact_template(base, task, target):
             "task_manifest_sha256": digest(base / TASK_MANIFEST),
         },
     )
-    template = {"prompt": task["prompt"], "workspace": str(work), "files": list(baseline)}
+    template = {
+        "prompt": task["prompt"],
+        "workspace": str(work),
+        "files": list(baseline),
+    }
     if intent is not None:
         template["intent"] = intent
     return template
@@ -527,8 +570,9 @@ def prepare(args):
     model_keys = tuple(args.models.split(","))
     repetitions = getattr(args, "repetitions", 3)
     balance_by_task = getattr(args, "balance_by_task", False)
-    planned_order = balanced_order(args.tasks.split(","), args.seed, arms, model_keys,
-                                   repetitions, balance_by_task)
+    planned_order = balanced_order(
+        args.tasks.split(","), args.seed, arms, model_keys, repetitions, balance_by_task
+    )
     base = create_campaign_directory(args.output)
     started = time.monotonic()
     commit, status = snapshot(args, base)

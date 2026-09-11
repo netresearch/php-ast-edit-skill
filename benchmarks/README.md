@@ -18,6 +18,11 @@ The separate [twenty-run entrypoint study](symbol-intent/results/2026-09-07-entr
 found median zero preparatory calls and one total call in both arms. A before-edit
 capability paragraph did not meet the prospective adoption rule; the existing
 entrypoint stays unchanged. All twenty candidates passed the edits and final tests.
+The [24-run prepared-invocation study](agent-economics/results/2026-09-11-exact-invocation/REPORT.md)
+controls selected target knowledge and tests a complete shell-quoted command.
+It removes four invocation errors but misses the two-task efficiency criterion:
+small-task tokens fall 11.6%, cross-file tokens rise 29.2%, and median calls stay
+unchanged. Correct code and final completion claims are assessed separately.
 Read the [execution and trust boundaries](TRUST.md) before grading candidate code or
 importing evidence; they also record the narrowly scoped static-analysis decisions.
 

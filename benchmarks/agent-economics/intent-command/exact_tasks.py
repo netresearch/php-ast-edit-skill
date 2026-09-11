@@ -15,7 +15,11 @@ def manifest():
     data = copy.deepcopy(tasks.manifest())
     targets = {
         tasks.METHOD_TASK: ("Product::findByUid", "Product.php", "resolveByUid"),
-        tasks.CROSS_TASK: ("Pilot\\CrossFile\\Contract::fetch", "src/Contract.php", "load"),
+        tasks.CROSS_TASK: (
+            "Pilot\\CrossFile\\Contract::fetch",
+            "src/Contract.php",
+            "load",
+        ),
     }
     for row in data["tasks"]:
         method, file, destination = targets[row["id"]]

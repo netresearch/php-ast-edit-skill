@@ -10,7 +10,9 @@ from pathlib import Path
 import exact_tasks
 import test_tasks as base
 
-ARTIFACT = Path(os.environ.get("PHP_AST_PILOT_ARTIFACT", str(base.ROOT / "bin/php-ast-edit")))
+ARTIFACT = Path(
+    os.environ.get("PHP_AST_PILOT_ARTIFACT", str(base.ROOT / "bin/php-ast-edit"))
+)
 
 
 class ExactTaskTests(unittest.TestCase):
@@ -34,7 +36,10 @@ class ExactTaskTests(unittest.TestCase):
         previous_tasks = base.agent_benchmark.TASKS
         try:
             for task in exact_tasks.manifest()["tasks"]:
-                with self.subTest(task=task["id"]), tempfile.TemporaryDirectory() as name:
+                with (
+                    self.subTest(task=task["id"]),
+                    tempfile.TemporaryDirectory() as name,
+                ):
                     campaign = Path(name)
                     manifest_path = campaign / "controller/benchmarks/tasks.json"
                     base.runner.save(manifest_path, exact_tasks.manifest())
@@ -44,23 +49,50 @@ class ExactTaskTests(unittest.TestCase):
                     )
                     prepared = base.runner.prepare_fixture(
                         campaign,
-                        {"run_id": "run001", "task_id": task["id"], "model_key": "haiku",
-                         "variant": "delegated_intent", "repetition": 1},
-                        template, "offline preflight",
+                        {
+                            "run_id": "run001",
+                            "task_id": task["id"],
+                            "model_key": "haiku",
+                            "variant": "delegated_intent",
+                            "repetition": 1,
+                        },
+                        template,
+                        "offline preflight",
                     )
                     work = Path(prepared["work"])
                     state = Path(prepared["evidence"]) / base.runner.STATE
-                    self.assertFalse(base.agent_benchmark.grade(task, work, state)["passed"])
+                    self.assertFalse(
+                        base.agent_benchmark.grade(task, work, state)["passed"]
+                    )
                     intent = task["intent"]
                     result = subprocess.run(
-                        ["php", str(ARTIFACT), "rename", "--method", intent["method"],
-                         "--to", intent["to"], "--path", intent["path"], "--file", intent["file"]],
-                        cwd=work, capture_output=True, text=True, check=False, timeout=60,
+                        [
+                            "php",
+                            str(ARTIFACT),
+                            "rename",
+                            "--method",
+                            intent["method"],
+                            "--to",
+                            intent["to"],
+                            "--path",
+                            intent["path"],
+                            "--file",
+                            intent["file"],
+                        ],
+                        cwd=work,
+                        capture_output=True,
+                        text=True,
+                        check=False,
+                        timeout=60,
                         env={**os.environ, "PHP_AST_EDIT_PHPACTOR": str(base.RESOLVER)},
                     )
-                    self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                    self.assertEqual(
+                        result.returncode, 0, result.stdout + result.stderr
+                    )
                     self.assertTrue(json.loads(result.stdout)["checksPassed"])
-                    self.assertTrue(base.agent_benchmark.grade(task, work, state)["passed"])
+                    self.assertTrue(
+                        base.agent_benchmark.grade(task, work, state)["passed"]
+                    )
         finally:
             base.agent_benchmark.TASKS = previous_tasks
 
