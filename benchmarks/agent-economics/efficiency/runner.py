@@ -7,6 +7,7 @@ import json
 import os
 import random
 import re
+import shlex
 import shutil
 import signal
 import subprocess
@@ -41,7 +42,7 @@ ARMS = (
 )
 # Experimental arms are opt-in so the established default schedule and its
 # validation remain unchanged for released protocols.
-EXPERIMENTAL_ARMS = ("minimal_intent", "delegated_intent")
+EXPERIMENTAL_ARMS = ("minimal_intent", "delegated_intent", "exact_invocation")
 SUPPORTED_ARMS = ARMS + EXPERIMENTAL_ARMS
 # The two arms that carry a project check. Both get `check.php` and the same task clause;
 # only `check_integrated` declares the check to the engine, so the one variable between
@@ -257,7 +258,7 @@ def variants(base):
         "extra work only for remaining requirements or unresolved warnings; preserve guards "
         "and unrelated files. It makes no guarantee for unsupported or unresolved cases."
     )
-    return {
+    instructions = {
         "contextual_patch": BASELINE,
         "full_skill": full,
         "minimal_intent": minimal_intent,
@@ -271,17 +272,20 @@ def variants(base):
         "check_manual": full,
         "check_integrated": full,
     }
+    instructions["exact_invocation"] = instructions["delegated_intent"]
+    return instructions
 
 
 def common_instructions(variant):
-    return DELEGATED_COMMON if variant == "delegated_intent" else COMMON
+    return DELEGATED_COMMON if variant in ("delegated_intent", "exact_invocation") else COMMON
 
 
 def system_instructions(variant, instructions):
     return common_instructions(variant) + "\n" + instructions
 
 
-def balanced_order(task_ids, seed, arms=ARMS, model_keys=tuple(MODELS)):
+def balanced_order(task_ids, seed, arms=ARMS, model_keys=tuple(MODELS),
+                   repetitions=3, balance_by_task=False):
     require(
         arms and len(arms) == len(set(arms)) and set(arms) <= set(SUPPORTED_ARMS),
         "Invalid or duplicate arms",
@@ -292,18 +296,29 @@ def balanced_order(task_ids, seed, arms=ARMS, model_keys=tuple(MODELS)):
         and set(model_keys) <= set(MODELS),
         "Invalid or duplicate model keys",
     )
+    require(type(repetitions) is int and repetitions > 0, "Repetitions must be a positive integer")
+    require(not balance_by_task or repetitions % len(arms) == 0,
+            "Per-task balance requires repetitions divisible by the arm count")
     # A fixed seed orders samples reproducibly; it makes no security decisions.
     rng = random.Random(seed)
     blocks = [
         (task, model, repeat)
         for task in task_ids
         for model in model_keys
-        for repeat in range(1, 4)
+        for repeat in range(1, repetitions + 1)
     ]
     rng.shuffle(blocks)  # NOSONAR(S2245)
     starts = list(range(len(arms))) * (len(blocks) // len(arms))
     starts += list(range(len(blocks) % len(arms)))
     rng.shuffle(starts)  # NOSONAR(S2245)
+    if balance_by_task:
+        task_starts = {}
+        for task in task_ids:
+            for model in model_keys:
+                positions = list(range(len(arms))) * (repetitions // len(arms))
+                rng.shuffle(positions)  # NOSONAR(S2245)
+                task_starts[task, model] = iter(positions)
+        starts = [next(task_starts[task, model]) for task, model, _ in blocks]
     rows = []
     for (task, model, repeat), start in zip(blocks, starts):
         order = arms[start:] + arms[:start]
@@ -320,7 +335,40 @@ def balanced_order(task_ids, seed, arms=ARMS, model_keys=tuple(MODELS)):
     return rows
 
 
+def selected_intent(task):
+    intent = task.get("intent")
+    if "intent" not in task:
+        return None
+    require(isinstance(intent, dict) and set(intent) == {"method", "file", "to", "path"},
+            "Intent needs exactly method, file, to and path")
+    require(all(isinstance(value, str) and value.strip() and "\0" not in value
+                for value in intent.values()), "Intent values must be nonempty strings")
+    file = Path(intent["file"])
+    require(not file.is_absolute() and ".." not in file.parts
+            and intent["file"] in {entry["path"] for entry in task["files"]},
+            "Intent file must be a contained task file")
+    require(intent["path"] == ".", "Intent project path must be '.'")
+    return dict(intent)
+
+
+def intent_prompt(template, variant):
+    intent = template.get("intent")
+    require(variant != "exact_invocation" or intent is not None,
+            "Exact invocation requires selected intent metadata")
+    if intent is None:
+        return ""
+    text = ("\n\nSelected rename intent (provided equally to both arms):\n"
+            + json.dumps(intent, sort_keys=True)
+            + "\nYou may use the declaration file with --file.")
+    if variant == "exact_invocation":
+        command = ["php-ast-edit", "rename", "--method", intent["method"],
+                   "--to", intent["to"], "--path", intent["path"], "--file", intent["file"]]
+        text += "\n\nReady-to-run invocation:\n" + shlex.join(command)
+    return text
+
+
 def exact_template(base, task, target):
+    intent = selected_intent(task)
     work = target / "work"
     work.mkdir(parents=True)
     for entry in task["files"]:
@@ -338,7 +386,10 @@ def exact_template(base, task, target):
             "task_manifest_sha256": digest(base / TASK_MANIFEST),
         },
     )
-    return {"prompt": task["prompt"], "workspace": str(work), "files": list(baseline)}
+    template = {"prompt": task["prompt"], "workspace": str(work), "files": list(baseline)}
+    if intent is not None:
+        template["intent"] = intent
+    return template
 
 
 def make_templates(base, task_ids, tasks):
@@ -364,6 +415,9 @@ def make_templates(base, task_ids, tasks):
             ]
         )
         templates[task] = json.loads(output)
+        intent = selected_intent(specification)
+        if intent is not None:
+            templates[task]["intent"] = intent
     return templates
 
 
@@ -390,6 +444,7 @@ def check_fixture(work, variant):
 
 
 def prepare_fixture(base, row, template, instructions):
+    intent_text = intent_prompt(template, row["variant"])
     folder = base / "runs" / row["run_id"]
     work, evidence = folder / "work", folder / "evidence"
     evidence.mkdir(parents=True)
@@ -432,7 +487,7 @@ def prepare_fixture(base, row, template, instructions):
     if row["variant"] in CHECK_ARMS:
         prompt += " " + CHECK_CLAUSE
     (evidence / "prompt.txt").write_text(
-        prompt + "\n\nFiles: " + ", ".join(template["files"]) + "\n"
+        prompt + "\n\nFiles: " + ", ".join(template["files"]) + intent_text + "\n"
     )
     return {**row, "work": str(work), "evidence": str(evidence)}
 
@@ -470,7 +525,10 @@ def create_campaign_directory(output):
 def prepare(args):
     arms = tuple(args.arms.split(","))
     model_keys = tuple(args.models.split(","))
-    planned_order = balanced_order(args.tasks.split(","), args.seed, arms, model_keys)
+    repetitions = getattr(args, "repetitions", 3)
+    balance_by_task = getattr(args, "balance_by_task", False)
+    planned_order = balanced_order(args.tasks.split(","), args.seed, arms, model_keys,
+                                   repetitions, balance_by_task)
     base = create_campaign_directory(args.output)
     started = time.monotonic()
     commit, status = snapshot(args, base)
@@ -499,7 +557,8 @@ def prepare(args):
         "model_keys": model_keys,
         "arms": arms,
         "task_ids": task_ids,
-        "repetitions": 3,
+        "repetitions": repetitions,
+        "balance_by_task": balance_by_task,
         "seed": args.seed,
         "claude": str(args.claude.resolve()),
         "cli_version": checked([str(args.claude), "--version"]).strip(),
@@ -1096,6 +1155,8 @@ def main():
     parser.add_argument("--arms", default=",".join(ARMS))
     parser.add_argument("--models", default=",".join(MODELS))
     parser.add_argument("--seed", type=int, default=20260906)
+    parser.add_argument("--repetitions", type=int, default=3)
+    parser.add_argument("--balance-by-task", action="store_true")
     parser.add_argument("--campaign-budget-usd", type=float, default=8.0)
     parser.add_argument(
         "--claude", type=Path, default=Path(shutil.which("claude") or "claude")

@@ -1,7 +1,9 @@
 """Offline campaign-directory and native-timing regressions; no model calls."""
 
+import hashlib
 import json
 import os
+import shlex
 import shutil
 import stat
 import tempfile
@@ -9,6 +11,7 @@ import unittest
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
+from collections import Counter
 
 import check_arms
 import native
@@ -268,6 +271,41 @@ class LegacyRecoveryTests(unittest.TestCase):
 
 
 class ScheduleSelectionTests(unittest.TestCase):
+    def test_legacy_schedule_bytes_are_preserved(self):
+        cases = [
+            (["local-variable", "multi-file-members"], 20260906, runner.ARMS,
+             tuple(runner.MODELS), "b5ea2c3ffbd3941f95ffdf39323f54bfbbeb6d055b87bca247141d46991b8a2d"),
+            (["method-and-literal", "cross-file-rename-clarified"], 20260914,
+             ("minimal_intent", "delegated_intent"), ("haiku",),
+             "f8a47e9a7029a10e59b58ae3bdc42e9118581d6df913c08974c0fe164daf0eff"),
+        ]
+        for tasks, seed, arms, models, expected in cases:
+            rows = runner.balanced_order(tasks, seed, arms, models)
+            self.assertEqual(hashlib.sha256(json.dumps(rows, sort_keys=True).encode()).hexdigest(), expected)
+
+    def test_six_repetitions_balance_starting_arm_within_each_task_and_model(self):
+        arms = ("delegated_intent", "exact_invocation")
+        rows = runner.balanced_order(["small", "cross"], 20260915, arms,
+                                     repetitions=6, balance_by_task=True)
+        self.assertEqual(len(rows), 48)
+        counts = Counter((row["task_id"], row["model_key"], row["variant"]) for row in rows)
+        starts = Counter((row["task_id"], row["model_key"], row["variant"]) for row in rows[::2])
+        self.assertEqual(set(counts.values()), {6})
+        self.assertEqual(set(starts.values()), {3})
+        for before, after in zip(rows[::2], rows[1::2]):
+            self.assertEqual({before["variant"], after["variant"]}, set(arms))
+            for field in ("task_id", "model_key", "repetition"):
+                self.assertEqual(before[field], after[field])
+        self.assertEqual(len({row["run_id"] for row in rows}), len(rows))
+
+    def test_invalid_repetition_or_balance_request_is_refused(self):
+        for repetitions in (0, -1, 1.5, True):
+            with self.subTest(repetitions=repetitions), self.assertRaises(ValueError):
+                runner.balanced_order(["fixture"], 1, repetitions=repetitions)
+        with self.assertRaises(ValueError):
+            runner.balanced_order(["fixture"], 1, arms=("delegated_intent", "exact_invocation"),
+                                  repetitions=3, balance_by_task=True)
+
     def test_the_schedule_holds_only_the_selected_models(self):
         rows = runner.balanced_order(["fixture"], seed=1, model_keys=("haiku",))
         self.assertEqual({row["model_key"] for row in rows}, {"haiku"})
@@ -302,7 +340,7 @@ class ExperimentalArmTests(unittest.TestCase):
 
     def test_minimal_intent_does_not_change_the_default_arm_set(self):
         self.assertEqual(
-            runner.SUPPORTED_ARMS, runner.ARMS + ("minimal_intent", "delegated_intent")
+            runner.SUPPORTED_ARMS, runner.ARMS + ("minimal_intent", "delegated_intent", "exact_invocation")
         )
         rows = runner.balanced_order(["fixture"], seed=1, model_keys=("haiku",))
         self.assertEqual({row["variant"] for row in rows}, set(runner.ARMS))
@@ -315,6 +353,9 @@ class ExperimentalArmTests(unittest.TestCase):
         skill.mkdir(parents=True)
         (skill / "SKILL.md").write_text("Fixture skill body.\n")
         instructions = runner.variants(base)
+        self.assertEqual(instructions["exact_invocation"], instructions["delegated_intent"])
+        self.assertEqual(runner.system_instructions("exact_invocation", instructions["exact_invocation"]),
+                         runner.system_instructions("delegated_intent", instructions["delegated_intent"]))
         addition = (
             "When the task names the class and method to rename, invoke the command before "
             "reading or searching PHP for declaration or caller discovery. Invoke it "
@@ -374,6 +415,48 @@ class ExperimentalArmTests(unittest.TestCase):
                 arms=("minimal_intent_typo",),
                 model_keys=("haiku",),
             )
+
+
+class ExactInvocationTests(unittest.TestCase):
+    def metadata(self):
+        return {"method": "Demo\\Product::old", "file": "src/odd ' $(touch sentinel).php",
+                "to": "newName", "path": "."}
+
+    def test_both_arms_get_same_metadata_only_treatment_gets_quoted_command(self):
+        intent = self.metadata()
+        template = {"intent": intent}
+        generic = runner.intent_prompt(template, "delegated_intent")
+        treatment = runner.intent_prompt(template, "exact_invocation")
+        shared, command = treatment.split("\n\nReady-to-run invocation:\n")
+        self.assertEqual(generic, shared)
+        self.assertIn(json.dumps(intent, sort_keys=True), shared)
+        self.assertIn("--file", shared)
+        self.assertNotIn("php-ast-edit rename", generic)
+        self.assertEqual(shlex.split(command), ["php-ast-edit", "rename", "--method", intent["method"],
+                         "--to", intent["to"], "--path", ".", "--file", intent["file"]])
+
+    def test_missing_metadata_leaves_legacy_prompt_unchanged_and_refuses_exact_arm(self):
+        for variant in runner.ARMS + ("minimal_intent", "delegated_intent"):
+            self.assertEqual(runner.intent_prompt({}, variant), "")
+        with self.assertRaises(ValueError):
+            runner.intent_prompt({}, "exact_invocation")
+        with tempfile.TemporaryDirectory() as name:
+            root = Path(name)
+            with self.assertRaises(ValueError):
+                runner.prepare_fixture(root, {"variant": "exact_invocation"}, {}, "")
+            self.assertEqual(list(root.iterdir()), [])
+
+    def test_metadata_validation_rejects_invalid_schema_or_outside_file(self):
+        intent = self.metadata()
+        task = {"intent": intent, "files": [{"path": intent["file"]}]}
+        self.assertEqual(runner.selected_intent(task), intent)
+        self.assertIsNone(runner.selected_intent({"files": []}))
+        for invalid in (None, {}, {**intent, "oracle": "answer"},
+                        {**intent, "file": "../escape.php"}, {**intent, "file": "/absolute.php"},
+                        {**intent, "file": "missing.php"}, {**intent, "path": ".."},
+                        {**intent, "to": ""}, {**intent, "to": 3}, {**intent, "to": "\0"}):
+            with self.subTest(intent=invalid), self.assertRaises(ValueError):
+                runner.selected_intent({**task, "intent": invalid})
 
 
 class EvidenceRelocationTests(unittest.TestCase):
