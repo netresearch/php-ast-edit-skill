@@ -5,12 +5,12 @@
       "id": 1,
       "eval_name": "rename-method-not-string-literal",
       "prompt": "Rename the method `findByUid` to `resolveByUid` in src/Domain/Repository/ProductRepository.php. There is also a log message in that file containing the text 'findByUid'.",
-      "expected_output": "Uses a named method selector or guarded inspected node to rename the intended declaration and in-scope callers; leaves the log literal unchanged. Reports unresolved project callers or safely refuses unsupported inheritance.",
+      "expected_output": "Uses the preferred `php-ast-edit rename --method Class::old --to new` command when the declaring method is known, or a guarded inspected node/apply document, to rename the intended declaration and in-scope callers; leaves the log literal unchanged. Reports unresolved project callers or safely refuses unsupported inheritance.",
       "files": [],
       "assertions": [
         "The intended method is renamed or an unsafe rename is refused without writes",
         "The same-named log string is unchanged",
-        "A selector is accepted without a redundant inspect; coordinate/ref edits use a snapshot guard",
+        "A named method command is accepted without manual inspection or file enumeration; coordinate/ref edits use a snapshot guard",
         "Uses php-ast-edit while the skill is active"
       ]
     },

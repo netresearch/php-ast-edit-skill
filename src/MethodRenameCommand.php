@@ -200,9 +200,8 @@ final class MethodRenameCommand
                 $matches === [] ? 'No declaration matches ' . $symbol . '. Name the declaring class, not an inherited-only receiver; check --path and project exclusions.' : 'Ambiguous method ' . $symbol . ': ' . implode('; ', $names) . '. Use the fully qualified class name and, if needed, --file.',
             );
         }
-        $found = $matches[0];
 
-        return $found;
+        return $matches[0];
     }
 
     private function methodMatches(

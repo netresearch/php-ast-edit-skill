@@ -101,6 +101,9 @@ def _append_orphan_errors(
     requests: dict[str, dict[str, Any]],
     errors: list[dict[str, Any]],
 ) -> bool:
+    # Result records have no argv. Without their request we cannot know whether
+    # an orphan belongs to apply or rename; retain intact pairs but leave totals
+    # unknown rather than attributing the missing command by assumption.
     orphan_results = results.keys() - requests.keys()
     for call_id in sorted(orphan_results):
         errors.append(

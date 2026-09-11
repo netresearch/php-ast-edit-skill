@@ -54,7 +54,7 @@ candidate. Unknown accounting, timeout, unexpected model, isolation mismatch or
 cap violation stops execution for offline review.
 
 The fixed schedule seed is `20260911-intent-command-v1` represented by the integer
-`20260911`. Every task/arm/repetition cell has three attempts. Record the exact
+`20260911`. Every task/arm cell has three repetitions, one candidate each. Record the exact
 source commit, current skill hash, CLI version, PHP/runtime identities, manifest
 hash, schedule, prompts and all frozen controller/runtime files.
 
@@ -83,7 +83,11 @@ changed lines. Cache state is unknown and list-price cost is not an invoice.
 
 The passive proxy already records direct rename argv/results. Summary code must count
 intent command invocations independently from `apply` events; an intent invocation
-is not an `apply` event merely because it delegates internally. Review native traces
+is not an `apply` event merely because it delegates internally.
+An orphan result has no command argv, so it cannot be attributed to `apply` or
+`rename`. Such incomplete evidence leaves intent totals unknown, retaining the
+intact pairs for inspection; independence of accounting does not imply guessing
+which missing request produced an orphan result. Review native traces
 for route adherence, command failures, repairs and unsupported claims. Tool timing
 stays unknown unless native intervals cover every tool call.
 

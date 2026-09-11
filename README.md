@@ -49,7 +49,7 @@ Use `bin/php-ast-edit` inside a source checkout. Use `vendor/bin/php-ast-edit` w
 Available on development `main`:
 
 ```bash
-php-ast-edit rename --method 'App\Checkout::submit' --to placeOrder
+bin/php-ast-edit rename --method 'App\Checkout::submit' --to placeOrder
 ```
 
 The command discovers the declaration and submits one guarded transaction. Non-private
