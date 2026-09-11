@@ -14,61 +14,20 @@ final class MethodRenameCommand
 {
     private const FLAGS = ['method', 'to', 'path', 'file', 'sha256', 'report', 'mocks', 'dry-run'];
 
-    /** @param array<string, mixed> $options @return array<string, mixed> */
     public function document(array $options): array
     {
         $this->validateOptions($options);
         $symbol = $this->text($options, 'method');
         $to = $this->text($options, 'to');
-        $parts = explode('::', $symbol);
-
-        if (count($parts) !== 2 || !$this->identifier($parts[1])) {
-            throw new EditException('--method must name Class::method or Namespace\Class::method.');
-        }
-        [$owner, $method] = $parts;
-
-        foreach (explode('\\', ltrim($owner, '\\')) as $part) {
-            if (!$this->identifier($part)) {
-                throw new EditException('--method must name Class::method or Namespace\Class::method.');
-            }
-        }
+        [$owner, $method] = $this->symbol($symbol);
 
         if (!$this->identifier($to)) {
             throw new EditException('--to must be a PHP method name.');
         }
-        $path = realpath($this->text($options, 'path', '.'));
-
-        if ($path === false || !is_dir($path)) {
-            throw new EditException('--path must name an existing project directory.');
-        }
-        $index = ProjectIndex::for($path);
-        $files = $this->containedFiles($index, array_key_exists('path', $options) ? $path : $index->root);
-
-        if (isset($options['file'])) {
-            $requested = $this->text($options, 'file');
-            $requested = str_starts_with($requested, DIRECTORY_SEPARATOR) ? $requested : $path . DIRECTORY_SEPARATOR . $requested;
-            $file = realpath($requested);
-
-            if ($file === false || is_link($requested) || !$index->isProjectFile($file)) {
-                throw new EditException(
-                    '--file must name a non-symlink PHP file in this project, outside its exclusions.',
-                );
-            }
-            $files = [$file];
-        }
+        $files = $this->discoveryFiles($options);
         $matches = $this->declarations($files, $owner, $method);
 
-        if (count($matches) !== 1) {
-            $names = array_map(
-                static fn (array $entry): string => $entry['symbol'] . ' in ' . $entry['path'],
-                $matches,
-            );
-
-            throw new EditException(
-                $matches === [] ? 'No declaration matches ' . $symbol . '. Name the declaring class, not an inherited-only receiver; check --path and project exclusions.' : 'Ambiguous method ' . $symbol . ': ' . implode('; ', $names) . '. Use the fully qualified class name and, if needed, --file.',
-            );
-        }
-        $found = $matches[0];
+        $found = $this->uniqueMatch($matches, $symbol);
 
         if (isset($options['sha256']) && !hash_equals($this->text($options, 'sha256'), $found['sha256'])) {
             throw new EditException(
@@ -78,7 +37,7 @@ final class MethodRenameCommand
         $mocks = $options['mocks'] ?? false;
 
         return [
-            'report' => $this->text($options, 'report', 'agent'),
+            'report' => $this->text($options, 'report', 'compact'),
             'files' => [
                 [
                     'path' => $found['path'],
@@ -114,7 +73,7 @@ final class MethodRenameCommand
             }
         }
 
-        if (!in_array($this->text($options, 'report', 'agent'), ['agent', 'full', 'compact'], true)) {
+        if (!in_array($this->text($options, 'report', 'compact'), ['agent', 'full', 'compact'], true)) {
             throw new EditException('--report must be agent, full or compact.');
         }
     }
@@ -136,14 +95,12 @@ final class MethodRenameCommand
         return preg_match('/^[A-Za-z_\x80-\xff][A-Za-z0-9_\x80-\xff]*$/D', $name) === 1;
     }
 
-    /** @param list<string> $files @return list<array<string, mixed>> */
     private function declarations(array $files, string $owner, string $method): array
     {
         $matches = [];
         $qualified = str_contains($owner, '\\');
         $owner = ltrim($owner, '\\');
         $parser = (new ParserFactory())->createForHostVersion();
-        $locator = new NodeLocator();
 
         foreach ($files as $file) {
             $source = file_get_contents($file);
@@ -159,20 +116,10 @@ final class MethodRenameCommand
                 if ($name === null || strcasecmp($qualified ? $name : (string) $class->name, $owner) !== 0) {
                     continue;
                 }
-
-                foreach ($class->getMethods() as $declaration) {
-                    if (strcasecmp($declaration->name->toString(), $method) !== 0) {
-                        continue;
-                    }
-                    $location = $locator->locate($roots, $declaration->getStartFilePos(), 'Stmt_ClassMethod');
-                    $matches[] = [
-                        'path' => $file,
-                        'symbol' => $name . '::' . $declaration->name,
-                        'ref' => $location->path,
-                        'sha256' => hash('sha256', $source),
-                        'private' => $declaration->isPrivate(),
-                    ];
-                }
+                array_push(
+                    $matches,
+                    ...$this->methodMatches($class, $roots, $file, $source, $name, $method),
+                );
             }
         }
 
@@ -195,5 +142,94 @@ final class MethodRenameCommand
         }
 
         return $files;
+    }
+
+    private function symbol(string $symbol): array
+    {
+        $parts = explode('::', $symbol);
+
+        if (count($parts) !== 2 || !$this->identifier($parts[1])) {
+            throw new EditException('--method must name Class::method or Namespace\Class::method.');
+        }
+        [$owner, $method] = $parts;
+
+        foreach (explode('\\', ltrim($owner, '\\')) as $part) {
+            if (!$this->identifier($part)) {
+                throw new EditException('--method must name Class::method or Namespace\Class::method.');
+            }
+        }
+
+        return [$owner, $method];
+    }
+
+    private function discoveryFiles(array $options): array
+    {
+        $path = realpath($this->text($options, 'path', '.'));
+
+        if ($path === false || !is_dir($path)) {
+            throw new EditException('--path must name an existing project directory.');
+        }
+        $index = ProjectIndex::for($path);
+        $files = $this->containedFiles($index, array_key_exists('path', $options) ? $path : $index->root);
+
+        if (isset($options['file'])) {
+            $requested = $this->text($options, 'file');
+            $requested = str_starts_with($requested, DIRECTORY_SEPARATOR) ? $requested : $path . DIRECTORY_SEPARATOR . $requested;
+            $file = realpath($requested);
+
+            if ($file === false || is_link($requested) || !$index->isProjectFile($file)) {
+                throw new EditException(
+                    '--file must name a non-symlink PHP file in this project, outside its exclusions.',
+                );
+            }
+            $files = [$file];
+        }
+
+        return $files;
+    }
+
+    private function uniqueMatch(array $matches, string $symbol): array
+    {
+        if (count($matches) !== 1) {
+            $names = array_map(
+                static fn (array $entry): string => $entry['symbol'] . ' in ' . $entry['path'],
+                $matches,
+            );
+
+            throw new EditException(
+                $matches === [] ? 'No declaration matches ' . $symbol . '. Name the declaring class, not an inherited-only receiver; check --path and project exclusions.' : 'Ambiguous method ' . $symbol . ': ' . implode('; ', $names) . '. Use the fully qualified class name and, if needed, --file.',
+            );
+        }
+        $found = $matches[0];
+
+        return $found;
+    }
+
+    private function methodMatches(
+        Stmt\ClassLike $class,
+        array $roots,
+        string $file,
+        string $source,
+        string $name,
+        string $method,
+    ): array {
+        $matches = [];
+        $locator = new NodeLocator();
+
+        foreach ($class->getMethods() as $declaration) {
+            if (strcasecmp($declaration->name->toString(), $method) !== 0) {
+                continue;
+            }
+            $location = $locator->locate($roots, $declaration->getStartFilePos(), 'Stmt_ClassMethod');
+            $matches[] = [
+                'path' => $file,
+                'symbol' => $name . '::' . $declaration->name,
+                'ref' => $location->path,
+                'sha256' => hash('sha256', $source),
+                'private' => $declaration->isPrivate(),
+            ];
+        }
+
+        return $matches;
     }
 }

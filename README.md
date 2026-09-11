@@ -55,8 +55,8 @@ php-ast-edit rename --method 'App\Checkout::submit' --to placeOrder
 The command discovers the declaration and submits one guarded transaction. Non-private
 methods resolve their hierarchy and callers through the configured Phpactor resolver,
 including public methods in final classes. Project checks run through the existing
-write pipeline. The default agent report carries their verdict and unresolved mentions;
-use `--report compact` to include the diff.
+write pipeline. The default compact report carries the diff, check verdicts and unresolved mentions;
+use `--report agent` when an inline diff is unnecessary.
 
 Use `--path` to name another project root, `--file` to narrow declaration discovery,
 and `--dry-run` to preview. `--file` does not limit which resolved callers change.

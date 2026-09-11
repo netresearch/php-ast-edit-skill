@@ -1,6 +1,6 @@
 ---
 name: php-structured-edit
-description: "Use for PHP source changes: method or variable renames, declarations, statements, expressions, imports, literals and file creation/deletion. Provides guarded AST writes and project method discovery. Use ordinary search for reads; not for read-only questions or non-PHP edits."
+description: "Use when changing PHP source: method or variable renames, declarations, statements, expressions, imports, literals and file creation/deletion. Provides guarded AST writes and project method discovery. Use ordinary search for reads; not for read-only questions or non-PHP edits."
 ---
 
 # PHP Structured Edit
@@ -22,10 +22,11 @@ qualified class when ambiguous, `--path` for another project, or `--file` to nar
 declaration discovery. Non-private methods require Phpactor, including final classes;
 missing or uncertain resolution is refused. `--dry-run` previews without writing.
 
-Read the returned `renames`, `open`, `checks` and `checksFailed`. PHP literals and
+In the default compact report, review `diff`, `renames`, `open`, `verify` and
+`checksPassed`. The changed lines are included for review. PHP literals and
 non-PHP mentions remain visible for task-specific decisions. `--mocks` also changes
 listed PHPUnit method names regardless of mocked class; use it only when all listed
-names mean this method. `--report compact` includes the diff when review needs it.
+names mean this method. Use `--report agent` when no inline diff is needed.
 
 ## Other changes
 
@@ -54,7 +55,7 @@ declares canonical mode; normalization is optional.
 ## Interpret the result
 
 Use `"report":"agent"` when a declared check's verdict is sufficient; `apply` otherwise
-defaults to `full`. `rename` defaults to `agent`. `full` and `compact` retain the diff.
+defaults to `full`. `rename` defaults to `compact`. `full` and `compact` retain the diff.
 Read effects, warnings and verification. `checks: "none_declared"` or
 `checksPassed: null` means no configured check ran. Parser success alone is not
 application correctness. Repair failed checks; run additional checks the task needs.

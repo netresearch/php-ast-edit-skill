@@ -104,10 +104,9 @@ def main() -> None:
     if destination is None:
         print(data, end="")
         return
-    destination.parent.mkdir(parents=True, exist_ok=True)
-    destination.write_text(
-        data
-    )  # NOSONAR(S8707): explicit operator-selected offline manifest output.
+    # The destination is an explicit caller-selected output path; absolute paths are supported.
+    destination.parent.mkdir(parents=True, exist_ok=True)  # NOSONAR(S8707)
+    destination.write_text(data)  # NOSONAR(S8707)
 
 
 if __name__ == "__main__":

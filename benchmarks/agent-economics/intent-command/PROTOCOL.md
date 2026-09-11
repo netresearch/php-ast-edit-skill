@@ -138,3 +138,30 @@ python3 benchmarks/agent-economics/intent-command/summarize.py \
 The two existing comparison arms are the complete schedule. The full-skill arm is
 the source/runtime route under test. No candidate call belongs in preparation,
 validation or fixture tests.
+
+## Refinement 1: include review evidence by default
+
+The first campaign used source `63c2e26ac707a9f84f38a5268c15513162416c6a`
+and completed all twelve attempts with correct oracles, no accounting errors and
+USD 0.4732538 native list-price cost. It did not meet the prospective success
+criterion: small-task median tokens fell 10.8% while wall time rose 11.9%; cross-file
+median tokens rose 48.5% and wall time rose 17.6%. In all three cross-file intent
+traces (run002, run004, run011), the agent reread changed source after a successful
+command whose default report omitted the diff. The small-task runs requested
+`--report compact` and required fewer follow-up reads. This is a mechanism to test,
+not a causal estimate from those differently sized tasks.
+
+Refinement 1 changes the new direct command's default from `agent` to the existing
+`compact` report and tells the skill consumer to review its included changed lines.
+All explicit report modes, guards, resolution, verification and preservation rules
+remain. Formatting/validator corrections and behavior-preserving complexity
+refactors from PR review are included in the next frozen commit and disclosed;
+no task prompt or fixture is changed. The first campaign and every attempt remain
+published, with separate summaries for the refinement.
+
+Use the same two tasks, arms, model, deadlines, runner and three repetitions per
+cell, with schedule seed `20260912`. The new campaign budget is USD 4.5267462,
+the remaining part of the combined USD 5 ceiling. Prepare a fresh directory from
+the reviewed implementation commit, then execute its frozen controller. The
+original success criteria remain unchanged. There is no third refinement in this
+protocol and no pooling with the first campaign or the historical 36 runs.

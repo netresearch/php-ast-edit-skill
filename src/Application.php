@@ -428,8 +428,8 @@ final class Application
         rename discovers one method declaration and performs one guarded transaction.
         A qualified class name resolves ambiguity; --file narrows declaration discovery,
         not the caller changes. Non-private methods use Phpactor across the project,
-        including final classes. Checks and unresolved mentions are in the agent report.
-        Use --report compact when you also need the diff in the same result.
+        including final classes. The default compact report includes the diff, checks
+        and unresolved mentions. Use --report agent when no inline diff is needed.
         Use a selector when the target has a name; inspect only when coordinates are needed:
           {"files":[{"path":"src/Foo.php","edits":[{"target":{"select":"method:Foo::bar"},
             "operation":"set_return_type","php":"string|int"}]}]}

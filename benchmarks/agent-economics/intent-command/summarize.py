@@ -36,55 +36,39 @@ def _load_pilot_reporter() -> Any:
 PILOT = _load_pilot_reporter()
 
 
-def _intent_summary(evidence: Path | None) -> dict[str, Any]:
-    """Return independent direct-command counts, retaining incomplete evidence."""
-
-    empty: dict[str, Any] = {
+def _empty_intent(
+    observation: str = "unknown_missing_audit",
+    errors: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    return {
         "intent_calls": None,
         "failed_intent_calls": None,
-        "intent_observation": "unknown_missing_audit",
+        "intent_observation": observation,
         "intent_unknown": True,
         "intent_records": [],
-        "intent_errors": [],
+        "intent_errors": errors or [],
     }
-    if evidence is None:
-        empty["intent_observation"] = "unknown_missing_evidence"
-        return empty
-    path = evidence / ENGINE_AUDIT_FILE
-    if path.is_symlink():
-        empty["intent_observation"] = "unknown_malformed"
-        empty["intent_errors"] = [
-            {
-                "file": ENGINE_AUDIT_FILE,
-                "error": "engine audit path is a symlink and was rejected",
-            }
-        ]
-        return empty
-    if not path.exists():
-        return empty
 
-    errors: list[dict[str, Any]] = []
-    try:
-        events, malformed = PILOT.read_jsonl(path)
-    except OSError as error:
-        empty["intent_observation"] = "unknown_unreadable"
-        empty["intent_errors"] = [{"file": ENGINE_AUDIT_FILE, "error": str(error)}]
-        return empty
 
-    requests, results = PILOT.index_engine_events(events, malformed, errors)
-    parser_errors = bool(errors)
-    intent_requests = [
-        request
-        for request in requests.values()
-        if isinstance(request.get("argv"), list)
-        and request["argv"]
-        and request["argv"][0] == "rename"
-    ]
+def _rename_requests(requests: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
+    return [request for request in requests.values() if _is_rename_request(request)]
+
+
+def _is_rename_request(request: dict[str, Any]) -> bool:
+    argv = request.get("argv")
+    return isinstance(argv, list) and bool(argv) and argv[0] == "rename"
+
+
+def _collect_intent_records(
+    requests: list[dict[str, Any]],
+    results: dict[str, dict[str, Any]],
+    errors: list[dict[str, Any]],
+    complete: bool,
+) -> tuple[list[dict[str, Any]], int, bool, bool]:
     records: list[dict[str, Any]] = []
     failed = 0
-    complete = not malformed and not errors
     malformed_pair = False
-    for request in intent_requests:
+    for request in requests:
         call_id = request["id"]
         result = results.get(call_id)
         exit_code = result.get("exit_code") if result else None
@@ -109,32 +93,87 @@ def _intent_summary(evidence: Path | None) -> dict[str, Any]:
                 "paired": paired,
             }
         )
+    return records, failed, complete, malformed_pair
 
-    # An orphan result may be the result of a direct request whose request line
-    # was lost.  Keep the direct-command totals unknown until the pair is intact.
+
+def _append_orphan_errors(
+    results: dict[str, dict[str, Any]],
+    requests: dict[str, dict[str, Any]],
+    errors: list[dict[str, Any]],
+) -> bool:
     orphan_results = results.keys() - requests.keys()
-    if orphan_results:
-        complete = False
-        for call_id in sorted(orphan_results):
-            errors.append(
+    for call_id in sorted(orphan_results):
+        errors.append(
+            {
+                "file": ENGINE_AUDIT_FILE,
+                "id": call_id,
+                "error": "engine result has no request",
+            }
+        )
+    return not orphan_results
+
+
+def _unknown_intent(
+    empty: dict[str, Any],
+    records: list[dict[str, Any]],
+    errors: list[dict[str, Any]],
+    malformed: bool,
+    parser_errors: bool,
+    malformed_pair: bool,
+) -> dict[str, Any]:
+    status = (
+        "unknown_malformed"
+        if malformed or parser_errors or malformed_pair
+        else "unknown_unpaired"
+    )
+    return {
+        **empty,
+        "intent_observation": status,
+        "intent_records": records,
+        "intent_errors": errors,
+    }
+
+
+def _intent_summary(evidence: Path | None) -> dict[str, Any]:
+    """Return independent direct-command counts, retaining incomplete evidence."""
+
+    empty = _empty_intent()
+    if evidence is None:
+        return _empty_intent("unknown_missing_evidence")
+    path = evidence / ENGINE_AUDIT_FILE
+    if path.is_symlink():
+        return _empty_intent(
+            "unknown_malformed",
+            [
                 {
                     "file": ENGINE_AUDIT_FILE,
-                    "id": call_id,
-                    "error": "engine result has no request",
+                    "error": "engine audit path is a symlink and was rejected",
                 }
-            )
+            ],
+        )
+    if not path.exists():
+        return empty
+
+    errors: list[dict[str, Any]] = []
+    try:
+        events, malformed = PILOT.read_jsonl(path)
+    except OSError as error:
+        return _empty_intent(
+            "unknown_unreadable",
+            [{"file": ENGINE_AUDIT_FILE, "error": str(error)}],
+        )
+
+    requests, results = PILOT.index_engine_events(events, malformed, errors)
+    parser_errors = bool(errors)
+    records, failed, complete, malformed_pair = _collect_intent_records(
+        _rename_requests(requests), results, errors, not malformed and not errors
+    )
+    complete = complete and _append_orphan_errors(results, requests, errors)
 
     if not complete:
-        if malformed or parser_errors or malformed_pair:
-            status = "unknown_malformed"
-        else:
-            status = "unknown_unpaired"
-        return {
-            **empty,
-            "intent_observation": status,
-            "intent_records": records,
-            "intent_errors": errors,
-        }
+        return _unknown_intent(
+            empty, records, errors, malformed, parser_errors, malformed_pair
+        )
     return {
         "intent_calls": len(records),
         "failed_intent_calls": failed,

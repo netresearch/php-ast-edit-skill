@@ -8,7 +8,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Added
 
-- `rename --method Class::old --to new` discovers a unique project declaration, captures its source hash and submits one transaction with existing verification. It accepts qualified names, `--path`, an optional declaration `--file`, caller `--sha256`, `--mocks`, report modes and dry-run. Non-private methods explicitly resolve project callers, including final classes. Ambiguous, excluded, symlinked and inherited-only declarations are refused.
+- `rename --method Class::old --to new` discovers a unique project declaration, captures its source hash and submits one transaction with existing verification. Its default compact report includes the changed lines for review. It accepts qualified names, `--path`, an optional declaration `--file`, caller `--sha256`, `--mocks`, report modes and dry-run. Non-private methods explicitly resolve project callers, including final classes. Ambiguous, excluded, symlinked and inherited-only declarations are refused.
 - `rename_method` accepts structural refs for project expansion and an optional boolean `project` to request project scope explicitly. Source guards and target kinds are checked before discovery; malformed `mocks`/`project` values are rejected on every target route.
 
 ### Changed

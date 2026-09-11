@@ -29,14 +29,16 @@ if str(ROOT / "benchmarks/agent-economics/efficiency") not in sys.path:
 import runner
 
 SPEC = importlib.util.spec_from_file_location("intent_tasks", HERE / "tasks.py")
-assert SPEC is not None and SPEC.loader is not None
+assert SPEC is not None
+assert SPEC.loader is not None
 tasks = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(tasks)
 
 BENCHMARK_SPEC = importlib.util.spec_from_file_location(
     "intent_agent_benchmark", ROOT / "benchmarks/agent_benchmark.py"
 )
-assert BENCHMARK_SPEC is not None and BENCHMARK_SPEC.loader is not None
+assert BENCHMARK_SPEC is not None
+assert BENCHMARK_SPEC.loader is not None
 agent_benchmark = importlib.util.module_from_spec(BENCHMARK_SPEC)
 BENCHMARK_SPEC.loader.exec_module(agent_benchmark)
 

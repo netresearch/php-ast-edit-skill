@@ -69,7 +69,7 @@ class IntentCommandTests(unittest.TestCase):
 
     def assert_refused(self, method: str, to: str, *options: str) -> str:
         status, payload, text = self.rename(method, to, *options)
-        self.assertEqual(2, status, payload)
+        self.assertEqual(status, 2, payload)
         self.assertIn("raw" if "raw" in payload else "error", payload)
         return text
 
@@ -99,15 +99,15 @@ class IntentCommandTests(unittest.TestCase):
             "}\n",
         )
 
-        status, report, _ = self.rename("local::old", "renamed")
-        self.assertEqual(0, status, report)
+        status, report, _ = self.rename("local::old", "renamed", "--report", "agent")
+        self.assertEqual(status, 0, report)
         source = path.read_text(encoding="utf-8")
         self.assertIn("function renamed", source)
         self.assertIn("$this->renamed()", source)
         self.assertIn("$other->OLD()", source)
         self.assertIn("return 'old'", source)
-        self.assertEqual("agent", report.get("report"))
-        self.assertEqual("applied", report.get("outcome"))
+        self.assertEqual(report.get("report"), "agent")
+        self.assertEqual(report.get("outcome"), "applied")
 
     def test_short_class_name_is_ambiguous_but_fqcn_selects_one(self):
         first = self.write("src/First.php", self.namespaced_class("First", "Worker"))
@@ -119,7 +119,7 @@ class IntentCommandTests(unittest.TestCase):
         self.assertEqual(before, (first.read_bytes(), second.read_bytes()))
 
         status, report, _ = self.rename(r"First\Worker::old", "newName")
-        self.assertEqual(0, status, report)
+        self.assertEqual(status, 0, report)
         self.assertIn("function newName", first.read_text(encoding="utf-8"))
         self.assertIn("function old", second.read_text(encoding="utf-8"))
 
@@ -139,7 +139,7 @@ class IntentCommandTests(unittest.TestCase):
             "namespace Two { final class Shared { private function old(): void {} } }\n",
         )
         status, report, _ = self.rename(r"One\Shared::old", "newName")
-        self.assertEqual(0, status, report)
+        self.assertEqual(status, 0, report)
         source = path.read_text(encoding="utf-8")
         self.assertIn("class Shared { private function newName", source)
         self.assertIn(
@@ -167,7 +167,7 @@ class IntentCommandTests(unittest.TestCase):
         status, report, _ = self.rename(
             "Worker::old", "newName", "--file", str(selected)
         )
-        self.assertEqual(0, status, report)
+        self.assertEqual(status, 0, report)
         self.assertIn("function newName", selected.read_text(encoding="utf-8"))
         self.assertIn("function old", other.read_text(encoding="utf-8"))
 
@@ -190,7 +190,7 @@ class IntentCommandTests(unittest.TestCase):
             "--sha256",
             "0" * 64,
         )
-        self.assertEqual(2, status, report)
+        self.assertEqual(status, 2, report)
         self.assertIn("STALE_SOURCE", json.dumps(report))
         self.assertIn("function old", path.read_text(encoding="utf-8"))
 
@@ -198,13 +198,13 @@ class IntentCommandTests(unittest.TestCase):
         path = self.write("Flags.php", self.local_class("Flags"))
         before = path.read_bytes()
         status, report, text = self.rename("Flags::old", "newName", "--typo", "value")
-        self.assertEqual(2, status, report)
+        self.assertEqual(status, 2, report)
         self.assertIn("typo", text)
         self.assertEqual(before, path.read_bytes())
         status, report, text = self.cli(
             "rename", "--method", "Flags::old", "--path", str(self.root)
         )
-        self.assertEqual(2, status, report)
+        self.assertEqual(status, 2, report)
         self.assertIn("--to", text)
         self.assertEqual(before, path.read_bytes())
 
@@ -212,8 +212,12 @@ class IntentCommandTests(unittest.TestCase):
         path = self.write("Dry.php", self.local_class("Dry"))
         before = path.read_bytes()
         status, report, _ = self.rename("Dry::old", "newName", "--dry-run")
-        self.assertEqual(0, status, report)
-        self.assertEqual("dry_run", report.get("outcome"))
+        self.assertEqual(status, 0, report)
+        file_report = report["files"][0]
+        self.assertTrue(file_report["dryRun"])
+        self.assertIn("diff", file_report)
+        self.assertEqual(file_report["checkIds"], [])
+        self.assertIsNone(report["checksPassed"])
         self.assertEqual(before, path.read_bytes())
 
     def test_failed_declared_check_keeps_edit_and_exits_one(self):
@@ -227,16 +231,20 @@ class IntentCommandTests(unittest.TestCase):
             encoding="utf-8",
         )
         status, report, _ = self.rename("Checked::old", "newName")
-        self.assertEqual(1, status, report)
-        self.assertEqual("failed", report.get("checks"))
-        self.assertEqual("applied_checks_failed", report.get("outcome"))
+        self.assertEqual(status, 1, report)
+        self.assertFalse(report["checksPassed"])
+        self.assertEqual(report["files"][0]["checkIds"], ["verify-1"])
+        self.assertEqual(report["files"][0]["validation"]["checks"], "failed")
+        self.assertFalse(report["verify"][0]["ok"])
         self.assertIn("function newName", path.read_text(encoding="utf-8"))
 
     def test_no_declared_checks_are_distinct_from_passed(self):
         path = self.write("Unchecked.php", self.local_class("Unchecked"))
-        status, report, _ = self.rename("Unchecked::old", "newName")
-        self.assertEqual(0, status, report)
-        self.assertEqual("none_declared", report.get("checks"))
+        status, report, _ = self.rename(
+            "Unchecked::old", "newName", "--report", "agent"
+        )
+        self.assertEqual(status, 0, report)
+        self.assertEqual(report.get("checks"), "none_declared")
         self.assertIsNone(report.get("checksPassed"))
         self.assertIn("function newName", path.read_text(encoding="utf-8"))
 
@@ -259,7 +267,7 @@ class IntentCommandTests(unittest.TestCase):
                     "-",
                     input_text=json.dumps(document),
                 )
-                self.assertEqual(2, status, report)
+                self.assertEqual(status, 2, report)
                 self.assertIn("true or false", text)
                 self.assertEqual(before, path.read_bytes())
 
@@ -275,7 +283,7 @@ class IntentCommandTests(unittest.TestCase):
             "--path",
             str(self.root / "src"),
         )
-        self.assertEqual(2, status, report)
+        self.assertEqual(status, 2, report)
         self.assertIn("root", text.lower())
         self.assertEqual(before, path.read_bytes())
 
@@ -291,7 +299,7 @@ class IntentCommandTests(unittest.TestCase):
             "Cwd.php",
             root=self.root / "src",
         )
-        self.assertEqual(0, status, report)
+        self.assertEqual(status, 0, report)
         self.assertIn("function newName", path.read_text(encoding="utf-8"))
 
     def test_report_modes_are_forwarded(self):
@@ -303,7 +311,7 @@ class IntentCommandTests(unittest.TestCase):
                 status, report, _ = self.rename(
                     f"Report{mode}::old", "newName", "--report", mode
                 )
-                self.assertEqual(0, status, report)
+                self.assertEqual(status, 0, report)
                 self.assertIn("function newName", path.read_text(encoding="utf-8"))
 
     def test_fixture_reference_finder_handles_ref_project_and_mocks(self):
@@ -360,18 +368,18 @@ class IntentCommandTests(unittest.TestCase):
                 text=True,
                 check=False,
             )
-            self.assertEqual(0, process.returncode, process.stderr)
+            self.assertEqual(process.returncode, 0, process.stderr)
             report = json.loads(process.stdout)
         finally:
             harness_temp.cleanup()
-        self.assertEqual(2, report["renames"][0]["declarations"])
-        self.assertEqual(2, report["renames"][0]["references"])
-        self.assertEqual(1, report["renames"][0]["mocksSet"])
+        self.assertEqual(report["renames"][0]["declarations"], 2)
+        self.assertEqual(report["renames"][0]["references"], 2)
+        self.assertEqual(report["renames"][0]["mocksSet"], 1)
         self.assertNotIn("old", base.read_text(encoding="utf-8"))
         self.assertNotIn("old", child.read_text(encoding="utf-8"))
         caller_source = caller.read_text(encoding="utf-8")
-        self.assertEqual(0, caller_source.count("old"))
-        self.assertEqual(3, caller_source.count("newName"))
+        self.assertEqual(caller_source.count("old"), 0)
+        self.assertEqual(caller_source.count("newName"), 3)
 
     def test_duplicate_fqcn_stops_fake_resolver_before_write_or_query(self):
         harness_temp = tempfile.TemporaryDirectory(prefix="php-ast-intent-duplicate-")
@@ -422,10 +430,10 @@ try {
                         text=True,
                         check=False,
                     )
-                    self.assertEqual(0, process.returncode, process.stderr)
+                    self.assertEqual(process.returncode, 0, process.stderr)
                     report = json.loads(process.stdout)
-                    self.assertEqual(2, report["status"], report)
-                    self.assertEqual(0, report["queries"], report)
+                    self.assertEqual(report["status"], 2, report)
+                    self.assertEqual(report["queries"], 0, report)
                     self.assertIn("duplicate", report["error"].lower())
                     self.assertIn(r"Same\Worker", report["error"])
                     self.assertEqual(before, (first.read_bytes(), second.read_bytes()))

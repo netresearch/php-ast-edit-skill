@@ -327,45 +327,23 @@ final class Editor
 
     private function projectRename(array $spec, array $edit): ?array
     {
-        $target = $edit['target'] ?? null;
+        $options = $this->projectRenameOptions($edit);
 
-        if (($edit['operation'] ?? null) !== 'rename_method' || !is_string($edit['to'] ?? null)) {
+        if ($options === null) {
             return null;
         }
-        $mocks = array_key_exists('mocks', $edit) ? $edit['mocks'] : false;
-        $project = array_key_exists('project', $edit) ? $edit['project'] : false;
-
-        if (!is_bool($mocks)) {
-            throw new EditException(
-                'rename_method "mocks" is true or false: true also sets the method names PHPUnit mocks list.',
-            );
-        }
-
-        if (!is_bool($project)) {
-            throw new EditException(
-                'rename_method "project" is true or false: true resolves callers across the project.',
-            );
-        }
-
-        if (!is_array($target) || !is_string($target['select'] ?? null) && !is_string($target['ref'] ?? null)) {
-            if ($project || $mocks) {
-                throw new EditException(
-                    'rename_method project or mocks requires target.select or target.ref.',
-                );
-            }
-
-            return null;
-        }
+        [$target, $mocks, $project] = $options;
         $path = $spec['path'];
         [$source, , $roots] = $this->parseFile($path, null);
         $this->assertSha($spec, $path, hash('sha256', $source));
         $location = is_string($target['ref'] ?? null) ? $this->locator->resolveRef($roots, $target['ref']) : $this->locator->resolveSelect($roots, $target['select']);
         $this->assertKind($location, $target['kind'] ?? null);
 
-        if (!$location->node instanceof Stmt\ClassMethod) {
-            return null;
+        $reason = null;
+
+        if ($location->node instanceof Stmt\ClassMethod) {
+            $reason = $project ? 'project scope was requested' : RenameMethod::projectWideBecause($location->node, $location->parent);
         }
-        $reason = $project ? 'project scope was requested' : RenameMethod::projectWideBecause($location->node, $location->parent);
 
         if ($reason === null) {
             return null;
@@ -3005,5 +2983,40 @@ final class Editor
     private function renameMethod(NodeLocation $location, string $to, array $roots): array
     {
         return (new RenameMethod())->rename($location, $to, $roots);
+    }
+
+    private function projectRenameOptions(array $edit): ?array
+    {
+        $target = $edit['target'] ?? null;
+
+        if (($edit['operation'] ?? null) !== 'rename_method' || !is_string($edit['to'] ?? null)) {
+            return null;
+        }
+        $mocks = array_key_exists('mocks', $edit) ? $edit['mocks'] : false;
+        $project = array_key_exists('project', $edit) ? $edit['project'] : false;
+
+        if (!is_bool($mocks)) {
+            throw new EditException(
+                'rename_method "mocks" is true or false: true also sets the method names PHPUnit mocks list.',
+            );
+        }
+
+        if (!is_bool($project)) {
+            throw new EditException(
+                'rename_method "project" is true or false: true resolves callers across the project.',
+            );
+        }
+
+        if (!is_array($target) || !is_string($target['select'] ?? null) && !is_string($target['ref'] ?? null)) {
+            if ($project || $mocks) {
+                throw new EditException(
+                    'rename_method project or mocks requires target.select or target.ref.',
+                );
+            }
+
+            return null;
+        }
+
+        return [$target, $mocks, $project];
     }
 }

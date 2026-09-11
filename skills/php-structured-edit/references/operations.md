@@ -41,8 +41,9 @@ resolution unless `--mocks` requests project processing. Resolver limitations an
 unresolved PHP literals or non-PHP mentions remain in the report. `--mocks` has the
 same class-independent PHPUnit-name matching as the operation below.
 
-The default `--report agent` shows observed outcomes, checks and open work.
-`--report full` and `--report compact` include the diff. Exit codes are unchanged:
+The default `--report compact` includes the diff and shares verification results
+across files. `--report agent` provides the decision report without a diff;
+`--report full` includes the diff and repeats checks per file. Exit codes are unchanged:
 0 completed, 1 written with failed checks, 2 refused, 3 unexpected error. No declared
 checks remains `none_declared`/null; it never becomes a passing verification claim.
 
