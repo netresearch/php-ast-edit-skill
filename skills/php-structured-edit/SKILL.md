@@ -11,9 +11,10 @@ fall back to text mutation.
 
 ## First use
 
-Resolve the executable once: repository `bin/php-ast-edit`, project `vendor/bin/php-ast-edit`,
-installed command, or this skill's `scripts/php-ast-edit` wrapper. Use `help` if needed;
-install missing engine dependencies before retrying.
+Use a supplied executable directly. Otherwise resolve it once: repository
+`bin/php-ast-edit`, project `vendor/bin/php-ast-edit`, installed command, or this skill's
+`scripts/php-ast-edit` wrapper. Use `help` if needed; install missing engine dependencies
+before retrying.
 
 Auto mode uses format-preserving printing unless applicable configuration enables
 canonical printing. Explicit printer choices override auto mode. Normalization is
@@ -52,14 +53,12 @@ configuring formatting.
    changed symbols and checks actually run; distinguish declarations from call sites.
    An intended edit leaves a Git diff. Avoid repository-wide `format` for a local edit.
 
-Minimal transaction:
-
-```json
-{"files":[{"path":"src/Registry.php","edits":[{"target":{"select":"class:Registry"},"operation":"add_member","php":"public function register(string $name): void {}"}]}]}
-```
+Minimal transaction, passed directly without a temporary payload file:
 
 ```bash
-php-ast-edit apply --input edits.json
+php-ast-edit apply <<'JSON'
+{"files":[{"path":"src/Registry.php","edits":[{"target":{"select":"class:Registry"},"operation":"add_member","php":"public function register(string $name): void {}"}]}]}
+JSON
 ```
 
 `"report":"full"` (the default) retains per-file verification. Report mode changes
@@ -77,7 +76,12 @@ as `checks: "none_declared"`, which is harder to misread. `agent` is versioned b
   Delete: `mode: delete` with the snapshot hash.
 - Local rename: `rename_variable` on the enclosing function-like scope with `from`/`to`.
   Binding collisions are rejected; dynamic variables remain limited.
-- Method rename: `rename_method` with `to` on `method:Class::name`, plus `"mocks": true`
+- Method rename: confirm the intended declaration, then submit one rename for its
+  hierarchy: `apply --file F.php --select method:Foo::bar --op rename_method --to baz`.
+  The resolver finds related declarations and typed callers; do not read individual
+  callers solely to locate edits or add redundant renames for each implementation.
+  Review the returned changes and unresolved mentions before deciding what remains.
+  Use `rename_method` with `to` on `method:Class::name`, plus `"mocks": true`
   when the tests mock the method: it also sets `->method('old')`, `onlyMethods`/`addMethods`/
   `setMethods` lists and `createPartialMock`/`createConfiguredMock` names. Public and inherited
   methods are renamed across the project through Phpactor (`doctor` shows its setup);
