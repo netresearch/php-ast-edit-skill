@@ -311,9 +311,9 @@ def raw_call_queue(
 def verify_raw_hash(
     path: Path | None, measurement: dict[str, Any], errors: list[dict[str, Any]]
 ) -> None:
-    expected = measurement.get("raw_sha256")
-    if expected is None:
+    if not measurement:
         return
+    expected = measurement.get("raw_sha256")
     if not isinstance(expected, str) or not re.fullmatch(r"[0-9a-fA-F]{64}", expected):
         errors.append(
             {

@@ -378,6 +378,24 @@ class SummarizeTests(unittest.TestCase):
         self.assertIsNone(observed["correctness"])
         self.assertFalse(observed["raw_present"])
 
+    def test_success_requires_raw_hash(self):
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            make_campaign(base, [row("run001")], {"run001": measurement()})
+            measurement_path = (
+                base / "runs" / "run001" / "evidence" / "measurement.json"
+            )
+            observed = json.loads(measurement_path.read_text(encoding="utf-8"))
+            observed.pop("raw_sha256")
+            write(measurement_path, observed)
+            report = summarize.summarize_campaign(base)
+        observed = report["runs"][0]
+        self.assertIsNone(observed["correctness"])
+        self.assertTrue(observed["raw_present"])
+        self.assertTrue(
+            any("raw_sha256" in item["error"] for item in observed["evidence_errors"])
+        )
+
     def test_raw_hash_and_tool_count_mismatches_are_unknown(self):
         with tempfile.TemporaryDirectory() as directory:
             base = Path(directory)
