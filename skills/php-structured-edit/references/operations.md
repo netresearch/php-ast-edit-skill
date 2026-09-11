@@ -25,8 +25,9 @@ matches and passes a structural ref plus SHA-256 to the same transaction engine 
 `apply`. Class and method matching follow PHP's case-insensitive naming. Qualify the
 class when short names collide; an inherited-only receiver is not a declaration.
 
-Options: `--path DIRECTORY` names the project root (omitting it discovers the
-enclosing project from the current directory); `--file FILE`
+Options: one positional `DIRECTORY` is an alias for `--path DIRECTORY` (only for
+`rename`); provide one form, not both. Omitting the path discovers the enclosing
+project from the current directory; `--file FILE`
 narrows declaration discovery within that root, while resolved callers elsewhere
 may still change. `--sha256 HASH` adds a caller snapshot precondition. `--dry-run`
 does not write or run configured verification. Unknown options are refused.

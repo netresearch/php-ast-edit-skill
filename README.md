@@ -58,8 +58,9 @@ including public methods in final classes. Project checks run through the existi
 write pipeline. The default compact report carries the diff, check verdicts and unresolved mentions;
 use `--report agent` when an inline diff is unnecessary.
 
-Use `--path` to name another project root, `--file` to narrow declaration discovery,
-and `--dry-run` to preview. `--file` does not limit which resolved callers change.
+Use one positional project root as an alias for `--path`, or use `--path` explicitly;
+do not provide both. `--file` narrows declaration discovery, and `--dry-run` previews.
+`--file` does not limit which resolved callers change.
 Ambiguous declarations, stale hashes and unresolved reference types are refused.
 Private methods retain the lexical scope and its reported limitations. See the
 [command contract](skills/php-structured-edit/references/operations.md#direct-method-rename)
