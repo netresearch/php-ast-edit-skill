@@ -8,7 +8,15 @@ The `php-structured-edit` skill teaches an agent this workflow.
 
 ## Does it reduce tokens and tool calls?
 
-Sometimes. In the [follow-up experiments](../benchmarks/agent-economics/results/2026-09-06-efficiency/REPORT.md),
+Sometimes. A [24-session trial](../benchmarks/agent-economics/results/2026-09-10-integrated-checks/REPORT.md)
+of configured project checks reduced median combined tokens from 60,443 to 45,499 and
+model rounds from five to four. Models reran the check after the last edit in 12/12
+manual-check sessions and 0/12 integrated-check sessions. The task oracle passed in
+12/12 controls and 11/12 treatments; one treatment left a forbidden `edits.json` despite
+correct PHP changes. This covers two small tasks, two models and three repetitions per
+task/model/arm, with successful cheap checks.
+
+In the earlier [follow-up experiments](../benchmarks/agent-economics/results/2026-09-06-efficiency/REPORT.md),
 an experimental compact adapter reduced Sonnet's median token use by 39% and tool calls
 from six to two on the two-file seed task. Small local renames cost more tokens, and a
 public TYPO3 rename exposed recovery loops, timeouts and text-edit bypasses. The compact
@@ -69,10 +77,20 @@ No. Rector supplies migration and refactoring rules; PHPStan analyzes PHP progra
 
 ## Does rename_method find all references?
 
-No. It operates on the selected declaration and structurally attributable calls in the
-same file. Other receivers, inheritance relationships, dynamic names, and callers in other
-files require further analysis. Read the effect report and use an appropriate LSP or
-project-wide refactoring tool for broader symbol resolution.
+It supports project-wide resolution, but does not guarantee that every runtime reference
+is found. The lexical path changes the selected declaration and structurally attributable
+calls in the same file. Methods needing hierarchy analysis use a project path when named
+by selector and the pinned Phpactor is configured through `phpactor` in
+`.php-ast-edit.json` or `PHP_AST_EDIT_PHPACTOR`. It combines project and Composer hierarchy
+information with resolved call sites, then applies guarded edits in one transaction.
+
+Missing ancestors, external method contracts, hierarchy name collisions and unresolved
+receiver types can cause refusal. Strings, configuration and template mentions are
+reported for review, and callers outside the project remain outside its scope. Optional
+`mocks: true` changes matching PHPUnit mock strings without resolving the mocked class;
+review same-named methods of other classes before enabling it. See the
+[limits](limits-and-alternatives.md) and
+[operation contract](../skills/php-structured-edit/references/operations.md#convenience-operations).
 
 ## Which installation should I choose?
 

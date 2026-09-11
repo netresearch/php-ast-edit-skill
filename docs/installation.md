@@ -78,6 +78,42 @@ signing them. Rebuilding the same source tag later can select newer compatible p
 the pipeline does not promise byte-identical rebuilds. Use the verified release assets and
 their dependency manifest when reproducing a deployed toolchain.
 
+## Optional resolver for project-wide method renames
+
+Project-wide `rename_method` uses a separate Phpactor PHAR. The engine PHAR and the
+skill/plugin archives do not bundle it; local edits do not need it. The resolver is
+pinned to **Phpactor 2026.07.22.0**, including its SHA-256 digest.
+
+Use PHP 8.2+ with `mbstring`, `posix`, and `tokenizer`, in addition to the engine's
+requirements. These are the [pinned resolver's declared requirements](https://github.com/phpactor/phpactor/blob/2026.07.22.0/composer.json).
+Git must be available, and the target project must be a Git working tree: project
+discovery includes tracked and non-ignored untracked files, respecting the editor's
+exclusions. Composer's generated class tables help resolve ancestors in dependencies.
+The POSIX requirement means this resolver installation targets Linux/macOS; use WSL
+on Windows rather than a native Windows PHP interpreter.
+
+From the target project's root, download and verify the resolver before using it:
+
+```bash
+mkdir -p .Build/bin &&
+curl --fail --silent --show-error --location \
+  --output .Build/bin/phpactor.phar \
+  https://github.com/phpactor/phpactor/releases/download/2026.07.22.0/phpactor.phar &&
+printf '%s  %s\n' \
+  '8c0155380b9d7559a12f35ddf8d09c1dc23e72f1797498038251fc35ad15574d' \
+  '.Build/bin/phpactor.phar' | sha256sum --check --strict &&
+export PHP_AST_EDIT_PHPACTOR="$PWD/.Build/bin/phpactor.phar"
+```
+
+Stop if the download or checksum fails. On macOS, `shasum -a 256 --check` can replace
+`sha256sum --check --strict`. The engine also verifies the pinned digest before starting
+the resolver. For persistent configuration, merge `"phpactor": ".Build/bin/phpactor.phar"`
+into `.php-ast-edit.json`; preserve any existing formatter, verification, and exclusion
+settings. Relative configuration paths resolve beside that file; the environment
+variable takes precedence. `doctor` reports the configured resolver and its digest
+status. A ready digest does not establish that the PHP extensions are installed or
+that every reference can be resolved.
+
 ## Install agent instructions
 
 For an agent supported by the skills installer:

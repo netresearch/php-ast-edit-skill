@@ -1,11 +1,8 @@
 name: PHP Tests
-
 on:
   push:
   pull_request:
-
 permissions: {}
-
 jobs:
   tests:
     name: PHP ${{ matrix.php }}
@@ -18,27 +15,38 @@ jobs:
         php: ['8.2', '8.3', '8.4', '8.5']
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1  # v2.21.1
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
         with:
           egress-policy: audit
-
       - name: Checkout repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           # Later steps run code from this checkout; it has no business holding the token.
           persist-credentials: false
-
       - name: Set up PHP
-        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240  # 2.37.2
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
         with:
           php-version: ${{ matrix.php }}
-          extensions: json, tokenizer, phar
+          extensions: json, tokenizer, phar, mbstring, posix
           ini-values: phar.readonly=0
           coverage: none
-
       - name: Install dependencies
-        uses: ramsey/composer-install@65e4f84970763564f46a70b8a54b90d033b3bdda  # 4.0.0
-
-      - name: Run tests
-        # Distribution has its own clean-install matrix on PHP 8.2 and 8.5.
-        run: bash tests/run.sh --runtime-only
+        uses: ramsey/composer-install@65e4f84970763564f46a70b8a54b90d033b3bdda # 4.0.0
+      - name: Download and verify the pinned Phpactor resolver
+        run: |
+          curl --fail --silent --show-error --location --retry 3 \
+            --output "$PHP_AST_EDIT_PHPACTOR_TEST" \
+            https://github.com/phpactor/phpactor/releases/download/2026.07.22.0/phpactor.phar
+          printf '%s  %s\n' \
+            '8c0155380b9d7559a12f35ddf8d09c1dc23e72f1797498038251fc35ad15574d' \
+            "$PHP_AST_EDIT_PHPACTOR_TEST" | sha256sum --check --strict
+        env:
+          PHP_AST_EDIT_PHPACTOR_TEST: ${{ runner.temp }}/phpactor.phar
+      - name: Run tests including real project-wide rename
+        run: |
+          # The integration test is opt-in locally; a missing PHAR must fail CI.
+          test -s "$PHP_AST_EDIT_PHPACTOR_TEST"
+          # Distribution has its own clean-install matrix on PHP 8.2 and 8.5.
+          bash tests/run.sh --runtime-only
+        env:
+          PHP_AST_EDIT_PHPACTOR_TEST: ${{ runner.temp }}/phpactor.phar
