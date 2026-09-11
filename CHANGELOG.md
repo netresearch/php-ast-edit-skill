@@ -6,12 +6,19 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-09-11
+
 ### Changed
 
 - `set_name` on a method declaration that the project calls by name is refused with the call count and the `rename_method` edit that renames the declaration and its callers, ready to copy; `"declarationOnly": true` (`--declaration-only`) keeps the declaration-only change. A gated run renamed a public method with 29 callers that way, the project's analysis failed on every caller, and the run renamed them by hand in 51 tool calls.
 - An apply whose project-wide rename left string literals reading the old name says so first, in `open`, in every report mode. A gated run received 67 listed mock literals, saw the analysis pass and stopped, and 174 unit tests failed: static analysis does not read strings.
 - A `match` that finds nothing while its replacement already stands in the scope is a reported no-op — `replaced: 0`, `alreadyPresent` — rather than a refusal. Four of eight gated runs asked `rename_method` to rename the call sites and then asked for the same rename by `match` in the same transaction.
 - `add_member` with a member as its target puts the new member directly after that one. Measured, a caller selected the method it wanted the new one beside and was refused for not naming the class. A `position` beside a member target is refused rather than ignored.
+
+Two behaviours of `apply --file` changed. A caller that scripted against the old ones will notice.
+
+- **A failed project check now exits 1 through the flag form too.** It returned 0 while its own JSON body said `checksPassed: false`. `help` and the 0.7.0 notes had promised exit 1 since the checks landed; only the JSON form delivered it.
+- **A flag the chosen form cannot carry is refused instead of dropped.** The option parser accepts `--anything value`, so `--sha256`, `--report`, `--mode` and typos were taken and silently ignored. `--sha256` and `--report` now reach the document; everything else is refused by name, and the refusal says which kind of wrong it is — a flag belonging to the other form, a per-file setting only the document can carry, or no such flag.
 
 ### Added
 
@@ -29,37 +36,6 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - A class member written where a statement goes is refused with the operation that takes it: `add_member` on the class, or `parseAs: member`.
 - `apply --input /dev/stdin` reads standard input like `--input -`. A heredoc caller spells it that way, and a sandbox may have no such path while standard input is readable.
 
-### Fixed
-
-- **`replace_statement` no longer accepts a declaration.** A method, property or class is a `Stmt` to the parser, so the class check let the operation swap one for a statement; the file then failed only at the reparse gate with a syntax error on a line the caller never wrote. It is refused before mutation, and the refusal shows the `match` form.
-
-## [0.8.0] - 2026-09-10
-
-### Changed
-
-Two behaviours of `apply --file` changed. A caller that scripted against the old ones will notice.
-
-- **A failed project check now exits 1 through the flag form too.** It returned 0 while its own JSON body said `checksPassed: false`. `help` and the 0.7.0 notes had promised exit 1 since the checks landed; only the JSON form delivered it.
-- **A flag the chosen form cannot carry is refused instead of dropped.** The option parser accepts `--anything value`, so `--sha256`, `--report`, `--mode` and typos were taken and silently ignored. `--sha256` and `--report` now reach the document; everything else is refused by name, and the refusal says which kind of wrong it is — a flag belonging to the other form, a per-file setting only the document can carry, or no such flag.
-
-### Fixed
-
-- The flag form of `apply` now answers exactly as the JSON form does. It returned exit 0 over failed project checks while reporting `checksPassed: false`, and silently dropped `--sha256` and `--report`, which the option parser accepts under any spelling — a supplied file guard never ran and the caller was told the edit was clean. Both flags now reach the document, both input forms share one execution and one verdict, and a flag the chosen form cannot carry is refused instead of dropped.
-- Resolve imported symbol-table function aliases before variable renames, and conservatively refuse `call_user_func()` and `call_user_func_array()` in affected scopes to prevent behavior-changing renames.
-- Reject variable renames that collide with local, parameter or captured bindings, or depend on unsafe dynamic scope. Refuse ambiguous inherited method renames, case-insensitive destination conflicts and unsupported late-static dispatch; preserve parent calls and nested lexical scopes.
-- Load Composer consumer autoloaders, including custom vendor and binary directories. Prevent a standalone skill wrapper from invoking itself recursively.
-- Preserve formatter, verification and custom JSON settings during normalization. Enforce supplied SHA guards on create-overwrite and restore file contents, permissions and symlink identity after failed transactions.
-- Reject PHP compile errors before writing and after formatting when the host runtime can check the target. Report `parsed`, `validation.lint` and `validation.checks` separately; `valid` remains a deprecated parser-only compatibility alias.
-- Preserve multiple warnings in `warnings`; retain the combined legacy `warning` field. Reset verification state between transactions. Failed project checks now return exit 1 while retaining the edit; transaction failures still return exit 2.
-- Make the documented quickstart executable, correct source/Composer installation paths, and remove obsolete normalization flags and the misleading post-edit clean-tree gate.
-
-### Measured
-
-- **Recommending `report: "agent"` as the default was measured and withdrawn.** Twelve sessions against `b1b79e6`: Sonnet paid +71% tokens, +67% model rounds and +89% list price for the recommendation; Haiku was unaffected. The mechanism is in the traces — the mode withholds the diff, `SKILL.md` said where to fetch it, and Sonnet fetched it in 3 of 3 runs against 0 of 3 in the control. `SKILL.md` now names the case the mode is for rather than prescribing it. The mode itself is unchanged, and the run is its worst case: with no declared checks, every field that distinguishes it was empty. See [`benchmarks/agent-economics/results/2026-09-10-agent-report`](benchmarks/agent-economics/results/2026-09-10-agent-report/REPORT.md).
-- The published figures of the 2026-09-07 comparison now recompute in the test suite from the report's own tables, including the distinction between the median comparison (−90.2%) and the comparison of summed tokens (−83.2%), and the decomposition showing 92.6% of the reduction is cache-read.
-
-### Added
-
 - `report: "agent"` names every verification execution in `verifications`, passing ones included — `id`, `scope`, `cwd`, `command`, `ok`, without output. With the per-file `checkIds` and `afterSha256` already in the response, that is the whole proof a caller needs to decide whether a check it already ran must run again: which command, where, over which files, at which bytes. `proofExcludes` names what the engine cannot see and therefore does not account for — `dependencies`, `checkToolVersions`, `runtime`, `environment` — because a reuse key missing those answers `passed` when it should not. No schema bump: added fields do not change what the existing ones mean.
 
 - Optional `report: "agent"`. The decision-shaped projection: `outcome`, a `checks` tri-state where `none_declared` is not `passed`, the output of failing checks only, and a per-file `open` list naming what the write did **not** establish — remaining occurrences, unresolved receivers, callers `rename_method` cannot reach, syntax unconfirmed on a newer target, a repository that declares no checks. It carries no `diff`, no generated `code`, and neither of the legacy `warning`/`valid` duplicates; `git diff -- <path>` has the diff, from the snapshot `beforeSha256` names, and a file outside version control is the one case that loses information. Versioned by `reportVersion`, which `full` and `compact` deliberately do not carry.
@@ -73,6 +49,26 @@ Two behaviours of `apply --file` changed. A caller that scripted against the old
 - Outcome and routing evaluations, executable task oracles, actual model-run evidence import, and a reproducible CLI benchmark comparing both batched AST edits and batched contextual patches with lint.
 - The documented apply examples in `README.md` and `SKILL.md` now run in the test suite and are checked against the guidance around them; the skill had recommended one report mode twenty lines above an example using another.
 - Installation, FAQ, limits and alternatives documentation, with explicit distinctions between parsing, lint, behavior, local timings and measured model usage.
+
+### Fixed
+
+- **`replace_statement` no longer accepts a declaration.** A method, property or class is a `Stmt` to the parser, so the class check let the operation swap one for a statement; the file then failed only at the reparse gate with a syntax error on a line the caller never wrote. It is refused before mutation, and the refusal shows the `match` form.
+
+- The flag form of `apply` now answers exactly as the JSON form does. It returned exit 0 over failed project checks while reporting `checksPassed: false`, and silently dropped `--sha256` and `--report`, which the option parser accepts under any spelling — a supplied file guard never ran and the caller was told the edit was clean. Both flags now reach the document, both input forms share one execution and one verdict, and a flag the chosen form cannot carry is refused instead of dropped.
+- Resolve imported symbol-table function aliases before variable renames, and conservatively refuse `call_user_func()` and `call_user_func_array()` in affected scopes to prevent behavior-changing renames.
+- Reject variable renames that collide with local, parameter or captured bindings, or depend on unsafe dynamic scope. Refuse ambiguous inherited method renames, case-insensitive destination conflicts and unsupported late-static dispatch; preserve parent calls and nested lexical scopes.
+- Load Composer consumer autoloaders, including custom vendor and binary directories. Prevent a standalone skill wrapper from invoking itself recursively.
+- Preserve formatter, verification and custom JSON settings during normalization. Enforce supplied SHA guards on create-overwrite and restore file contents, permissions and symlink identity after failed transactions.
+- Reject PHP compile errors before writing and after formatting when the host runtime can check the target. Report `parsed`, `validation.lint` and `validation.checks` separately; `valid` remains a deprecated parser-only compatibility alias.
+- Preserve multiple warnings in `warnings`; retain the combined legacy `warning` field. Reset verification state between transactions. Failed project checks now return exit 1 while retaining the edit; transaction failures still return exit 2.
+- Make the documented quickstart executable, correct source/Composer installation paths, and remove obsolete normalization flags and the misleading post-edit clean-tree gate.
+
+### Measured
+
+- Declared project checks were compared with separate checks in 24 sessions across two small tasks and two models. Manual checking after the last edit occurred in 12/12 controls and 0/12 treatments; median combined tokens were 60,443 versus 45,499 and time 17.3 versus 13.0 seconds. The task oracle passed in 12/12 controls and 11/12 treatments: one treatment left a forbidden payload file despite correct PHP edits. The [report](benchmarks/agent-economics/results/2026-09-10-integrated-checks/REPORT.md) retains this failure and limits the result to successful, cheap checks on these tasks.
+
+- **Recommending `report: "agent"` as the default was measured and withdrawn.** Twelve sessions against `b1b79e6`: Sonnet paid +71% tokens, +67% model rounds and +89% list price for the recommendation; Haiku was unaffected. The mechanism is in the traces — the mode withholds the diff, `SKILL.md` said where to fetch it, and Sonnet fetched it in 3 of 3 runs against 0 of 3 in the control. `SKILL.md` now names the case the mode is for rather than prescribing it. The mode itself is unchanged, and the run is its worst case: with no declared checks, every field that distinguishes it was empty. See [`benchmarks/agent-economics/results/2026-09-10-agent-report`](benchmarks/agent-economics/results/2026-09-10-agent-report/REPORT.md).
+- The published figures of the 2026-09-07 comparison now recompute in the test suite from the report's own tables, including the distinction between the median comparison (−90.2%) and the comparison of summed tokens (−83.2%), and the decomposition showing 92.6% of the reduction is cache-read.
 
 ### Measurement note
 
