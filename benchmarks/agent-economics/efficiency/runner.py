@@ -39,6 +39,10 @@ ARMS = (
     "check_manual",
     "check_integrated",
 )
+# Experimental arms are opt-in so the established default schedule and its
+# validation remain unchanged for released protocols.
+EXPERIMENTAL_ARMS = ("minimal_intent",)
+SUPPORTED_ARMS = ARMS + EXPERIMENTAL_ARMS
 # The two arms that carry a project check. Both get `check.php` and the same task clause;
 # only `check_integrated` declares the check to the engine, so the one variable between
 # them is whether `apply` runs it and reports the verdict.
@@ -244,6 +248,14 @@ def variants(base):
     return {
         "contextual_patch": BASELINE,
         "full_skill": full,
+        "minimal_intent": (
+            "Use the already supplied `php-ast-edit` executable for PHP writes. For a method "
+            "rename, invoke `php-ast-edit rename --method 'Class::old' --to new`; provide the project path "
+            "when the command requires it. The command resolves supported project callers "
+            "and runs configured checks. Review the returned diff, warnings, and checks. Do "
+            "extra work only for remaining requirements or unresolved warnings; preserve guards "
+            "and unrelated files. It makes no guarantee for unsupported or unresolved cases."
+        ),
         "compact_full": COMPACT.replace("MODE", "full"),
         "compact_focused": COMPACT.replace("MODE", "focused"),
         # Identical text in both check arms: nothing in an instruction may name the
@@ -256,7 +268,7 @@ def variants(base):
 
 def balanced_order(task_ids, seed, arms=ARMS, model_keys=tuple(MODELS)):
     require(
-        arms and len(arms) == len(set(arms)) and set(arms) <= set(ARMS),
+        arms and len(arms) == len(set(arms)) and set(arms) <= set(SUPPORTED_ARMS),
         "Invalid or duplicate arms",
     )
     require(

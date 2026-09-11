@@ -279,6 +279,40 @@ class ScheduleSelectionTests(unittest.TestCase):
                 runner.balanced_order(["fixture"], seed=1, model_keys=keys)
 
 
+class ExperimentalArmTests(unittest.TestCase):
+    def test_minimal_intent_is_opt_in_and_uses_generic_instructions(self):
+        rows = runner.balanced_order(
+            ["fixture"], seed=1, arms=("minimal_intent",), model_keys=("haiku",)
+        )
+        self.assertEqual(len(rows), 3)
+        self.assertEqual({row["variant"] for row in rows}, {"minimal_intent"})
+        base = Path(tempfile.mkdtemp(prefix="php-ast-minimal-intent-"))
+        self.addCleanup(lambda: shutil.rmtree(base, ignore_errors=True))
+        skill = base / "runtime/skills/php-structured-edit"
+        skill.mkdir(parents=True)
+        (skill / "SKILL.md").write_text("Fixture skill body.\n")
+        text = runner.variants(base)["minimal_intent"]
+        self.assertGreaterEqual(len(text.split()), 60)
+        self.assertLessEqual(len(text.split()), 80)
+        self.assertIn("rename --method 'Class::old' --to new", text)
+        self.assertIn("configured checks", text)
+        self.assertIn("no guarantee", text)
+        for task_specific in ("Product", "CrossFile", "src/", "check.php"):
+            self.assertNotIn(task_specific, text)
+
+    def test_minimal_intent_does_not_change_the_default_arm_set(self):
+        self.assertEqual(runner.SUPPORTED_ARMS, runner.ARMS + ("minimal_intent",))
+        rows = runner.balanced_order(["fixture"], seed=1, model_keys=("haiku",))
+        self.assertEqual({row["variant"] for row in rows}, set(runner.ARMS))
+        self.assertEqual(len(rows), 3 * len(runner.ARMS))
+
+    def test_unknown_experimental_arm_is_refused(self):
+        with self.assertRaises(ValueError):
+            runner.balanced_order(
+                ["fixture"], seed=1, arms=("minimal_intent_typo",), model_keys=("haiku",)
+            )
+
+
 class EvidenceRelocationTests(unittest.TestCase):
     """An unpacked evidence archive must summarize, and a missing one must not."""
 
