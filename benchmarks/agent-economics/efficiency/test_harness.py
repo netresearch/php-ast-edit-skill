@@ -8,10 +8,10 @@ import shutil
 import stat
 import tempfile
 import unittest
+from collections import Counter
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
-from collections import Counter
 
 import check_arms
 import native
