@@ -47,8 +47,7 @@ export BASE
 [[ "$(sha256sum "$PHP_AST_EDIT_PHPACTOR" | cut -d' ' -f1)" == 8c0155380b9d7559a12f35ddf8d09c1dc23e72f1797498038251fc35ad15574d ]] \
   || { echo "PHP_AST_EDIT_PHPACTOR is not the pinned release" >&2; exit 2; }
 
-case "${1:-}" in
-  setup)
+if [[ "$1" == setup ]]; then
     mkdir -m 700 "$BENCH"
     "$TOOL/benchmarks/skill-invocation/prepare.sh" free >/dev/null
     cfg=$("$TOOL/benchmarks/skill-invocation/prepare.sh" gate "$TOOL/skills/php-structured-edit")
@@ -71,9 +70,7 @@ Path(sys.argv[1]).write_text(json.dumps(settings, indent=2) + "\n")
 PY
     echo "$BENCH/cfg-free $cfg"
     exit 0
-    ;;
-  run) ;;
-esac
+fi
 
 RUN="$TOOL/benchmarks/skill-invocation/run.sh"
 N=30

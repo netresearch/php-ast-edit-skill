@@ -92,6 +92,13 @@ their available counters alongside their exclusion reason. An absent `done` mark
 missing status or unexpected candidate IDs prevents aggregate metrics and inference,
 so a partial export cannot silently become a smaller successful trial.
 
+The campaign can live outside the repository. Within its `out` directory the reader
+accepts only regular contained evidence files: directory traversal, symlinked output
+directories, symlinked files and borrowed completion markers are rejected. Unsafe
+entries remain visible in coverage and cannot contribute a successful outcome.
+This validates a stable local snapshot, not a sandbox against a concurrent hostile
+process with the same filesystem privileges.
+
 After a complete campaign is recovered, report all exclusions by task/arm and keep
 the original diffs and native accounting with the summary. The greater-than-10%
 failure rule and wall-time counter-test constrain the decision even when a nominal

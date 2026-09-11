@@ -103,3 +103,16 @@ expected AST structure before runtime execution, and requires its final runtime
 marker. Plans bind complete file inventories and tool bytes. These checks improve
 ordinary outcome integrity; neither hashes nor the local state lock authenticate an
 operator or protect against a malicious concurrent process with the same privileges.
+
+The powered skill-invocation analyzer is also an operator-run offline reader. Its
+campaign root may be anywhere the operator selects. Under that root it validates
+resolved paths and reads only regular files inside `out`; symlinked evidence, an
+output-directory symlink and nonregular entries cannot supply successful outcomes.
+Coverage records unsafe artifacts and retains missing observations as unknown.
+These checks prevent ordinary evidence borrowing; they do not attest to an operator
+or protect a changing directory from a concurrent process with the same privileges.
+
+| Code | Rule | Reviewed behavior and decision |
+| --- | --- | --- |
+| `powered.analyze.bootstrap` | S2245 | Seeded `random.choices` draws bootstrap resamples, in gate/free order, to reproduce the protocol's confidence intervals. It produces no secrets or security decisions. Retain the two statistical sampling calls with rule-specific annotations; cryptographic randomness would break repeatability without improving this boundary. |
+| `powered.analyze.self_test` | S2245 | Seeded `randint` creates synthetic numeric samples to compare the normal approximation with exact enumeration. Both calls have no security role and retain rule-specific annotations. |

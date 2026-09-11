@@ -48,6 +48,61 @@ class AccountingTests(unittest.TestCase):
         self.assertEqual(len(result["rows"]), 6)
         self.assertTrue(all(row["p_gate_lower"] is None for row in result["rows"]))
 
+    def test_borrowed_status_oracle_and_result_are_unknown_not_accepted(self):
+        for number, extension in enumerate(("status", "oracle", "json"), 1):
+            stem = f"C{number:02d}-free"
+            self.candidate(stem)
+            source = self.out / f"{stem}.{extension}"
+            outside = self.root / f"borrowed-{extension}"
+            source.rename(outside)
+            source.symlink_to(outside)
+        result = analyze.report(self.root)
+        rows = {run["id"]: run for run in result["runs"]}
+        for number in range(1, 4):
+            self.assertFalse(rows[f"C{number:02d}-free"]["accepted"])
+        self.assertIsNone(rows["C01-free"]["exit_status"])
+        self.assertIsNone(rows["C02-free"]["oracle_status"])
+        self.assertIsNone(rows["C03-free"]["metrics"]["turns"])
+        self.assertEqual(len(result["coverage"]["unsafe_artifacts"]), 3)
+
+    def test_output_directory_symlink_cannot_select_a_different_campaign(self):
+        self.complete()
+        outside = self.root / "borrowed-out"
+        self.out.rename(outside)
+        self.out.symlink_to(outside, target_is_directory=True)
+        result = analyze.report(self.root)
+        self.assertEqual(result["coverage"]["missing_status"], 120)
+        self.assertEqual(result["coverage"]["output_root_error"], "unsafe_output_root")
+        self.assertFalse(result["coverage"]["complete"])
+
+    def test_borrowed_done_marker_cannot_complete_a_campaign(self):
+        self.complete()
+        (self.out / "done").unlink()
+        outside = self.root / "borrowed-done"
+        outside.touch()
+        (self.out / "done").symlink_to(outside)
+        result = analyze.report(self.root)
+        self.assertFalse(result["coverage"]["done_marker"])
+        self.assertFalse(result["coverage"]["complete"])
+
+    def test_internal_evidence_symlinks_are_also_rejected(self):
+        self.candidate("C01-free")
+        (self.out / "C01-free.status").unlink()
+        (self.out / "C01-free.status").symlink_to("C01-free.oracle")
+        result = analyze.report(self.root)
+        self.assertIsNone(result["runs"][0]["exit_status"])
+        self.assertIn("C01-free.status", result["coverage"]["unsafe_artifacts"])
+
+    def test_evidence_reader_rejects_traversal_and_nonregular_entries(self):
+        (self.root / "borrowed").write_text("outside output root")
+        (self.out / "C01-free.status").mkdir()
+        evidence = analyze.EvidenceDirectory(self.root)
+        with self.assertRaises(ValueError):
+            evidence.read_text("../borrowed")
+        with self.assertRaises(ValueError):
+            evidence.read_text("C01-free.status")
+        self.assertIn("C01-free.status", evidence.unsafe_artifacts)
+
     def test_partial_result_without_status_is_an_interrupted_slot(self):
         self.candidate("C01-free")
         (self.out / "C01-free.status").unlink()

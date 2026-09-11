@@ -90,7 +90,12 @@ def hodges_lehmann(gate, free):
 def bootstrap(gate, free, draws=10000):
     rng = random.Random(SEED)
     differences = sorted(
-        median(rng.choices(gate, k=len(gate))) - median(rng.choices(free, k=len(free)))
+        median(
+            rng.choices(gate, k=len(gate))  # NOSONAR(S2245)
+        )
+        - median(
+            rng.choices(free, k=len(free))  # NOSONAR(S2245)
+        )
         for _ in range(draws)
     )
     return differences[int(0.025 * draws)], differences[int(0.975 * draws) - 1]
@@ -118,12 +123,67 @@ def planned_runs():
                 yield f"{task}{number:02d}-{arm}", task, arm
 
 
-def read_status(path):
+class EvidenceDirectory:
+    """Read regular evidence files contained in an operator-selected campaign's out/."""
+
+    def __init__(self, bench):
+        self.root = Path(bench).resolve() / "out"
+        self.unsafe_artifacts = set()
+        self.root_error = None
+        if self.root.is_symlink() or (self.root.exists() and not self.root.is_dir()):
+            self.root_error = "unsafe_output_root"
+
+    def regular_path(self, name):
+        """Reject path traversal, symlinks, borrowed files and nonregular evidence."""
+        if self.root_error:
+            raise ValueError(self.root_error)
+        if Path(name).name != name or name in (".", ".."):
+            raise ValueError("evidence name must be one filename")
+        path = self.root / name
+        if path.is_symlink():
+            self.unsafe_artifacts.add(name)
+            raise ValueError("symlink evidence is not accepted")
+        resolved = path.resolve(strict=True)
+        if not resolved.is_relative_to(self.root) or not resolved.is_file():
+            self.unsafe_artifacts.add(name)
+            raise ValueError("evidence must be a regular file within the output root")
+        return resolved
+
+    def read_text(self, name):
+        return self.regular_path(name).read_text()
+
+    def is_regular(self, name):
+        try:
+            self.regular_path(name)
+            return True
+        except (OSError, ValueError):
+            return False
+
+    def candidate_artifacts(self):
+        if self.root_error or not self.root.is_dir():
+            return []
+        extensions = {
+            ".status",
+            ".oracle",
+            ".json",
+            ".err",
+            ".diff",
+            ".version",
+            ".oracle-output",
+            ".untracked",
+        }
+        paths = [path for path in self.root.iterdir() if path.suffix in extensions]
+        for path in paths:
+            self.is_regular(path.name)
+        return paths
+
+
+def read_status(evidence, name):
     """Missing or malformed status is unknown, never an implicit success."""
     try:
-        value = path.read_text().strip()
+        value = evidence.read_text(name).strip()
         return int(value) if value.isascii() and value.isdecimal() else None
-    except (OSError, UnicodeError, ValueError):
+    except (OSError, ValueError):
         return None
 
 
@@ -138,17 +198,11 @@ def valid_metric(value, key):
     return valid
 
 
-def read_candidate(out, stem, task, arm):
-    """Retain valid native counters even when the candidate failed or was interrupted."""
+def result_document(evidence, stem):
+    """Return a result object and its integrity issues without inventing a success."""
     issues = []
-    status = read_status(out / f"{stem}.status")
-    oracle = read_status(out / f"{stem}.oracle")
-    if status is None:
-        issues.append("missing_status")
-    elif status != 0:
-        issues.append("exit_status")
     try:
-        document = json.loads((out / f"{stem}.json").read_text())
+        document = json.loads(evidence.read_text(f"{stem}.json"))
     except (OSError, ValueError):
         document = None
         issues.append("unreadable_result")
@@ -161,17 +215,34 @@ def read_candidate(out, stem, task, arm):
         issues.append("invalid_result")
     elif document["is_error"] or document["subtype"] != "success":
         issues.append("error_result")
-    if oracle is None:
-        issues.append("missing_oracle")
-    elif oracle != 0:
-        issues.append("oracle_failed")
-    metrics = {}
-    for name, key in METRICS:
-        value = document.get(key)
-        valid = valid_metric(value, key)
-        metrics[name] = (
-            value / 1000 if valid and key == "duration_ms" else value if valid else None
-        )
+    return document, issues
+
+
+def normalized_metric(value, key):
+    if not valid_metric(value, key):
+        return None
+    if key == "duration_ms":
+        return value / 1000
+    return value
+
+
+def status_issues(status, missing, failed):
+    if status is None:
+        return [missing]
+    if status != 0:
+        return [failed]
+    return []
+
+
+def read_candidate(evidence, stem, task, arm):
+    """Retain valid native counters even when the candidate failed or was interrupted."""
+    status = read_status(evidence, f"{stem}.status")
+    oracle = read_status(evidence, f"{stem}.oracle")
+    document, document_issues = result_document(evidence, stem)
+    issues = status_issues(status, "missing_status", "exit_status")
+    issues.extend(document_issues)
+    issues.extend(status_issues(oracle, "missing_oracle", "oracle_failed"))
+    metrics = {name: normalized_metric(document.get(key), key) for name, key in METRICS}
     if any(value is None for value in metrics.values()):
         issues.append("invalid_metrics")
     return {
@@ -188,39 +259,34 @@ def read_candidate(out, stem, task, arm):
 
 
 def load(bench):
-    out = Path(bench, "out")
-    records = [read_candidate(out, *slot) for slot in planned_runs()]
+    evidence = EvidenceDirectory(bench)
+    records = [read_candidate(evidence, *slot) for slot in planned_runs()]
     expected = {record["id"] for record in records}
     unexpected = sorted(
         path.name
-        for extension in (
-            "status",
-            "oracle",
-            "json",
-            "err",
-            "diff",
-            "version",
-            "oracle-output",
-            "untracked",
-        )
-        for path in out.glob(f"*.{extension}")
+        for path in evidence.candidate_artifacts()
         if path.stem not in expected
     )
     missing_status = sum(record["exit_status"] is None for record in records)
-    done = (out / "done").is_file()
+    done = evidence.is_regular("done")
     coverage = {
         "expected": len(records),
         "status_observed": len(records) - missing_status,
         "missing_status": missing_status,
         "done_marker": done,
         "unexpected_artifacts": unexpected,
-        "complete": done and missing_status == 0 and not unexpected,
+        "unsafe_artifacts": sorted(evidence.unsafe_artifacts),
+        "output_root_error": evidence.root_error,
+        "complete": done
+        and missing_status == 0
+        and not unexpected
+        and not evidence.unsafe_artifacts,
     }
     return records, coverage
 
 
-def report(bench):
-    records, coverage = load(bench)
+def group_records(records):
+    """Separate accepted metric observations from the full exclusion denominator."""
     runs = {(t, a): [] for t in TASKS for a in ARMS}
     excluded = {(t, a): Counter() for t in TASKS for a in ARMS}
     for record in records:
@@ -229,70 +295,94 @@ def report(bench):
             runs[key].append(record["metrics"])
         else:
             excluded[key][record["reason"]] += 1
-    rows = []
-    for task in TASKS:
-        for name, _ in METRICS:
-            gate = [run[name] for run in runs[(task, "gate")]]
-            free = [run[name] for run in runs[(task, "free")]]
-            available = coverage["complete"] and bool(gate) and bool(free)
-            interval = list(bootstrap(gate, free)) if available else None
-            rows.append(
-                {
-                    "task": task,
-                    "metric": name,
-                    "n_gate": len(gate),
-                    "n_free": len(free),
-                    "median_gate": median(gate) if available else None,
-                    "median_free": median(free) if available else None,
-                    "hodges_lehmann": hodges_lehmann(gate, free) if available else None,
-                    "ci95_median_difference": interval,
-                    "p_gate_lower": mann_whitney_less(gate, free)
-                    if available
-                    else None,
-                }
-            )
+    return runs, excluded
+
+
+def metric_row(task, name, runs, complete):
+    gate = [run[name] for run in runs[(task, "gate")]]
+    free = [run[name] for run in runs[(task, "free")]]
+    row = {
+        "task": task,
+        "metric": name,
+        "n_gate": len(gate),
+        "n_free": len(free),
+        "median_gate": None,
+        "median_free": None,
+        "hodges_lehmann": None,
+        "ci95_median_difference": None,
+        "p_gate_lower": None,
+    }
+    if complete and gate and free:
+        row.update(
+            median_gate=median(gate),
+            median_free=median(free),
+            hodges_lehmann=hodges_lehmann(gate, free),
+            ci95_median_difference=list(bootstrap(gate, free)),
+            p_gate_lower=mann_whitney_less(gate, free),
+        )
+    return row
+
+
+def correct_hypothesis_family(rows, complete):
     # Always correct for six hypotheses. An unavailable comparison cannot reduce the
     # family and silently make the remaining claims easier to pass.
     pvalues = [
         row["p_gate_lower"] if row["p_gate_lower"] is not None else 1 for row in rows
     ]
     for row, rejected in zip(rows, holm(pvalues)):
-        row["holm_rejects_at_0_05"] = rejected and coverage["complete"]
-    decisions = {}
-    for task in TASKS:
-        counts = {arm: sum(excluded[task, arm].values()) for arm in ARMS}
-        gate = [run["wall_s"] for run in runs[task, "gate"]]
-        free = [run["wall_s"] for run in runs[task, "free"]]
-        p_wall = (
-            mann_whitney_two_sided(gate, free)
-            if coverage["complete"] and gate and free
-            else None
-        )
-        worse = (
-            rank_moments(gate, free)[0] < len(gate) * len(free) / 2 and p_wall < ALPHA
-            if p_wall is not None
-            else None
-        )
-        cheaper = any(
-            row["holm_rejects_at_0_05"]
-            for row in rows
-            if row["task"] == task and row["metric"] in ("turns", "usd")
-        )
-        if not coverage["complete"]:
-            status = "incomplete_campaign"
-        elif any(count / REPETITIONS > 0.1 for count in counts.values()):
-            status = "inconclusive_exclusions"
-        elif cheaper and worse is False:
-            status = "supported_lower_cost"
-        else:
-            status = "not_established"
-        decisions[task] = {
-            "status": status,
-            "excluded": counts,
-            "planned_per_arm": REPETITIONS,
-            "p_wall_two_sided": p_wall,
-            "wall_significantly_worse": worse,
-        }
+        row["holm_rejects_at_0_05"] = rejected and complete
+
+
+def wall_comparison(task, runs, complete):
+    gate = [run["wall_s"] for run in runs[task, "gate"]]
+    free = [run["wall_s"] for run in runs[task, "free"]]
+    if not complete or not gate or not free:
+        return None, None
+    p_wall = mann_whitney_two_sided(gate, free)
+    u, mean, _ = rank_moments(gate, free)
+    return p_wall, u < mean and p_wall < ALPHA
+
+
+def decision_status(complete, counts, cheaper, worse):
+    if not complete:
+        return "incomplete_campaign"
+    if any(count / REPETITIONS > 0.1 for count in counts.values()):
+        return "inconclusive_exclusions"
+    if cheaper and worse is False:
+        return "supported_lower_cost"
+    return "not_established"
+
+
+def task_decision(task, runs, excluded, rows, complete):
+    counts = {arm: sum(excluded[task, arm].values()) for arm in ARMS}
+    p_wall, worse = wall_comparison(task, runs, complete)
+    cheaper = any(
+        row["holm_rejects_at_0_05"]
+        for row in rows
+        if row["task"] == task and row["metric"] in ("turns", "usd")
+    )
+    return {
+        "status": decision_status(complete, counts, cheaper, worse),
+        "excluded": counts,
+        "planned_per_arm": REPETITIONS,
+        "p_wall_two_sided": p_wall,
+        "wall_significantly_worse": worse,
+    }
+
+
+def report(bench):
+    records, coverage = load(bench)
+    runs, excluded = group_records(records)
+    rows = [
+        metric_row(task, name, runs, coverage["complete"])
+        for task in TASKS
+        for name, _ in METRICS
+    ]
+    correct_hypothesis_family(rows, coverage["complete"])
+    decisions = {
+        task: task_decision(task, runs, excluded, rows, coverage["complete"])
+        for task in TASKS
+    }
     return {
         "coverage": coverage,
         "runs": records,
@@ -305,8 +395,14 @@ def report(bench):
 def self_test():
     rng = random.Random(SEED)
     for _ in range(20):
-        gate = [rng.randint(8, 20) for _ in range(6)]
-        free = [rng.randint(10, 22) for _ in range(6)]
+        gate = [
+            rng.randint(8, 20)  # NOSONAR(S2245)
+            for _ in range(6)
+        ]
+        free = [
+            rng.randint(10, 22)  # NOSONAR(S2245)
+            for _ in range(6)
+        ]
         approx, exact = mann_whitney_less(gate, free), exact_less(gate, free)
         assert abs(approx - exact) < 0.06, (gate, free, approx, exact)
     assert holm([0.001, 0.04, 0.03]) == [True, False, False]
