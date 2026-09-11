@@ -278,7 +278,7 @@ final class Editor
             $here = $this->canonicalPath($spec['path']);
 
             foreach ($spec['edits'] as $edit) {
-                $plan = is_array($edit) ? $this->projectRename($spec, $this->acceptSynonyms($edit)) : null;
+                $plan = is_array($edit) ? $this->projectRename($files[$i], $this->acceptSynonyms($edit)) : null;
 
                 if ($plan === null) {
                     $edits[] = $edit;
@@ -290,9 +290,15 @@ final class Editor
                     $key = $this->canonicalPath($file);
 
                     if ($key === $here) {
+                        $this->assertSha($files[$i], $file, $entry['sha256']);
+                        $files[$i]['sha256'] = $entry['sha256'];
                         array_push($edits, ...$entry['edits']);
 
                         continue;
+                    }
+
+                    if (isset($extra[$key])) {
+                        $this->assertSha($extra[$key], $file, $entry['sha256']);
                     }
                     $extra[$key] ??= ['path' => $file, 'sha256' => $entry['sha256'], 'edits' => []];
                     array_push($extra[$key]['edits'], ...$entry['edits']);
@@ -318,6 +324,8 @@ final class Editor
                     ),
                 );
             }
+            $this->assertSha($spec, $spec['path'], $extra[$key]['sha256']);
+            $files[$i]['sha256'] = $extra[$key]['sha256'];
             $files[$i]['edits'] = [...$extra[$key]['edits'], ...is_array($spec['edits'] ?? null) ? $spec['edits'] : []];
             unset($extra[$key]);
         }
@@ -338,7 +346,7 @@ final class Editor
         $this->assertSha($spec, $path, hash('sha256', $source));
         $location = is_string($target['ref'] ?? null) ? $this->locator->resolveRef($roots, $target['ref']) : $this->locator->resolveSelect($roots, $target['select']);
         $this->assertKind($location, $target['kind'] ?? null);
-
+        $this->assertExpectations($location->node, $edit['expect'] ?? []);
         $reason = null;
 
         if ($location->node instanceof Stmt\ClassMethod) {
@@ -3015,6 +3023,10 @@ final class Editor
             }
 
             return null;
+        }
+
+        if (isset($target['select'], $target['ref'])) {
+            throw new EditException('An edit names its target by ref or by select, not both.');
         }
 
         return [$target, $mocks, $project];

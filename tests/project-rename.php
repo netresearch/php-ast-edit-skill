@@ -154,6 +154,201 @@ $hierarchy = [
 
 try {
     projectCase(
+        'project expansion refuses a target carrying both select and ref',
+        function () use ($hierarchy): void {
+            $root = projectFixture('double-target', $hierarchy);
+            $finder = new CallsByName();
+            $refusal = projectRefusal(
+                static fn () => (new Editor($finder))->apply(
+                    [
+                        'files' => [
+                            [
+                                'path' => $root . '/' . BASE_FILE,
+                                'edits' => [
+                                    [
+                                        'target' => [
+                                            'select' => 'method:Base::fetch',
+                                            'ref' => 'stmts[0].stmts[0].stmts[0]',
+                                        ],
+                                        'operation' => 'rename_method',
+                                        'to' => 'load',
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
+                ),
+            );
+            projectAssert(str_contains($refusal, 'not both'), $refusal);
+            projectAssert($finder->queries === 0, 'ambiguous target reached the resolver');
+
+            foreach ($hierarchy as $path => $source) {
+                projectAssert(
+                    file_get_contents($root . '/' . $path) === $source,
+                    $path . ' changed',
+                );
+            }
+        },
+    );
+    projectCase(
+        'a later plan cannot remove the snapshot guard of an existing file spec',
+        function (): void {
+            foreach (['declaration', 'caller'] as $changed) {
+                $sources = [
+                    'src/First.php' => "<?php\nnamespace App;\nclass First { public function fetch(): int { return 1; } }\n",
+                    'src/Second.php' => "<?php\nnamespace App;\nclass Second { public function other(): int { return 2; } }\n",
+                    'src/Consumer.php' => "<?php\nnamespace App;\nclass Consumer { public function run(First \$first): int { return \$first->fetch(); } }\n",
+                ];
+                $root = projectFixture('snapshot-' . $changed, $sources);
+                $relative = $changed === 'declaration' ? 'src/First.php' : 'src/Consumer.php';
+                $concurrent = $sources[$relative] . "// concurrent edit\n";
+                $finder = new class ($root . '/' . $relative, $concurrent) implements ReferenceFinder {
+                    public function __construct(
+                        private readonly string $path,
+                        private readonly string $source,
+                    ) {}
+
+                    public function references(string $root, string $class, string $member): array
+                    {
+                        if ($class === 'App\Second') {
+                            file_put_contents($this->path, $this->source);
+                        }
+
+                        return (new CallsByName())->references($root, $class, $member);
+                    }
+                };
+                $files = [
+                    [
+                        'path' => $root . '/src/First.php',
+                        'edits' => [
+                            [
+                                'target' => ['select' => 'method:First::fetch'],
+                                'operation' => 'rename_method',
+                                'to' => 'load',
+                            ],
+                        ],
+                    ],
+                    [
+                        'path' => $root . '/src/Second.php',
+                        'edits' => [
+                            [
+                                'target' => ['select' => 'method:Second::other'],
+                                'operation' => 'rename_method',
+                                'to' => 'read',
+                            ],
+                        ],
+                    ],
+                ];
+
+                if ($changed === 'caller') {
+                    $files[] = [
+                        'path' => $root . '/src/Consumer.php',
+                        'edits' => [
+                            [
+                                'target' => ['select' => 'class:Consumer'],
+                                'operation' => 'add_member',
+                                'php' => 'public const ADDED = true;',
+                            ],
+                        ],
+                    ];
+                }
+                $refusal = projectRefusal(static fn () => (new Editor($finder))->apply(['files' => $files]));
+                projectAssert(str_contains($refusal, 'STALE_SOURCE'), $refusal);
+
+                foreach ($sources as $path => $source) {
+                    projectAssert(
+                        file_get_contents($root . '/' . $path) === ($path === $relative ? $concurrent : $source),
+                        $path . ' was edited or its concurrent update was lost',
+                    );
+                }
+            }
+        },
+    );
+    projectCase(
+        'project renames validate original expectations before resolving or writing',
+        function () use ($hierarchy): void {
+            $invalid = [
+                [['name' => 'different'], 'Expected node name'],
+                [['type' => 'Identifier'], 'Expected node type'],
+                [['value' => 'different'], 'Expected node value'],
+                ['not-an-object', 'expect must be an object'],
+            ];
+            $targets = [['select' => 'method:Base::fetch'], ['ref' => 'stmts[0].stmts[0].stmts[0]']];
+
+            foreach ($targets as $t => $target) {
+                foreach ($invalid as $e => [$expect, $message]) {
+                    foreach ([false, true] as $dryRun) {
+                        $root = projectFixture('expect-' . $t . '-' . $e . '-' . (int) $dryRun, $hierarchy);
+                        $finder = new CallsByName();
+                        $refusal = projectRefusal(
+                            static fn () => (new Editor($finder))->apply(
+                                [
+                                    'dryRun' => $dryRun,
+                                    'files' => [
+                                        [
+                                            'path' => $root . '/' . BASE_FILE,
+                                            'edits' => [
+                                                [
+                                                    'target' => $target,
+                                                    'operation' => 'rename_method',
+                                                    'to' => 'load',
+                                                    'expect' => $expect,
+                                                ],
+                                            ],
+                                        ],
+                                    ],
+                                ],
+                            ),
+                        );
+                        projectAssert(str_contains($refusal, $message), $refusal);
+                        projectAssert(
+                            $finder->queries === 0,
+                            'invalid expectation reached the resolver',
+                        );
+
+                        foreach ($hierarchy as $path => $source) {
+                            projectAssert(
+                                file_get_contents($root . '/' . $path) === $source,
+                                $path . ' changed after refusal',
+                            );
+                        }
+                    }
+                }
+            }
+        },
+    );
+    projectCase(
+        'matching expectations preserve the complete project rename',
+        function () use ($hierarchy): void {
+            $root = projectFixture('expect-match', $hierarchy);
+            $finder = new CallsByName();
+            $result = (new Editor($finder))->apply(
+                [
+                    'report' => 'compact',
+                    'files' => [
+                        [
+                            'path' => $root . '/' . BASE_FILE,
+                            'edits' => [
+                                [
+                                    'target' => ['select' => 'method:Base::fetch'],
+                                    'operation' => 'rename_method',
+                                    'to' => 'load',
+                                    'expect' => ['name' => 'fetch', 'type' => 'Stmt_ClassMethod'],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            );
+            projectAssert($finder->queries > 0, 'matching guard bypassed reference discovery');
+            projectAssert(($result['renames'][0]['declarations'] ?? 0) === 3, json_encode($result));
+            projectAssert(
+                str_contains((string) file_get_contents($root . '/' . USE_FILE), '->load()'),
+                'caller not renamed',
+            );
+        },
+    );
+    projectCase(
         'a public method in a hierarchy is renamed across every declaration and call',
         function () use ($hierarchy): void {
             $root = projectFixture('hierarchy', $hierarchy);

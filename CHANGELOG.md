@@ -6,6 +6,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Fixed
+
+- Project-wide `rename_method` validates the caller's original `expect` conditions before reference discovery. Previously expansion discarded these guards, so a mismatched name, type or value could still lead to a write.
+- Planned source hashes survive merging rename edits into an existing file entry. Conflicting snapshots and changes made while another rename is being planned now stop the transaction before any write, preserving concurrent changes.
+- Project expansion rejects targets containing both `select` and `ref`, matching the normal edit route instead of silently choosing one.
+
 ### Added
 
 - `rename --method Class::old --to new` discovers a unique project declaration, captures its source hash and submits one transaction with existing verification. Its default compact report includes the changed lines for review. It accepts qualified names, `--path`, an optional declaration `--file`, caller `--sha256`, `--mocks`, report modes and dry-run. Non-private methods explicitly resolve project callers, including final classes. Ambiguous, excluded, symlinked and inherited-only declarations are refused.
