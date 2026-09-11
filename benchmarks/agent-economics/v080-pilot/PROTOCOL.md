@@ -139,7 +139,12 @@ not an adversarial operating-system sandbox.
 
 Check out the protocol/task commit recorded in `operator-provenance.json`, install
 the released runtime dependencies, and supply the pinned Phpactor PHAR through
-`PHP_AST_EDIT_PHPACTOR`. Run the offline fixture and reporter tests first:
+`PHP_AST_EDIT_PHPACTOR`. The fixture preflight also uses the released engine PHAR;
+set `PHP_AST_PILOT_ARTIFACT` and `PHP_AST_PILOT_PHPACTOR` to override its defaults
+(`/tmp/php-ast-release-download-20260911/php-ast-edit.phar` and
+`/tmp/phpactor-release-20260911.phar`). If either PHAR is unavailable, the released
+fixture test is intentionally skipped; that skip is reported by unittest and does
+not claim that the fixture oracle ran. Run the offline fixture and reporter tests first:
 
 ```bash
 python3 -m unittest discover -s benchmarks/agent-economics/v080-pilot -p 'test_*.py'

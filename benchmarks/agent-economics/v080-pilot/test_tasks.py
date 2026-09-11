@@ -189,6 +189,7 @@ class TaskManifestTests(unittest.TestCase):
                         capture_output=True,
                         env=os.environ.copy(),
                         check=False,
+                        timeout=60,
                     )
                     self.assertEqual(
                         result.returncode,

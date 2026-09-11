@@ -129,6 +129,10 @@ echo "::group::symbol intent (offline guards and pilot oracles; LSP integration 
 python3 -m unittest discover -s benchmarks/symbol-intent -p 'test_*.py' || fail=1
 echo "::endgroup::"
 
+echo "::group::v0.8 Haiku pilot (offline fixture, oracle and reporter tests)"
+python3 -m unittest discover -s benchmarks/agent-economics/v080-pilot -p 'test_*.py' || fail=1
+echo "::endgroup::"
+
 if [[ "${1:-}" != --runtime-only ]]; then
   echo "::group::tests/distribution.sh (clean install and executable artifacts)"
   bash tests/distribution.sh || fail=1
