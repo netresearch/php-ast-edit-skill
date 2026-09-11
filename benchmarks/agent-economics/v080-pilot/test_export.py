@@ -20,6 +20,7 @@ class ExportTests(unittest.TestCase):
         for schedule in (
             [row, row],
             [{**row, "run_id": "run0"}],
+            [{**row, "run_id": "run\u0660\u0660\u0661"}],
             [{**row, "task_id": []}],
             [None],
         ):

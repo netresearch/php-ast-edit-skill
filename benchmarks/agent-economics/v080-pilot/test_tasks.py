@@ -23,7 +23,8 @@ RESOLVER = Path(
     os.environ.get("PHP_AST_PILOT_PHPACTOR", "/tmp/phpactor-release-20260911.phar")
 )
 SPEC = importlib.util.spec_from_file_location("v080_tasks", HERE / "tasks.py")
-assert SPEC and SPEC.loader
+assert SPEC is not None
+assert SPEC.loader is not None
 tasks = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(tasks)
 
@@ -35,7 +36,8 @@ import runner
 BENCHMARK_SPEC = importlib.util.spec_from_file_location(
     "v080_agent_benchmark", HERE.parents[1] / "agent_benchmark.py"
 )
-assert BENCHMARK_SPEC and BENCHMARK_SPEC.loader
+assert BENCHMARK_SPEC is not None
+assert BENCHMARK_SPEC.loader is not None
 agent_benchmark = importlib.util.module_from_spec(BENCHMARK_SPEC)
 BENCHMARK_SPEC.loader.exec_module(agent_benchmark)
 

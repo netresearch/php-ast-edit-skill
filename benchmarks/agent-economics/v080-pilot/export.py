@@ -45,32 +45,35 @@ EVIDENCE = (
 )
 
 
-def validate_metadata(schedule, manifest):
-    if not isinstance(schedule, list) or not isinstance(manifest, dict):
-        raise TypeError("Expected a schedule array and task manifest object")
-    rows = manifest.get("tasks")
-    if not isinstance(rows, list):
-        raise TypeError("Task manifest needs a tasks array")
+def validate_task_paths(entries):
+    paths = set()
+    for entry in entries:
+        name = entry.get("path") if isinstance(entry, dict) else None
+        if not isinstance(name, str) or not name or name in paths:
+            raise ValueError("Invalid or duplicate task file path")
+        if Path(name).is_absolute() or ".." in Path(name).parts:
+            raise ValueError("Task file must be a contained relative path")
+        paths.add(name)
+
+
+def index_tasks(rows):
     tasks = {}
     for task in rows:
         if not isinstance(task, dict) or not isinstance(task.get("id"), str):
             raise TypeError("Invalid task identity")
         if task["id"] in tasks or not isinstance(task.get("files"), list):
             raise ValueError("Duplicate task identity or invalid files array")
-        paths = set()
-        for entry in task["files"]:
-            name = entry.get("path") if isinstance(entry, dict) else None
-            if not isinstance(name, str) or not name or name in paths:
-                raise ValueError("Invalid or duplicate task file path")
-            if Path(name).is_absolute() or ".." in Path(name).parts:
-                raise ValueError("Task file must be a contained relative path")
-            paths.add(name)
+        validate_task_paths(task["files"])
         tasks[task["id"]] = task
+    return tasks
+
+
+def validate_schedule(schedule, tasks):
     identifiers = set()
     for row in schedule:
         identifier = row.get("run_id") if isinstance(row, dict) else None
         if not isinstance(identifier, str) or not re.fullmatch(
-            r"run[0-9]{3,}", identifier
+            r"run\d{3,}", identifier, flags=re.ASCII
         ):
             raise ValueError("Invalid scheduled run ID")
         if identifier in identifiers:
@@ -78,6 +81,16 @@ def validate_metadata(schedule, manifest):
         if not isinstance(row.get("task_id"), str) or row["task_id"] not in tasks:
             raise ValueError("Scheduled task is absent from manifest")
         identifiers.add(identifier)
+
+
+def validate_metadata(schedule, manifest):
+    if not isinstance(schedule, list) or not isinstance(manifest, dict):
+        raise TypeError("Expected a schedule array and task manifest object")
+    rows = manifest.get("tasks")
+    if not isinstance(rows, list):
+        raise TypeError("Task manifest needs a tasks array")
+    tasks = index_tasks(rows)
+    validate_schedule(schedule, tasks)
     return tasks
 
 
@@ -110,7 +123,9 @@ def export_campaign(source: Path, target: Path) -> dict[str, str]:
             raise ValueError(f"Unsafe evidence path: {name}")
         if path.is_file():
             selected.append((name, path))
-    target.mkdir(parents=True)
+    # The local operator chooses this output root; no candidate data supplies it.
+    # Absolute destinations are intentional, and existing exports are refused above.
+    target.mkdir(parents=True)  # NOSONAR(S8707)
     checksums = {}
     for name, path in selected:
         destination = target / name

@@ -12,7 +12,8 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 SPEC = importlib.util.spec_from_file_location("pilot_summarize", HERE / "summarize.py")
-assert SPEC and SPEC.loader
+assert SPEC is not None
+assert SPEC.loader is not None
 summarize = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(summarize)
 

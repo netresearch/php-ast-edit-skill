@@ -360,24 +360,28 @@ CHECKS = {
 }
 
 
+CHECK_CONFIG_PATH = ".php-ast-edit.json"
+CHECK_SCRIPT_PATH = "check.php"
+
+
 SUPPORT = {
     "simple-edit": {
-        ".php-ast-edit.json": CHECK_CONFIG,
-        "check.php": CHECKS["simple-edit"],
+        CHECK_CONFIG_PATH: CHECK_CONFIG,
+        CHECK_SCRIPT_PATH: CHECKS["simple-edit"],
     },
     "same-file-batch": {
-        ".php-ast-edit.json": CHECK_CONFIG,
-        "check.php": CHECKS["same-file-batch"],
+        CHECK_CONFIG_PATH: CHECK_CONFIG,
+        CHECK_SCRIPT_PATH: CHECKS["same-file-batch"],
     },
     "cross-file-rename": {
-        ".php-ast-edit.json": CHECK_CONFIG,
-        "check.php": CHECKS["cross-file-rename"],
+        CHECK_CONFIG_PATH: CHECK_CONFIG,
+        CHECK_SCRIPT_PATH: CHECKS["cross-file-rename"],
         "composer.json": '{"autoload":{"psr-4":{"Pilot\\\\CrossFile\\\\":"src/"}}}\n',
         "config/services.yaml": "services:\n  Pilot\\CrossFile\\Base:\n    calls:\n      - fetch\n",
     },
     "confusable-rename": {
-        ".php-ast-edit.json": CHECK_CONFIG,
-        "check.php": CHECKS["confusable-rename"],
+        CHECK_CONFIG_PATH: CHECK_CONFIG,
+        CHECK_SCRIPT_PATH: CHECKS["confusable-rename"],
     },
 }
 
@@ -587,7 +591,9 @@ def main() -> None:
     if destination is None:
         print(data, end="")
         return
-    destination.parent.mkdir(parents=True, exist_ok=True)
+    # This offline controller accepts an operator-selected output path directly;
+    # it is not model/task-derived and has no restricted output-root contract.
+    destination.parent.mkdir(parents=True, exist_ok=True)  # NOSONAR(S8707)
     destination.write_text(data)
 
 
