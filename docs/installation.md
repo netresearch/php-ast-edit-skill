@@ -96,7 +96,8 @@ From the target project's root, download and verify the resolver before using it
 
 ```bash
 mkdir -p .Build/bin &&
-curl --fail --silent --show-error --location \
+curl --proto '=https' --proto-redir '=https' --tlsv1.2 \
+  --fail --silent --show-error --location \
   --output .Build/bin/phpactor.phar \
   https://github.com/phpactor/phpactor/releases/download/2026.07.22.0/phpactor.phar &&
 printf '%s  %s\n' \

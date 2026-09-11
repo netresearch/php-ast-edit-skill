@@ -34,7 +34,8 @@ jobs:
         uses: ramsey/composer-install@65e4f84970763564f46a70b8a54b90d033b3bdda # 4.0.0
       - name: Download and verify the pinned Phpactor resolver
         run: |
-          curl --fail --silent --show-error --location --retry 3 \
+          curl --proto '=https' --proto-redir '=https' --tlsv1.2 \
+            --fail --silent --show-error --location --retry 3 \
             --output "$PHP_AST_EDIT_PHPACTOR_TEST" \
             https://github.com/phpactor/phpactor/releases/download/2026.07.22.0/phpactor.phar
           printf '%s  %s\n' \
