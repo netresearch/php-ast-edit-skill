@@ -65,6 +65,12 @@ Private methods retain the lexical scope and its reported limitations. See the
 [command contract](skills/php-structured-edit/references/operations.md#direct-method-rename)
 for options, mocks and verification semantics.
 
+A [24-run Haiku experiment](benchmarks/agent-economics/results/2026-09-11-intent-command/REPORT.md)
+tested this interface and then its default inline diff. In the final comparison,
+median tokens fell 10.0% on the small rename and 5.5% across files; wall time rose
+17.6% and 27.7%. All task oracles passed. With three repetitions per cell, this is
+engineering feedback, not an overall efficiency or cost-saving claim.
+
 ## Context requirements
 
 Provide the intended change and any source snapshot used to select targets. `rename`
@@ -115,7 +121,7 @@ Send this JSON to `php-ast-edit apply --input edits.json`:
 
 Use a file-level `sha256` guard when editing a previously read snapshot. Selectors identify named declarations without a coordinate lookup. For an expression or statement, `inspect --file src/Clock.php --line 4 --column 10` returns node ancestry, structural refs, and the snapshot hash. Ambiguous selectors fail rather than choosing the first match. Related changes across files belong in the same `files` array.
 
-Three response shapes. Omitting `report`, or choosing `"full"`, keeps the per-file `verify` layout and the `diff` — the default, and the right one when you want to see the change. `"report": "compact"` emits each verification run once in top-level `verify`, linked from each file's `checkIds`. `"report": "agent"` states what the write did and what it left open — `outcome`, a `checks` tri-state where `none_declared` is not `passed`, failing check output, a per-file `open` list, and `verifications` naming every execution — and carries no diff. Reach for it when a declared check's verdict is what you need; [measured](benchmarks/agent-economics/results/2026-09-10-agent-report/REPORT.md) on an edit with no declared checks, fetching the dropped diff back cost more than it saved. All three report the same checks and outcomes. A successful parse is not proof of correct behavior; run the relevant project tests if they have not already run through configured `verify` commands.
+Three response shapes. For `apply`, omitting `report`, or choosing `"full"`, keeps the per-file `verify` layout and the `diff` — the default, and the right one when you want to see the change. `"report": "compact"` emits each verification run once in top-level `verify`, linked from each file's `checkIds`. `"report": "agent"` states what the write did and what it left open — `outcome`, a `checks` tri-state where `none_declared` is not `passed`, failing check output, a per-file `open` list, and `verifications` naming every execution — and carries no diff. Reach for it when a declared check's verdict is what you need; [measured](benchmarks/agent-economics/results/2026-09-10-agent-report/REPORT.md) on an edit with no declared checks, fetching the dropped diff back cost more than it saved. All three report the same checks and outcomes. A successful parse is not proof of correct behavior; run the relevant project tests if they have not already run through configured `verify` commands.
 
 Use `scope: "project"` for checks such as PHPStan that should use their configured project paths, including after file deletions. Use `scope: "changed_files"` for commands that accept the changed, existing file paths through `{files}`. Configure these in `.php-ast-edit.json`; see the [verification contract](skills/php-structured-edit/references/operations.md#verification-configuration).
 
