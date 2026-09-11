@@ -90,8 +90,9 @@ model, without a timeout or accounting error.
 
 In the refinement, all seven direct command invocations across six skill runs
 exited successfully, and each run reached a passing configured checker. One run
-added a dry run; another explicitly selected `agent` output. All eight observed
-failed tool results were attempts to read a directory as a file (`EISDIR`). There
+added a dry run; another explicitly selected `agent` output. Of eight observed
+failed tool results, seven were directory reads (`EISDIR`); one was the invalid
+`git diff --no-pager` command in contextual run010, which exited 129. There
 were no failed text edits in this sample, so it cannot quantify avoided edit-repair
 loops. Both arms reached the same final correctness rate.
 
