@@ -52,6 +52,8 @@ Two behaviours of `apply --file` changed. A caller that scripted against the old
 
 ### Fixed
 
+- Recover the powered benchmark protocol with complete accounting for all 120 planned runs, fixed-family statistical correction, a wall-time counter-test and refusal to overwrite earlier attempts. Offline regression tests cover incomplete evidence and preservation of staged changes. Historical raw results remain unavailable; this recovery publishes no savings result.
+
 - **`replace_statement` no longer accepts a declaration.** A method, property or class is a `Stmt` to the parser, so the class check let the operation swap one for a statement; the file then failed only at the reparse gate with a syntax error on a line the caller never wrote. It is refused before mutation, and the refusal shows the `match` form.
 
 - The flag form of `apply` now answers exactly as the JSON form does. It returned exit 0 over failed project checks while reporting `checksPassed: false`, and silently dropped `--sha256` and `--report`, which the option parser accepts under any spelling — a supplied file guard never ran and the caller was told the edit was clean. Both flags now reach the document, both input forms share one execution and one verdict, and a flag the chosen form cannot carry is refused instead of dropped.

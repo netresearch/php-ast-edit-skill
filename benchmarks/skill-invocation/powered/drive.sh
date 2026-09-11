@@ -9,10 +9,32 @@
 # REPO   the subject repository
 # TOOL   a checkout of this repository at the protocol's tool commit, with its vendor
 # PHP_AST_EDIT_PHPACTOR  the pinned phpactor.phar, exported to both arms alike
-set -uo pipefail
+set -euo pipefail
 HERE=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 : "${BENCH:?set BENCH}" "${REPO:?set REPO}" "${TOOL:?set TOOL}" "${PHP_AST_EDIT_PHPACTOR:?set PHP_AST_EDIT_PHPACTOR}"
 export BENCH REPO TOOL PHP_AST_EDIT_PHPACTOR
+
+# This driver starts a new campaign once. It never resumes: the old run.sh removes
+# its worktree and truncates its result, so retrying this loop would erase evidence.
+case "${1:-}" in
+  setup)
+    [[ ! -e "$BENCH" && ! -L "$BENCH" ]] || {
+      echo "setup requires a new BENCH path; existing evidence/configuration is preserved" >&2
+      exit 2
+    }
+    ;;
+  run)
+    [[ -d "$BENCH" && ! -L "$BENCH" ]] || { echo "run requires the prepared BENCH directory" >&2; exit 2; }
+    for prior in "$BENCH/out" "$BENCH/work"; do
+      [[ ! -e "$prior" && ! -L "$prior" ]] || {
+        echo "refusing to rerun or resume $BENCH; preserve the first attempt and use a new campaign" >&2
+        exit 2
+      }
+    done
+    ;;
+  *) echo "usage: drive.sh setup|run" >&2; exit 2 ;;
+esac
+[[ "${N:-30}" == 30 ]] || { echo "the frozen protocol requires N=30" >&2; exit 2; }
 
 # The commits come from the protocol, not from the caller: a round run against anything
 # other than what the protocol froze is a different measurement.
@@ -27,31 +49,41 @@ export BASE
 
 case "${1:-}" in
   setup)
+    mkdir -m 700 "$BENCH"
     "$TOOL/benchmarks/skill-invocation/prepare.sh" free >/dev/null
     cfg=$("$TOOL/benchmarks/skill-invocation/prepare.sh" gate "$TOOL/skills/php-structured-edit")
-    cat > "$cfg/settings.json" <<EOF
-{
-  "includeCoAuthoredBy": false,
-  "hooks": {
-    "PreToolUse": [
-      {
-        "matcher": "Edit|Write|MultiEdit|NotebookEdit|Bash",
-        "hooks": [{"type": "command", "command": "python3 $TOOL/hooks/php-ast-only.py"}]
-      }
-    ]
-  }
+    python3 - "$cfg/settings.json" "$TOOL/hooks/php-ast-only.py" <<'PY'
+import json
+import shlex
+import sys
+from pathlib import Path
+
+settings = {
+    "includeCoAuthoredBy": False,
+    "hooks": {
+        "PreToolUse": [{
+            "matcher": "Edit|Write|MultiEdit|NotebookEdit|Bash",
+            "hooks": [{"type": "command", "command": shlex.join(["python3", sys.argv[2]])}],
+        }],
+    },
 }
-EOF
+Path(sys.argv[1]).write_text(json.dumps(settings, indent=2) + "\n")
+PY
     echo "$BENCH/cfg-free $cfg"
     exit 0
     ;;
   run) ;;
-  *) echo "usage: drive.sh setup|run" >&2; exit 2 ;;
 esac
 
 RUN="$TOOL/benchmarks/skill-invocation/run.sh"
-N="${N:-30}"
-mkdir -p "$BENCH/out"
+N=30
+# Exclusive creation also arbitrates concurrent invocations. No marker is removed
+# on failure; the first attempt, including an interrupted one, remains the evidence.
+mkdir "$BENCH/out"
+set -C
+sha256sum "$HERE/PROTOCOL.md" "$HERE/drive.sh" "$HERE/analyze.py" \
+  "$HERE/task-C.txt" "$HERE/task-D.txt" "$HERE/oracle-C.sh" "$HERE/oracle-D.sh" \
+  > "$BENCH/out/harness.sha256"
 
 for i in $(seq 1 "$N"); do
   n=$(printf '%02d' "$i")
@@ -68,12 +100,28 @@ for i in $(seq 1 "$N"); do
     for arm in "${arms[@]}"; do
       id="$t$n"
       claude --version > "$BENCH/out/$id-$arm.version" 2>&1
-      "$RUN" "$id" "$arm" "$(cat "$HERE/task-$t.txt")" || echo "run $id-$arm exited $?"
+      if "$RUN" "$id" "$arm" "$(cat "$HERE/task-$t.txt")"; then
+        :
+      else
+        status=$?
+        echo "driver failed before completing $id-$arm (exit $status); first attempt preserved" >&2
+        exit "$status"
+      fi
       work="$BENCH/work/$id-$arm"
+      [[ -f "$BENCH/out/$id-$arm.status" && -d "$work" ]] || {
+        echo "missing outcome or worktree for $id-$arm; campaign interrupted" >&2
+        exit 2
+      }
       # The oracle decides on the tree the run left; the diff is kept as the evidence,
       # and the tree goes, so a round of 120 runs does not hold 120 checkouts.
-      ( cd "$work" && sh "$HERE/oracle-$t.sh" ); echo "$?" > "$BENCH/out/$id-$arm.oracle"
-      git -C "$work" diff > "$BENCH/out/$id-$arm.diff"
+      oracle_status=0
+      ( cd "$work" && sh "$HERE/oracle-$t.sh" ) \
+        > "$BENCH/out/$id-$arm.oracle-output" 2>&1 || oracle_status=$?
+      echo "$oracle_status" > "$BENCH/out/$id-$arm.oracle"
+      # Compare final tracked bytes with the pinned subject, not merely the index:
+      # a candidate can stage or commit an edit before finishing.
+      git -C "$work" diff --binary "$BASE" > "$BENCH/out/$id-$arm.diff"
+      git -C "$work" ls-files --others --exclude-standard -z > "$BENCH/out/$id-$arm.untracked"
       git -C "$REPO" worktree remove --force "$work" 2>/dev/null || true
     done
   done
