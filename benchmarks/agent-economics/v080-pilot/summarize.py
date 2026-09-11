@@ -763,7 +763,6 @@ def run_record(
     evidence = evidence_path(base, row)
     attempted = present_evidence(evidence)
     measurement, measurement_file_present = load_measurement(evidence, errors)
-    raw_values: tuple[list[dict[str, Any]], int | None, bool] = ([], None, False)
     engine = engine_apply_summary(
         evidence / ENGINE_AUDIT_FILE if evidence else None, errors
     )
