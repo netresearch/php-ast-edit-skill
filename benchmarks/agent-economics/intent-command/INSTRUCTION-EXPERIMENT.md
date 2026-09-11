@@ -91,3 +91,71 @@ python3 /tmp/php-ast-intent-instruction-campaign-20260911/controller/efficiency/
 python3 benchmarks/agent-economics/intent-command/summarize.py \
   /tmp/php-ast-intent-instruction-campaign-20260911
 ```
+
+## Single refinement: delegate family discovery
+
+The initial 18 attempts completed without accounting errors, for a native list-price
+estimate of USD 0.7160165. All final oracles passed. Shortening instructions alone
+did not meet the prospective criterion: small-task median tokens increased from
+61,734 to 82,944; cross-file tokens decreased from 204,758 to 154,635.
+Independent trace review also rejects run005's general type-safety claim; that
+run fails the completion-claims gate despite its correct fixture outcome.
+
+The initial common contract required the model to read source before editing.
+Every AST candidate therefore did discovery that the guarded rename command can
+perform itself. In minimal run005, the model queued Contract, Base and Child
+renames together: Contract succeeded first, then the two redundant calls failed
+because that transaction had already renamed the family. These failures remain
+in the initial totals.
+
+Test one workflow change: delegate the complete supported family rename to the
+intent command, including its initial discovery. Compare unchanged `minimal_intent`
+with opt-in `delegated_intent`. The latter appends this generic instruction:
+
+> When the task names the class and method to rename, invoke the command before
+> reading or searching PHP for declaration or caller discovery. Invoke it once for
+> the named method family; it handles supported declarations and callers
+> together. Do not queue separate renames for each implementation or caller. Read
+> source yourself only when needed for another requirement, a failed command, or
+> unresolved warnings.
+
+Only for this arm, replace the common sentence "Read relevant source before
+editing." with "Ensure relevant source is read before editing; for a supported
+method rename, the command performs this discovery." Record each arm's actual
+common instructions. This is a disclosed compound instruction about one workflow;
+do not attribute any difference separately to its individual phrases. It does not
+weaken source guards, resolution requirements, verification, diff review or the
+independent oracle. Failed discovery and unresolved cases still require diagnosis.
+
+Use the same two tasks, three repetitions, pinned Haiku, tool set, runtime and
+checks: 12 attempts, seed `20260914`. Freeze a new commit before preparation and
+obtain independent design review before execution. The remaining campaign ceiling
+is USD 2.2839835 (USD 3 less the initial cost), still reserving USD 0.75 before each
+attempt. The same stop rules and all-attempt reporting apply. No further refinement
+or replacement attempts are allowed under this protocol.
+
+The primary comparison is now delegated versus contemporaneous minimal. A promising
+result requires at least 15% lower median total tokens, no higher median wall time,
+and all quality gates passing on both tasks. Earlier full-skill and contextual
+cells are separate historical context, not contemporaneous controls for this
+refinement. Inspect pre-write source reads and queued family calls to determine
+whether the intended mechanism actually occurred. Report mixed or negative results
+and instruction non-adherence. Three repetitions are exploratory.
+
+```bash
+python3 benchmarks/agent-economics/efficiency/runner.py prepare \
+  --source "$PWD" --source-ref <REFINEMENT_FROZEN_COMMIT> --vendor <PINNED_VENDOR> \
+  --manifest /tmp/intent-instruction-tasks.json \
+  --tasks method-and-literal,cross-file-rename-clarified \
+  --arms minimal_intent,delegated_intent --models haiku --seed 20260914 \
+  --campaign-budget-usd 2.2839835 --output /tmp/php-ast-delegated-intent-campaign-20260911
+PHP_AST_EDIT_PHPACTOR=/tmp/php-ast-delegated-intent-campaign-20260911/runtime/vendor/phpactor.phar \
+python3 /tmp/php-ast-delegated-intent-campaign-20260911/controller/efficiency/runner.py \
+  run --output /tmp/php-ast-delegated-intent-campaign-20260911 --execute-models
+python3 benchmarks/agent-economics/intent-command/summarize.py \
+  /tmp/php-ast-delegated-intent-campaign-20260911
+```
+
+`<PINNED_VENDOR>` includes the same verified Phpactor PHAR under `phpactor.phar`;
+record its digest and the environment selection in operator provenance. The PHAR
+is therefore also covered by the frozen runtime checksum manifest.
