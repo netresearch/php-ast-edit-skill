@@ -6,6 +6,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.8.1] - 2026-09-11
+
 ### Changed
 
 - Use an already supplied executable directly and pass the skill's example transaction through standard input. The Haiku pilot showed unnecessary executable lookup, payload-file cleanup and one retained payload despite the requested PHP edit. These are usability changes, not a measured savings claim: a bundled follow-up with additional method-rename instructions increased agent work, and the extra paragraph was withdrawn.
@@ -235,7 +237,8 @@ The historical figures below come from reported controlled runs comparing succes
 - `php-structured-edit` Agent Skill with the operation reference and a wrapper resolving the repository binary, `vendor/bin`, a local PHAR, or `PATH`.
 - PHAR build via `scripts/build-phar.php`.
 
-[Unreleased]: https://github.com/netresearch/php-ast-edit-skill/compare/v0.8.0...HEAD
+[Unreleased]: https://github.com/netresearch/php-ast-edit-skill/compare/v0.8.1...HEAD
+[0.8.1]: https://github.com/netresearch/php-ast-edit-skill/compare/v0.8.0...v0.8.1
 [0.8.0]: https://github.com/netresearch/php-ast-edit-skill/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/netresearch/php-ast-edit-skill/compare/v0.6.1...v0.7.0
 [0.6.1]: https://github.com/netresearch/php-ast-edit-skill/compare/v0.6.0...v0.6.1
