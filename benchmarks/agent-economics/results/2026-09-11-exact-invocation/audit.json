@@ -1,0 +1,3931 @@
+{
+  "schema_version": 1,
+  "kind": "independent_manual_trace_audit",
+  "campaign": "php-ast-exact-invocation-campaign-20260911",
+  "reviewed_runs": 24,
+  "summary_by_arm": {
+    "delegated_intent": {
+      "runs": 12,
+      "all_four_quality_gates_pass": 12,
+      "first_argv_exact_matches": 0,
+      "first_argv_file_adoption": 9,
+      "successful_write_file_adoption": 6,
+      "runs_with_PHP_reads_before_first_try": 2,
+      "PHP_reads_before_first_try": 4,
+      "PHP_reads_before_successful_write": 6,
+      "post_write_calls": 73,
+      "post_write_changed_file_Reads": 25,
+      "post_write_unchanged_file_Reads": 25,
+      "runs_with_repeated_check": 11,
+      "repeated_check_calls": 11,
+      "failed_engine_calls": 4,
+      "queued_engine_requests": 0
+    },
+    "exact_invocation": {
+      "runs": 12,
+      "all_four_quality_gates_pass": 11,
+      "first_argv_exact_matches": 12,
+      "first_argv_file_adoption": 12,
+      "successful_write_file_adoption": 12,
+      "runs_with_PHP_reads_before_first_try": 1,
+      "PHP_reads_before_first_try": 2,
+      "PHP_reads_before_successful_write": 2,
+      "post_write_calls": 79,
+      "post_write_changed_file_Reads": 28,
+      "post_write_unchanged_file_Reads": 27,
+      "runs_with_repeated_check": 11,
+      "repeated_check_calls": 12,
+      "failed_engine_calls": 0,
+      "queued_engine_requests": 0
+    }
+  },
+  "diff_hashes_by_task": {
+    "cross-file-rename-clarified": [
+      "8dc3376807c19bdb23d3abe207ab574305e4f61c36012e09251c14e323a7fcbb"
+    ],
+    "method-and-literal": [
+      "cf5fa56e0a848633c43a1d5458e9b7d0475fc08ae861f8f3861ee45eff1d3fbd"
+    ]
+  },
+  "definitions_and_limits": [
+    "All 24 attempts are included. Completion claims means the final candidate response. Intermediate factual errors are retained separately and do not silently change the preregistered completion gate.",
+    "Before first try counts native PHP Read calls before the first rename invocation, including one that fails. Before successful write includes recovery Reads after a refused invocation. Native Reads are counted individually, not as unique files.",
+    "Source-read counts cover recognized native Read calls. Bash Git diffs are retained separately and can also expose source. No shell commands or candidate code were run for this audit.",
+    "A read of a file named in an engine warning is observed, not automatically proof that every warning was reviewed. Warning review and explicit user preservation requirements can justify post-write Reads. The counters do not claim all such Reads are removable.",
+    "Repeated checks are explicit php check.php calls after the engine already reported the identical project check passed, with no intervening candidate mutation. Other source review and the independent expected-change oracle remain distinct: the cross-file runtime check also accepts the old method via its fallback.",
+    "The only PHP writes visible in these traces are the engine invocations. Reported before/after hashes match retained fixture hashes, and reported changed files equal the final changed-file set. This is evidence for these attempts, not a universal security claim.",
+    "Output includes deterministic printer whitespace: Product.php gains a final newline; the four changed cross-file PHP files lose one trailing blank line. Protected fixtures and unrelated files remain unchanged.",
+    "Both arms receive the same already-selected method/file/destination/project metadata and use the same engine. The extra ready-to-run command tests invocation formulation/adoption, not autonomous discovery or an intrinsic AST-versus-text advantage.",
+    "Tool-execution time, provider cache state and the cost of selecting intent metadata are not inferred by this trace audit. The parent report owns the experimental economic metrics and all-attempt decision."
+  ],
+  "runs": [
+    {
+      "run_id": "run001",
+      "arm": "delegated_intent",
+      "task_id": "cross-file-rename-clarified",
+      "repetition": 1,
+      "source_commit": "ff3484f928ea1557ff88c6fae314fcff9600d2f2",
+      "raw_sha256": "ad4e834cea994831906a1b61fb828e74465b3b92a621a7f80ba6dfa0e5af4d99",
+      "evidence": {
+        "raw": "runs/run001/evidence/raw.jsonl",
+        "measurement": "runs/run001/evidence/measurement.json",
+        "diff": "runs/run001/evidence/diff.patch",
+        "oracle": "runs/run001/evidence/oracle.json"
+      },
+      "engine_invocations": [
+        {
+          "argv": [
+            "rename",
+            "--method",
+            "Pilot\\\\CrossFile\\\\Contract::fetch",
+            "--to",
+            "load",
+            "--file",
+            "src/Contract.php"
+          ],
+          "exit_code": 2,
+          "file_values": [
+            "src/Contract.php"
+          ],
+          "path_values": [],
+          "method_values": [
+            "Pilot\\\\CrossFile\\\\Contract::fetch"
+          ],
+          "exact_manifest_argv_match": false,
+          "native_request_line": 9,
+          "native_result_line": 11,
+          "reports_actual_mutation": false,
+          "checksPassed": null
+        },
+        {
+          "argv": [
+            "rename",
+            "--method",
+            "Contract::fetch",
+            "--to",
+            "load"
+          ],
+          "exit_code": 0,
+          "file_values": [],
+          "path_values": [],
+          "method_values": [
+            "Contract::fetch"
+          ],
+          "exact_manifest_argv_match": false,
+          "native_request_line": 26,
+          "native_result_line": 27,
+          "reports_actual_mutation": true,
+          "checksPassed": true
+        }
+      ],
+      "phase_anchors": {
+        "first_writer_request_line": 9,
+        "first_mutation_request_line": 26,
+        "last_mutation_result_line": 27
+      },
+      "engine_requests_queued_before_previous_result_lines": [],
+      "counts": {
+        "native_calls": 10,
+        "before_writer_calls": 0,
+        "before_writer_known_file_Reads": 0,
+        "before_writer_known_PHP_Reads": 0,
+        "before_actual_mutation_known_PHP_Reads": 2,
+        "post_write_calls": 6,
+        "post_write_known_file_Reads": 3,
+        "post_write_known_changed_file_Reads": 0,
+        "post_write_known_unchanged_file_Reads": 3,
+        "manual_check_repetition_candidates": 1
+      },
+      "source_reads": [
+        {
+          "line": 17,
+          "file": "src/Contract.php",
+          "phase": "writer_phase_or_unknown",
+          "php": true,
+          "final_file_changed": true,
+          "file_named_by_engine_warning": false
+        },
+        {
+          "line": 19,
+          "file": "src/Base.php",
+          "phase": "writer_phase_or_unknown",
+          "php": true,
+          "final_file_changed": true,
+          "file_named_by_engine_warning": false
+        },
+        {
+          "line": 34,
+          "file": "src/Other.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": false,
+          "file_named_by_engine_warning": false
+        },
+        {
+          "line": 36,
+          "file": "check.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": false,
+          "file_named_by_engine_warning": true
+        },
+        {
+          "line": 43,
+          "file": "src/OtherConsumer.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": false,
+          "file_named_by_engine_warning": false
+        }
+      ],
+      "other_post_write_calls": [
+        {
+          "line": 50,
+          "tool": "Bash",
+          "command": "php check.php && echo \"Check passed!\"",
+          "result_line": 51,
+          "is_error": false
+        },
+        {
+          "line": 57,
+          "tool": "Bash",
+          "command": "git status",
+          "result_line": 58,
+          "is_error": false
+        },
+        {
+          "line": 63,
+          "tool": "Bash",
+          "command": "git diff src/",
+          "result_line": 64,
+          "is_error": false
+        }
+      ],
+      "gates": {
+        "oracle": "pass",
+        "candidate_check": "pass",
+        "writer_route": "pass",
+        "completion_claims": "pass"
+      },
+      "candidate_check_evidence": {
+        "engine_result_line": 27,
+        "verify": [
+          {
+            "scope": "project",
+            "command": "php check.php",
+            "ok": true
+          }
+        ],
+        "manual_repetitions": [
+          {
+            "request_line": 50,
+            "result_line": 51,
+            "command": "php check.php && echo \"Check passed!\""
+          }
+        ]
+      },
+      "engine_report_hashes_match_retained_output": true,
+      "changed_files": [
+        "src/Base.php",
+        "src/Child.php",
+        "src/Consumer.php",
+        "src/Contract.php"
+      ],
+      "diff_sha256": "8dc3376807c19bdb23d3abe207ab574305e4f61c36012e09251c14e323a7fcbb",
+      "final_claim_evidence": "runs/run001/evidence/raw.jsonl:69",
+      "claims_evidence_lines": [
+        69
+      ],
+      "command_failure_lines": [
+        9
+      ],
+      "intermediate_claim_findings": [],
+      "final_claim_findings": [],
+      "review_notes": [
+        "First request (raw:9, result:11) has doubled namespace backslashes in actual argv and exits 2. Two PHP Reads after refusal, before successful write at raw:26; the successful short-class selector omits --file and --path.",
+        "One successful engine mutation handles the complete interface family. Subsequent php check.php at raw:50 repeats the same engine-passed check with no intervening mutation.",
+        "Completion at raw:69 is limited to the supplied fixture behavior; independent oracle and retained diff support it."
+      ]
+    },
+    {
+      "run_id": "run002",
+      "arm": "exact_invocation",
+      "task_id": "cross-file-rename-clarified",
+      "repetition": 1,
+      "source_commit": "ff3484f928ea1557ff88c6fae314fcff9600d2f2",
+      "raw_sha256": "056674398b9706f7581c3146cb5ecf9a6d368b4562bad5bafcb3efa9843f253e",
+      "evidence": {
+        "raw": "runs/run002/evidence/raw.jsonl",
+        "measurement": "runs/run002/evidence/measurement.json",
+        "diff": "runs/run002/evidence/diff.patch",
+        "oracle": "runs/run002/evidence/oracle.json"
+      },
+      "engine_invocations": [
+        {
+          "argv": [
+            "rename",
+            "--method",
+            "Pilot\\CrossFile\\Contract::fetch",
+            "--to",
+            "load",
+            "--path",
+            ".",
+            "--file",
+            "src/Contract.php"
+          ],
+          "exit_code": 0,
+          "file_values": [
+            "src/Contract.php"
+          ],
+          "path_values": [
+            "."
+          ],
+          "method_values": [
+            "Pilot\\CrossFile\\Contract::fetch"
+          ],
+          "exact_manifest_argv_match": true,
+          "native_request_line": 6,
+          "native_result_line": 8,
+          "reports_actual_mutation": true,
+          "checksPassed": true
+        }
+      ],
+      "phase_anchors": {
+        "first_writer_request_line": 6,
+        "first_mutation_request_line": 6,
+        "last_mutation_result_line": 8
+      },
+      "engine_requests_queued_before_previous_result_lines": [],
+      "counts": {
+        "native_calls": 10,
+        "before_writer_calls": 0,
+        "before_writer_known_file_Reads": 0,
+        "before_writer_known_PHP_Reads": 0,
+        "before_actual_mutation_known_PHP_Reads": 0,
+        "post_write_calls": 9,
+        "post_write_known_file_Reads": 7,
+        "post_write_known_changed_file_Reads": 4,
+        "post_write_known_unchanged_file_Reads": 3,
+        "manual_check_repetition_candidates": 2
+      },
+      "source_reads": [
+        {
+          "line": 16,
+          "file": "check.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": false,
+          "file_named_by_engine_warning": true
+        },
+        {
+          "line": 29,
+          "file": "src/Other.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": false,
+          "file_named_by_engine_warning": false
+        },
+        {
+          "line": 32,
+          "file": "src/OtherConsumer.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": false,
+          "file_named_by_engine_warning": false
+        },
+        {
+          "line": 38,
+          "file": "src/Contract.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": true,
+          "file_named_by_engine_warning": false
+        },
+        {
+          "line": 41,
+          "file": "src/Base.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": true,
+          "file_named_by_engine_warning": false
+        },
+        {
+          "line": 44,
+          "file": "src/Child.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": true,
+          "file_named_by_engine_warning": false
+        },
+        {
+          "line": 47,
+          "file": "src/Consumer.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": true,
+          "file_named_by_engine_warning": false
+        }
+      ],
+      "other_post_write_calls": [
+        {
+          "line": 22,
+          "tool": "Bash",
+          "command": "php check.php && echo \"✓ check.php passed\"",
+          "result_line": 23,
+          "is_error": false
+        },
+        {
+          "line": 54,
+          "tool": "Bash",
+          "command": "php check.php && echo \"✓ All checks passed\"",
+          "result_line": 55,
+          "is_error": false
+        }
+      ],
+      "gates": {
+        "oracle": "pass",
+        "candidate_check": "pass",
+        "writer_route": "pass",
+        "completion_claims": "pass"
+      },
+      "candidate_check_evidence": {
+        "engine_result_line": 8,
+        "verify": [
+          {
+            "scope": "project",
+            "command": "php check.php",
+            "ok": true
+          }
+        ],
+        "manual_repetitions": [
+          {
+            "request_line": 22,
+            "result_line": 23,
+            "command": "php check.php && echo \"✓ check.php passed\""
+          },
+          {
+            "request_line": 54,
+            "result_line": 55,
+            "command": "php check.php && echo \"✓ All checks passed\""
+          }
+        ]
+      },
+      "engine_report_hashes_match_retained_output": true,
+      "changed_files": [
+        "src/Base.php",
+        "src/Child.php",
+        "src/Consumer.php",
+        "src/Contract.php"
+      ],
+      "diff_sha256": "8dc3376807c19bdb23d3abe207ab574305e4f61c36012e09251c14e323a7fcbb",
+      "final_claim_evidence": "runs/run002/evidence/raw.jsonl:60",
+      "claims_evidence_lines": [
+        21,
+        60
+      ],
+      "command_failure_lines": [],
+      "intermediate_claim_findings": [],
+      "final_claim_findings": [],
+      "review_notes": [
+        "Exact supplied argv is the first native tool call (raw:6), including --path . and --file src/Contract.php. It succeeds.",
+        "Checks at raw:22 and raw:54 repeat the engine-passed php check.php without intervening mutation. Seven native file Reads follow the write.",
+        "The fallback method-name literal is explained correctly at raw:21. Final raw:60 says all required files remain unmodified, interpreted in context as the explicitly protected files after listing the intended source modifications; their hashes agree."
+      ]
+    },
+    {
+      "run_id": "run003",
+      "arm": "exact_invocation",
+      "task_id": "method-and-literal",
+      "repetition": 5,
+      "source_commit": "ff3484f928ea1557ff88c6fae314fcff9600d2f2",
+      "raw_sha256": "cbbe0c254efbbe41c772dfdae3c7476f666c6101341e84f1d1437f68378d29e4",
+      "evidence": {
+        "raw": "runs/run003/evidence/raw.jsonl",
+        "measurement": "runs/run003/evidence/measurement.json",
+        "diff": "runs/run003/evidence/diff.patch",
+        "oracle": "runs/run003/evidence/oracle.json"
+      },
+      "engine_invocations": [
+        {
+          "argv": [
+            "rename",
+            "--method",
+            "Product::findByUid",
+            "--to",
+            "resolveByUid",
+            "--path",
+            ".",
+            "--file",
+            "Product.php"
+          ],
+          "exit_code": 0,
+          "file_values": [
+            "Product.php"
+          ],
+          "path_values": [
+            "."
+          ],
+          "method_values": [
+            "Product::findByUid"
+          ],
+          "exact_manifest_argv_match": true,
+          "native_request_line": 7,
+          "native_result_line": 9,
+          "reports_actual_mutation": true,
+          "checksPassed": true
+        }
+      ],
+      "phase_anchors": {
+        "first_writer_request_line": 7,
+        "first_mutation_request_line": 7,
+        "last_mutation_result_line": 9
+      },
+      "engine_requests_queued_before_previous_result_lines": [],
+      "counts": {
+        "native_calls": 5,
+        "before_writer_calls": 0,
+        "before_writer_known_file_Reads": 0,
+        "before_writer_known_PHP_Reads": 0,
+        "before_actual_mutation_known_PHP_Reads": 0,
+        "post_write_calls": 4,
+        "post_write_known_file_Reads": 3,
+        "post_write_known_changed_file_Reads": 1,
+        "post_write_known_unchanged_file_Reads": 2,
+        "manual_check_repetition_candidates": 1
+      },
+      "source_reads": [
+        {
+          "line": 19,
+          "file": "Product.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": true,
+          "file_named_by_engine_warning": true
+        },
+        {
+          "line": 21,
+          "file": "check.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": false,
+          "file_named_by_engine_warning": true
+        },
+        {
+          "line": 23,
+          "file": ".php-ast-edit.json",
+          "phase": "after_write",
+          "php": false,
+          "final_file_changed": false,
+          "file_named_by_engine_warning": false
+        }
+      ],
+      "other_post_write_calls": [
+        {
+          "line": 30,
+          "tool": "Bash",
+          "command": "php check.php && echo \"Exit code: $?\"",
+          "result_line": 31,
+          "is_error": false
+        }
+      ],
+      "gates": {
+        "oracle": "pass",
+        "candidate_check": "pass",
+        "writer_route": "pass",
+        "completion_claims": "pass"
+      },
+      "candidate_check_evidence": {
+        "engine_result_line": 9,
+        "verify": [
+          {
+            "scope": "project",
+            "command": "php check.php",
+            "ok": true
+          }
+        ],
+        "manual_repetitions": [
+          {
+            "request_line": 30,
+            "result_line": 31,
+            "command": "php check.php && echo \"Exit code: $?\""
+          }
+        ]
+      },
+      "engine_report_hashes_match_retained_output": true,
+      "changed_files": [
+        "Product.php"
+      ],
+      "diff_sha256": "cf5fa56e0a848633c43a1d5458e9b7d0475fc08ae861f8f3861ee45eff1d3fbd",
+      "final_claim_evidence": "runs/run003/evidence/raw.jsonl:36",
+      "claims_evidence_lines": [
+        36
+      ],
+      "command_failure_lines": [],
+      "intermediate_claim_findings": [],
+      "final_claim_findings": [],
+      "review_notes": [
+        "First call at raw:7 uses exact supplied argv. Three file Reads and one repeated php check.php follow the successful write.",
+        "Final raw:36 correctly distinguishes the preserved log string from the check's old-method-absence assertion. Required source changes and protected-byte claims match the oracle and final hashes."
+      ]
+    },
+    {
+      "run_id": "run004",
+      "arm": "delegated_intent",
+      "task_id": "method-and-literal",
+      "repetition": 5,
+      "source_commit": "ff3484f928ea1557ff88c6fae314fcff9600d2f2",
+      "raw_sha256": "a445db8afe8696d4b792cb827a645bae6a561e12c628566ac3c1a3a77aca4293",
+      "evidence": {
+        "raw": "runs/run004/evidence/raw.jsonl",
+        "measurement": "runs/run004/evidence/measurement.json",
+        "diff": "runs/run004/evidence/diff.patch",
+        "oracle": "runs/run004/evidence/oracle.json"
+      },
+      "engine_invocations": [
+        {
+          "argv": [
+            "rename",
+            "--method",
+            "Product::findByUid",
+            "--to",
+            "resolveByUid",
+            "--file",
+            "Product.php",
+            "."
+          ],
+          "exit_code": 0,
+          "file_values": [
+            "Product.php"
+          ],
+          "path_values": [],
+          "method_values": [
+            "Product::findByUid"
+          ],
+          "exact_manifest_argv_match": false,
+          "native_request_line": 7,
+          "native_result_line": 9,
+          "reports_actual_mutation": true,
+          "checksPassed": true
+        }
+      ],
+      "phase_anchors": {
+        "first_writer_request_line": 7,
+        "first_mutation_request_line": 7,
+        "last_mutation_result_line": 9
+      },
+      "engine_requests_queued_before_previous_result_lines": [],
+      "counts": {
+        "native_calls": 5,
+        "before_writer_calls": 0,
+        "before_writer_known_file_Reads": 0,
+        "before_writer_known_PHP_Reads": 0,
+        "before_actual_mutation_known_PHP_Reads": 0,
+        "post_write_calls": 4,
+        "post_write_known_file_Reads": 0,
+        "post_write_known_changed_file_Reads": 0,
+        "post_write_known_unchanged_file_Reads": 0,
+        "manual_check_repetition_candidates": 1
+      },
+      "source_reads": [],
+      "other_post_write_calls": [
+        {
+          "line": 17,
+          "tool": "Bash",
+          "command": "git status",
+          "result_line": 18,
+          "is_error": false
+        },
+        {
+          "line": 22,
+          "tool": "Bash",
+          "command": "git diff Product.php",
+          "result_line": 23,
+          "is_error": false
+        },
+        {
+          "line": 27,
+          "tool": "Bash",
+          "command": "php check.php && echo \"CHECK PASSED\"",
+          "result_line": 28,
+          "is_error": false
+        },
+        {
+          "line": 30,
+          "tool": "Bash",
+          "command": "git diff check.php && git diff .php-ast-edit.json && echo \"Both files are unchanged (no diff output above)\"",
+          "result_line": 31,
+          "is_error": false
+        }
+      ],
+      "gates": {
+        "oracle": "pass",
+        "candidate_check": "pass",
+        "writer_route": "pass",
+        "completion_claims": "pass"
+      },
+      "candidate_check_evidence": {
+        "engine_result_line": 9,
+        "verify": [
+          {
+            "scope": "project",
+            "command": "php check.php",
+            "ok": true
+          }
+        ],
+        "manual_repetitions": [
+          {
+            "request_line": 27,
+            "result_line": 28,
+            "command": "php check.php && echo \"CHECK PASSED\""
+          }
+        ]
+      },
+      "engine_report_hashes_match_retained_output": true,
+      "changed_files": [
+        "Product.php"
+      ],
+      "diff_sha256": "cf5fa56e0a848633c43a1d5458e9b7d0475fc08ae861f8f3861ee45eff1d3fbd",
+      "final_claim_evidence": "runs/run004/evidence/raw.jsonl:35",
+      "claims_evidence_lines": [
+        35
+      ],
+      "command_failure_lines": [],
+      "intermediate_claim_findings": [],
+      "final_claim_findings": [],
+      "review_notes": [
+        "First call at raw:7 uses --file Product.php with positional project path ., accepted by the repaired CLI. No native Read calls; four post-write Bash calls inspect Git state/diffs or repeat the already-passed check.",
+        "Final raw:35 is supported by the output, diff and protected-file hashes."
+      ]
+    },
+    {
+      "run_id": "run005",
+      "arm": "delegated_intent",
+      "task_id": "cross-file-rename-clarified",
+      "repetition": 2,
+      "source_commit": "ff3484f928ea1557ff88c6fae314fcff9600d2f2",
+      "raw_sha256": "a02e9a2b52a6084d92fb1ea697a68a1778721c28a3d5072ed885ec31323a28d0",
+      "evidence": {
+        "raw": "runs/run005/evidence/raw.jsonl",
+        "measurement": "runs/run005/evidence/measurement.json",
+        "diff": "runs/run005/evidence/diff.patch",
+        "oracle": "runs/run005/evidence/oracle.json"
+      },
+      "engine_invocations": [
+        {
+          "argv": [
+            "rename",
+            "--method",
+            "Pilot\\CrossFile\\Contract::fetch",
+            "--to",
+            "load",
+            "--file",
+            "src/Contract.php",
+            "."
+          ],
+          "exit_code": 0,
+          "file_values": [
+            "src/Contract.php"
+          ],
+          "path_values": [],
+          "method_values": [
+            "Pilot\\CrossFile\\Contract::fetch"
+          ],
+          "exact_manifest_argv_match": false,
+          "native_request_line": 7,
+          "native_result_line": 9,
+          "reports_actual_mutation": true,
+          "checksPassed": true
+        }
+      ],
+      "phase_anchors": {
+        "first_writer_request_line": 7,
+        "first_mutation_request_line": 7,
+        "last_mutation_result_line": 9
+      },
+      "engine_requests_queued_before_previous_result_lines": [],
+      "counts": {
+        "native_calls": 10,
+        "before_writer_calls": 0,
+        "before_writer_known_file_Reads": 0,
+        "before_writer_known_PHP_Reads": 0,
+        "before_actual_mutation_known_PHP_Reads": 0,
+        "post_write_calls": 9,
+        "post_write_known_file_Reads": 8,
+        "post_write_known_changed_file_Reads": 4,
+        "post_write_known_unchanged_file_Reads": 4,
+        "manual_check_repetition_candidates": 1
+      },
+      "source_reads": [
+        {
+          "line": 16,
+          "file": "check.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": false,
+          "file_named_by_engine_warning": true
+        },
+        {
+          "line": 31,
+          "file": "src/Other.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": false,
+          "file_named_by_engine_warning": false
+        },
+        {
+          "line": 33,
+          "file": "src/OtherConsumer.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": false,
+          "file_named_by_engine_warning": false
+        },
+        {
+          "line": 35,
+          "file": "config/services.yaml",
+          "phase": "after_write",
+          "php": false,
+          "final_file_changed": false,
+          "file_named_by_engine_warning": true
+        },
+        {
+          "line": 41,
+          "file": "src/Contract.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": true,
+          "file_named_by_engine_warning": false
+        },
+        {
+          "line": 43,
+          "file": "src/Base.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": true,
+          "file_named_by_engine_warning": false
+        },
+        {
+          "line": 45,
+          "file": "src/Child.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": true,
+          "file_named_by_engine_warning": false
+        },
+        {
+          "line": 47,
+          "file": "src/Consumer.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": true,
+          "file_named_by_engine_warning": false
+        }
+      ],
+      "other_post_write_calls": [
+        {
+          "line": 25,
+          "tool": "Bash",
+          "command": "php check.php && echo \"✓ check.php passed\"",
+          "result_line": 26,
+          "is_error": false
+        }
+      ],
+      "gates": {
+        "oracle": "pass",
+        "candidate_check": "pass",
+        "writer_route": "pass",
+        "completion_claims": "pass"
+      },
+      "candidate_check_evidence": {
+        "engine_result_line": 9,
+        "verify": [
+          {
+            "scope": "project",
+            "command": "php check.php",
+            "ok": true
+          }
+        ],
+        "manual_repetitions": [
+          {
+            "request_line": 25,
+            "result_line": 26,
+            "command": "php check.php && echo \"✓ check.php passed\""
+          }
+        ]
+      },
+      "engine_report_hashes_match_retained_output": true,
+      "changed_files": [
+        "src/Base.php",
+        "src/Child.php",
+        "src/Consumer.php",
+        "src/Contract.php"
+      ],
+      "diff_sha256": "8dc3376807c19bdb23d3abe207ab574305e4f61c36012e09251c14e323a7fcbb",
+      "final_claim_evidence": "runs/run005/evidence/raw.jsonl:53",
+      "claims_evidence_lines": [
+        24,
+        53
+      ],
+      "command_failure_lines": [],
+      "intermediate_claim_findings": [],
+      "final_claim_findings": [],
+      "review_notes": [
+        "First call at raw:7 uses the complete namespaced method, --file and positional . successfully. No PHP source read precedes it.",
+        "The warning's fallback literal is correctly identified and preserved due to the byte-preservation requirement (raw:24). Eight file Reads and one repeated check follow the successful engine call.",
+        "Final raw:53 is supported by the source, retained output and oracle."
+      ]
+    },
+    {
+      "run_id": "run006",
+      "arm": "exact_invocation",
+      "task_id": "cross-file-rename-clarified",
+      "repetition": 2,
+      "source_commit": "ff3484f928ea1557ff88c6fae314fcff9600d2f2",
+      "raw_sha256": "0a661e9206f572ce94a58e9af2270f7c75a16d921b74b9316b035700e988a274",
+      "evidence": {
+        "raw": "runs/run006/evidence/raw.jsonl",
+        "measurement": "runs/run006/evidence/measurement.json",
+        "diff": "runs/run006/evidence/diff.patch",
+        "oracle": "runs/run006/evidence/oracle.json"
+      },
+      "engine_invocations": [
+        {
+          "argv": [
+            "rename",
+            "--method",
+            "Pilot\\CrossFile\\Contract::fetch",
+            "--to",
+            "load",
+            "--path",
+            ".",
+            "--file",
+            "src/Contract.php"
+          ],
+          "exit_code": 0,
+          "file_values": [
+            "src/Contract.php"
+          ],
+          "path_values": [
+            "."
+          ],
+          "method_values": [
+            "Pilot\\CrossFile\\Contract::fetch"
+          ],
+          "exact_manifest_argv_match": true,
+          "native_request_line": 7,
+          "native_result_line": 9,
+          "reports_actual_mutation": true,
+          "checksPassed": true
+        }
+      ],
+      "phase_anchors": {
+        "first_writer_request_line": 7,
+        "first_mutation_request_line": 7,
+        "last_mutation_result_line": 9
+      },
+      "engine_requests_queued_before_previous_result_lines": [],
+      "counts": {
+        "native_calls": 12,
+        "before_writer_calls": 0,
+        "before_writer_known_file_Reads": 0,
+        "before_writer_known_PHP_Reads": 0,
+        "before_actual_mutation_known_PHP_Reads": 0,
+        "post_write_calls": 11,
+        "post_write_known_file_Reads": 7,
+        "post_write_known_changed_file_Reads": 4,
+        "post_write_known_unchanged_file_Reads": 3,
+        "manual_check_repetition_candidates": 1
+      },
+      "source_reads": [
+        {
+          "line": 15,
+          "file": "check.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": false,
+          "file_named_by_engine_warning": true
+        },
+        {
+          "line": 31,
+          "file": "src/Contract.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": true,
+          "file_named_by_engine_warning": false
+        },
+        {
+          "line": 33,
+          "file": "src/Other.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": false,
+          "file_named_by_engine_warning": false
+        },
+        {
+          "line": 35,
+          "file": "src/Consumer.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": true,
+          "file_named_by_engine_warning": false
+        },
+        {
+          "line": 40,
+          "file": "src/Base.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": true,
+          "file_named_by_engine_warning": false
+        },
+        {
+          "line": 42,
+          "file": "src/Child.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": true,
+          "file_named_by_engine_warning": false
+        },
+        {
+          "line": 48,
+          "file": "src/OtherConsumer.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": false,
+          "file_named_by_engine_warning": false
+        }
+      ],
+      "other_post_write_calls": [
+        {
+          "line": 25,
+          "tool": "Bash",
+          "command": "php check.php && echo \"✓ Check passed\"",
+          "result_line": 26,
+          "is_error": false
+        },
+        {
+          "line": 54,
+          "tool": "Bash",
+          "command": "md5sum .php-ast-edit.json composer.json config/services.yaml",
+          "result_line": 55,
+          "is_error": false
+        },
+        {
+          "line": 57,
+          "tool": "Bash",
+          "command": "git status",
+          "result_line": 58,
+          "is_error": false
+        },
+        {
+          "line": 62,
+          "tool": "Bash",
+          "command": "git diff src/Base.php src/Child.php src/Consumer.php src/Contract.php",
+          "result_line": 63,
+          "is_error": false
+        }
+      ],
+      "gates": {
+        "oracle": "pass",
+        "candidate_check": "pass",
+        "writer_route": "pass",
+        "completion_claims": "pass"
+      },
+      "candidate_check_evidence": {
+        "engine_result_line": 9,
+        "verify": [
+          {
+            "scope": "project",
+            "command": "php check.php",
+            "ok": true
+          }
+        ],
+        "manual_repetitions": [
+          {
+            "request_line": 25,
+            "result_line": 26,
+            "command": "php check.php && echo \"✓ Check passed\""
+          }
+        ]
+      },
+      "engine_report_hashes_match_retained_output": true,
+      "changed_files": [
+        "src/Base.php",
+        "src/Child.php",
+        "src/Consumer.php",
+        "src/Contract.php"
+      ],
+      "diff_sha256": "8dc3376807c19bdb23d3abe207ab574305e4f61c36012e09251c14e323a7fcbb",
+      "final_claim_evidence": "runs/run006/evidence/raw.jsonl:67",
+      "claims_evidence_lines": [
+        24,
+        67
+      ],
+      "command_failure_lines": [],
+      "intermediate_claim_findings": [],
+      "final_claim_findings": [],
+      "review_notes": [
+        "Exact argv at raw:7 succeeds as first call. Seven native file Reads follow; raw:25 repeats the already-passed engine check, with no intervening write.",
+        "The byte-preservation requirement and fallback are recognized (raw:24). Final raw:67 is supported by the supplied fixture evidence. Post-write md5sum alone does not establish preservation against a baseline, but the subsequent Git status/diff and independent hashes provide that evidence."
+      ]
+    },
+    {
+      "run_id": "run007",
+      "arm": "exact_invocation",
+      "task_id": "cross-file-rename-clarified",
+      "repetition": 3,
+      "source_commit": "ff3484f928ea1557ff88c6fae314fcff9600d2f2",
+      "raw_sha256": "21305db42c7b72906fbfd117f39f2fe28839a0bf7878dadb23cb669f960732fe",
+      "evidence": {
+        "raw": "runs/run007/evidence/raw.jsonl",
+        "measurement": "runs/run007/evidence/measurement.json",
+        "diff": "runs/run007/evidence/diff.patch",
+        "oracle": "runs/run007/evidence/oracle.json"
+      },
+      "engine_invocations": [
+        {
+          "argv": [
+            "rename",
+            "--method",
+            "Pilot\\CrossFile\\Contract::fetch",
+            "--to",
+            "load",
+            "--path",
+            ".",
+            "--file",
+            "src/Contract.php"
+          ],
+          "exit_code": 0,
+          "file_values": [
+            "src/Contract.php"
+          ],
+          "path_values": [
+            "."
+          ],
+          "method_values": [
+            "Pilot\\CrossFile\\Contract::fetch"
+          ],
+          "exact_manifest_argv_match": true,
+          "native_request_line": 6,
+          "native_result_line": 8,
+          "reports_actual_mutation": true,
+          "checksPassed": true
+        }
+      ],
+      "phase_anchors": {
+        "first_writer_request_line": 6,
+        "first_mutation_request_line": 6,
+        "last_mutation_result_line": 8
+      },
+      "engine_requests_queued_before_previous_result_lines": [],
+      "counts": {
+        "native_calls": 9,
+        "before_writer_calls": 0,
+        "before_writer_known_file_Reads": 0,
+        "before_writer_known_PHP_Reads": 0,
+        "before_actual_mutation_known_PHP_Reads": 0,
+        "post_write_calls": 8,
+        "post_write_known_file_Reads": 7,
+        "post_write_known_changed_file_Reads": 4,
+        "post_write_known_unchanged_file_Reads": 3,
+        "manual_check_repetition_candidates": 1
+      },
+      "source_reads": [
+        {
+          "line": 14,
+          "file": "check.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": false,
+          "file_named_by_engine_warning": true
+        },
+        {
+          "line": 16,
+          "file": "src/Other.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": false,
+          "file_named_by_engine_warning": false
+        },
+        {
+          "line": 18,
+          "file": "src/OtherConsumer.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": false,
+          "file_named_by_engine_warning": false
+        },
+        {
+          "line": 32,
+          "file": "src/Contract.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": true,
+          "file_named_by_engine_warning": false
+        },
+        {
+          "line": 34,
+          "file": "src/Base.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": true,
+          "file_named_by_engine_warning": false
+        },
+        {
+          "line": 36,
+          "file": "src/Child.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": true,
+          "file_named_by_engine_warning": false
+        },
+        {
+          "line": 38,
+          "file": "src/Consumer.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": true,
+          "file_named_by_engine_warning": false
+        }
+      ],
+      "other_post_write_calls": [
+        {
+          "line": 26,
+          "tool": "Bash",
+          "command": "php check.php && echo \"Check passed\"",
+          "result_line": 27,
+          "is_error": false
+        }
+      ],
+      "gates": {
+        "oracle": "pass",
+        "candidate_check": "pass",
+        "writer_route": "pass",
+        "completion_claims": "pass"
+      },
+      "candidate_check_evidence": {
+        "engine_result_line": 8,
+        "verify": [
+          {
+            "scope": "project",
+            "command": "php check.php",
+            "ok": true
+          }
+        ],
+        "manual_repetitions": [
+          {
+            "request_line": 26,
+            "result_line": 27,
+            "command": "php check.php && echo \"Check passed\""
+          }
+        ]
+      },
+      "engine_report_hashes_match_retained_output": true,
+      "changed_files": [
+        "src/Base.php",
+        "src/Child.php",
+        "src/Consumer.php",
+        "src/Contract.php"
+      ],
+      "diff_sha256": "8dc3376807c19bdb23d3abe207ab574305e4f61c36012e09251c14e323a7fcbb",
+      "final_claim_evidence": "runs/run007/evidence/raw.jsonl:44",
+      "claims_evidence_lines": [
+        25,
+        44
+      ],
+      "command_failure_lines": [],
+      "intermediate_claim_findings": [
+        {
+          "line": 25,
+          "category": "nonexistent_member_identification",
+          "claim": "OtherConsumer::fetch() was not modified",
+          "correction": "OtherConsumer::run() calls Other::fetch(); OtherConsumer does not declare fetch().",
+          "final_completion_correct": true
+        }
+      ],
+      "final_claim_findings": [],
+      "review_notes": [
+        "Exact argv at raw:6 succeeds as first call. Seven native file Reads follow; raw:26 repeats the engine-passed check.",
+        "Intermediate raw:25 calls the preserved caller OtherConsumer::fetch(), although OtherConsumer only declares run(), which calls Other::fetch(). Final raw:44 describes the preserved class/caller correctly. The preregistered completion gate judges the final completion claims; this intermediate false member identification is retained separately and does not fail that gate."
+      ]
+    },
+    {
+      "run_id": "run008",
+      "arm": "delegated_intent",
+      "task_id": "cross-file-rename-clarified",
+      "repetition": 3,
+      "source_commit": "ff3484f928ea1557ff88c6fae314fcff9600d2f2",
+      "raw_sha256": "911d6fe34f13d4b9a594911c30a3867f32f836a9b88234e64754ebd312643c37",
+      "evidence": {
+        "raw": "runs/run008/evidence/raw.jsonl",
+        "measurement": "runs/run008/evidence/measurement.json",
+        "diff": "runs/run008/evidence/diff.patch",
+        "oracle": "runs/run008/evidence/oracle.json"
+      },
+      "engine_invocations": [
+        {
+          "argv": [
+            "rename",
+            "--method",
+            "Pilot\\CrossFile\\Contract::fetch",
+            "--to",
+            "load"
+          ],
+          "exit_code": 0,
+          "file_values": [],
+          "path_values": [],
+          "method_values": [
+            "Pilot\\CrossFile\\Contract::fetch"
+          ],
+          "exact_manifest_argv_match": false,
+          "native_request_line": 8,
+          "native_result_line": 10,
+          "reports_actual_mutation": true,
+          "checksPassed": true
+        }
+      ],
+      "phase_anchors": {
+        "first_writer_request_line": 8,
+        "first_mutation_request_line": 8,
+        "last_mutation_result_line": 10
+      },
+      "engine_requests_queued_before_previous_result_lines": [],
+      "counts": {
+        "native_calls": 9,
+        "before_writer_calls": 0,
+        "before_writer_known_file_Reads": 0,
+        "before_writer_known_PHP_Reads": 0,
+        "before_actual_mutation_known_PHP_Reads": 0,
+        "post_write_calls": 8,
+        "post_write_known_file_Reads": 7,
+        "post_write_known_changed_file_Reads": 4,
+        "post_write_known_unchanged_file_Reads": 3,
+        "manual_check_repetition_candidates": 1
+      },
+      "source_reads": [
+        {
+          "line": 17,
+          "file": "check.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": false,
+          "file_named_by_engine_warning": true
+        },
+        {
+          "line": 31,
+          "file": "src/Contract.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": true,
+          "file_named_by_engine_warning": false
+        },
+        {
+          "line": 33,
+          "file": "src/Base.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": true,
+          "file_named_by_engine_warning": false
+        },
+        {
+          "line": 35,
+          "file": "src/Child.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": true,
+          "file_named_by_engine_warning": false
+        },
+        {
+          "line": 37,
+          "file": "src/Consumer.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": true,
+          "file_named_by_engine_warning": false
+        },
+        {
+          "line": 39,
+          "file": "src/Other.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": false,
+          "file_named_by_engine_warning": false
+        },
+        {
+          "line": 41,
+          "file": "src/OtherConsumer.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": false,
+          "file_named_by_engine_warning": false
+        }
+      ],
+      "other_post_write_calls": [
+        {
+          "line": 24,
+          "tool": "Bash",
+          "command": "php check.php && echo \"Check passed\"",
+          "result_line": 25,
+          "is_error": false
+        }
+      ],
+      "gates": {
+        "oracle": "pass",
+        "candidate_check": "pass",
+        "writer_route": "pass",
+        "completion_claims": "pass"
+      },
+      "candidate_check_evidence": {
+        "engine_result_line": 10,
+        "verify": [
+          {
+            "scope": "project",
+            "command": "php check.php",
+            "ok": true
+          }
+        ],
+        "manual_repetitions": [
+          {
+            "request_line": 24,
+            "result_line": 25,
+            "command": "php check.php && echo \"Check passed\""
+          }
+        ]
+      },
+      "engine_report_hashes_match_retained_output": true,
+      "changed_files": [
+        "src/Base.php",
+        "src/Child.php",
+        "src/Consumer.php",
+        "src/Contract.php"
+      ],
+      "diff_sha256": "8dc3376807c19bdb23d3abe207ab574305e4f61c36012e09251c14e323a7fcbb",
+      "final_claim_evidence": "runs/run008/evidence/raw.jsonl:47",
+      "claims_evidence_lines": [
+        30,
+        47
+      ],
+      "command_failure_lines": [],
+      "intermediate_claim_findings": [],
+      "final_claim_findings": [],
+      "review_notes": [
+        "First invocation at raw:8 uses correct fully qualified method but omits --file and --path; it succeeds. Seven native file Reads and one repeated check follow.",
+        "Fallback explanation at raw:30 and final raw:47 match the supplied code and oracle. Runtime-check success is not by itself proof of the full rename; the candidate also reads the changed declarations/callers, and the independent expected-change oracle passes."
+      ]
+    },
+    {
+      "run_id": "run009",
+      "arm": "delegated_intent",
+      "task_id": "method-and-literal",
+      "repetition": 1,
+      "source_commit": "ff3484f928ea1557ff88c6fae314fcff9600d2f2",
+      "raw_sha256": "667f904db90b8d05742e5e01120379ec6bfb45759d5a8300f54c3a0e9150bccf",
+      "evidence": {
+        "raw": "runs/run009/evidence/raw.jsonl",
+        "measurement": "runs/run009/evidence/measurement.json",
+        "diff": "runs/run009/evidence/diff.patch",
+        "oracle": "runs/run009/evidence/oracle.json"
+      },
+      "engine_invocations": [
+        {
+          "argv": [
+            "rename",
+            "--method",
+            "Product::findByUid",
+            "--to",
+            "resolveByUid",
+            "--file",
+            "Product.php"
+          ],
+          "exit_code": 0,
+          "file_values": [
+            "Product.php"
+          ],
+          "path_values": [],
+          "method_values": [
+            "Product::findByUid"
+          ],
+          "exact_manifest_argv_match": false,
+          "native_request_line": 9,
+          "native_result_line": 11,
+          "reports_actual_mutation": true,
+          "checksPassed": true
+        }
+      ],
+      "phase_anchors": {
+        "first_writer_request_line": 9,
+        "first_mutation_request_line": 9,
+        "last_mutation_result_line": 11
+      },
+      "engine_requests_queued_before_previous_result_lines": [],
+      "counts": {
+        "native_calls": 5,
+        "before_writer_calls": 0,
+        "before_writer_known_file_Reads": 0,
+        "before_writer_known_PHP_Reads": 0,
+        "before_actual_mutation_known_PHP_Reads": 0,
+        "post_write_calls": 4,
+        "post_write_known_file_Reads": 2,
+        "post_write_known_changed_file_Reads": 1,
+        "post_write_known_unchanged_file_Reads": 1,
+        "manual_check_repetition_candidates": 1
+      },
+      "source_reads": [
+        {
+          "line": 18,
+          "file": "Product.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": true,
+          "file_named_by_engine_warning": true
+        },
+        {
+          "line": 20,
+          "file": "check.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": false,
+          "file_named_by_engine_warning": true
+        }
+      ],
+      "other_post_write_calls": [
+        {
+          "line": 28,
+          "tool": "Bash",
+          "command": "git status",
+          "result_line": 29,
+          "is_error": false
+        },
+        {
+          "line": 33,
+          "tool": "Bash",
+          "command": "php check.php && echo \"Check passed successfully\"",
+          "result_line": 34,
+          "is_error": false
+        }
+      ],
+      "gates": {
+        "oracle": "pass",
+        "candidate_check": "pass",
+        "writer_route": "pass",
+        "completion_claims": "pass"
+      },
+      "candidate_check_evidence": {
+        "engine_result_line": 11,
+        "verify": [
+          {
+            "scope": "project",
+            "command": "php check.php",
+            "ok": true
+          }
+        ],
+        "manual_repetitions": [
+          {
+            "request_line": 33,
+            "result_line": 34,
+            "command": "php check.php && echo \"Check passed successfully\""
+          }
+        ]
+      },
+      "engine_report_hashes_match_retained_output": true,
+      "changed_files": [
+        "Product.php"
+      ],
+      "diff_sha256": "cf5fa56e0a848633c43a1d5458e9b7d0475fc08ae861f8f3861ee45eff1d3fbd",
+      "final_claim_evidence": "runs/run009/evidence/raw.jsonl:38",
+      "claims_evidence_lines": [
+        27,
+        38
+      ],
+      "command_failure_lines": [],
+      "intermediate_claim_findings": [],
+      "final_claim_findings": [],
+      "review_notes": [
+        "First call uses --file Product.php and default project path successfully. Two native Reads, Git status and a repeated php check.php follow the write.",
+        "The candidate explicitly acknowledges the already-passed engine check (raw:27), then repeats it (raw:33). Final raw:38 matches the oracle and protected-file hashes."
+      ]
+    },
+    {
+      "run_id": "run010",
+      "arm": "exact_invocation",
+      "task_id": "method-and-literal",
+      "repetition": 1,
+      "source_commit": "ff3484f928ea1557ff88c6fae314fcff9600d2f2",
+      "raw_sha256": "10d027b78b8d4fdaf27664375020764209b2a8ddfcd8494f8cb3307dd70d3f93",
+      "evidence": {
+        "raw": "runs/run010/evidence/raw.jsonl",
+        "measurement": "runs/run010/evidence/measurement.json",
+        "diff": "runs/run010/evidence/diff.patch",
+        "oracle": "runs/run010/evidence/oracle.json"
+      },
+      "engine_invocations": [
+        {
+          "argv": [
+            "rename",
+            "--method",
+            "Product::findByUid",
+            "--to",
+            "resolveByUid",
+            "--path",
+            ".",
+            "--file",
+            "Product.php"
+          ],
+          "exit_code": 0,
+          "file_values": [
+            "Product.php"
+          ],
+          "path_values": [
+            "."
+          ],
+          "method_values": [
+            "Product::findByUid"
+          ],
+          "exact_manifest_argv_match": true,
+          "native_request_line": 7,
+          "native_result_line": 9,
+          "reports_actual_mutation": true,
+          "checksPassed": true
+        }
+      ],
+      "phase_anchors": {
+        "first_writer_request_line": 7,
+        "first_mutation_request_line": 7,
+        "last_mutation_result_line": 9
+      },
+      "engine_requests_queued_before_previous_result_lines": [],
+      "counts": {
+        "native_calls": 7,
+        "before_writer_calls": 0,
+        "before_writer_known_file_Reads": 0,
+        "before_writer_known_PHP_Reads": 0,
+        "before_actual_mutation_known_PHP_Reads": 0,
+        "post_write_calls": 6,
+        "post_write_known_file_Reads": 3,
+        "post_write_known_changed_file_Reads": 1,
+        "post_write_known_unchanged_file_Reads": 2,
+        "manual_check_repetition_candidates": 1
+      },
+      "source_reads": [
+        {
+          "line": 16,
+          "file": "Product.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": true,
+          "file_named_by_engine_warning": true
+        },
+        {
+          "line": 18,
+          "file": "check.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": false,
+          "file_named_by_engine_warning": true
+        },
+        {
+          "line": 32,
+          "file": ".php-ast-edit.json",
+          "phase": "after_write",
+          "php": false,
+          "final_file_changed": false,
+          "file_named_by_engine_warning": false
+        }
+      ],
+      "other_post_write_calls": [
+        {
+          "line": 26,
+          "tool": "Bash",
+          "command": "php check.php && echo \"Check passed!\"",
+          "result_line": 27,
+          "is_error": false
+        },
+        {
+          "line": 36,
+          "tool": "Bash",
+          "command": "git status",
+          "result_line": 37,
+          "is_error": false
+        },
+        {
+          "line": 42,
+          "tool": "Bash",
+          "command": "git diff Product.php",
+          "result_line": 43,
+          "is_error": false
+        }
+      ],
+      "gates": {
+        "oracle": "pass",
+        "candidate_check": "pass",
+        "writer_route": "pass",
+        "completion_claims": "pass"
+      },
+      "candidate_check_evidence": {
+        "engine_result_line": 9,
+        "verify": [
+          {
+            "scope": "project",
+            "command": "php check.php",
+            "ok": true
+          }
+        ],
+        "manual_repetitions": [
+          {
+            "request_line": 26,
+            "result_line": 27,
+            "command": "php check.php && echo \"Check passed!\""
+          }
+        ]
+      },
+      "engine_report_hashes_match_retained_output": true,
+      "changed_files": [
+        "Product.php"
+      ],
+      "diff_sha256": "cf5fa56e0a848633c43a1d5458e9b7d0475fc08ae861f8f3861ee45eff1d3fbd",
+      "final_claim_evidence": "runs/run010/evidence/raw.jsonl:47",
+      "claims_evidence_lines": [
+        25,
+        47
+      ],
+      "command_failure_lines": [],
+      "intermediate_claim_findings": [],
+      "final_claim_findings": [],
+      "review_notes": [
+        "Exact first argv succeeds. Three native Reads, one repeated check and two Git calls follow.",
+        "Raw:25 correctly identifies the check's old-method-absence assertion. Final raw:47 is supported by the fixture, diff and oracle."
+      ]
+    },
+    {
+      "run_id": "run011",
+      "arm": "exact_invocation",
+      "task_id": "method-and-literal",
+      "repetition": 6,
+      "source_commit": "ff3484f928ea1557ff88c6fae314fcff9600d2f2",
+      "raw_sha256": "1a265df2c76e6a7faae70a817ea2d544b52b1f8703f525496ee8b1def16e83ce",
+      "evidence": {
+        "raw": "runs/run011/evidence/raw.jsonl",
+        "measurement": "runs/run011/evidence/measurement.json",
+        "diff": "runs/run011/evidence/diff.patch",
+        "oracle": "runs/run011/evidence/oracle.json"
+      },
+      "engine_invocations": [
+        {
+          "argv": [
+            "rename",
+            "--method",
+            "Product::findByUid",
+            "--to",
+            "resolveByUid",
+            "--path",
+            ".",
+            "--file",
+            "Product.php"
+          ],
+          "exit_code": 0,
+          "file_values": [
+            "Product.php"
+          ],
+          "path_values": [
+            "."
+          ],
+          "method_values": [
+            "Product::findByUid"
+          ],
+          "exact_manifest_argv_match": true,
+          "native_request_line": 17,
+          "native_result_line": 18,
+          "reports_actual_mutation": true,
+          "checksPassed": true
+        }
+      ],
+      "phase_anchors": {
+        "first_writer_request_line": 17,
+        "first_mutation_request_line": 17,
+        "last_mutation_result_line": 18
+      },
+      "engine_requests_queued_before_previous_result_lines": [],
+      "counts": {
+        "native_calls": 5,
+        "before_writer_calls": 3,
+        "before_writer_known_file_Reads": 3,
+        "before_writer_known_PHP_Reads": 2,
+        "before_actual_mutation_known_PHP_Reads": 2,
+        "post_write_calls": 1,
+        "post_write_known_file_Reads": 1,
+        "post_write_known_changed_file_Reads": 1,
+        "post_write_known_unchanged_file_Reads": 0,
+        "manual_check_repetition_candidates": 0
+      },
+      "source_reads": [
+        {
+          "line": 6,
+          "file": "Product.php",
+          "phase": "before_first_writer",
+          "php": true,
+          "final_file_changed": true,
+          "file_named_by_engine_warning": true
+        },
+        {
+          "line": 8,
+          "file": "check.php",
+          "phase": "before_first_writer",
+          "php": true,
+          "final_file_changed": false,
+          "file_named_by_engine_warning": true
+        },
+        {
+          "line": 10,
+          "file": ".php-ast-edit.json",
+          "phase": "before_first_writer",
+          "php": false,
+          "final_file_changed": false,
+          "file_named_by_engine_warning": false
+        },
+        {
+          "line": 25,
+          "file": "Product.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": true,
+          "file_named_by_engine_warning": true
+        }
+      ],
+      "other_post_write_calls": [],
+      "gates": {
+        "oracle": "pass",
+        "candidate_check": "pass",
+        "writer_route": "pass",
+        "completion_claims": "pass"
+      },
+      "candidate_check_evidence": {
+        "engine_result_line": 18,
+        "verify": [
+          {
+            "scope": "project",
+            "command": "php check.php",
+            "ok": true
+          }
+        ],
+        "manual_repetitions": []
+      },
+      "engine_report_hashes_match_retained_output": true,
+      "changed_files": [
+        "Product.php"
+      ],
+      "diff_sha256": "cf5fa56e0a848633c43a1d5458e9b7d0475fc08ae861f8f3861ee45eff1d3fbd",
+      "final_claim_evidence": "runs/run011/evidence/raw.jsonl:30",
+      "claims_evidence_lines": [
+        30
+      ],
+      "command_failure_lines": [],
+      "intermediate_claim_findings": [],
+      "final_claim_findings": [],
+      "review_notes": [
+        "Three native file Reads (two PHP) precede the exact argv invocation. This violates the requested command-first workflow, separately from correctness. The argv itself is adopted exactly.",
+        "One post-write Product.php Read, no manual check repetition. The engine's verified php check.php supports the reported check pass; final raw:30 matches the independent oracle and hashes."
+      ]
+    },
+    {
+      "run_id": "run012",
+      "arm": "delegated_intent",
+      "task_id": "method-and-literal",
+      "repetition": 6,
+      "source_commit": "ff3484f928ea1557ff88c6fae314fcff9600d2f2",
+      "raw_sha256": "45b2cb1b000231706db73810b9fae006fe64abadfb115b79b891aa42b683f02c",
+      "evidence": {
+        "raw": "runs/run012/evidence/raw.jsonl",
+        "measurement": "runs/run012/evidence/measurement.json",
+        "diff": "runs/run012/evidence/diff.patch",
+        "oracle": "runs/run012/evidence/oracle.json"
+      },
+      "engine_invocations": [
+        {
+          "argv": [
+            "rename",
+            "--method",
+            "Product::findByUid",
+            "--to",
+            "resolveByUid",
+            "--file",
+            "Product.php"
+          ],
+          "exit_code": 0,
+          "file_values": [
+            "Product.php"
+          ],
+          "path_values": [],
+          "method_values": [
+            "Product::findByUid"
+          ],
+          "exact_manifest_argv_match": false,
+          "native_request_line": 23,
+          "native_result_line": 24,
+          "reports_actual_mutation": true,
+          "checksPassed": true
+        }
+      ],
+      "phase_anchors": {
+        "first_writer_request_line": 23,
+        "first_mutation_request_line": 23,
+        "last_mutation_result_line": 24
+      },
+      "engine_requests_queued_before_previous_result_lines": [],
+      "counts": {
+        "native_calls": 9,
+        "before_writer_calls": 4,
+        "before_writer_known_file_Reads": 3,
+        "before_writer_known_PHP_Reads": 2,
+        "before_actual_mutation_known_PHP_Reads": 2,
+        "post_write_calls": 4,
+        "post_write_known_file_Reads": 1,
+        "post_write_known_changed_file_Reads": 1,
+        "post_write_known_unchanged_file_Reads": 0,
+        "manual_check_repetition_candidates": 1
+      },
+      "source_reads": [
+        {
+          "line": 11,
+          "file": "Product.php",
+          "phase": "before_first_writer",
+          "php": true,
+          "final_file_changed": true,
+          "file_named_by_engine_warning": true
+        },
+        {
+          "line": 13,
+          "file": "check.php",
+          "phase": "before_first_writer",
+          "php": true,
+          "final_file_changed": false,
+          "file_named_by_engine_warning": true
+        },
+        {
+          "line": 15,
+          "file": ".php-ast-edit.json",
+          "phase": "before_first_writer",
+          "php": false,
+          "final_file_changed": false,
+          "file_named_by_engine_warning": false
+        },
+        {
+          "line": 31,
+          "file": "Product.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": true,
+          "file_named_by_engine_warning": true
+        }
+      ],
+      "other_post_write_calls": [
+        {
+          "line": 37,
+          "tool": "Bash",
+          "command": "php check.php && echo \"Check passed successfully\"",
+          "result_line": 38,
+          "is_error": false
+        },
+        {
+          "line": 40,
+          "tool": "Bash",
+          "command": "sha256sum check.php .php-ast-edit.json",
+          "result_line": 41,
+          "is_error": false
+        },
+        {
+          "line": 43,
+          "tool": "Bash",
+          "command": "git status",
+          "result_line": 44,
+          "is_error": false
+        }
+      ],
+      "gates": {
+        "oracle": "pass",
+        "candidate_check": "pass",
+        "writer_route": "pass",
+        "completion_claims": "pass"
+      },
+      "candidate_check_evidence": {
+        "engine_result_line": 24,
+        "verify": [
+          {
+            "scope": "project",
+            "command": "php check.php",
+            "ok": true
+          }
+        ],
+        "manual_repetitions": [
+          {
+            "request_line": 37,
+            "result_line": 38,
+            "command": "php check.php && echo \"Check passed successfully\""
+          }
+        ]
+      },
+      "engine_report_hashes_match_retained_output": true,
+      "changed_files": [
+        "Product.php"
+      ],
+      "diff_sha256": "cf5fa56e0a848633c43a1d5458e9b7d0475fc08ae861f8f3861ee45eff1d3fbd",
+      "final_claim_evidence": "runs/run012/evidence/raw.jsonl:48",
+      "claims_evidence_lines": [
+        48
+      ],
+      "command_failure_lines": [],
+      "intermediate_claim_findings": [],
+      "final_claim_findings": [],
+      "review_notes": [
+        "Directory listing and three file Reads (two PHP) precede the successful --file invocation, despite the command-first instruction.",
+        "One changed-file Read and one repeated check follow the write, then hash output and Git status. Hash output alone lacks a prior baseline, but Git and independently retained initial/final hashes support the final preservation claims at raw:48."
+      ]
+    },
+    {
+      "run_id": "run013",
+      "arm": "delegated_intent",
+      "task_id": "method-and-literal",
+      "repetition": 3,
+      "source_commit": "ff3484f928ea1557ff88c6fae314fcff9600d2f2",
+      "raw_sha256": "52466d27512f60fddc74d9404c53615a5f410e28967ca0de61005c17e09e380d",
+      "evidence": {
+        "raw": "runs/run013/evidence/raw.jsonl",
+        "measurement": "runs/run013/evidence/measurement.json",
+        "diff": "runs/run013/evidence/diff.patch",
+        "oracle": "runs/run013/evidence/oracle.json"
+      },
+      "engine_invocations": [
+        {
+          "argv": [
+            "rename",
+            "--method",
+            "Product::findByUid",
+            "--to",
+            "resolveByUid"
+          ],
+          "exit_code": 0,
+          "file_values": [],
+          "path_values": [],
+          "method_values": [
+            "Product::findByUid"
+          ],
+          "exact_manifest_argv_match": false,
+          "native_request_line": 8,
+          "native_result_line": 10,
+          "reports_actual_mutation": true,
+          "checksPassed": true
+        }
+      ],
+      "phase_anchors": {
+        "first_writer_request_line": 8,
+        "first_mutation_request_line": 8,
+        "last_mutation_result_line": 10
+      },
+      "engine_requests_queued_before_previous_result_lines": [],
+      "counts": {
+        "native_calls": 4,
+        "before_writer_calls": 0,
+        "before_writer_known_file_Reads": 0,
+        "before_writer_known_PHP_Reads": 0,
+        "before_actual_mutation_known_PHP_Reads": 0,
+        "post_write_calls": 3,
+        "post_write_known_file_Reads": 2,
+        "post_write_known_changed_file_Reads": 1,
+        "post_write_known_unchanged_file_Reads": 1,
+        "manual_check_repetition_candidates": 1
+      },
+      "source_reads": [
+        {
+          "line": 16,
+          "file": "Product.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": true,
+          "file_named_by_engine_warning": true
+        },
+        {
+          "line": 18,
+          "file": "check.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": false,
+          "file_named_by_engine_warning": true
+        }
+      ],
+      "other_post_write_calls": [
+        {
+          "line": 20,
+          "tool": "Bash",
+          "command": "php check.php",
+          "result_line": 21,
+          "is_error": false
+        }
+      ],
+      "gates": {
+        "oracle": "pass",
+        "candidate_check": "pass",
+        "writer_route": "pass",
+        "completion_claims": "pass"
+      },
+      "candidate_check_evidence": {
+        "engine_result_line": 10,
+        "verify": [
+          {
+            "scope": "project",
+            "command": "php check.php",
+            "ok": true
+          }
+        ],
+        "manual_repetitions": [
+          {
+            "request_line": 20,
+            "result_line": 21,
+            "command": "php check.php"
+          }
+        ]
+      },
+      "engine_report_hashes_match_retained_output": true,
+      "changed_files": [
+        "Product.php"
+      ],
+      "diff_sha256": "cf5fa56e0a848633c43a1d5458e9b7d0475fc08ae861f8f3861ee45eff1d3fbd",
+      "final_claim_evidence": "runs/run013/evidence/raw.jsonl:26",
+      "claims_evidence_lines": [
+        26
+      ],
+      "command_failure_lines": [],
+      "intermediate_claim_findings": [],
+      "final_claim_findings": [],
+      "review_notes": [
+        "Correct method rename is the first call, without --file or --path. It succeeds. Two native file Reads and one repeated check follow.",
+        "Final raw:26 accurately describes the method rename, preserved literal and check assertions; all oracle components pass."
+      ]
+    },
+    {
+      "run_id": "run014",
+      "arm": "exact_invocation",
+      "task_id": "method-and-literal",
+      "repetition": 3,
+      "source_commit": "ff3484f928ea1557ff88c6fae314fcff9600d2f2",
+      "raw_sha256": "b094dc1b46e7e6eb107d74853670e7fafa6aa3e382819c9c6ba15223ed8ad637",
+      "evidence": {
+        "raw": "runs/run014/evidence/raw.jsonl",
+        "measurement": "runs/run014/evidence/measurement.json",
+        "diff": "runs/run014/evidence/diff.patch",
+        "oracle": "runs/run014/evidence/oracle.json"
+      },
+      "engine_invocations": [
+        {
+          "argv": [
+            "rename",
+            "--method",
+            "Product::findByUid",
+            "--to",
+            "resolveByUid",
+            "--path",
+            ".",
+            "--file",
+            "Product.php"
+          ],
+          "exit_code": 0,
+          "file_values": [
+            "Product.php"
+          ],
+          "path_values": [
+            "."
+          ],
+          "method_values": [
+            "Product::findByUid"
+          ],
+          "exact_manifest_argv_match": true,
+          "native_request_line": 6,
+          "native_result_line": 8,
+          "reports_actual_mutation": true,
+          "checksPassed": true
+        }
+      ],
+      "phase_anchors": {
+        "first_writer_request_line": 6,
+        "first_mutation_request_line": 6,
+        "last_mutation_result_line": 8
+      },
+      "engine_requests_queued_before_previous_result_lines": [],
+      "counts": {
+        "native_calls": 5,
+        "before_writer_calls": 0,
+        "before_writer_known_file_Reads": 0,
+        "before_writer_known_PHP_Reads": 0,
+        "before_actual_mutation_known_PHP_Reads": 0,
+        "post_write_calls": 4,
+        "post_write_known_file_Reads": 2,
+        "post_write_known_changed_file_Reads": 1,
+        "post_write_known_unchanged_file_Reads": 1,
+        "manual_check_repetition_candidates": 1
+      },
+      "source_reads": [
+        {
+          "line": 16,
+          "file": "Product.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": true,
+          "file_named_by_engine_warning": true
+        },
+        {
+          "line": 18,
+          "file": "check.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": false,
+          "file_named_by_engine_warning": true
+        }
+      ],
+      "other_post_write_calls": [
+        {
+          "line": 20,
+          "tool": "Bash",
+          "command": "php check.php && echo \"✓ Check passed\"",
+          "result_line": 21,
+          "is_error": false
+        },
+        {
+          "line": 27,
+          "tool": "Bash",
+          "command": "git status",
+          "result_line": 28,
+          "is_error": false
+        }
+      ],
+      "gates": {
+        "oracle": "pass",
+        "candidate_check": "pass",
+        "writer_route": "pass",
+        "completion_claims": "pass"
+      },
+      "candidate_check_evidence": {
+        "engine_result_line": 8,
+        "verify": [
+          {
+            "scope": "project",
+            "command": "php check.php",
+            "ok": true
+          }
+        ],
+        "manual_repetitions": [
+          {
+            "request_line": 20,
+            "result_line": 21,
+            "command": "php check.php && echo \"✓ Check passed\""
+          }
+        ]
+      },
+      "engine_report_hashes_match_retained_output": true,
+      "changed_files": [
+        "Product.php"
+      ],
+      "diff_sha256": "cf5fa56e0a848633c43a1d5458e9b7d0475fc08ae861f8f3861ee45eff1d3fbd",
+      "final_claim_evidence": "runs/run014/evidence/raw.jsonl:32",
+      "claims_evidence_lines": [
+        32
+      ],
+      "command_failure_lines": [],
+      "intermediate_claim_findings": [],
+      "final_claim_findings": [],
+      "review_notes": [
+        "Exact argv is the first call and succeeds. Two native file Reads, one repeated check and Git status follow.",
+        "Final raw:32 correctly explains old/new method assertions and preserved label; output and hashes support it."
+      ]
+    },
+    {
+      "run_id": "run015",
+      "arm": "exact_invocation",
+      "task_id": "cross-file-rename-clarified",
+      "repetition": 6,
+      "source_commit": "ff3484f928ea1557ff88c6fae314fcff9600d2f2",
+      "raw_sha256": "959297ef926da17108e02db17aaf04baf5fe932a61d0e4558aa1c2848eeafd1f",
+      "evidence": {
+        "raw": "runs/run015/evidence/raw.jsonl",
+        "measurement": "runs/run015/evidence/measurement.json",
+        "diff": "runs/run015/evidence/diff.patch",
+        "oracle": "runs/run015/evidence/oracle.json"
+      },
+      "engine_invocations": [
+        {
+          "argv": [
+            "rename",
+            "--method",
+            "Pilot\\CrossFile\\Contract::fetch",
+            "--to",
+            "load",
+            "--path",
+            ".",
+            "--file",
+            "src/Contract.php"
+          ],
+          "exit_code": 0,
+          "file_values": [
+            "src/Contract.php"
+          ],
+          "path_values": [
+            "."
+          ],
+          "method_values": [
+            "Pilot\\CrossFile\\Contract::fetch"
+          ],
+          "exact_manifest_argv_match": true,
+          "native_request_line": 6,
+          "native_result_line": 8,
+          "reports_actual_mutation": true,
+          "checksPassed": true
+        }
+      ],
+      "phase_anchors": {
+        "first_writer_request_line": 6,
+        "first_mutation_request_line": 6,
+        "last_mutation_result_line": 8
+      },
+      "engine_requests_queued_before_previous_result_lines": [],
+      "counts": {
+        "native_calls": 11,
+        "before_writer_calls": 0,
+        "before_writer_known_file_Reads": 0,
+        "before_writer_known_PHP_Reads": 0,
+        "before_actual_mutation_known_PHP_Reads": 0,
+        "post_write_calls": 10,
+        "post_write_known_file_Reads": 7,
+        "post_write_known_changed_file_Reads": 4,
+        "post_write_known_unchanged_file_Reads": 3,
+        "manual_check_repetition_candidates": 1
+      },
+      "source_reads": [
+        {
+          "line": 14,
+          "file": "check.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": false,
+          "file_named_by_engine_warning": true
+        },
+        {
+          "line": 32,
+          "file": "src/Other.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": false,
+          "file_named_by_engine_warning": false
+        },
+        {
+          "line": 35,
+          "file": "src/OtherConsumer.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": false,
+          "file_named_by_engine_warning": false
+        },
+        {
+          "line": 39,
+          "file": "src/Contract.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": true,
+          "file_named_by_engine_warning": false
+        },
+        {
+          "line": 42,
+          "file": "src/Base.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": true,
+          "file_named_by_engine_warning": false
+        },
+        {
+          "line": 45,
+          "file": "src/Child.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": true,
+          "file_named_by_engine_warning": false
+        },
+        {
+          "line": 48,
+          "file": "src/Consumer.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": true,
+          "file_named_by_engine_warning": false
+        }
+      ],
+      "other_post_write_calls": [
+        {
+          "line": 26,
+          "tool": "Bash",
+          "command": "php check.php && echo \"Check passed!\"",
+          "result_line": 27,
+          "is_error": false
+        },
+        {
+          "line": 51,
+          "tool": "Bash",
+          "command": "git diff --name-only",
+          "result_line": 52,
+          "is_error": false
+        },
+        {
+          "line": 58,
+          "tool": "Bash",
+          "command": "git diff src/",
+          "result_line": 59,
+          "is_error": false
+        }
+      ],
+      "gates": {
+        "oracle": "pass",
+        "candidate_check": "pass",
+        "writer_route": "pass",
+        "completion_claims": "pass"
+      },
+      "candidate_check_evidence": {
+        "engine_result_line": 8,
+        "verify": [
+          {
+            "scope": "project",
+            "command": "php check.php",
+            "ok": true
+          }
+        ],
+        "manual_repetitions": [
+          {
+            "request_line": 26,
+            "result_line": 27,
+            "command": "php check.php && echo \"Check passed!\""
+          }
+        ]
+      },
+      "engine_report_hashes_match_retained_output": true,
+      "changed_files": [
+        "src/Base.php",
+        "src/Child.php",
+        "src/Consumer.php",
+        "src/Contract.php"
+      ],
+      "diff_sha256": "8dc3376807c19bdb23d3abe207ab574305e4f61c36012e09251c14e323a7fcbb",
+      "final_claim_evidence": "runs/run015/evidence/raw.jsonl:64",
+      "claims_evidence_lines": [
+        25,
+        64
+      ],
+      "command_failure_lines": [],
+      "intermediate_claim_findings": [],
+      "final_claim_findings": [],
+      "review_notes": [
+        "Exact first argv succeeds. Seven native Reads, one repeated check and two Git calls follow the write.",
+        "Raw:25 correctly identifies the fallback literal and acknowledges the engine-passed check. Final raw:64 is supported; Child::parent::fetch is contextual notation for the parent call inside Child, explicitly labeled parent call, rather than a claim of a separately declared PHP symbol."
+      ]
+    },
+    {
+      "run_id": "run016",
+      "arm": "delegated_intent",
+      "task_id": "cross-file-rename-clarified",
+      "repetition": 6,
+      "source_commit": "ff3484f928ea1557ff88c6fae314fcff9600d2f2",
+      "raw_sha256": "0564d31bb710ecf9e6f1b831f3375d601c128ad60bc1ec1326dd3ce2a34ec5b7",
+      "evidence": {
+        "raw": "runs/run016/evidence/raw.jsonl",
+        "measurement": "runs/run016/evidence/measurement.json",
+        "diff": "runs/run016/evidence/diff.patch",
+        "oracle": "runs/run016/evidence/oracle.json"
+      },
+      "engine_invocations": [
+        {
+          "argv": [
+            "rename",
+            "--method",
+            "Pilot\\\\CrossFile\\\\Contract::fetch",
+            "--to",
+            "load",
+            "--file",
+            "src/Contract.php"
+          ],
+          "exit_code": 2,
+          "file_values": [
+            "src/Contract.php"
+          ],
+          "path_values": [],
+          "method_values": [
+            "Pilot\\\\CrossFile\\\\Contract::fetch"
+          ],
+          "exact_manifest_argv_match": false,
+          "native_request_line": 9,
+          "native_result_line": 11,
+          "reports_actual_mutation": false,
+          "checksPassed": null
+        },
+        {
+          "argv": [
+            "rename",
+            "--method",
+            "Pilot\\CrossFile\\Contract::fetch",
+            "--to",
+            "load"
+          ],
+          "exit_code": 0,
+          "file_values": [],
+          "path_values": [],
+          "method_values": [
+            "Pilot\\CrossFile\\Contract::fetch"
+          ],
+          "exact_manifest_argv_match": false,
+          "native_request_line": 16,
+          "native_result_line": 17,
+          "reports_actual_mutation": true,
+          "checksPassed": true
+        }
+      ],
+      "phase_anchors": {
+        "first_writer_request_line": 9,
+        "first_mutation_request_line": 16,
+        "last_mutation_result_line": 17
+      },
+      "engine_requests_queued_before_previous_result_lines": [],
+      "counts": {
+        "native_calls": 13,
+        "before_writer_calls": 0,
+        "before_writer_known_file_Reads": 0,
+        "before_writer_known_PHP_Reads": 0,
+        "before_actual_mutation_known_PHP_Reads": 0,
+        "post_write_calls": 11,
+        "post_write_known_file_Reads": 8,
+        "post_write_known_changed_file_Reads": 4,
+        "post_write_known_unchanged_file_Reads": 4,
+        "manual_check_repetition_candidates": 1
+      },
+      "source_reads": [
+        {
+          "line": 24,
+          "file": "check.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": false,
+          "file_named_by_engine_warning": true
+        },
+        {
+          "line": 35,
+          "file": "src/Other.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": false,
+          "file_named_by_engine_warning": false
+        },
+        {
+          "line": 37,
+          "file": "src/OtherConsumer.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": false,
+          "file_named_by_engine_warning": false
+        },
+        {
+          "line": 39,
+          "file": "config/services.yaml",
+          "phase": "after_write",
+          "php": false,
+          "final_file_changed": false,
+          "file_named_by_engine_warning": true
+        },
+        {
+          "line": 45,
+          "file": "src/Contract.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": true,
+          "file_named_by_engine_warning": false
+        },
+        {
+          "line": 47,
+          "file": "src/Base.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": true,
+          "file_named_by_engine_warning": false
+        },
+        {
+          "line": 49,
+          "file": "src/Child.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": true,
+          "file_named_by_engine_warning": false
+        },
+        {
+          "line": 51,
+          "file": "src/Consumer.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": true,
+          "file_named_by_engine_warning": false
+        }
+      ],
+      "other_post_write_calls": [
+        {
+          "line": 58,
+          "tool": "Bash",
+          "command": "php check.php && echo \"Check passed!\"",
+          "result_line": 59,
+          "is_error": false
+        },
+        {
+          "line": 65,
+          "tool": "Bash",
+          "command": "git status",
+          "result_line": 66,
+          "is_error": false
+        },
+        {
+          "line": 71,
+          "tool": "Bash",
+          "command": "git diff src/",
+          "result_line": 72,
+          "is_error": false
+        }
+      ],
+      "gates": {
+        "oracle": "pass",
+        "candidate_check": "pass",
+        "writer_route": "pass",
+        "completion_claims": "pass"
+      },
+      "candidate_check_evidence": {
+        "engine_result_line": 17,
+        "verify": [
+          {
+            "scope": "project",
+            "command": "php check.php",
+            "ok": true
+          }
+        ],
+        "manual_repetitions": [
+          {
+            "request_line": 58,
+            "result_line": 59,
+            "command": "php check.php && echo \"Check passed!\""
+          }
+        ]
+      },
+      "engine_report_hashes_match_retained_output": true,
+      "changed_files": [
+        "src/Base.php",
+        "src/Child.php",
+        "src/Consumer.php",
+        "src/Contract.php"
+      ],
+      "diff_sha256": "8dc3376807c19bdb23d3abe207ab574305e4f61c36012e09251c14e323a7fcbb",
+      "final_claim_evidence": "runs/run016/evidence/raw.jsonl:77",
+      "claims_evidence_lines": [
+        34,
+        77
+      ],
+      "command_failure_lines": [
+        9
+      ],
+      "intermediate_claim_findings": [],
+      "final_claim_findings": [],
+      "review_notes": [
+        "First argv at raw:9 doubles namespace backslashes and exits 2, matching the quoting failure in run001. Retry at raw:16 uses the correct FQN, omits --file and --path, and succeeds without prior source Reads.",
+        "Eight native Reads, one repeated check and two Git calls follow the successful write. Final raw:77 is supported by the fixture, diff and oracle; ordinary printer EOF whitespace is disclosed as a global audit caveat."
+      ]
+    },
+    {
+      "run_id": "run017",
+      "arm": "exact_invocation",
+      "task_id": "method-and-literal",
+      "repetition": 4,
+      "source_commit": "ff3484f928ea1557ff88c6fae314fcff9600d2f2",
+      "raw_sha256": "d719d725d46c1aad6f1f36ff2354a666da19928537e8842028ef250af5e44e0c",
+      "evidence": {
+        "raw": "runs/run017/evidence/raw.jsonl",
+        "measurement": "runs/run017/evidence/measurement.json",
+        "diff": "runs/run017/evidence/diff.patch",
+        "oracle": "runs/run017/evidence/oracle.json"
+      },
+      "engine_invocations": [
+        {
+          "argv": [
+            "rename",
+            "--method",
+            "Product::findByUid",
+            "--to",
+            "resolveByUid",
+            "--path",
+            ".",
+            "--file",
+            "Product.php"
+          ],
+          "exit_code": 0,
+          "file_values": [
+            "Product.php"
+          ],
+          "path_values": [
+            "."
+          ],
+          "method_values": [
+            "Product::findByUid"
+          ],
+          "exact_manifest_argv_match": true,
+          "native_request_line": 7,
+          "native_result_line": 9,
+          "reports_actual_mutation": true,
+          "checksPassed": true
+        }
+      ],
+      "phase_anchors": {
+        "first_writer_request_line": 7,
+        "first_mutation_request_line": 7,
+        "last_mutation_result_line": 9
+      },
+      "engine_requests_queued_before_previous_result_lines": [],
+      "counts": {
+        "native_calls": 5,
+        "before_writer_calls": 0,
+        "before_writer_known_file_Reads": 0,
+        "before_writer_known_PHP_Reads": 0,
+        "before_actual_mutation_known_PHP_Reads": 0,
+        "post_write_calls": 4,
+        "post_write_known_file_Reads": 3,
+        "post_write_known_changed_file_Reads": 1,
+        "post_write_known_unchanged_file_Reads": 2,
+        "manual_check_repetition_candidates": 1
+      },
+      "source_reads": [
+        {
+          "line": 17,
+          "file": "Product.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": true,
+          "file_named_by_engine_warning": true
+        },
+        {
+          "line": 22,
+          "file": "check.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": false,
+          "file_named_by_engine_warning": true
+        },
+        {
+          "line": 24,
+          "file": ".php-ast-edit.json",
+          "phase": "after_write",
+          "php": false,
+          "final_file_changed": false,
+          "file_named_by_engine_warning": false
+        }
+      ],
+      "other_post_write_calls": [
+        {
+          "line": 30,
+          "tool": "Bash",
+          "command": "php check.php",
+          "result_line": 31,
+          "is_error": false
+        }
+      ],
+      "gates": {
+        "oracle": "pass",
+        "candidate_check": "pass",
+        "writer_route": "pass",
+        "completion_claims": "pass"
+      },
+      "candidate_check_evidence": {
+        "engine_result_line": 9,
+        "verify": [
+          {
+            "scope": "project",
+            "command": "php check.php",
+            "ok": true
+          }
+        ],
+        "manual_repetitions": [
+          {
+            "request_line": 30,
+            "result_line": 31,
+            "command": "php check.php"
+          }
+        ]
+      },
+      "engine_report_hashes_match_retained_output": true,
+      "changed_files": [
+        "Product.php"
+      ],
+      "diff_sha256": "cf5fa56e0a848633c43a1d5458e9b7d0475fc08ae861f8f3861ee45eff1d3fbd",
+      "final_claim_evidence": "runs/run017/evidence/raw.jsonl:36",
+      "claims_evidence_lines": [
+        36
+      ],
+      "command_failure_lines": [],
+      "intermediate_claim_findings": [],
+      "final_claim_findings": [],
+      "review_notes": [
+        "Exact first argv succeeds. Three native Reads and one repeated check follow.",
+        "Final raw:36 accurately describes required changes, preserved label and protected files; all oracle components pass."
+      ]
+    },
+    {
+      "run_id": "run018",
+      "arm": "delegated_intent",
+      "task_id": "method-and-literal",
+      "repetition": 4,
+      "source_commit": "ff3484f928ea1557ff88c6fae314fcff9600d2f2",
+      "raw_sha256": "bcfeca311a3a7ffbbbecd56179594a58beeef27be1ae3b50256f54d36bbd91b2",
+      "evidence": {
+        "raw": "runs/run018/evidence/raw.jsonl",
+        "measurement": "runs/run018/evidence/measurement.json",
+        "diff": "runs/run018/evidence/diff.patch",
+        "oracle": "runs/run018/evidence/oracle.json"
+      },
+      "engine_invocations": [
+        {
+          "argv": [
+            "rename",
+            "--method",
+            "Product::findByUid",
+            "--to",
+            "resolveByUid"
+          ],
+          "exit_code": 0,
+          "file_values": [],
+          "path_values": [],
+          "method_values": [
+            "Product::findByUid"
+          ],
+          "exact_manifest_argv_match": false,
+          "native_request_line": 8,
+          "native_result_line": 10,
+          "reports_actual_mutation": true,
+          "checksPassed": true
+        }
+      ],
+      "phase_anchors": {
+        "first_writer_request_line": 8,
+        "first_mutation_request_line": 8,
+        "last_mutation_result_line": 10
+      },
+      "engine_requests_queued_before_previous_result_lines": [],
+      "counts": {
+        "native_calls": 5,
+        "before_writer_calls": 0,
+        "before_writer_known_file_Reads": 0,
+        "before_writer_known_PHP_Reads": 0,
+        "before_actual_mutation_known_PHP_Reads": 0,
+        "post_write_calls": 4,
+        "post_write_known_file_Reads": 3,
+        "post_write_known_changed_file_Reads": 1,
+        "post_write_known_unchanged_file_Reads": 2,
+        "manual_check_repetition_candidates": 1
+      },
+      "source_reads": [
+        {
+          "line": 18,
+          "file": "Product.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": true,
+          "file_named_by_engine_warning": true
+        },
+        {
+          "line": 20,
+          "file": "check.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": false,
+          "file_named_by_engine_warning": true
+        },
+        {
+          "line": 22,
+          "file": ".php-ast-edit.json",
+          "phase": "after_write",
+          "php": false,
+          "final_file_changed": false,
+          "file_named_by_engine_warning": false
+        }
+      ],
+      "other_post_write_calls": [
+        {
+          "line": 30,
+          "tool": "Bash",
+          "command": "php check.php && echo \"Check passed!\"",
+          "result_line": 31,
+          "is_error": false
+        }
+      ],
+      "gates": {
+        "oracle": "pass",
+        "candidate_check": "pass",
+        "writer_route": "pass",
+        "completion_claims": "pass"
+      },
+      "candidate_check_evidence": {
+        "engine_result_line": 10,
+        "verify": [
+          {
+            "scope": "project",
+            "command": "php check.php",
+            "ok": true
+          }
+        ],
+        "manual_repetitions": [
+          {
+            "request_line": 30,
+            "result_line": 31,
+            "command": "php check.php && echo \"Check passed!\""
+          }
+        ]
+      },
+      "engine_report_hashes_match_retained_output": true,
+      "changed_files": [
+        "Product.php"
+      ],
+      "diff_sha256": "cf5fa56e0a848633c43a1d5458e9b7d0475fc08ae861f8f3861ee45eff1d3fbd",
+      "final_claim_evidence": "runs/run018/evidence/raw.jsonl:35",
+      "claims_evidence_lines": [
+        35
+      ],
+      "command_failure_lines": [],
+      "intermediate_claim_findings": [],
+      "final_claim_findings": [],
+      "review_notes": [
+        "Correct first rename invocation succeeds without --file or --path. Three native Reads and one repeated check follow.",
+        "Final raw:35 correctly describes the checker assertions and source changes; oracle and protected hashes agree."
+      ]
+    },
+    {
+      "run_id": "run019",
+      "arm": "delegated_intent",
+      "task_id": "method-and-literal",
+      "repetition": 2,
+      "source_commit": "ff3484f928ea1557ff88c6fae314fcff9600d2f2",
+      "raw_sha256": "6d49cd5fe6c19850680784e3e165ddf6d81a250cc966eb9d42f733b87fbd3961",
+      "evidence": {
+        "raw": "runs/run019/evidence/raw.jsonl",
+        "measurement": "runs/run019/evidence/measurement.json",
+        "diff": "runs/run019/evidence/diff.patch",
+        "oracle": "runs/run019/evidence/oracle.json"
+      },
+      "engine_invocations": [
+        {
+          "argv": [
+            "rename",
+            "--method",
+            "Product::findByUid",
+            "--to",
+            "resolveByUid",
+            "--file",
+            "Product.php"
+          ],
+          "exit_code": 0,
+          "file_values": [
+            "Product.php"
+          ],
+          "path_values": [],
+          "method_values": [
+            "Product::findByUid"
+          ],
+          "exact_manifest_argv_match": false,
+          "native_request_line": 24,
+          "native_result_line": 25,
+          "reports_actual_mutation": true,
+          "checksPassed": true
+        }
+      ],
+      "phase_anchors": {
+        "first_writer_request_line": 24,
+        "first_mutation_request_line": 24,
+        "last_mutation_result_line": 25
+      },
+      "engine_requests_queued_before_previous_result_lines": [],
+      "counts": {
+        "native_calls": 8,
+        "before_writer_calls": 4,
+        "before_writer_known_file_Reads": 3,
+        "before_writer_known_PHP_Reads": 2,
+        "before_actual_mutation_known_PHP_Reads": 2,
+        "post_write_calls": 3,
+        "post_write_known_file_Reads": 3,
+        "post_write_known_changed_file_Reads": 1,
+        "post_write_known_unchanged_file_Reads": 2,
+        "manual_check_repetition_candidates": 0
+      },
+      "source_reads": [
+        {
+          "line": 13,
+          "file": "Product.php",
+          "phase": "before_first_writer",
+          "php": true,
+          "final_file_changed": true,
+          "file_named_by_engine_warning": true
+        },
+        {
+          "line": 15,
+          "file": "check.php",
+          "phase": "before_first_writer",
+          "php": true,
+          "final_file_changed": false,
+          "file_named_by_engine_warning": true
+        },
+        {
+          "line": 17,
+          "file": ".php-ast-edit.json",
+          "phase": "before_first_writer",
+          "php": false,
+          "final_file_changed": false,
+          "file_named_by_engine_warning": false
+        },
+        {
+          "line": 33,
+          "file": "Product.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": true,
+          "file_named_by_engine_warning": true
+        },
+        {
+          "line": 35,
+          "file": "check.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": false,
+          "file_named_by_engine_warning": true
+        },
+        {
+          "line": 37,
+          "file": ".php-ast-edit.json",
+          "phase": "after_write",
+          "php": false,
+          "final_file_changed": false,
+          "file_named_by_engine_warning": false
+        }
+      ],
+      "other_post_write_calls": [],
+      "gates": {
+        "oracle": "pass",
+        "candidate_check": "pass",
+        "writer_route": "pass",
+        "completion_claims": "pass"
+      },
+      "candidate_check_evidence": {
+        "engine_result_line": 25,
+        "verify": [
+          {
+            "scope": "project",
+            "command": "php check.php",
+            "ok": true
+          }
+        ],
+        "manual_repetitions": []
+      },
+      "engine_report_hashes_match_retained_output": true,
+      "changed_files": [
+        "Product.php"
+      ],
+      "diff_sha256": "cf5fa56e0a848633c43a1d5458e9b7d0475fc08ae861f8f3861ee45eff1d3fbd",
+      "final_claim_evidence": "runs/run019/evidence/raw.jsonl:44",
+      "claims_evidence_lines": [
+        44
+      ],
+      "command_failure_lines": [],
+      "intermediate_claim_findings": [],
+      "final_claim_findings": [],
+      "review_notes": [
+        "Directory listing and three native Reads (two PHP) precede the successful --file invocation despite command-first instructions. Three more Reads follow the write.",
+        "No manual check repetition. Final raw:44 explicitly attributes check success to the engine verification; the claim is supported by the recorded project check and oracle."
+      ]
+    },
+    {
+      "run_id": "run020",
+      "arm": "exact_invocation",
+      "task_id": "method-and-literal",
+      "repetition": 2,
+      "source_commit": "ff3484f928ea1557ff88c6fae314fcff9600d2f2",
+      "raw_sha256": "f53928744d8875b2f7466f6123a8eae6c95f7564311236af82993e93d874a69b",
+      "evidence": {
+        "raw": "runs/run020/evidence/raw.jsonl",
+        "measurement": "runs/run020/evidence/measurement.json",
+        "diff": "runs/run020/evidence/diff.patch",
+        "oracle": "runs/run020/evidence/oracle.json"
+      },
+      "engine_invocations": [
+        {
+          "argv": [
+            "rename",
+            "--method",
+            "Product::findByUid",
+            "--to",
+            "resolveByUid",
+            "--path",
+            ".",
+            "--file",
+            "Product.php"
+          ],
+          "exit_code": 0,
+          "file_values": [
+            "Product.php"
+          ],
+          "path_values": [
+            "."
+          ],
+          "method_values": [
+            "Product::findByUid"
+          ],
+          "exact_manifest_argv_match": true,
+          "native_request_line": 6,
+          "native_result_line": 8,
+          "reports_actual_mutation": true,
+          "checksPassed": true
+        }
+      ],
+      "phase_anchors": {
+        "first_writer_request_line": 6,
+        "first_mutation_request_line": 6,
+        "last_mutation_result_line": 8
+      },
+      "engine_requests_queued_before_previous_result_lines": [],
+      "counts": {
+        "native_calls": 5,
+        "before_writer_calls": 0,
+        "before_writer_known_file_Reads": 0,
+        "before_writer_known_PHP_Reads": 0,
+        "before_actual_mutation_known_PHP_Reads": 0,
+        "post_write_calls": 4,
+        "post_write_known_file_Reads": 3,
+        "post_write_known_changed_file_Reads": 1,
+        "post_write_known_unchanged_file_Reads": 2,
+        "manual_check_repetition_candidates": 1
+      },
+      "source_reads": [
+        {
+          "line": 14,
+          "file": "check.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": false,
+          "file_named_by_engine_warning": true
+        },
+        {
+          "line": 16,
+          "file": ".php-ast-edit.json",
+          "phase": "after_write",
+          "php": false,
+          "final_file_changed": false,
+          "file_named_by_engine_warning": false
+        },
+        {
+          "line": 26,
+          "file": "Product.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": true,
+          "file_named_by_engine_warning": true
+        }
+      ],
+      "other_post_write_calls": [
+        {
+          "line": 22,
+          "tool": "Bash",
+          "command": "php check.php",
+          "result_line": 23,
+          "is_error": false
+        }
+      ],
+      "gates": {
+        "oracle": "pass",
+        "candidate_check": "pass",
+        "writer_route": "pass",
+        "completion_claims": "pass"
+      },
+      "candidate_check_evidence": {
+        "engine_result_line": 8,
+        "verify": [
+          {
+            "scope": "project",
+            "command": "php check.php",
+            "ok": true
+          }
+        ],
+        "manual_repetitions": [
+          {
+            "request_line": 22,
+            "result_line": 23,
+            "command": "php check.php"
+          }
+        ]
+      },
+      "engine_report_hashes_match_retained_output": true,
+      "changed_files": [
+        "Product.php"
+      ],
+      "diff_sha256": "cf5fa56e0a848633c43a1d5458e9b7d0475fc08ae861f8f3861ee45eff1d3fbd",
+      "final_claim_evidence": "runs/run020/evidence/raw.jsonl:31",
+      "claims_evidence_lines": [
+        31
+      ],
+      "command_failure_lines": [],
+      "intermediate_claim_findings": [],
+      "final_claim_findings": [],
+      "review_notes": [
+        "Exact first argv succeeds. Three native Reads and one repeated check follow.",
+        "Final raw:31 matches the required source edits, label preservation and checker output; oracle and protected-file hashes pass."
+      ]
+    },
+    {
+      "run_id": "run021",
+      "arm": "delegated_intent",
+      "task_id": "cross-file-rename-clarified",
+      "repetition": 4,
+      "source_commit": "ff3484f928ea1557ff88c6fae314fcff9600d2f2",
+      "raw_sha256": "60f5452ef64f7bcf1a5f8d449aa29da59e73d5fc4a0222a645c7dcaa417306bd",
+      "evidence": {
+        "raw": "runs/run021/evidence/raw.jsonl",
+        "measurement": "runs/run021/evidence/measurement.json",
+        "diff": "runs/run021/evidence/diff.patch",
+        "oracle": "runs/run021/evidence/oracle.json"
+      },
+      "engine_invocations": [
+        {
+          "argv": [
+            "rename",
+            "--method",
+            "Pilot\\\\CrossFile\\\\Contract::fetch",
+            "--to",
+            "load",
+            "--file",
+            "src/Contract.php",
+            "."
+          ],
+          "exit_code": 2,
+          "file_values": [
+            "src/Contract.php"
+          ],
+          "path_values": [],
+          "method_values": [
+            "Pilot\\\\CrossFile\\\\Contract::fetch"
+          ],
+          "exact_manifest_argv_match": false,
+          "native_request_line": 8,
+          "native_result_line": 10,
+          "reports_actual_mutation": false,
+          "checksPassed": null
+        },
+        {
+          "argv": [
+            "rename",
+            "--method",
+            "Pilot\\CrossFile\\Contract::fetch",
+            "--to",
+            "load",
+            "--file",
+            "src/Contract.php",
+            "."
+          ],
+          "exit_code": 0,
+          "file_values": [
+            "src/Contract.php"
+          ],
+          "path_values": [],
+          "method_values": [
+            "Pilot\\CrossFile\\Contract::fetch"
+          ],
+          "exact_manifest_argv_match": false,
+          "native_request_line": 14,
+          "native_result_line": 15,
+          "reports_actual_mutation": true,
+          "checksPassed": true
+        }
+      ],
+      "phase_anchors": {
+        "first_writer_request_line": 8,
+        "first_mutation_request_line": 14,
+        "last_mutation_result_line": 15
+      },
+      "engine_requests_queued_before_previous_result_lines": [],
+      "counts": {
+        "native_calls": 11,
+        "before_writer_calls": 0,
+        "before_writer_known_file_Reads": 0,
+        "before_writer_known_PHP_Reads": 0,
+        "before_actual_mutation_known_PHP_Reads": 0,
+        "post_write_calls": 9,
+        "post_write_known_file_Reads": 6,
+        "post_write_known_changed_file_Reads": 4,
+        "post_write_known_unchanged_file_Reads": 2,
+        "manual_check_repetition_candidates": 1
+      },
+      "source_reads": [
+        {
+          "line": 27,
+          "file": "src/Other.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": false,
+          "file_named_by_engine_warning": false
+        },
+        {
+          "line": 29,
+          "file": "src/OtherConsumer.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": false,
+          "file_named_by_engine_warning": false
+        },
+        {
+          "line": 31,
+          "file": "src/Contract.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": true,
+          "file_named_by_engine_warning": false
+        },
+        {
+          "line": 36,
+          "file": "src/Base.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": true,
+          "file_named_by_engine_warning": false
+        },
+        {
+          "line": 38,
+          "file": "src/Child.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": true,
+          "file_named_by_engine_warning": false
+        },
+        {
+          "line": 40,
+          "file": "src/Consumer.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": true,
+          "file_named_by_engine_warning": false
+        }
+      ],
+      "other_post_write_calls": [
+        {
+          "line": 46,
+          "tool": "Bash",
+          "command": "php check.php",
+          "result_line": 47,
+          "is_error": false
+        },
+        {
+          "line": 51,
+          "tool": "Bash",
+          "command": "git status",
+          "result_line": 52,
+          "is_error": false
+        },
+        {
+          "line": 58,
+          "tool": "Bash",
+          "command": "git diff src/Contract.php src/Base.php src/Child.php src/Consumer.php",
+          "result_line": 59,
+          "is_error": false
+        }
+      ],
+      "gates": {
+        "oracle": "pass",
+        "candidate_check": "pass",
+        "writer_route": "pass",
+        "completion_claims": "pass"
+      },
+      "candidate_check_evidence": {
+        "engine_result_line": 15,
+        "verify": [
+          {
+            "scope": "project",
+            "command": "php check.php",
+            "ok": true
+          }
+        ],
+        "manual_repetitions": [
+          {
+            "request_line": 46,
+            "result_line": 47,
+            "command": "php check.php"
+          }
+        ]
+      },
+      "engine_report_hashes_match_retained_output": true,
+      "changed_files": [
+        "src/Base.php",
+        "src/Child.php",
+        "src/Consumer.php",
+        "src/Contract.php"
+      ],
+      "diff_sha256": "8dc3376807c19bdb23d3abe207ab574305e4f61c36012e09251c14e323a7fcbb",
+      "final_claim_evidence": "runs/run021/evidence/raw.jsonl:64",
+      "claims_evidence_lines": [
+        64
+      ],
+      "command_failure_lines": [
+        8
+      ],
+      "intermediate_claim_findings": [],
+      "final_claim_findings": [],
+      "review_notes": [
+        "First argv at raw:8 doubles namespace backslashes and exits 2. Retry at raw:14 corrects the FQN while retaining --file and positional ., then succeeds without PHP pre-Reads.",
+        "Six native Reads, one repeated check and two Git calls follow. The literal warning's check.php is not read by the candidate in this run; preservation is nevertheless correct under the explicit byte-preservation requirement. Final raw:64 matches the fixture and oracle."
+      ]
+    },
+    {
+      "run_id": "run022",
+      "arm": "exact_invocation",
+      "task_id": "cross-file-rename-clarified",
+      "repetition": 4,
+      "source_commit": "ff3484f928ea1557ff88c6fae314fcff9600d2f2",
+      "raw_sha256": "73dfab0cfd0abd8638a262e3ce8e677d739d99713f9d15c6f9cbbfc14c4ad200",
+      "evidence": {
+        "raw": "runs/run022/evidence/raw.jsonl",
+        "measurement": "runs/run022/evidence/measurement.json",
+        "diff": "runs/run022/evidence/diff.patch",
+        "oracle": "runs/run022/evidence/oracle.json"
+      },
+      "engine_invocations": [
+        {
+          "argv": [
+            "rename",
+            "--method",
+            "Pilot\\CrossFile\\Contract::fetch",
+            "--to",
+            "load",
+            "--path",
+            ".",
+            "--file",
+            "src/Contract.php"
+          ],
+          "exit_code": 0,
+          "file_values": [
+            "src/Contract.php"
+          ],
+          "path_values": [
+            "."
+          ],
+          "method_values": [
+            "Pilot\\CrossFile\\Contract::fetch"
+          ],
+          "exact_manifest_argv_match": true,
+          "native_request_line": 7,
+          "native_result_line": 9,
+          "reports_actual_mutation": true,
+          "checksPassed": true
+        }
+      ],
+      "phase_anchors": {
+        "first_writer_request_line": 7,
+        "first_mutation_request_line": 7,
+        "last_mutation_result_line": 9
+      },
+      "engine_requests_queued_before_previous_result_lines": [],
+      "counts": {
+        "native_calls": 10,
+        "before_writer_calls": 0,
+        "before_writer_known_file_Reads": 0,
+        "before_writer_known_PHP_Reads": 0,
+        "before_actual_mutation_known_PHP_Reads": 0,
+        "post_write_calls": 9,
+        "post_write_known_file_Reads": 5,
+        "post_write_known_changed_file_Reads": 2,
+        "post_write_known_unchanged_file_Reads": 3,
+        "manual_check_repetition_candidates": 1
+      },
+      "source_reads": [
+        {
+          "line": 17,
+          "file": "check.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": false,
+          "file_named_by_engine_warning": true
+        },
+        {
+          "line": 31,
+          "file": "src/Contract.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": true,
+          "file_named_by_engine_warning": false
+        },
+        {
+          "line": 34,
+          "file": "src/Consumer.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": true,
+          "file_named_by_engine_warning": false
+        },
+        {
+          "line": 39,
+          "file": "src/Other.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": false,
+          "file_named_by_engine_warning": false
+        },
+        {
+          "line": 42,
+          "file": "src/OtherConsumer.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": false,
+          "file_named_by_engine_warning": false
+        }
+      ],
+      "other_post_write_calls": [
+        {
+          "line": 24,
+          "tool": "Bash",
+          "command": "php check.php && echo \"✓ check.php passed\"",
+          "result_line": 25,
+          "is_error": false
+        },
+        {
+          "line": 47,
+          "tool": "Bash",
+          "command": "git diff --no-index /dev/null . 2>/dev/null || git diff",
+          "result_line": 48,
+          "is_error": false
+        },
+        {
+          "line": 53,
+          "tool": "Bash",
+          "command": "git status --short",
+          "result_line": 54,
+          "is_error": false
+        },
+        {
+          "line": 58,
+          "tool": "Bash",
+          "command": "git diff src/Other.php src/OtherConsumer.php check.php composer.json config/services.yaml .php-ast-edit.json autoload.php",
+          "result_line": 59,
+          "is_error": false
+        }
+      ],
+      "gates": {
+        "oracle": "pass",
+        "candidate_check": "pass",
+        "writer_route": "pass",
+        "completion_claims": "pass"
+      },
+      "candidate_check_evidence": {
+        "engine_result_line": 9,
+        "verify": [
+          {
+            "scope": "project",
+            "command": "php check.php",
+            "ok": true
+          }
+        ],
+        "manual_repetitions": [
+          {
+            "request_line": 24,
+            "result_line": 25,
+            "command": "php check.php && echo \"✓ check.php passed\""
+          }
+        ]
+      },
+      "engine_report_hashes_match_retained_output": true,
+      "changed_files": [
+        "src/Base.php",
+        "src/Child.php",
+        "src/Consumer.php",
+        "src/Contract.php"
+      ],
+      "diff_sha256": "8dc3376807c19bdb23d3abe207ab574305e4f61c36012e09251c14e323a7fcbb",
+      "final_claim_evidence": "runs/run022/evidence/raw.jsonl:63",
+      "claims_evidence_lines": [
+        23,
+        63
+      ],
+      "command_failure_lines": [],
+      "intermediate_claim_findings": [],
+      "final_claim_findings": [],
+      "review_notes": [
+        "Exact first argv succeeds. Five native Reads, one repeated check and three Git calls follow. The Git --no-index command has a fallback to git diff; the overall call succeeds and does not write source.",
+        "Intermediate raw:23 says the checker has already been updated, although its load/fetch fallback predates the candidate; the wording does not clearly attribute that update to this write. Final raw:63 correctly lists check.php among byte-preserved files and matches the retained hashes."
+      ]
+    },
+    {
+      "run_id": "run023",
+      "arm": "exact_invocation",
+      "task_id": "cross-file-rename-clarified",
+      "repetition": 5,
+      "source_commit": "ff3484f928ea1557ff88c6fae314fcff9600d2f2",
+      "raw_sha256": "523e119e91e75711232efe58cab9fe0ad6790e32b6ee370e5d947df3f1cb0518",
+      "evidence": {
+        "raw": "runs/run023/evidence/raw.jsonl",
+        "measurement": "runs/run023/evidence/measurement.json",
+        "diff": "runs/run023/evidence/diff.patch",
+        "oracle": "runs/run023/evidence/oracle.json"
+      },
+      "engine_invocations": [
+        {
+          "argv": [
+            "rename",
+            "--method",
+            "Pilot\\CrossFile\\Contract::fetch",
+            "--to",
+            "load",
+            "--path",
+            ".",
+            "--file",
+            "src/Contract.php"
+          ],
+          "exit_code": 0,
+          "file_values": [
+            "src/Contract.php"
+          ],
+          "path_values": [
+            "."
+          ],
+          "method_values": [
+            "Pilot\\CrossFile\\Contract::fetch"
+          ],
+          "exact_manifest_argv_match": true,
+          "native_request_line": 6,
+          "native_result_line": 8,
+          "reports_actual_mutation": true,
+          "checksPassed": true
+        }
+      ],
+      "phase_anchors": {
+        "first_writer_request_line": 6,
+        "first_mutation_request_line": 6,
+        "last_mutation_result_line": 8
+      },
+      "engine_requests_queued_before_previous_result_lines": [],
+      "counts": {
+        "native_calls": 10,
+        "before_writer_calls": 0,
+        "before_writer_known_file_Reads": 0,
+        "before_writer_known_PHP_Reads": 0,
+        "before_actual_mutation_known_PHP_Reads": 0,
+        "post_write_calls": 9,
+        "post_write_known_file_Reads": 7,
+        "post_write_known_changed_file_Reads": 4,
+        "post_write_known_unchanged_file_Reads": 3,
+        "manual_check_repetition_candidates": 1
+      },
+      "source_reads": [
+        {
+          "line": 14,
+          "file": "check.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": false,
+          "file_named_by_engine_warning": true
+        },
+        {
+          "line": 23,
+          "file": "src/Other.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": false,
+          "file_named_by_engine_warning": false
+        },
+        {
+          "line": 26,
+          "file": "src/OtherConsumer.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": false,
+          "file_named_by_engine_warning": false
+        },
+        {
+          "line": 36,
+          "file": "src/Contract.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": true,
+          "file_named_by_engine_warning": false
+        },
+        {
+          "line": 39,
+          "file": "src/Base.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": true,
+          "file_named_by_engine_warning": false
+        },
+        {
+          "line": 42,
+          "file": "src/Child.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": true,
+          "file_named_by_engine_warning": false
+        },
+        {
+          "line": 45,
+          "file": "src/Consumer.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": true,
+          "file_named_by_engine_warning": false
+        }
+      ],
+      "other_post_write_calls": [
+        {
+          "line": 32,
+          "tool": "Bash",
+          "command": "php check.php && echo \"Check passed\"",
+          "result_line": 33,
+          "is_error": false
+        },
+        {
+          "line": 52,
+          "tool": "Bash",
+          "command": "git status",
+          "result_line": 53,
+          "is_error": false
+        }
+      ],
+      "gates": {
+        "oracle": "pass",
+        "candidate_check": "pass",
+        "writer_route": "pass",
+        "completion_claims": "fail"
+      },
+      "candidate_check_evidence": {
+        "engine_result_line": 8,
+        "verify": [
+          {
+            "scope": "project",
+            "command": "php check.php",
+            "ok": true
+          }
+        ],
+        "manual_repetitions": [
+          {
+            "request_line": 32,
+            "result_line": 33,
+            "command": "php check.php && echo \"Check passed\""
+          }
+        ]
+      },
+      "engine_report_hashes_match_retained_output": true,
+      "changed_files": [
+        "src/Base.php",
+        "src/Child.php",
+        "src/Consumer.php",
+        "src/Contract.php"
+      ],
+      "diff_sha256": "8dc3376807c19bdb23d3abe207ab574305e4f61c36012e09251c14e323a7fcbb",
+      "final_claim_evidence": "runs/run023/evidence/raw.jsonl:58",
+      "claims_evidence_lines": [
+        58
+      ],
+      "command_failure_lines": [],
+      "intermediate_claim_findings": [],
+      "final_claim_findings": [
+        {
+          "line": 58,
+          "category": "nonexistent_member_identification",
+          "claim": "Other::fetch() method and its caller OtherConsumer::fetch() remain unchanged",
+          "correction": "OtherConsumer::run() calls Other::fetch(); OtherConsumer does not declare fetch().",
+          "code_and_oracle_correct": true
+        }
+      ],
+      "review_notes": [
+        "Exact first argv succeeds. Seven native Reads, one repeated check and Git status follow. Source output, independent oracle, protected hashes and engine check are correct.",
+        "Final raw:58 incorrectly names OtherConsumer::fetch() as the preserved caller. OtherConsumer declares run(), whose body calls Other::fetch(). This is a narrow false final symbol claim, not an incorrect code edit or broad semantic-safety failure. Unlike run007, the error is in the final completion response and therefore fails the final-claims gate."
+      ]
+    },
+    {
+      "run_id": "run024",
+      "arm": "delegated_intent",
+      "task_id": "cross-file-rename-clarified",
+      "repetition": 5,
+      "source_commit": "ff3484f928ea1557ff88c6fae314fcff9600d2f2",
+      "raw_sha256": "90d94b432f545c583fb79e83dd027b78bbb401a1aa01219c63e4d4078be6c049",
+      "evidence": {
+        "raw": "runs/run024/evidence/raw.jsonl",
+        "measurement": "runs/run024/evidence/measurement.json",
+        "diff": "runs/run024/evidence/diff.patch",
+        "oracle": "runs/run024/evidence/oracle.json"
+      },
+      "engine_invocations": [
+        {
+          "argv": [
+            "rename",
+            "--method",
+            "Pilot\\\\CrossFile\\\\Contract::fetch",
+            "--to",
+            "load",
+            "--file",
+            "src/Contract.php"
+          ],
+          "exit_code": 2,
+          "file_values": [
+            "src/Contract.php"
+          ],
+          "path_values": [],
+          "method_values": [
+            "Pilot\\\\CrossFile\\\\Contract::fetch"
+          ],
+          "exact_manifest_argv_match": false,
+          "native_request_line": 7,
+          "native_result_line": 9,
+          "reports_actual_mutation": false,
+          "checksPassed": null
+        },
+        {
+          "argv": [
+            "rename",
+            "--method",
+            "Contract::fetch",
+            "--to",
+            "load"
+          ],
+          "exit_code": 0,
+          "file_values": [],
+          "path_values": [],
+          "method_values": [
+            "Contract::fetch"
+          ],
+          "exact_manifest_argv_match": false,
+          "native_request_line": 11,
+          "native_result_line": 12,
+          "reports_actual_mutation": true,
+          "checksPassed": true
+        }
+      ],
+      "phase_anchors": {
+        "first_writer_request_line": 7,
+        "first_mutation_request_line": 11,
+        "last_mutation_result_line": 12
+      },
+      "engine_requests_queued_before_previous_result_lines": [],
+      "counts": {
+        "native_calls": 10,
+        "before_writer_calls": 0,
+        "before_writer_known_file_Reads": 0,
+        "before_writer_known_PHP_Reads": 0,
+        "before_actual_mutation_known_PHP_Reads": 0,
+        "post_write_calls": 8,
+        "post_write_known_file_Reads": 7,
+        "post_write_known_changed_file_Reads": 4,
+        "post_write_known_unchanged_file_Reads": 3,
+        "manual_check_repetition_candidates": 1
+      },
+      "source_reads": [
+        {
+          "line": 18,
+          "file": "check.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": false,
+          "file_named_by_engine_warning": true
+        },
+        {
+          "line": 24,
+          "file": "src/Other.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": false,
+          "file_named_by_engine_warning": false
+        },
+        {
+          "line": 30,
+          "file": "src/OtherConsumer.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": false,
+          "file_named_by_engine_warning": false
+        },
+        {
+          "line": 35,
+          "file": "src/Contract.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": true,
+          "file_named_by_engine_warning": false
+        },
+        {
+          "line": 38,
+          "file": "src/Base.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": true,
+          "file_named_by_engine_warning": false
+        },
+        {
+          "line": 41,
+          "file": "src/Child.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": true,
+          "file_named_by_engine_warning": false
+        },
+        {
+          "line": 44,
+          "file": "src/Consumer.php",
+          "phase": "after_write",
+          "php": true,
+          "final_file_changed": true,
+          "file_named_by_engine_warning": false
+        }
+      ],
+      "other_post_write_calls": [
+        {
+          "line": 49,
+          "tool": "Bash",
+          "command": "php check.php && echo \"Check passed\"",
+          "result_line": 50,
+          "is_error": false
+        }
+      ],
+      "gates": {
+        "oracle": "pass",
+        "candidate_check": "pass",
+        "writer_route": "pass",
+        "completion_claims": "pass"
+      },
+      "candidate_check_evidence": {
+        "engine_result_line": 12,
+        "verify": [
+          {
+            "scope": "project",
+            "command": "php check.php",
+            "ok": true
+          }
+        ],
+        "manual_repetitions": [
+          {
+            "request_line": 49,
+            "result_line": 50,
+            "command": "php check.php && echo \"Check passed\""
+          }
+        ]
+      },
+      "engine_report_hashes_match_retained_output": true,
+      "changed_files": [
+        "src/Base.php",
+        "src/Child.php",
+        "src/Consumer.php",
+        "src/Contract.php"
+      ],
+      "diff_sha256": "8dc3376807c19bdb23d3abe207ab574305e4f61c36012e09251c14e323a7fcbb",
+      "final_claim_evidence": "runs/run024/evidence/raw.jsonl:59",
+      "claims_evidence_lines": [
+        59
+      ],
+      "command_failure_lines": [
+        7
+      ],
+      "intermediate_claim_findings": [],
+      "final_claim_findings": [],
+      "review_notes": [
+        "First argv at raw:7 doubles namespace backslashes and exits 2. Immediate retry at raw:11 uses Contract::fetch without --file or --path and succeeds; no PHP pre-Reads.",
+        "Seven native Reads and one repeated check follow the successful write. Final raw:59 correctly names OtherConsumer::run(Other $service), preserves the fallback and labels, and matches the retained source/oracle."
+      ]
+    }
+  ]
+}
