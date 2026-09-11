@@ -55,11 +55,8 @@ declares canonical mode; normalization is optional.
 ## Interpret the result
 
 Use `"report":"agent"` when a declared check's verdict is sufficient; `apply` otherwise
-defaults to `full`. `rename` defaults to `compact`. `full` and `compact` retain the diff.
-Choose them before writing when the transaction's diff is needed, subject to output
-limits. `beforeSha256` stores no snapshot; ordinary `git diff` uses the index, so prior,
-staged or subsequent edits can differ from this transaction. Untracked files are omitted.
-Do not rerun an edit merely to obtain its diff.
+defaults to `full`. `rename` defaults to `compact`. `full` and `compact` include small edit
+diffs; choose the report before writing, since Git diff cannot recover transaction history.
 Read effects, warnings and verification. `checks: "none_declared"` or
 `checksPassed: null` means no configured check ran. Parser success alone is not
 application correctness. Repair failed checks; run additional checks the task needs.
