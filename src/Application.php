@@ -64,6 +64,7 @@ final class Application
             return match ($command) {
                 'inspect' => $this->inspect($options),
                 'apply' => $this->apply($options),
+                'rename' => $this->rename($options),
                 'validate' => $this->validate($options),
                 'contexts' => $this->contexts($options),
                 'format' => $this->format($options, false),
@@ -125,15 +126,9 @@ final class Application
 
     private function apply(array $options): int
     {
-        // One command written two ways, so one execution and one verdict. Reporting the
-        // flag form's result and returning 0 over it made a failed check look like a clean
-        // edit — the opposite of what help promises, and unrecoverable for a caller that
-        // reads the exit code and stops there.
         $document = $this->inlineDocument($options) ?? $this->inputDocument($options);
-        $result = (new Editor())->apply($document, isset($options['dry-run']));
-        $this->json($result);
 
-        return $result['checksPassed'] === false ? 1 : 0;
+        return $this->execute($document, isset($options['dry-run']));
     }
 
     /**
@@ -418,6 +413,8 @@ final class Application
         php-ast-edit — AST-based PHP edits for coding agents
         
         Commands:
+          php-ast-edit rename --method Class::old --to new [--path DIRECTORY]
+              [--file FILE] [--sha256 HASH] [--mocks] [--report agent|full|compact] [--dry-run]
           php-ast-edit inspect --file FILE (--offset N | --line N --column N) [--kind TYPE] [--php-version 8.4]
           php-ast-edit apply [--input FILE|-] [--dry-run]
           php-ast-edit apply --file FILE (--select SEL|--ref REF) --op OPERATION [args]
@@ -428,6 +425,11 @@ final class Application
           php-ast-edit normalize [--path DIRECTORY] [--exclude PATHS] [--dry-run]
           php-ast-edit format [--path FILE_OR_DIRECTORY] [--dry-run]
         
+        rename discovers one method declaration and performs one guarded transaction.
+        A qualified class name resolves ambiguity; --file narrows declaration discovery,
+        not the caller changes. Non-private methods use Phpactor across the project,
+        including final classes. The default compact report includes the diff, checks
+        and unresolved mentions. Use --report agent when no inline diff is needed.
         Use a selector when the target has a name; inspect only when coordinates are needed:
           {"files":[{"path":"src/Foo.php","edits":[{"target":{"select":"method:Foo::bar"},
             "operation":"set_return_type","php":"string|int"}]}]}
@@ -780,5 +782,18 @@ final class Application
         }
 
         return $value;
+    }
+
+    private function execute(array $document, bool $dryRun): int
+    {
+        $result = (new Editor())->apply($document, $dryRun);
+        $this->json($result);
+
+        return $result['checksPassed'] === false ? 1 : 0;
+    }
+
+    private function rename(array $options): int
+    {
+        return $this->execute((new MethodRenameCommand())->document($options), isset($options['dry-run']));
     }
 }

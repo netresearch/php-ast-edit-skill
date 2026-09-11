@@ -56,6 +56,14 @@ echo "::group::tests/reports.py (shared verification reports and compatibility)"
 python3 tests/reports.py || fail=1
 echo "::endgroup::"
 
+echo "::group::tests/intent-command.py (method discovery and guarded rename command)"
+python3 tests/intent-command.py || fail=1
+echo "::endgroup::"
+
+echo "::group::intent-command benchmark fixture oracles (no model calls)"
+python3 -m unittest discover -s benchmarks/agent-economics/intent-command -p 'test_*.py' || fail=1
+echo "::endgroup::"
+
 echo "::group::skills/php-structured-edit/scripts/php-ast-edit (wrapper resolves an executable)"
 bash skills/php-structured-edit/scripts/php-ast-edit validate --file tests/fixtures/sample.php || fail=1
 echo "::endgroup::"

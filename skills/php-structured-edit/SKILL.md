@@ -1,59 +1,46 @@
 ---
 name: php-structured-edit
-description: "Use when editing PHP source: renaming a method, function or variable and its call sites; adding, changing or removing a method, property, constant, parameter, return type, attribute or use import; inserting or replacing a statement, expression or call argument; changing a signature, visibility or docblock; editing a PHP string literal; creating or deleting a whole PHP file. Reach for this before Edit or sed on a .php file. Use ordinary search for discovery. Not for read-only PHP questions or edits to non-PHP files."
+description: "Use when changing PHP source: method or variable renames, declarations, statements, expressions, imports, literals and file creation/deletion. Provides guarded AST writes and project method discovery. Use ordinary search for reads; not for read-only questions or non-PHP edits."
 ---
 
 # PHP Structured Edit
 
-Use `php-ast-edit` for PHP writes while this skill is active. The tool parses snippets,
-changes the AST, and prints the result. After rejection, correct the cause; do not
-fall back to text mutation.
+Use `php-ast-edit` for PHP writes. Use the supplied executable directly, or resolve
+repository `bin/php-ast-edit`, `vendor/bin/php-ast-edit`, PATH or this skill's wrapper
+once. Correct rejected requests rather than falling back to text writes.
 
-## First use
+## Method renames
 
-Use a supplied executable directly. Otherwise resolve it once: repository
-`bin/php-ast-edit`, project `vendor/bin/php-ast-edit`, installed command, or this skill's
-`scripts/php-ast-edit` wrapper. Use `help` if needed; install missing engine dependencies
-before retrying.
+```bash
+php-ast-edit rename --method 'Checkout::submit' --to placeOrder
+```
 
-Auto mode uses format-preserving printing unless applicable configuration enables
-canonical printing. Explicit printer choices override auto mode. Normalization is
-optional; `doctor` diagnoses canonical setup. Read the formatting reference when
-configuring formatting.
+Name the declaring class and method. The command discovers the file, captures its
+hash, resolves the hierarchy and callers, and submits one transaction with configured
+checks. Do not enumerate callers or submit one rename per declaration. Use a fully
+qualified class when ambiguous, `--path` for another project, or `--file` to narrow
+declaration discovery. Non-private methods require Phpactor, including final classes;
+missing or uncertain resolution is refused. `--dry-run` previews without writing.
 
-## Workflow
+In the default compact report, review `diff`, `renames`, `open`, `verify` and
+`checksPassed`. The changed lines are included for review. PHP literals and
+non-PHP mentions remain visible for task-specific decisions. `--mocks` also changes
+listed PHPUnit method names regardless of mocked class; use it only when all listed
+names mean this method. Use `--report agent` when no inline diff is needed.
 
-1. Find the relevant code with normal search or an LSP.
-2. Prefer named targets: `{"select":"method:Checkout::submit"}`. Other selectors:
-   `class:`, `interface:`, `trait:`, `enum:`, `function:`, `property:Foo::$items`,
-   `const:Foo::LIMIT`. Ambiguous names are refused. Use `inspect` for unnamed targets;
-   retain its `ref` and `sha256`.
-3. One edit against a named target is one call, with no payload file:
-   `apply --file F.php --select method:Foo::bar --op rename_variable --from a --to b`.
-   Batch related edits across files in one `apply`. Include `sha256` when relying on a
-   read snapshot. After `STALE_SOURCE`, reread and reassess; never drop the guard.
-   Use `"report":"agent"` when a declared check's verdict is what you need, or the diff
-   would be large: it carries the check proof and drops the diff. Measured otherwise,
-   fetching that diff back costs more than it saved (benchmarks/agent-economics/
-   results/2026-09-10-agent-report).
-4. Supply compact valid snippets. Import or qualify external types in namespaced PHP,
-   e.g. `\\DateTimeImmutable` in JSON. The printer handles indentation.
-5. In `agent` reports read `outcome`, `checks`, `checksFailed` and each file's `open`;
-   `checks: "none_declared"` means nothing verified the edit, which is not `"passed"`.
-   `git diff -- <path>` has the diff, from the snapshot `beforeSha256` names. In `full` and
-   `compact` reports read `effects`, `diff`, all `warnings` and `validation`, where `parsed`
-   and legacy `valid` mean parser success, and follow `checkIds` to top-level `verify`.
-   Failed checks need repair; skipped or unrun checks remain outstanding where required.
-6. A passed configured command satisfies that same check on unchanged inputs. Repeat it
-   after relevant changes, or run additional checks required by the task. `alreadyRun`
-   names the project checks that passed on the written files: while nothing else changed,
-   do not rerun those by hand. Use supplied
-   exact-byte evidence for its stated scope instead of rereading solely to reconfirm it.
-   Neither passing tests nor byte preservation proves reference completeness. Report
-   changed symbols and checks actually run; distinguish declarations from call sites.
-   An intended edit leaves a Git diff. Avoid repository-wide `format` for a local edit.
+## Other changes
 
-Minimal transaction, passed directly without a temporary payload file:
+Search normally; prefer a named selector. Use `inspect` only for unnamed nodes and
+retain its `ref` and `sha256`. One variable rename needs no payload file:
+
+```bash
+php-ast-edit apply --file Checkout.php --select method:Checkout::submit --op rename_variable --from total --to amount
+```
+
+Use `replace_expression` or `replace_statement` with `match`/`php` within a named
+method; `add_member` for members; `add_use` for imports. For unfamiliar operations,
+read `contexts --operation NAME`. Qualify or import external types in PHP snippets.
+Batch related edits in one `apply`:
 
 ```bash
 php-ast-edit apply <<'JSON'
@@ -61,37 +48,20 @@ php-ast-edit apply <<'JSON'
 JSON
 ```
 
-`"report":"full"` (the default) retains per-file verification. Report mode changes
-presentation only; `checksPassed: null` means no checks ran — `agent` says the same thing
-as `checks: "none_declared"`, which is harder to misread. `agent` is versioned by
-`reportVersion`; `full` and `compact` are not.
+Include `sha256` when relying on a read snapshot. After `STALE_SOURCE`, reread and
+reassess; never drop the guard. Auto printing preserves formatting unless the project
+declares canonical mode; normalization is optional.
 
-## Choose the narrow operation
+## Interpret the result
 
-- Empty list: `insert_into` with `property` and `position`; class members: `add_member`.
-- Replace any node: `replace_node`; change a slot: `replace_child`.
-- Change code inside a named method: keep the method as target, `replace_expression`
-  or `replace_statement` with `match` (the code as it is) and `php` (the replacement).
-- New file: `mode: create`, full PHP including `<?php`, default `expectAbsent` guard.
-  Delete: `mode: delete` with the snapshot hash.
-- Local rename: `rename_variable` on the enclosing function-like scope with `from`/`to`.
-  Binding collisions are rejected; dynamic variables remain limited.
-- Method rename: `rename_method` with `to` on `method:Class::name`, plus `"mocks": true`
-  when the tests mock the method: it also sets `->method('old')`, `onlyMethods`/`addMethods`/
-  `setMethods` lists and `createPartialMock`/`createConfiguredMock` names. Public and inherited
-  methods are renamed across the project through Phpactor (`doctor` shows its setup);
-  read `renames.notRenamed` for YAML, TypoScript and Fluid mentions, and `renames.literals`
-  for PHP strings such as mock `->method('old')`: a `replace_expression` on a listed
-  `select` with `match`/`php` sets every literal of that entry; `set_string` on its `refs`
-  sets only those that mean the method. An apply that leaves such literals says so first,
-  in `open`. `set_name` on a method declaration something calls is refused unless
-  `"declarationOnly": true`.
-- SQL/HTML/JSON inside a PHP literal: `set_string` on its `Scalar_String` node.
-- Class import: `add_use` with `value` and no `target`; already-imported is a reported
-  no-op, a taken name an error. Add it in the same transaction as the code that needs it.
-
-Use `contexts --operation <name>` before guessing unfamiliar arguments.
-Parser and host lint passes do not prove application behavior.
+Use `"report":"agent"` when a declared check's verdict is sufficient; `apply` otherwise
+defaults to `full`. `rename` defaults to `compact`. `full` and `compact` retain the diff.
+Read effects, warnings and verification. `checks: "none_declared"` or
+`checksPassed: null` means no configured check ran. Parser success alone is not
+application correctness. Repair failed checks; run additional checks the task needs.
+`alreadyRun` names checks already satisfied on unchanged inputs: do not repeat them
+or reread solely to reconfirm supplied byte evidence. Tests and hashes do not establish
+reference completeness. Review unresolved facts and report the observed outcome.
 
 ## References, when needed
 

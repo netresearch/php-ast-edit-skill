@@ -14,6 +14,7 @@ PHP CLI plus Agent Skill for AST-native PHP source mutations.
 │   ├── references/enforcement.md      # PreToolUse gate wiring
 │   └── scripts/php-ast-edit           # Wrapper: repo bin, vendor/bin, PHAR, or PATH
 ├── src/
+│   ├── MethodRenameCommand.php        # Named method intent → unique guarded declaration
 │   ├── Application.php                # CLI dispatch (inspect, apply, validate, contexts, help)
 │   ├── Editor.php                      # Transaction engine, primitives and convenience ops
 │   ├── CanonicalPrinter.php            # Width-aware canonical printing
@@ -73,6 +74,7 @@ PHP CLI plus Agent Skill for AST-native PHP source mutations.
 - `bash scripts/build-release.sh` — build `dist/releases/` with isolated production dependencies; output directory must be empty
 - `bin/php-ast-edit inspect --file <path> --line <n> --column <n>` — AST ancestry at a position
 - `bin/php-ast-edit apply --input edits.json` — guarded transaction; exit 1 retains edits when project checks fail
+- `bin/php-ast-edit rename --method Class::old --to new` — discover the declaration and run one guarded rename with project callers and checks
 - `bin/php-ast-edit validate --file <path>` — parse and host PHP lint; check explicit skip status for newer target syntax
 - `bin/php-ast-edit contexts --operation rename_variable` — the contract for one operation
 - `bin/php-ast-edit doctor` — canonical-mode setup diagnostics; ordinary edits support format preservation

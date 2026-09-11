@@ -6,6 +6,18 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Added
+
+- `rename --method Class::old --to new` discovers a unique project declaration, captures its source hash and submits one transaction with existing verification. Its default compact report includes the changed lines for review. It accepts qualified names, `--path`, an optional declaration `--file`, caller `--sha256`, `--mocks`, report modes and dry-run. Non-private methods explicitly resolve project callers, including final classes. Ambiguous, excluded, symlinked and inherited-only declarations are refused.
+- `rename_method` accepts structural refs for project expansion and an optional boolean `project` to request project scope explicitly. Source guards and target kinds are checked before discovery; malformed `mocks`/`project` values are rejected on every target route.
+
+### Changed
+
+- Shorten the loaded skill and lead with the direct method command. Keep operation and report details in the linked reference. The interface and instruction bundle is measured separately from the earlier v0.8.0 pilot.
+- Remaining method-name strings now request classification rather than declaring the task unfinished. They may be callbacks or deliberately preserved data; the report still lists every observed occurrence and warns that passing checks do not classify them.
+- Project hierarchy indexing refuses duplicate fully qualified class-like declarations instead of silently choosing the first file. A declaration `--file` cannot disambiguate project references; exclude inactive copies before retrying.
+- Publish both direct-command Haiku campaigns: 24 complete attempts, all final oracles passing, USD 0.9390213 native list-price estimate. The final default-diff comparison uses fewer tokens and visible rounds but more wall time and cost; the prospective overall improvement criterion was not met. Raw evidence, separate reports and checksums are retained without pooling or replacing runs.
+
 ## [0.8.1] - 2026-09-11
 
 ### Changed
