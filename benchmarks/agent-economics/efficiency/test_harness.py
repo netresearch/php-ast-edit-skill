@@ -310,7 +310,8 @@ class ScheduleSelectionTests(unittest.TestCase):
         self.assertEqual(set(counts.values()), {6})
         self.assertEqual(set(starts.values()), {3})
         for before, after in zip(rows[::2], rows[1::2]):
-            self.assertEqual({before["variant"], after["variant"]}, set(arms))
+            actual_arms = {before["variant"], after["variant"]}
+            self.assertEqual(actual_arms, set(arms))
             for field in ("task_id", "model_key", "repetition"):
                 self.assertEqual(before[field], after[field])
         self.assertEqual(len({row["run_id"] for row in rows}), len(rows))
