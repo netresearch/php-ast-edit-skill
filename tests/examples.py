@@ -27,7 +27,7 @@ SOURCES = [
     ),
     (
         SKILL,
-        r"Minimal transaction:\n\n```json\n(.*?)\n```",
+        r"```bash\nphp-ast-edit apply <<'JSON'\n(.*?)\nJSON\n```",
         {"src/Registry.php": "<?php\nfinal class Registry {}\n"},
     ),
 ]

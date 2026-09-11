@@ -6,6 +6,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Changed
+
+- Use an already supplied executable directly and pass the skill's example transaction through standard input. The Haiku pilot showed unnecessary executable lookup, payload-file cleanup and one retained payload despite the requested PHP edit. These are usability changes, not a measured savings claim: a bundled follow-up with additional method-rename instructions increased agent work, and the extra paragraph was withdrawn.
+
 ## [0.8.0] - 2026-09-11
 
 ### Changed

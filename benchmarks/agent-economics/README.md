@@ -1,5 +1,12 @@
 # Complete-agent economics
 
+The [36-run v0.8.0 Haiku pilot](results/2026-09-11-v080-haiku/REPORT.md) compares
+ordinary contextual edits with the released full skill and a separate instruction
+follow-up. The small edit saved 31.1% of tokens; three changes in one file and the
+clarified cross-file rename used more. Additional declaration-first prose also lost
+and was withdrawn. Every attempt, the ambiguous original fixture, and the separately
+scheduled correction remain in the report; no general saving is claimed.
+
 The [compact-workflow follow-up](results/2026-09-06-efficiency/REPORT.md) compares
 contextual editing, the unchanged full skill and one experimental compact adapter with two read modes
 with Sonnet and Haiku. It includes public TYPO3 code, mandatory read-bound revisions,
