@@ -30,11 +30,12 @@ final class EditReport
      * "no checks are declared" is not "the checks passed" — an agent that reads a nullable
      * boolean here cannot tell an unverified edit from a verified one.
      *
-     * What is deliberately absent: `diff` and `code`. Both are recoverable without this tool
-     * re-running anything — `git diff -- <path>` against the working tree, with
-     * `beforeSha256` naming the snapshot it started from. A file outside version control has
-     * no such record, which is the one case where this mode loses information the `full`
-     * report would have carried.
+     * What is deliberately absent: `diff` and `code`. `beforeSha256` identifies the input
+     * bytes but stores no retrievable snapshot. `git diff -- <path>` compares the working
+     * tree with the index: earlier, staged or subsequent edits can differ from this
+     * transaction, and untracked files are omitted. Request `full` or `compact` before
+     * writing when the transaction's diff is needed, subject to existing output limits.
+     * Do not rerun an edit merely to obtain its diff.
      *
      * @return array<string, mixed>
      */
