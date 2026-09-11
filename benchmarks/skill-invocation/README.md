@@ -10,6 +10,11 @@ is phrased, the skill is listed, paid for, and never called — and the run then
 
 That is not a hypothetical. It is what the first arm of this measurement did.
 
+The later [powered round](powered/README.md) has a recovered protocol and an offline
+analyzer for 120 planned runs. Its historical raw data remain unavailable, so it has
+no published savings result. The recovery guide identifies the original session
+and the evidence needed to complete that analysis.
+
 ## What is held fixed
 
 Prompt, repository, base commit, model, PATH and permission mode — the engine is on PATH

@@ -1,0 +1,1 @@
+Rename the public method getConfiguration() of ExtensionConfigurationService (Classes/Service/ExtensionConfigurationService.php) to configuration(), including every call to it anywhere in the project. Change nothing else. Make sure the project static analysis still passes.

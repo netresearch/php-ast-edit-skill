@@ -120,6 +120,11 @@ echo "::group::skill invocation arms (dependency isolation and the poisoned-subj
 python3 benchmarks/skill-invocation/test_run.py || fail=1
 echo "::endgroup::"
 
+echo "::group::powered round (complete accounting, statistics and first-attempt preservation)"
+python3 benchmarks/skill-invocation/powered/analyze.py --self-test || fail=1
+python3 benchmarks/skill-invocation/powered/test_powered.py || fail=1
+echo "::endgroup::"
+
 echo "::group::symbol intent (offline guards and pilot oracles; LSP integration opt-in)"
 python3 -m unittest discover -s benchmarks/symbol-intent -p 'test_*.py' || fail=1
 echo "::endgroup::"
