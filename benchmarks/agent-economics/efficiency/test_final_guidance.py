@@ -204,7 +204,8 @@ class FinalGuidanceTests(unittest.TestCase):
                 (first["task_id"], first["repetition"]),
                 (second["task_id"], second["repetition"]),
             )
-            self.assertEqual({first["variant"], second["variant"]}, set(ARMS))
+            actual_arms = {first["variant"], second["variant"]}
+            self.assertEqual(actual_arms, set(ARMS))
             starts[first["task_id"]][first["variant"]] += 1
         for task in tasks:
             self.assertEqual(starts[task], {ARMS[0]: 5, ARMS[1]: 5})
