@@ -6,6 +6,7 @@ import io
 import json
 import tempfile
 import unittest
+from decimal import Decimal
 from pathlib import Path
 
 import unchanged_compare
@@ -141,6 +142,13 @@ class CompareTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             unchanged_compare.compare(report)
 
+        report = self.report()
+        report["config"]["models"]["haiku"]["id"] = "other-haiku"
+        for row in report["runs"]:
+            row["reported_model"] = "other-haiku"
+        with self.assertRaises(ValueError):
+            unchanged_compare.compare(report)
+
     def test_schema_config_types_are_required(self):
         report = self.report()
         report["config"]["arms"] = {arm: True for arm in unchanged_compare.ARMS}
@@ -180,6 +188,54 @@ class CompareTests(unittest.TestCase):
         with self.assertRaises(SystemExit) as missing:
             unchanged_compare.main([])
         self.assertEqual(missing.exception.code, 2)
+
+    def test_cli_keeps_serialized_wall_above_threshold_above_one(self):
+        report = self.report()
+        for row in report["runs"]:
+            row["metrics"]["wall_ms"] = 1
+        serialized = json.dumps(report)
+        for row in report["runs"]:
+            if row["arm"] != unchanged_compare.ARMS[1]:
+                continue
+            marker = f'"run_id": "{row["run_id"]}"'
+            start = serialized.index(marker)
+            wall = serialized.index('"wall_ms": 1', start)
+            serialized = (
+                serialized[:wall]
+                + '"wall_ms": 1.0000000000000001'
+                + serialized[wall + len('"wall_ms": 1') :]
+            )
+        with tempfile.TemporaryDirectory(
+            prefix="unchanged-compare-decimal-"
+        ) as directory:
+            path = Path(directory) / "report.json"
+            path.write_text(serialized)
+            parsed = json.loads(serialized, parse_float=Decimal)
+            rows = [
+                row
+                for row in parsed["runs"]
+                if row["task_id"] == unchanged_compare.TASKS[0]
+            ]
+            control = {
+                row["repetition"]: row
+                for row in rows
+                if row["arm"] == unchanged_compare.ARMS[0]
+            }
+            treatment = {
+                row["repetition"]: row
+                for row in rows
+                if row["arm"] == unchanged_compare.ARMS[1]
+            }
+            self.assertGreater(
+                unchanged_compare._exact_median_ratio(control, treatment, "wall_ms"),
+                1,
+            )
+            output = io.StringIO()
+            with contextlib.redirect_stdout(output):
+                status = unchanged_compare.main([str(path)])
+        self.assertEqual(status, 0)
+        result = json.loads(output.getvalue())
+        self.assertFalse(result["all_tasks_numeric_criterion_passed"])
 
 
 if __name__ == "__main__":

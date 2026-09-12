@@ -8,6 +8,7 @@ import json
 import math
 import statistics
 import sys
+from decimal import Decimal
 from fractions import Fraction
 from pathlib import Path
 from typing import Any
@@ -34,16 +35,19 @@ TOKEN_PARTS = (
     "output_tokens",
 )
 COUNT_METRICS = ("visible_primary_rounds", "tool_calls", "failed_tool_calls")
+EXPECTED_MODEL_KEY = "haiku"
+EXPECTED_MODEL_ID = "claude-haiku-4-5-20251001"
 
 
 class CompareError(ValueError):
     """The input report cannot support a complete paired comparison."""
 
 
-def _number(value: Any, field: str) -> int | float:
-    if isinstance(value, bool) or not isinstance(value, (int, float)):
+def _number(value: Any, field: str) -> int | float | Decimal:
+    if isinstance(value, bool) or not isinstance(value, (int, float, Decimal)):
         raise CompareError(f"{field} must be numeric")
-    if not math.isfinite(value) or value < 0:
+    finite = value.is_finite() if isinstance(value, Decimal) else math.isfinite(value)
+    if not finite or value < 0:
         raise CompareError(f"{field} must be finite and non-negative")
     return value
 
@@ -61,17 +65,17 @@ def _validate_config(report: dict[str, Any]) -> tuple[list[str], dict[str, str]]
     if type(config.get("repetitions")) is not int or config["repetitions"] != 6:
         raise CompareError("report config must specify six repetitions")
     configured_models = config.get("model_keys")
-    if not isinstance(configured_models, list) or len(configured_models) != 1:
-        raise CompareError("report config must specify one model")
+    if configured_models != [EXPECTED_MODEL_KEY]:
+        raise CompareError("report config must pin the registered Haiku model")
     model_definitions = config.get("models")
     if not isinstance(model_definitions, dict):
         raise CompareError("report config must specify model identities")
-    model = configured_models[0]
-    definition = model_definitions.get(model) if isinstance(model, str) else None
+    model = EXPECTED_MODEL_KEY
+    definition = model_definitions.get(model)
     if not isinstance(definition, dict):
         raise CompareError("report config has an invalid model identity")
     identity = definition.get("id")
-    if not isinstance(identity, str) or not identity:
+    if identity != EXPECTED_MODEL_ID:
         raise CompareError("report config has an invalid model identity")
     return configured_models, {model: identity}
 
@@ -170,11 +174,13 @@ def _validate_report(report: dict[str, Any]) -> list[dict[str, Any]]:
     return rows
 
 
-def _ratio(after: float, before: float) -> float | None:
+def _ratio(after: Any, before: Any) -> Any:
+    if isinstance(after, Decimal) or isinstance(before, Decimal):
+        after, before = Decimal(str(after)), Decimal(str(before))
     return after / before if before else None
 
 
-def _median(values: list[int | float | None]) -> int | float | None:
+def _median(values: list[Any]) -> Any:
     usable = [value for value in values if value is not None]
     return statistics.median(usable) if usable else None
 
@@ -264,17 +270,23 @@ def compare(report: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _json_default(value: Any) -> float:
+    if isinstance(value, Decimal):
+        return float(value)
+    raise TypeError(f"Object of type {type(value).__name__} is not JSON serializable")
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("report", type=Path)
     args = parser.parse_args(sys.argv[1:] if argv is None else argv)
     try:
-        report = json.loads(args.report.read_text())
+        report = json.loads(args.report.read_text(), parse_float=Decimal)
         output = compare(report)
     except (OSError, TypeError, json.JSONDecodeError, CompareError) as error:
         print(f"unchanged_compare.py: {error}", file=sys.stderr)
         return 1
-    print(json.dumps(output, indent=2, sort_keys=True))
+    print(json.dumps(output, default=_json_default, indent=2, sort_keys=True))
     return 0
 
 
