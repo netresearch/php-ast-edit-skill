@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Passive local capture of full-skill engine calls; preserve native stdout/stderr."""
+"""Capture engine calls; opt-in synthetic experiments may add review excerpts."""
 
 import hashlib
 import json
@@ -71,6 +71,30 @@ def main():
     if args and args[0] == "apply":
         forwarded, captured = capture_input(args)
     append({"event": "engine_request", "id": identifier, "argv": args, **captured})
+    mode = os.environ.get("PHP_AST_REVIEW_CONTEXT")
+    snapshot = None
+    try:
+        if mode is not None:
+            import review_context
+
+            if mode not in ("review_locations", "review_excerpts"):
+                raise ValueError("Unknown review-context experiment mode")
+            if args and args[0] in ("rename", "apply"):
+                allowed_files = json.loads(
+                    Path(os.environ["PHP_AST_REVIEW_FIXTURE"]).read_text()
+                )
+                snapshot = review_context.capture(Path.cwd(), list(allowed_files))
+    except (
+        ValueError,
+        OSError,
+        ImportError,
+        KeyError,
+        TypeError,
+        subprocess.SubprocessError,
+    ) as error:
+        append({"event": "experiment_error", "id": identifier, "error": str(error)})
+        print("Review-context snapshot failed", file=sys.stderr)
+        return 70
     # Passive capture preserves the engine's normal argv; no sandbox. See benchmarks/TRUST.md.
     result = subprocess.run(  # NOSONAR(S6350, S8705)
         [os.environ["PHP_AST_REAL_BIN"], *args],
@@ -78,6 +102,14 @@ def main():
         capture_output=True,
         check=False,
     )
+    presented = result.stdout
+    try:
+        if snapshot is not None and result.returncode == 0:
+            augmented = review_context.augment(result.stdout, snapshot)
+            if mode == "review_excerpts":
+                presented = augmented
+    except (ValueError, OSError, KeyError, TypeError) as error:
+        append({"event": "experiment_error", "id": identifier, "error": str(error)})
     append(
         {
             "event": "engine_result",
@@ -85,9 +117,17 @@ def main():
             "exit_code": result.returncode,
             "stdout": result.stdout.decode(errors="replace"),
             "stderr": result.stderr.decode(errors="replace"),
+            **(
+                {
+                    "context_mode": mode,
+                    "presented_stdout": presented.decode(errors="replace"),
+                }
+                if mode
+                else {}
+            ),
         }
     )
-    sys.stdout.buffer.write(result.stdout)
+    sys.stdout.buffer.write(presented)
     sys.stderr.buffer.write(result.stderr)
     return result.returncode
 

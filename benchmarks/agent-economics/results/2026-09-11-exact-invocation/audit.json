@@ -23,7 +23,7 @@
     },
     "exact_invocation": {
       "runs": 12,
-      "all_four_quality_gates_pass": 11,
+      "all_four_quality_gates_pass": 10,
       "first_argv_exact_matches": 12,
       "first_argv_file_adoption": 12,
       "successful_write_file_adoption": 12,
@@ -3512,7 +3512,7 @@
         "oracle": "pass",
         "candidate_check": "pass",
         "writer_route": "pass",
-        "completion_claims": "pass"
+        "completion_claims": "fail"
       },
       "candidate_check_evidence": {
         "engine_result_line": 9,
@@ -3546,10 +3546,19 @@
       ],
       "command_failure_lines": [],
       "intermediate_claim_findings": [],
-      "final_claim_findings": [],
+      "final_claim_findings": [
+        {
+          "line": 63,
+          "category": "incorrect_configuration_literal",
+          "claim": "config/services.yaml: 'fetch service' label metadata unchanged",
+          "correction": "The unchanged YAML contains label: fetch, not the quoted value fetch service.",
+          "code_and_oracle_correct": true
+        }
+      ],
       "review_notes": [
         "Exact first argv succeeds. Five native Reads, one repeated check and three Git calls follow. The Git --no-index command has a fallback to git diff; the overall call succeeds and does not write source.",
-        "Intermediate raw:23 says the checker has already been updated, although its load/fetch fallback predates the candidate; the wording does not clearly attribute that update to this write. Final raw:63 correctly lists check.php among byte-preserved files and matches the retained hashes."
+        "Intermediate raw:23 says the checker has already been updated, although its load/fetch fallback predates the candidate; the wording does not clearly attribute that update to this write. Final raw:63 correctly lists check.php among byte-preserved files and matches the retained hashes.",
+        "Correction 2026-09-12: a second review of all 24 final responses identified the overlooked false YAML-value claim at raw:63. Correct code, protected-file hashes and native economics are unchanged; final claims now fail for runs022 and 023."
       ]
     },
     {
@@ -3926,6 +3935,16 @@
         "First argv at raw:7 doubles namespace backslashes and exits 2. Immediate retry at raw:11 uses Contract::fetch without --file or --path and succeeds; no PHP pre-Reads.",
         "Seven native Reads and one repeated check follow the successful write. Final raw:59 correctly names OtherConsumer::run(Other $service), preserves the fallback and labels, and matches the retained source/oracle."
       ]
+    }
+  ],
+  "corrections": [
+    {
+      "date": "2026-09-12",
+      "scope": "Second independent review of all 24 final completion responses",
+      "finding": "run022 quoted an incorrect YAML label value; prior completion_claims pass corrected to fail",
+      "previous_final_claims_passed": 23,
+      "corrected_final_claims_passed": 22,
+      "raw_evidence_and_economic_metrics_changed": false
     }
   ]
 }

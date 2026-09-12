@@ -23,6 +23,11 @@ controls selected target knowledge and tests a complete shell-quoted command.
 It removes four invocation errors but misses the two-task efficiency criterion:
 small-task tokens fall 11.6%, cross-file tokens rise 29.2%, and median calls stay
 unchanged. Correct code and final completion claims are assessed separately.
+The [24-run source-excerpt study](agent-economics/results/2026-09-12-review-context/REPORT.md)
+tests bounded raw context beside unresolved rename warnings. Cross-file median
+tokens fall 15.3%, time 16.0% and calls 10%; small-task tokens rise 20.8% and time
+4.3%. All 24 edits pass, while 19 final claims pass review. The two-task adoption
+criterion fails, so excerpts remain an isolated benchmark prototype.
 Read the [execution and trust boundaries](TRUST.md) before grading candidate code or
 importing evidence; they also record the narrowly scoped static-analysis decisions.
 

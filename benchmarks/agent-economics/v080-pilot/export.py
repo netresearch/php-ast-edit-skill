@@ -22,6 +22,7 @@ CONTROLLER = (
     "controller/efficiency/runner.py",
     "controller/efficiency/native.py",
     "controller/efficiency/engine_proxy.py",
+    "controller/efficiency/review_context.py",
 )
 EVIDENCE = (
     "argv.json",
@@ -36,6 +37,7 @@ EVIDENCE = (
     "measurement.json",
     "oracle.json",
     "engine-audit.jsonl",
+    "adapter-state/audit.jsonl",
     "diff.patch",
     "git-status.txt",
     "grade-stdout.txt",

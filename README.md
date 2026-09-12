@@ -171,7 +171,15 @@ gives both AST arms the same selected target metadata, then supplies a complete
 command to one. That removes four invocation errors, but median tokens fall 11.6%
 on the small task and rise 29.2% across files; median tool calls stay unchanged.
 It does not meet the adoption criterion or compare against ordinary text editing.
-All 24 code states are correct; 23 final completion claims pass review.
+All 24 code states are correct; 22 final completion claims pass review (corrected
+after a second claims audit on September 12).
+
+The [24-run source-excerpt experiment](benchmarks/agent-economics/results/2026-09-12-review-context/REPORT.md)
+adds bounded source lines to unresolved rename warnings. Across files, median
+tokens fall 15.3%, wall time 16.0% and calls 10%; the small task instead uses 20.8%
+more tokens and 4.3% more time. All 24 edits are correct, but only 19 final claims
+pass review. These six pairs per task support further investigation, not default
+adoption: the feature remains benchmark-only and does not compare AST with text editing.
 
 The [36-run v0.8.0 Haiku pilot](benchmarks/agent-economics/results/2026-09-11-v080-haiku/REPORT.md) shows why the installed workflow needs its own measurement. One small edit saved 31.1% of tokens, while three same-file changes used 38.6% more and an unambiguous cross-file rename used 33.2% more. A separate instruction follow-up also lost. The report retains failed completions, a corrected fixture ambiguity and all raw attempts; the extra method-rename instructions were withdrawn.
 
