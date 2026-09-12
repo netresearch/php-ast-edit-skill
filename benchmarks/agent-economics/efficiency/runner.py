@@ -52,6 +52,15 @@ REVIEW_CONTEXT_ARMS = (
 )
 CHECK_REUSE_ARMS = ("check_reuse_control", "check_reuse_guidance")
 SHARED_REPORT_ARMS = ("shared_report_control", "shared_report_factored")
+FINAL_GUIDANCE_ARMS = ("final_guidance_control", "final_guidance_bounded")
+FINAL_GUIDANCE = (
+    "Keep the final response to the requested changes, observed check results and "
+    "remaining requirements or warnings. Ground every name or value in a specific "
+    "observed source or report entry. A passing check does not prove unchanged file "
+    "bytes or complete correctness. Use existing evidence; do not reread files "
+    "merely to decorate the final response with extra details. Preserve necessary "
+    "investigation and disclose unresolved limitations."
+)
 CHECK_REUSE_GUIDANCE = (
     "A requested check is satisfied by a successful project-scoped `verify` entry "
     "for the same command and working directory, together with `alreadyRun`. "
@@ -67,6 +76,7 @@ EXACT_COMMAND_ARMS = (
     *REVIEW_CONTEXT_ARMS,
     *CHECK_REUSE_ARMS,
     *SHARED_REPORT_ARMS,
+    *FINAL_GUIDANCE_ARMS,
 )
 EXPERIMENTAL_ARMS = ("minimal_intent", "delegated_intent", *EXACT_COMMAND_ARMS)
 SUPPORTED_ARMS = ARMS + EXPERIMENTAL_ARMS
@@ -323,6 +333,9 @@ def variants(base):
     for arm in EXACT_COMMAND_ARMS:
         instructions[arm] = instructions["delegated_intent"]
     instructions[CHECK_REUSE_ARMS[1]] += " " + CHECK_REUSE_GUIDANCE
+    for arm in FINAL_GUIDANCE_ARMS:
+        instructions[arm] += " " + CHECK_REUSE_GUIDANCE
+    instructions[FINAL_GUIDANCE_ARMS[1]] += " " + FINAL_GUIDANCE
     return instructions
 
 

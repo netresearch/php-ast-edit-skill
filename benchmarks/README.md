@@ -41,6 +41,12 @@ tool calls are unchanged and 17.0% higher. All 24 edits and 23 final explanation
 pass, but the small-task numeric gate and cross-file repeat-check mechanism fail.
 This instruction comparison does not measure the installed full skill against text edits.
 
+The [40-run final-guidance study](agent-economics/results/2026-09-12-final-guidance/REPORT.md)
+fails both its consistency and final-quality gates on two new synthetic rename instances.
+Cross-file paired median tokens fall 16.8%, yet total tokens rise 3.0% and calls stay
+67→67; small-task paired tokens rise 1.4%. All 40 code results pass, but only 13/20
+treatment finals are supported and complete (control: 10/20). No default adoption follows.
+
 The [24-run shared-metadata study](agent-economics/results/2026-09-12-shared-report/REPORT.md)
 factors identical per-file metadata while preserving all diffs and facts. Cross-file
 median paired tokens fall 43.7%, time 30.9% and calls 14.1%; its numeric gate passes.
