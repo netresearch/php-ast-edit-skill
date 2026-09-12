@@ -75,14 +75,15 @@ class SharedReportTests(unittest.TestCase):
         self.assertNotIn("dryRun", projected.get(shared_report.FILE_DEFAULTS, {}))
         self.assertNotIn("warnings", projected.get(shared_report.FILE_DEFAULTS, {}))
         self.assertNotIn("checkIds", projected.get(shared_report.FILE_DEFAULTS, {}))
-        self.assertEqual(projected["files"][0]["dryRun"], True)
+        self.assertIs(projected["files"][0]["dryRun"], True)
         self.assertEqual(
             projected["files"][1]["warnings"], ["lint skipped", "missing check"]
         )
 
     def test_reserved_names_and_restore_overrides_are_rejected(self) -> None:
+        reserved_raw = _raw({"fileDefaults": {}, "files": [{}, {}]})
         with self.assertRaises(ValueError):
-            shared_report.factor(_raw({"fileDefaults": {}, "files": [{}, {}]}))
+            shared_report.factor(reserved_raw)
         with self.assertRaises(ValueError):
             shared_report.factor(b'{"files":[{"path":"a"},{"path":"b"}],"files":[]}')
         with self.assertRaises(ValueError):

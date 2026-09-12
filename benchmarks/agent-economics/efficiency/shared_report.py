@@ -157,47 +157,66 @@ def restore(document: dict[str, Any]) -> dict[str, Any]:
     return restored
 
 
-def presentation_valid(entry: dict[str, Any], mode: str, **_kwargs: Any) -> bool:
-    """Validate an engine result's original and arm-specific presented output."""
+SHARED_MODES = ("shared_report_control", "shared_report_factored")
 
+
+def _presentation_values(entry: dict[str, Any], mode: str) -> tuple[Any, ...] | None:
     if (
-        mode not in ("shared_report_control", "shared_report_factored")
+        mode not in SHARED_MODES
         or entry.get("shared_report_mode") != mode
         or type(entry.get("shared_report_eligible")) is not bool
         or not isinstance(entry.get("stdout"), str)
         or not isinstance(entry.get("presented_stdout"), str)
         or type(entry.get("exit_code")) is not int
     ):
+        return None
+    return (
+        entry["stdout"],
+        entry["presented_stdout"],
+        entry["shared_report_eligible"],
+        entry["exit_code"],
+    )
+
+
+def _argv_is_eligible(entry: dict[str, Any], kwargs: dict[str, Any]) -> bool:
+    if "argv" not in kwargs:
+        return True
+    argv = kwargs["argv"]
+    if not isinstance(argv, list) or any(not isinstance(arg, str) for arg in argv):
+        return False
+    expected = entry["exit_code"] == 0 and bool(argv) and argv[0] in ("rename", "apply")
+    return entry["shared_report_eligible"] == expected
+
+
+def _eligible_presentation_valid(mode: str, original: bytes, presented: bytes) -> bool:
+    original_document = _parse(original)
+    presented_document = _parse(presented)
+    projected = factor(original)
+    if not _same_json(restore(_parse(projected)), original_document):
+        return False
+    if mode == "shared_report_control":
+        return original == presented
+    return presented == projected and _same_json(
+        restore(presented_document), original_document
+    )
+
+
+def presentation_valid(entry: dict[str, Any], mode: str, **_kwargs: Any) -> bool:
+    """Validate an engine result's original and arm-specific presented output."""
+
+    values = _presentation_values(entry, mode)
+    if values is None:
         return False
     try:
-        original = entry["stdout"].encode("utf-8")
-        presented = entry["presented_stdout"].encode("utf-8")
-        eligible = entry["shared_report_eligible"]
-        if "argv" in _kwargs:
-            argv = _kwargs["argv"]
-            if not isinstance(argv, list) or any(
-                not isinstance(arg, str) for arg in argv
-            ):
-                return False
-            expected = (
-                entry["exit_code"] == 0
-                and bool(argv)
-                and argv[0] in ("rename", "apply")
-            )
-            if eligible != expected:
-                return False
-        if eligible and entry["exit_code"] != 0:
+        stdout, presented_stdout, eligible, exit_code = values
+        original = stdout.encode("utf-8")
+        presented = presented_stdout.encode("utf-8")
+        if not _argv_is_eligible(entry, _kwargs):
+            return False
+        if eligible and exit_code != 0:
             return False
         if not eligible:
             return original == presented
-        original_document = _parse(original)
-        presented_document = _parse(presented)
-        projected = factor(original)
-        return _same_json(restore(_parse(projected)), original_document) and (
-            original == presented
-            if mode == "shared_report_control"
-            else presented == projected
-            and _same_json(restore(presented_document), original_document)
-        )
+        return _eligible_presentation_valid(mode, original, presented)
     except (ValueError, TypeError):
         return False
