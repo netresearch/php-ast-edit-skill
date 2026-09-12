@@ -4,7 +4,12 @@ A ready-to-run command removed four invocation errors, but did **not** meet the
 prospective efficiency criterion. On the small task it used 11.6% fewer median
 tokens and 20.8% less time. Across files it used 29.2% more tokens and 3.8% less
 time. Median tool calls were unchanged on both tasks. All 24 final code states
-were correct; 23 final completion claims passed independent review.
+were correct; 22 final completion claims passed independent review.
+
+**Correction, September 12:** A second review of all 24 final responses found an
+overlooked false YAML-value claim in run022. The final-claims count is 22/24,
+previously reported as 23/24. Raw evidence, code correctness, economic measurements
+and the failed adoption criterion are unchanged; the manual audit is corrected.
 
 The result supports better command formulation in these attempts, not a general
 efficiency gain. The prepared-invocation arm stays optional benchmark tooling;
@@ -63,7 +68,7 @@ need not sum to the median total. Every category is retained in [report.json](re
 The predefined criterion requires at least 15% fewer median tokens, no higher
 median wall time on **both** tasks, and all quality gates passing in both arms.
 It fails: the small token reduction is below 15%, the cross-file token count
-increases, and treatment run023 fails the final-claims gate. Small-task cost falls
+increases, and treatment runs022 and 023 fail the final-claims gate. Small-task cost falls
 13.9%; cross-file cost rises 3.0%. Cost and total processed tokens are distinct.
 
 Pairing also shows substantial variation. Below, each ratio is treatment/control;
@@ -107,7 +112,7 @@ line references and separate correctness, checks, write-route and final-claim ga
 | Subsequent Read calls for unchanged files | 25 | 27 |
 | Repeated already-passed project check calls | 11 | 12 |
 | Runs repeating that check | 11 | 11 |
-| All four quality gates passing | 12/12 | 11/12 |
+| All four quality gates passing | 12/12 | 10/12 |
 
 - All twelve treatment runs adopt the provided argv exactly. Control runs001,
   016, 021 and 024 pass doubled namespace backslashes through single-quoted shell
@@ -135,6 +140,10 @@ line references and separate correctness, checks, write-route and final-claim ga
   completion claim fails. Run007 makes the same mistake in intermediate prose and
   corrects it in the final response; that separate observation does not change the
   preregistered final-claims threshold.
+- Run022's final response identifies the YAML label as `'fetch service'`; the
+  protected `config/services.yaml` actually contains `label: fetch`. The file is
+  unchanged and correct, but the quoted final value is false. This is the missed
+  claim corrected in the September 12 audit, rather than a new code failure.
 
 The concrete next candidate is bounded source context beside unresolved literal
 and non-PHP mention locations in the existing rename report. The engine already
