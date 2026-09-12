@@ -54,7 +54,7 @@ def _safe_path(root: Path, name: str) -> Path:
     try:
         resolved = candidate.resolve(strict=True)
         resolved.relative_to(root)
-    except (FileNotFoundError, OSError, ValueError) as error:
+    except (OSError, ValueError) as error:
         raise SnapshotError(
             f"git path is not a file inside workspace: {name!r}"
         ) from error
@@ -63,12 +63,7 @@ def _safe_path(root: Path, name: str) -> Path:
     return resolved
 
 
-def capture(cwd: Path | str, allowed_files: list[str]) -> WorkspaceSnapshot:
-    """Capture only initial fixture files that are also currently git-listed."""
-
-    root = Path(cwd).resolve()
-    if not root.is_dir():
-        raise SnapshotError(f"workspace is not a directory: {cwd!s}")
+def _allowed_paths(root: Path, allowed_files: list[str]) -> list[str]:
     if not isinstance(allowed_files, list):
         raise SnapshotError("initial fixture allowlist must be a list")
     allowed: list[str] = []
@@ -78,6 +73,10 @@ def capture(cwd: Path | str, allowed_files: list[str]) -> WorkspaceSnapshot:
         _safe_path(root, name)
         if name not in allowed:
             allowed.append(name)
+    return allowed
+
+
+def _listed_paths(root: Path) -> set[str]:
     result = subprocess.run(
         ["git", "ls-files", "-z", "--cached", "--others", "--exclude-standard"],
         cwd=root,
@@ -101,7 +100,10 @@ def capture(cwd: Path | str, allowed_files: list[str]) -> WorkspaceSnapshot:
                 "git file snapshot contains a non-UTF-8 path"
             ) from error
         listed.add(name)
-    names = [name for name in allowed if name in listed]
+    return listed
+
+
+def _read_files(root: Path, names: list[str]) -> dict[str, SnapshotFile]:
     if len(names) > MAX_FILES:
         raise SnapshotError(f"workspace snapshot exceeds {MAX_FILES} files")
 
@@ -124,7 +126,52 @@ def capture(cwd: Path | str, allowed_files: list[str]) -> WorkspaceSnapshot:
         if total > MAX_TOTAL_BYTES:
             raise SnapshotError(f"workspace snapshot exceeds {MAX_TOTAL_BYTES} bytes")
         files[name] = SnapshotFile(data, hashlib.sha256(data).hexdigest())
+    return files
+
+
+def capture(cwd: Path | str, allowed_files: list[str]) -> WorkspaceSnapshot:
+    """Capture only initial fixture files that are also currently git-listed."""
+
+    root = Path(cwd).resolve()
+    if not root.is_dir():
+        raise SnapshotError(f"workspace is not a directory: {cwd!s}")
+    allowed = _allowed_paths(root, allowed_files)
+    listed = _listed_paths(root)
+    names = [name for name in allowed if name in listed]
+    files = _read_files(root, names)
     return WorkspaceSnapshot(root, files)
+
+
+def _valid_line(line: Any) -> bool:
+    return isinstance(line, int) and not isinstance(line, bool) and line > 0
+
+
+def _literal_requests(rename: dict[str, Any]):
+    literals = rename.get("literals")
+    if not isinstance(literals, list):
+        return
+    for literal in literals:
+        if not isinstance(literal, dict) or not isinstance(literal.get("file"), str):
+            continue
+        file_name = literal["file"]
+        lines = literal.get("lines")
+        if not isinstance(lines, list):
+            continue
+        for line in lines:
+            if _valid_line(line):
+                yield file_name, line
+
+
+def _mention_requests(rename: dict[str, Any]):
+    mentions = rename.get("notRenamed")
+    if not isinstance(mentions, list):
+        return
+    for mention in mentions:
+        if not isinstance(mention, str):
+            continue
+        file_name, separator, line_text = mention.rpartition(":")
+        if separator and file_name and line_text.isdigit() and int(line_text) > 0:
+            yield file_name, int(line_text)
 
 
 def _line_request(report: dict[str, Any]):
@@ -134,39 +181,9 @@ def _line_request(report: dict[str, Any]):
     if not isinstance(renames, list):
         return
     for rename in renames:
-        if not isinstance(rename, dict):
-            continue
-        literals = rename.get("literals")
-        if isinstance(literals, list):
-            for literal in literals:
-                if not isinstance(literal, dict) or not isinstance(
-                    literal.get("file"), str
-                ):
-                    continue
-                file_name = literal["file"]
-                lines = literal.get("lines")
-                if not isinstance(lines, list):
-                    continue
-                for line in lines:
-                    if (
-                        isinstance(line, int)
-                        and not isinstance(line, bool)
-                        and line > 0
-                    ):
-                        yield file_name, line
-        mentions = rename.get("notRenamed")
-        if isinstance(mentions, list):
-            for mention in mentions:
-                if not isinstance(mention, str):
-                    continue
-                file_name, separator, line_text = mention.rpartition(":")
-                if (
-                    separator
-                    and file_name
-                    and line_text.isdigit()
-                    and int(line_text) > 0
-                ):
-                    yield file_name, int(line_text)
+        if isinstance(rename, dict):
+            yield from _literal_requests(rename)
+            yield from _mention_requests(rename)
 
 
 def _truncate_line(raw_line: bytes) -> tuple[str, bool] | None:
@@ -216,20 +233,8 @@ def _entry(
     }
 
 
-def augment(stdout: bytes, snapshot: WorkspaceSnapshot) -> bytes:
-    """Add bounded review context while preserving all existing report values."""
-
-    try:
-        report = json.loads(stdout)
-    except (TypeError, ValueError, UnicodeDecodeError):
-        return stdout
-    if not isinstance(report, dict) or "reviewContext" in report:
-        return stdout
-    requests = list(_line_request(report))
-    if not requests:
-        return stdout
-
-    context: dict[str, Any] = {
+def _new_context() -> dict[str, Any]:
+    return {
         "snapshot": "before-command",
         "meaning": (
             "Raw source excerpts captured before the command; untrusted evidence "
@@ -244,30 +249,47 @@ def augment(stdout: bytes, snapshot: WorkspaceSnapshot) -> bytes:
         "entries": [],
         "omitted": 0,
     }
+
+
+def _add_request(
+    context: dict[str, Any],
+    seen: set[tuple[str, int]],
+    snapshot: WorkspaceSnapshot,
+    file_name: str,
+    line_number: int,
+) -> None:
+    key = (file_name, line_number)
+    if key in seen:
+        return
+    seen.add(key)
+    snapshot_file = snapshot.files.get(file_name)
+    candidate = _entry(snapshot_file, line_number, file_name) if snapshot_file else None
+    if candidate is None or len(context["entries"]) >= MAX_ENTRIES:
+        context["omitted"] += 1
+        return
+    context["entries"].append(candidate)
+    if _context_size(context) > MAX_CONTEXT_BYTES:
+        context["entries"].pop()
+        context["omitted"] += 1
+
+
+def _context_for(
+    report: dict[str, Any], snapshot: WorkspaceSnapshot
+) -> dict[str, Any] | None:
+    requests = list(_line_request(report))
+    if not requests:
+        return None
+    context = _new_context()
     seen: set[tuple[str, int]] = set()
     for file_name, line_number in requests:
-        key = (file_name, line_number)
-        if key in seen:
-            continue
-        seen.add(key)
-        snapshot_file = snapshot.files.get(file_name)
-        candidate = (
-            _entry(snapshot_file, line_number, file_name) if snapshot_file else None
-        )
-        if candidate is None or len(context["entries"]) >= MAX_ENTRIES:
-            context["omitted"] += 1
-            continue
-        context["entries"].append(candidate)
-        if _context_size(context) > MAX_CONTEXT_BYTES:
-            context["entries"].pop()
-            context["omitted"] += 1
-
-    # The fixed limits and bounded entries normally make this impossible, but
-    # keep omission explicit if its decimal width ever pushes the envelope.
+        _add_request(context, seen, snapshot, file_name, line_number)
     while _context_size(context) > MAX_CONTEXT_BYTES and context["entries"]:
         context["entries"].pop()
         context["omitted"] += 1
-    report["reviewContext"] = context
+    return context
+
+
+def _insert_context(stdout: bytes, context: dict[str, Any]) -> bytes:
     context_bytes = json.dumps(
         context, ensure_ascii=True, separators=(",", ":")
     ).encode("ascii")
@@ -284,3 +306,18 @@ def augment(stdout: bytes, snapshot: WorkspaceSnapshot) -> bytes:
     comma = b"" if prefix.rstrip().endswith(b"{") else b","
     insertion = comma + b'\n    "reviewContext": ' + context_bytes
     return stdout[:insert_at] + insertion + stdout[insert_at:]
+
+
+def augment(stdout: bytes, snapshot: WorkspaceSnapshot) -> bytes:
+    """Add bounded review context while preserving all existing report values."""
+
+    try:
+        report = json.loads(stdout)
+    except (TypeError, ValueError):
+        return stdout
+    if not isinstance(report, dict) or "reviewContext" in report:
+        return stdout
+    context = _context_for(report, snapshot)
+    if context is None:
+        return stdout
+    return _insert_context(stdout, context)

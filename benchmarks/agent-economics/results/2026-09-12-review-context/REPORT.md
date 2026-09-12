@@ -203,5 +203,7 @@ comparison, manual audit and this document.
 After measurement, the publication branch strengthens future controllers to stop
 on missing/wrong presentation identity or altered control stdout. The measured
 controller remains the frozen `b93c57c` version; independent trace review verified
-those invariants in all actual outputs. All 58 efficiency tests pass after this
-hardening. This later guard is not represented as part of the measured treatment.
+those invariants in all actual outputs. Later helper cleanup reduces function
+complexity; all 24 old/new augmented outputs remain byte-identical, and 59 efficiency
+tests pass after the cleanup. These publication changes are not represented as part of the measured
+treatment; the archived controller and helper retain their original bytes.

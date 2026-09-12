@@ -224,6 +224,21 @@ class ReviewContextTests(unittest.TestCase):
         self.assertEqual(context["entries"], [])
         self.assertEqual(context["omitted"], 1)
 
+    def test_git_listing_runs_once_for_multiple_or_no_allowlisted_files(self):
+        root = self.repo()
+        self.stage(root, "first.txt", b"first\n")
+        self.stage(root, "second.txt", b"second\n")
+        for names in (["first.txt", "second.txt"], []):
+            with (
+                self.subTest(names=names),
+                patch.object(
+                    review_context.subprocess, "run", wraps=subprocess.run
+                ) as execute,
+            ):
+                snapshot = review_context.capture(root, names)
+                self.assertEqual(execute.call_count, 1)
+                self.assertEqual(list(snapshot.files), names)
+
 
 if __name__ == "__main__":
     unittest.main()

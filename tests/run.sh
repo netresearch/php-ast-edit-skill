@@ -15,6 +15,7 @@ if [[ $# -gt 1 || ( $# -eq 1 && "$1" != --runtime-only ) ]]; then
 fi
 
 fail=0
+python_test_pattern='test_*.py'
 
 echo "::group::scripts/check.php (php -l over shipped sources)"
 php scripts/check.php || fail=1
@@ -61,7 +62,7 @@ python3 tests/intent-command.py || fail=1
 echo "::endgroup::"
 
 echo "::group::intent-command benchmark fixture oracles (no model calls)"
-python3 -m unittest discover -s benchmarks/agent-economics/intent-command -p 'test_*.py' || fail=1
+python3 -m unittest discover -s benchmarks/agent-economics/intent-command -p "$python_test_pattern" || fail=1
 echo "::endgroup::"
 
 echo "::group::skills/php-structured-edit/scripts/php-ast-edit (wrapper resolves an executable)"
@@ -113,7 +114,7 @@ python3 benchmarks/agent_benchmark.py self-test || fail=1
 echo "::endgroup::"
 
 echo "::group::efficiency harness (private campaign directories and native timing)"
-python3 -m unittest discover -s benchmarks/agent-economics/efficiency -p 'test_*.py' || fail=1
+python3 -m unittest discover -s benchmarks/agent-economics/efficiency -p "$python_test_pattern" || fail=1
 echo "::endgroup::"
 
 echo "::group::efficiency adapter (real-engine revision guards and source views)"
@@ -134,11 +135,11 @@ python3 benchmarks/skill-invocation/powered/test_powered.py || fail=1
 echo "::endgroup::"
 
 echo "::group::symbol intent (offline guards and pilot oracles; LSP integration opt-in)"
-python3 -m unittest discover -s benchmarks/symbol-intent -p 'test_*.py' || fail=1
+python3 -m unittest discover -s benchmarks/symbol-intent -p "$python_test_pattern" || fail=1
 echo "::endgroup::"
 
 echo "::group::v0.8 Haiku pilot (offline fixture, oracle and reporter tests)"
-python3 -m unittest discover -s benchmarks/agent-economics/v080-pilot -p 'test_*.py' || fail=1
+python3 -m unittest discover -s benchmarks/agent-economics/v080-pilot -p "$python_test_pattern" || fail=1
 echo "::endgroup::"
 
 if [[ "${1:-}" != --runtime-only ]]; then
