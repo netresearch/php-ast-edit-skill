@@ -174,6 +174,13 @@ It does not meet the adoption criterion or compare against ordinary text editing
 All 24 code states are correct; 22 final completion claims pass review (corrected
 after a second claims audit on September 12).
 
+The [24-run source-excerpt experiment](benchmarks/agent-economics/results/2026-09-12-review-context/REPORT.md)
+adds bounded source lines to unresolved rename warnings. Across files, median
+tokens fall 15.3%, wall time 16.0% and calls 10%; the small task instead uses 20.8%
+more tokens and 4.3% more time. All 24 edits are correct, but only 19 final claims
+pass review. These six pairs per task support further investigation, not default
+adoption: the feature remains benchmark-only and does not compare AST with text editing.
+
 The [36-run v0.8.0 Haiku pilot](benchmarks/agent-economics/results/2026-09-11-v080-haiku/REPORT.md) shows why the installed workflow needs its own measurement. One small edit saved 31.1% of tokens, while three same-file changes used 38.6% more and an unambiguous cross-file rename used 33.2% more. A separate instruction follow-up also lost. The report retains failed completions, a corrected fixture ambiguity and all raw attempts; the extra method-rename instructions were withdrawn.
 
 The [30-run public-source verification experiment](benchmarks/symbol-intent/results/2026-09-07-real-php/REPORT.md) compares an **experimental semantic rename workflow** with text edits on one six-file PHP extraction. With the same 17 existing tests actually executed on every final result, the integrated workflow used median 1 versus 16 tool calls, 12,212 versus 124,133.5 tokens including cache use, and 16.43 versus 37.76 seconds. All thirty changes were correct; native median list-price cost fell 66.4%. Fresh uncached input was nearly unchanged. These gains apply to this composite resolver, AST and verification experiment, not the installed skill in arbitrary PHP projects. The 90.2% splits into −75.5% from semantic editing and a further −59.9% from integrating the project's checks, so neither half accounts for it alone. The [recomputation](benchmarks/symbol-intent/results/2026-09-07-real-php/recompute/) runs in the test suite and fails if these figures stop following from the report's own tables.
