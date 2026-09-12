@@ -64,6 +64,12 @@ def capture_input(args):
     return forwarded, captured
 
 
+def augment_for_mode(context, stdout, snapshot, mode):
+    if mode in ("unchanged_locations", "unchanged_excerpts"):
+        return context.augment(stdout, snapshot, unchanged_only=True)
+    return context.augment(stdout, snapshot)
+
+
 def main():
     args = sys.argv[1:]
     identifier = uuid.uuid4().hex
@@ -110,12 +116,7 @@ def main():
     presented = result.stdout
     try:
         if snapshot is not None and result.returncode == 0:
-            if mode in ("unchanged_locations", "unchanged_excerpts"):
-                augmented = review_context.augment(
-                    result.stdout, snapshot, unchanged_only=True
-                )
-            else:
-                augmented = review_context.augment(result.stdout, snapshot)
+            augmented = augment_for_mode(review_context, result.stdout, snapshot, mode)
             if mode in ("review_excerpts", "unchanged_excerpts"):
                 presented = augmented
     except (ValueError, OSError, KeyError, TypeError) as error:

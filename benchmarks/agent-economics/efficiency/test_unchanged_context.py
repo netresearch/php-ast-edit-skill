@@ -132,9 +132,10 @@ class UnchangedContextTests(unittest.TestCase):
         ):
             original = {**report(), "files": files}
             raw = encoded(original)
+            captured = snapshot()
             with self.subTest(files=files):
                 with self.assertRaises(ValueError):
-                    context.augment(raw, snapshot(), unchanged_only=True)
+                    context.augment(raw, captured, unchanged_only=True)
                 for mode in ("unchanged_locations", "unchanged_excerpts"):
                     self.assertFalse(
                         context.presentation_valid(
@@ -145,8 +146,9 @@ class UnchangedContextTests(unittest.TestCase):
     def test_duplicate_canonical_file_entries_are_rejected(self):
         original = report()
         original["files"].append({"path": "./changed.txt", "changed": True})
+        raw, captured = encoded(original), snapshot()
         with self.assertRaises(ValueError):
-            context.augment(encoded(original), snapshot(), unchanged_only=True)
+            context.augment(raw, captured, unchanged_only=True)
 
     def test_dry_run_changes_remain_eligible_and_flag_requires_a_boolean(self):
         original = report()
@@ -163,8 +165,9 @@ class UnchangedContextTests(unittest.TestCase):
         )
         for invalid in (None, 0, 1, "false"):
             original["files"][0]["dryRun"] = invalid
+            raw, captured = encoded(original), snapshot()
             with self.subTest(dry_run=invalid), self.assertRaises(ValueError):
-                context.augment(encoded(original), snapshot(), unchanged_only=True)
+                context.augment(raw, captured, unchanged_only=True)
 
     def test_unsafe_report_and_warning_paths_are_rejected_without_reading_files(self):
         for name in (
@@ -182,9 +185,10 @@ class UnchangedContextTests(unittest.TestCase):
                 else:
                     original["files"] = [{"path": name, "changed": False}]
                 raw = encoded(original)
+                captured = snapshot()
                 with self.subTest(name=name, warning=use_warning):
                     with self.assertRaises(ValueError):
-                        context.augment(raw, snapshot(), unchanged_only=True)
+                        context.augment(raw, captured, unchanged_only=True)
                     self.assertFalse(
                         context.presentation_valid(
                             audit(raw, raw), "unchanged_excerpts", root=ROOT

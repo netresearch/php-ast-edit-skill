@@ -102,5 +102,7 @@ with `--arms unchanged_locations,unchanged_excerpts --models haiku --seed 202609
 --repetitions 6 --balance-by-task --campaign-budget-usd 3`, the frozen source and
 pinned runtime-only vendor directory. Execute the frozen controller, retain original
 and presented stdout plus native streams, then summarize and export with the
-existing intent-command and pilot tools. Publish only allowlisted synthetic inputs
+existing intent-command and pilot tools. Run the frozen `unchanged_compare.py` on
+the summary for the registered paired criterion; manual quality review remains a
+separate gate. Publish only allowlisted synthetic inputs
 and run evidence; exclude private sessions, credentials, dependencies and binaries.
