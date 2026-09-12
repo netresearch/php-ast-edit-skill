@@ -86,7 +86,7 @@ class FinalGuidanceTests(unittest.TestCase):
                         hashlib.sha256(normalized.encode()).hexdigest(), checksum
                     )
         self.assertEqual(runner.FINAL_GUIDANCE_ARMS, ARMS)
-        self.assertTrue(set(ARMS) <= set(runner.EXACT_COMMAND_ARMS))
+        self.assertLessEqual(set(ARMS), set(runner.EXACT_COMMAND_ARMS))
         previous = {arm for arms in LEGACY_PROMPTS.values() for arm in arms}
         self.assertEqual(set(runner.SUPPORTED_ARMS), previous | set(ARMS))
         self.assertEqual(set(instructions), previous | set(ARMS))
@@ -124,8 +124,9 @@ class FinalGuidanceTests(unittest.TestCase):
         }
         argv = []
         for arm in ARMS:
-            self.assertEqual(runner.intent_prompt(template, arm), expected)
-            command = expected.split("Ready-to-run invocation:\n")[1]
+            actual_prompt = runner.intent_prompt(template, arm)
+            self.assertEqual(actual_prompt, expected)
+            command = actual_prompt.split("Ready-to-run invocation:\n")[1]
             self.assertEqual(
                 shlex.split(command),
                 [
@@ -157,7 +158,7 @@ class FinalGuidanceTests(unittest.TestCase):
             )
         self.assertEqual(argv[0][:-2], argv[1][:-2])
         self.assertEqual(argv[0][-1], argv[1][-1])
-        self.assertEqual(argv[0][-2] + " " + GUIDANCE, argv[1][-2])
+        self.assertEqual(argv[1][-2], argv[0][-2] + " " + GUIDANCE)
         self.assertEqual(argv[0][argv[0].index("--tools") + 1], "Bash,Read,Edit,Write")
         self.assertNotIn("--effort", argv[0])
 

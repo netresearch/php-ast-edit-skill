@@ -17,6 +17,8 @@ V080_TASKS = ROOT / "benchmarks/agent-economics/v080-pilot/tasks.py"
 SINGLE_TASK = "ledger-method-rename"
 CROSS_TASK = "transport-contract-rename"
 CHECK_CONFIG = current_tasks.CHECK_CONFIG
+CATALOG_PATH = "Catalog.php"
+TRANSPORT_PATH = "src/Transport.php"
 
 
 SINGLE_SOURCE = r"""<?php
@@ -62,7 +64,7 @@ echo "OK: Catalog method rename\n";
 """
 
 CROSS_FILES = {
-    "src/Transport.php": r"""<?php
+    TRANSPORT_PATH: r"""<?php
 
 declare(strict_types=1);
 
@@ -230,10 +232,10 @@ def _single_row() -> dict[str, Any]:
     row = _task_helper(
         SINGLE_TASK,
         "Rename Catalog::findSku() to resolveSku(), including its internal call. Preserve the unrelated findSku data labels. Make sure `php check.php` passes. Do not start background processes. Leave no unrelated edits.",
-        {"Catalog.php": SINGLE_SOURCE},
+        {CATALOG_PATH: SINGLE_SOURCE},
         [
             {
-                "path": "Catalog.php",
+                "path": CATALOG_PATH,
                 "edits": [
                     {
                         "target": {"select": "method:Evidence\\Solo\\Catalog::findSku"},
@@ -247,7 +249,7 @@ def _single_row() -> dict[str, Any]:
     )
     row["intent"] = {
         "method": "Evidence\\Solo\\Catalog::findSku",
-        "file": "Catalog.php",
+        "file": CATALOG_PATH,
         "to": "resolveSku",
         "path": ".",
     }
@@ -261,7 +263,7 @@ def _cross_row() -> dict[str, Any]:
         CROSS_FILES,
         [
             {
-                "path": "src/Transport.php",
+                "path": TRANSPORT_PATH,
                 "edits": [
                     {
                         "target": {
@@ -277,7 +279,7 @@ def _cross_row() -> dict[str, Any]:
     )
     row["intent"] = {
         "method": "Evidence\\Network\\Transport::deliver",
-        "file": "src/Transport.php",
+        "file": TRANSPORT_PATH,
         "to": "transmit",
         "path": ".",
     }

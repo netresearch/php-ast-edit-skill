@@ -31,7 +31,8 @@ RESOLVER = Path(
 BENCHMARK_SPEC = importlib.util.spec_from_file_location(
     "final_agent_benchmark", ROOT / "benchmarks/agent_benchmark.py"
 )
-assert BENCHMARK_SPEC is not None and BENCHMARK_SPEC.loader is not None
+assert BENCHMARK_SPEC is not None
+assert BENCHMARK_SPEC.loader is not None
 agent_benchmark = importlib.util.module_from_spec(BENCHMARK_SPEC)
 BENCHMARK_SPEC.loader.exec_module(agent_benchmark)
 
