@@ -37,6 +37,7 @@ EVIDENCE = (
     "measurement.json",
     "oracle.json",
     "engine-audit.jsonl",
+    "adapter-state/audit.jsonl",
     "diff.patch",
     "git-status.txt",
     "grade-stdout.txt",

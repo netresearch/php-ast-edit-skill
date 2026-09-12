@@ -169,7 +169,8 @@ class ReviewArmTests(unittest.TestCase):
                     env["PHP_AST_REVIEW_FIXTURE"], str(evidence / runner.INITIAL_HASHES)
                 )
                 self.assertEqual(
-                    env["PHP_AST_EDIT_BIN"], str(base / "tools/php-ast-edit")
+                    env["PHP_AST_EDIT_BIN"],
+                    str(base / "runtime/review-proxy/php-ast-edit"),
                 )
                 self.assertEqual(
                     env["PHP_AST_REAL_BIN"], str(base / "runtime/bin/php-ast-edit")
@@ -394,6 +395,173 @@ class ProxyIntegrationTests(unittest.TestCase):
         )
         self.assertEqual(len({row["id"] for row in records}), 1)
         self.assertEqual(records[-1]["presented_stdout"], raw.decode())
+
+
+class RealAdapterIntegrationTests(unittest.TestCase):
+    def test_read_and_guarded_apply_use_runtime_proxy_and_vendor_layout(self):
+        repository = HERE.parents[2]
+        self.assertTrue((repository / "vendor/autoload.php").is_file())
+        for arm in REVIEW_ARMS:
+            with self.subTest(arm=arm), tempfile.TemporaryDirectory() as name:
+                base = Path(name)
+                runtime, work, evidence = (
+                    base / "runtime",
+                    base / "work",
+                    base / "evidence",
+                )
+                work.mkdir()
+                evidence.mkdir()
+                (runtime / "bin").mkdir(parents=True)
+                (runtime / "bin/php-ast-edit").symlink_to(
+                    repository / "bin/php-ast-edit"
+                )
+                (runtime / "vendor").symlink_to(
+                    repository / "vendor", target_is_directory=True
+                )
+                shutil.copytree(HERE / "adapter", runtime / "adapter")
+                proxy_folder = runtime / "review-proxy"
+                proxy_folder.mkdir()
+                proxy = proxy_folder / "php-ast-edit"
+                shutil.copyfile(PROXY, proxy)
+                proxy.chmod(0o700)
+                shutil.copyfile(
+                    HERE / "review_context.py", proxy_folder / "review_context.py"
+                )
+                fixtures = {
+                    "Demo.php": "<?php\nfinal class Demo { public function old(): int { return 42; } }\n",
+                    "check.php": "<?php\nrequire __DIR__ . '/Demo.php';\nif ((new Demo())->renamed() !== 42) { exit(1); }\n",
+                    ".php-ast-edit.json": json.dumps(
+                        {
+                            "verify": [
+                                {"scope": "project", "command": ["php", "check.php"]}
+                            ]
+                        }
+                    )
+                    + "\n",
+                }
+                for path, source in fixtures.items():
+                    (work / path).write_text(source)
+                runner.save(
+                    evidence / runner.INITIAL_HASHES,
+                    {
+                        path: hashlib.sha256(source.encode()).hexdigest()
+                        for path, source in fixtures.items()
+                    },
+                )
+                subprocess.run(
+                    ["git", "-c", "init.templateDir=", "init", "-q"],
+                    cwd=work,
+                    capture_output=True,
+                    check=True,
+                    timeout=10,
+                )
+                subprocess.run(
+                    ["git", "add", "--", *fixtures],
+                    cwd=work,
+                    capture_output=True,
+                    check=True,
+                    timeout=10,
+                )
+                env = runner.candidate_environment(base, evidence, arm)
+                adapter = runtime / "adapter/php-ast-agent"
+                read_args = [
+                    sys.executable,
+                    str(adapter),
+                    "read",
+                    "--mode",
+                    "focused",
+                    "--files",
+                    "Demo.php",
+                    "--select",
+                    "method:Demo::old",
+                ]
+
+                # Reproduce the previous tools/ layout failure without providing
+                # an accidental campaign/vendor directory that could conceal it.
+                (base / "tools").mkdir()
+                shutil.copyfile(proxy, base / "tools/php-ast-edit")
+                invalid_env = {
+                    **env,
+                    "PHP_AST_EDIT_BIN": str(base / "tools/php-ast-edit"),
+                }
+                invalid = subprocess.run(
+                    read_args,
+                    cwd=work,
+                    env=invalid_env,
+                    capture_output=True,
+                    check=False,
+                    timeout=10,
+                )
+                self.assertEqual(invalid.returncode, 2)
+                self.assertIn(b"vendor/autoload.php", invalid.stdout)
+                self.assertFalse((base / "vendor").exists())
+
+                read = subprocess.run(
+                    read_args,
+                    cwd=work,
+                    env=env,
+                    capture_output=True,
+                    check=False,
+                    timeout=10,
+                )
+                self.assertEqual(read.returncode, 0, (read.stdout, read.stderr))
+                selected = json.loads(read.stdout)["files"][0]
+                self.assertIn("function old()", selected["source"])
+                payload = {
+                    "files": [
+                        {
+                            "path": "Demo.php",
+                            "revision": selected["revision"],
+                            "edits": [
+                                {
+                                    "operation": "set_name",
+                                    "target": {"select": "method:Demo::old"},
+                                    "value": "renamed",
+                                }
+                            ],
+                        }
+                    ]
+                }
+                applied = subprocess.run(
+                    [sys.executable, str(adapter), "apply"],
+                    input=json.dumps(payload).encode(),
+                    cwd=work,
+                    env=env,
+                    capture_output=True,
+                    check=False,
+                    timeout=20,
+                )
+                self.assertEqual(
+                    applied.returncode, 0, (applied.stdout, applied.stderr)
+                )
+                result = json.loads(applied.stdout)
+                self.assertTrue(result["ok"])
+                self.assertTrue(result["checksPassed"])
+                self.assertTrue(result["files"][0]["changed"])
+                self.assertIn("function renamed()", (work / "Demo.php").read_text())
+                self.assertEqual(
+                    (work / "check.php").read_text(), fixtures["check.php"]
+                )
+                records = [
+                    json.loads(line)
+                    for line in (evidence / "engine-audit.jsonl")
+                    .read_text()
+                    .splitlines()
+                ]
+                self.assertEqual(
+                    [row["event"] for row in records],
+                    ["engine_request", "engine_result"],
+                )
+                request, response = records
+                self.assertEqual(request["argv"], ["apply"])
+                self.assertTrue(request["files"][0]["sha256_present"])
+                self.assertTrue(request["files"][0]["matches_capture_snapshot"])
+                self.assertEqual(response["context_mode"], arm)
+                self.assertEqual(response["exit_code"], 0)
+                self.assertTrue(json.loads(response["stdout"])["checksPassed"])
+                # This plain declaration edit has no rename-review locations.
+                self.assertEqual(response["presented_stdout"], response["stdout"])
+                self.assertNotIn("reviewContext", result)
 
 
 class InterventionAbortTests(unittest.TestCase):

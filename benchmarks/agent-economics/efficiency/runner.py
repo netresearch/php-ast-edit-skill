@@ -244,6 +244,12 @@ def snapshot(args, base):
     context_helper = controller / "efficiency/review_context.py"
     if context_helper.is_file():
         shutil.copy2(context_helper, base / "tools/review_context.py")
+        # The adapter derives vendor/autoload.php from its executable's grandparent.
+        adapter_proxy = runtime / "review-proxy"
+        adapter_proxy.mkdir()
+        shutil.copy2(launcher, adapter_proxy / "php-ast-edit")
+        shutil.copy2(context_helper, adapter_proxy / "review_context.py")
+        (adapter_proxy / "php-ast-edit").chmod(0o755)
     launcher.chmod(0o755)
     return commit, status
 
@@ -698,7 +704,7 @@ def candidate_environment(base, evidence, variant=None):
     if variant in REVIEW_CONTEXT_ARMS:
         env["PHP_AST_REVIEW_CONTEXT"] = variant
         env["PHP_AST_REVIEW_FIXTURE"] = str(evidence / INITIAL_HASHES)
-        env["PHP_AST_EDIT_BIN"] = str(base / "tools/php-ast-edit")
+        env["PHP_AST_EDIT_BIN"] = str(base / "runtime/review-proxy/php-ast-edit")
     return env
 
 
