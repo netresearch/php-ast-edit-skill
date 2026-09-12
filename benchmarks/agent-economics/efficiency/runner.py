@@ -42,7 +42,9 @@ ARMS = (
 )
 # Experimental arms are opt-in so the established default schedule and its
 # validation remain unchanged for released protocols.
-EXPERIMENTAL_ARMS = ("minimal_intent", "delegated_intent", "exact_invocation")
+REVIEW_CONTEXT_ARMS = ("review_locations", "review_excerpts")
+EXACT_COMMAND_ARMS = ("exact_invocation", *REVIEW_CONTEXT_ARMS)
+EXPERIMENTAL_ARMS = ("minimal_intent", "delegated_intent", *EXACT_COMMAND_ARMS)
 SUPPORTED_ARMS = ARMS + EXPERIMENTAL_ARMS
 # The two arms that carry a project check. Both get `check.php` and the same task clause;
 # only `check_integrated` declares the check to the engine, so the one variable between
@@ -239,6 +241,9 @@ def snapshot(args, base):
     (base / "tools").mkdir()
     launcher = base / "tools/php-ast-edit"
     shutil.copy2(controller / "efficiency/engine_proxy.py", launcher)
+    context_helper = controller / "efficiency/review_context.py"
+    if context_helper.is_file():
+        shutil.copy2(context_helper, base / "tools/review_context.py")
     launcher.chmod(0o755)
     return commit, status
 
@@ -272,14 +277,15 @@ def variants(base):
         "check_manual": full,
         "check_integrated": full,
     }
-    instructions["exact_invocation"] = instructions["delegated_intent"]
+    for arm in EXACT_COMMAND_ARMS:
+        instructions[arm] = instructions["delegated_intent"]
     return instructions
 
 
 def common_instructions(variant):
     return (
         DELEGATED_COMMON
-        if variant in ("delegated_intent", "exact_invocation")
+        if variant in ("delegated_intent", *EXACT_COMMAND_ARMS)
         else COMMON
     )
 
@@ -379,7 +385,7 @@ def selected_intent(task):
 def intent_prompt(template, variant):
     intent = template.get("intent")
     require(
-        variant != "exact_invocation" or intent is not None,
+        variant not in EXACT_COMMAND_ARMS or intent is not None,
         "Exact invocation requires selected intent metadata",
     )
     if intent is None:
@@ -389,7 +395,7 @@ def intent_prompt(template, variant):
         + json.dumps(intent, sort_keys=True)
         + "\nYou may use the declaration file with --file."
     )
-    if variant == "exact_invocation":
+    if variant in EXACT_COMMAND_ARMS:
         command = [
             "php-ast-edit",
             "rename",
@@ -678,7 +684,7 @@ def candidate_args(row, config):
     ]
 
 
-def candidate_environment(base, evidence):
+def candidate_environment(base, evidence, variant=None):
     env = environment()
     env["PATH"] = os.pathsep.join(
         [str(base / "tools"), str(base / "runtime/adapter"), env.get("PATH", "")]
@@ -687,6 +693,12 @@ def candidate_environment(base, evidence):
     env["PHP_AST_REAL_BIN"] = env["PHP_AST_EDIT_BIN"]
     env["PHP_AST_ENGINE_AUDIT"] = str(evidence / "engine-audit.jsonl")
     env["PHP_AST_AGENT_STATE_DIR"] = str(evidence / "adapter-state")
+    env.pop("PHP_AST_REVIEW_CONTEXT", None)
+    env.pop("PHP_AST_REVIEW_FIXTURE", None)
+    if variant in REVIEW_CONTEXT_ARMS:
+        env["PHP_AST_REVIEW_CONTEXT"] = variant
+        env["PHP_AST_REVIEW_FIXTURE"] = str(evidence / INITIAL_HASHES)
+        env["PHP_AST_EDIT_BIN"] = str(base / "tools/php-ast-edit")
     return env
 
 
@@ -702,7 +714,7 @@ def capture(base, row, config, argv):
         process = subprocess.Popen(  # NOSONAR(S6350)
             argv,
             cwd=row["work"],
-            env=candidate_environment(base, evidence),
+            env=candidate_environment(base, evidence, row["variant"]),
             stdout=output,
             stderr=error,
             start_new_session=True,
@@ -818,6 +830,26 @@ def run_one(base, row, config):
     except (ValueError, OSError, subprocess.TimeoutExpired) as error:
         result["grading_error"] = str(error)
     result["engine_audit"] = audit_records(evidence / "engine-audit.jsonl")
+    if row["variant"] in REVIEW_CONTEXT_ARMS:
+        audit = result["engine_audit"]
+        requests = {
+            entry.get("id")
+            for entry in audit["records"]
+            if entry.get("event") == "engine_request"
+        }
+        responses = {
+            entry.get("id")
+            for entry in audit["records"]
+            if entry.get("event") == "engine_result"
+        }
+        if (
+            audit["errors"]
+            or requests != responses
+            or any(
+                entry.get("event") == "experiment_error" for entry in audit["records"]
+            )
+        ):
+            result["accounting_errors"].append("Review-context intervention failed")
     result["adapter_audit"] = audit_records(evidence / "adapter-state/audit.jsonl")
     result["adherence_review"] = (
         "Pending trace review; supplied arm does not prove instruction compliance"

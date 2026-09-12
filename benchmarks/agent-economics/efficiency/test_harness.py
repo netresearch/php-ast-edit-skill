@@ -364,7 +364,14 @@ class ExperimentalArmTests(unittest.TestCase):
     def test_minimal_intent_does_not_change_the_default_arm_set(self):
         self.assertEqual(
             runner.SUPPORTED_ARMS,
-            runner.ARMS + ("minimal_intent", "delegated_intent", "exact_invocation"),
+            runner.ARMS
+            + (
+                "minimal_intent",
+                "delegated_intent",
+                "exact_invocation",
+                "review_locations",
+                "review_excerpts",
+            ),
         )
         rows = runner.balanced_order(["fixture"], seed=1, model_keys=("haiku",))
         self.assertEqual({row["variant"] for row in rows}, set(runner.ARMS))

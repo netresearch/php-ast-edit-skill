@@ -113,7 +113,7 @@ python3 benchmarks/agent_benchmark.py self-test || fail=1
 echo "::endgroup::"
 
 echo "::group::efficiency harness (private campaign directories and native timing)"
-python3 benchmarks/agent-economics/efficiency/test_harness.py || fail=1
+python3 -m unittest discover -s benchmarks/agent-economics/efficiency -p 'test_*.py' || fail=1
 echo "::endgroup::"
 
 echo "::group::efficiency adapter (real-engine revision guards and source views)"
