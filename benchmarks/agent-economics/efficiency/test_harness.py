@@ -23,6 +23,46 @@ class SnapshotReached(Exception):
 
 
 class CampaignDirectoryTests(unittest.TestCase):
+    def test_missing_context_helper_is_rejected_only_for_review_arms(self):
+        for arm in (*runner.REVIEW_CONTEXT_ARMS, "contextual_patch"):
+            with self.subTest(arm=arm), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                source, base, vendor = (
+                    root / "source",
+                    root / "campaign",
+                    root / "vendor",
+                )
+                harness = source / runner.RELATIVE
+                (harness / "adapter").mkdir(parents=True)
+                (harness / "adapter/php-ast-agent").write_text("fixture adapter\n")
+                (harness / "engine_proxy.py").write_text("fixture proxy\n")
+                vendor.mkdir()
+                args = SimpleNamespace(
+                    source=source,
+                    source_ref="fixture",
+                    development=True,
+                    vendor=vendor,
+                    manifest=None,
+                    arms=arm,
+                )
+
+                def archive_fixture(_source, _commit, _paths, destination):
+                    destination.mkdir(parents=True, exist_ok=True)
+
+                with (
+                    patch.object(runner, "archive", side_effect=archive_fixture),
+                    patch.object(runner, "checked", side_effect=["a" * 40, ""]),
+                ):
+                    if arm in runner.REVIEW_CONTEXT_ARMS:
+                        with self.assertRaisesRegex(
+                            ValueError, "helper is not available"
+                        ):
+                            runner.snapshot(args, base)
+                        self.assertFalse((base / "tools").exists())
+                    else:
+                        self.assertEqual(runner.snapshot(args, base), ("a" * 40, ""))
+                        self.assertTrue((base / "tools/php-ast-edit").is_file())
+
     def fresh_output(self):
         path = Path(
             tempfile.mkdtemp(prefix="php-ast-campaign-permissions-", dir="/tmp")

@@ -14,6 +14,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
+import review_context
 import runner
 
 HERE = Path(__file__).resolve().parent
@@ -564,6 +565,201 @@ class RealAdapterIntegrationTests(unittest.TestCase):
                 self.assertNotIn("reviewContext", result)
 
 
+def presentation_example(
+    raw=b'{ "ok": true, "renames": [{"notRenamed": ["source.txt:1"]}] }\n',
+):
+    data = b"a literal value\n"
+    snapshot = review_context.WorkspaceSnapshot(
+        Path("/fixture"),
+        {
+            "source.txt": review_context.SnapshotFile(
+                data, hashlib.sha256(data).hexdigest()
+            )
+        },
+    )
+    return {
+        "event": "engine_result",
+        "id": "write",
+        "exit_code": 0,
+        "context_mode": "review_excerpts",
+        "stdout": raw.decode(),
+        "presented_stdout": review_context.augment(raw, snapshot).decode(),
+    }
+
+
+def with_review_context(entry, context):
+    original = json.loads(entry["presented_stdout"])["reviewContext"]
+    return {
+        **entry,
+        "presented_stdout": entry["presented_stdout"].replace(
+            json.dumps(original, separators=(",", ":")),
+            json.dumps(context, separators=(",", ":")),
+            1,
+        ),
+    }
+
+
+class PresentationValidationTests(unittest.TestCase):
+    def test_actual_additive_output_is_accepted_and_hidden_context_is_rejected(self):
+        examples = (
+            presentation_example(),
+            presentation_example(
+                b'{"renames":[{"literals":[{"file":"source.txt","lines":[1]}]}]}'
+            ),
+        )
+        for entry in examples:
+            with self.subTest(stdout=entry["stdout"]):
+                self.assertTrue(
+                    review_context.presentation_valid(entry, "review_excerpts")
+                )
+                entry["presented_stdout"] = entry["stdout"]
+                self.assertFalse(
+                    review_context.presentation_valid(entry, "review_excerpts")
+                )
+
+    def test_original_values_and_bytes_cannot_be_rewritten(self):
+        entry = presentation_example()
+        for presented in (
+            entry["presented_stdout"].replace('"ok": true', '"ok": false'),
+            json.dumps(json.loads(entry["presented_stdout"])),
+            entry["presented_stdout"] + " ",
+        ):
+            with self.subTest(presented=presented):
+                self.assertFalse(
+                    review_context.presentation_valid(
+                        {**entry, "presented_stdout": presented}, "review_excerpts"
+                    )
+                )
+
+    def test_malformed_and_unbounded_context_is_rejected(self):
+        entry = presentation_example()
+        valid = json.loads(entry["presented_stdout"])["reviewContext"]
+        for context in (
+            None,
+            {},
+            {**valid, "snapshot": "after-command"},
+            {**valid, "entries": {}},
+            {**valid, "omitted": -1},
+            {**valid, "omitted": True},
+            {**valid, "meaning": "x" * 8192},
+            {**valid, "entries": valid["entries"] * 21},
+            {**valid, "entries": [{**valid["entries"][0], "text": "x" * 241}]},
+        ):
+            presented = entry["presented_stdout"].replace(
+                json.dumps(valid, separators=(",", ":")),
+                json.dumps(context, separators=(",", ":")),
+                1,
+            )
+            with self.subTest(context=context):
+                self.assertFalse(
+                    review_context.presentation_valid(
+                        {**entry, "presented_stdout": presented}, "review_excerpts"
+                    )
+                )
+        self.assertFalse(
+            review_context.presentation_valid(
+                {**entry, "presented_stdout": "not JSON"}, "review_excerpts"
+            )
+        )
+
+    def test_no_eligible_locations_or_error_requires_identical_output(self):
+        for raw, exit_code in (
+            ('{"renames": []}', 0),
+            ('{"renames": [{"notRenamed": ["f:0"]}]}', 0),
+            ('{"renames": [{"literals": [{"file": "f", "lines": [true, 0]}]}]}', 0),
+            ('{"reviewContext": {}, "renames": [{"notRenamed": ["f:1"]}]}', 0),
+            ('{"renames": [{"notRenamed": ["f:1"]}]}', 1),
+            ("not JSON", 1),
+        ):
+            entry = {
+                **presentation_example(),
+                "stdout": raw,
+                "presented_stdout": raw,
+                "exit_code": exit_code,
+            }
+            with self.subTest(raw=raw, exit_code=exit_code):
+                self.assertTrue(
+                    review_context.presentation_valid(entry, "review_excerpts")
+                )
+                self.assertFalse(
+                    review_context.presentation_valid(
+                        {**entry, "presented_stdout": raw + " "}, "review_excerpts"
+                    )
+                )
+
+    def test_control_accepts_only_original_bytes(self):
+        entry = presentation_example()
+        entry["context_mode"] = "review_locations"
+        self.assertFalse(review_context.presentation_valid(entry, "review_locations"))
+        entry["presented_stdout"] = entry["stdout"]
+        self.assertTrue(review_context.presentation_valid(entry, "review_locations"))
+
+    def test_identity_and_audit_field_types_are_required(self):
+        entry = presentation_example()
+        for change in (
+            {"stdout": None},
+            {"presented_stdout": None},
+            {"exit_code": None},
+            {"exit_code": True},
+            {"exit_code": "0"},
+            {"context_mode": "review_locations"},
+        ):
+            with self.subTest(change=change):
+                self.assertFalse(
+                    review_context.presentation_valid(
+                        {**entry, **change}, "review_excerpts"
+                    )
+                )
+
+    def test_locations_hashes_and_fixed_metadata_must_match_the_contract(self):
+        entry = presentation_example()
+        valid = json.loads(entry["presented_stdout"])["reviewContext"]
+        source = valid["entries"][0]
+        for context in (
+            {**valid, "entries": [], "omitted": 0},
+            {**valid, "omitted": 1},
+            {**valid, "entries": [{**source, "file": "not-warned.txt"}]},
+            {**valid, "entries": [{**source, "line": 99}]},
+            {**valid, "entries": [{**source, "sha256": "not-a-hash"}]},
+            {**valid, "entries": [{**source, "sha256": "a" * 63}]},
+            {**valid, "entries": [{**source, "sha256": "g" * 64}]},
+            {**valid, "meaning": "Trusted current write coordinates"},
+            {**valid, "limits": {**valid["limits"], "maxEntries": 21}},
+            {key: value for key, value in valid.items() if key != "meaning"},
+            {key: value for key, value in valid.items() if key != "limits"},
+        ):
+            with self.subTest(context=context):
+                self.assertFalse(
+                    review_context.presentation_valid(
+                        with_review_context(entry, context), "review_excerpts"
+                    )
+                )
+
+    def test_duplicate_entries_cannot_replace_a_distinct_warning(self):
+        entry = presentation_example(
+            b'{"renames":[{"notRenamed":["source.txt:1","other.txt:1"]}]}'
+        )
+        context = json.loads(entry["presented_stdout"])["reviewContext"]
+        context.update(entries=context["entries"] * 2, omitted=0)
+        self.assertFalse(
+            review_context.presentation_valid(
+                with_review_context(entry, context), "review_excerpts"
+            )
+        )
+
+    def test_duplicate_warnings_and_complete_omission_are_valid(self):
+        for raw in (
+            b'{"renames":[{"notRenamed":["unavailable.txt:1"]}]}',
+            b'{"renames":[{"notRenamed":["source.txt:1","source.txt:1"],"literals":[{"file":"source.txt","lines":[1]}]}]}',
+        ):
+            with self.subTest(raw=raw):
+                self.assertTrue(
+                    review_context.presentation_valid(
+                        presentation_example(raw), "review_excerpts"
+                    )
+                )
+
+
 class InterventionAbortTests(unittest.TestCase):
     def test_error_marker_is_retained_in_measurement_and_prevents_continuation(self):
         self.assert_stops([{"event": "experiment_error", "error": "fixture failure"}])
@@ -575,6 +771,7 @@ class InterventionAbortTests(unittest.TestCase):
         response = {
             "event": "engine_result",
             "id": "write",
+            "exit_code": 0,
             "context_mode": "review_excerpts",
             "presented_stdout": "{}",
             "stdout": "{}",
@@ -599,6 +796,7 @@ class InterventionAbortTests(unittest.TestCase):
                 {
                     "event": "engine_result",
                     "id": "write",
+                    "exit_code": 0,
                     "context_mode": "review_locations",
                     "stdout": "original",
                     "presented_stdout": "changed",
@@ -606,6 +804,37 @@ class InterventionAbortTests(unittest.TestCase):
             ],
             variant="review_locations",
         )
+
+    def test_hidden_or_corrupted_eligible_context_stops_after_retaining_cost(self):
+        entry = presentation_example()
+        for presented in (
+            entry["stdout"],
+            "not JSON",
+            entry["presented_stdout"].replace('"ok": true', '"ok": false'),
+        ):
+            with self.subTest(presented=presented):
+                self.assert_stops(
+                    [
+                        {"event": "engine_request", "id": "write"},
+                        {**entry, "presented_stdout": presented},
+                    ]
+                )
+
+    def test_unaccounted_or_fabricated_context_stops_after_retaining_cost(self):
+        entry = presentation_example()
+        valid = json.loads(entry["presented_stdout"])["reviewContext"]
+        for context in (
+            {**valid, "entries": [], "omitted": 0},
+            {**valid, "entries": [{**valid["entries"][0], "file": "other.txt"}]},
+            {**valid, "meaning": "Trusted current source"},
+        ):
+            with self.subTest(context=context):
+                self.assert_stops(
+                    [
+                        {"event": "engine_request", "id": "write"},
+                        with_review_context(entry, context),
+                    ]
+                )
 
     def assert_stops(self, records, variant="review_excerpts"):
         with tempfile.TemporaryDirectory() as name:

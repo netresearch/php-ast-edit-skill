@@ -200,10 +200,13 @@ context helper. Dependencies, binaries and private sessions are excluded; runtim
 identities remain recorded. [SHA256SUMS](SHA256SUMS) covers the archive, report,
 comparison, manual audit and this document.
 
-After measurement, the publication branch strengthens future controllers to stop
-on missing/wrong presentation identity or altered control stdout. The measured
-controller remains the frozen `b93c57c` version; independent trace review verified
-those invariants in all actual outputs. Later helper cleanup reduces function
-complexity; all 24 old/new augmented outputs remain byte-identical, and 59 efficiency
-tests pass after the cleanup. These publication changes are not represented as part of the measured
-treatment; the archived controller and helper retain their original bytes.
+After measurement, the publication branch strengthens future controllers to reject
+missing context helpers before preparing these arms and stop on missing/wrong
+presentation identity, hidden eligible context or altered original report bytes.
+Legitimate no-op and error outputs retain their original bytes. The measured
+controller remains the frozen `b93c57c` version; independent trace review and the
+new presentation validator verified all 24 actual outputs. Later helper cleanup
+reduces function complexity; all 24 old/new augmented outputs remain byte-identical,
+and 71 efficiency tests pass. These publication changes are not represented as part
+of the measured treatment; the archived controller and helper retain their original
+bytes.

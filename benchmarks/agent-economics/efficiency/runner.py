@@ -17,6 +17,7 @@ from decimal import Decimal
 from pathlib import Path
 
 from native import collect, read_events, require, summarize, validate_init
+from review_context import presentation_valid
 
 HERE = Path(__file__).resolve().parent
 RELATIVE = Path("benchmarks/agent-economics/efficiency")
@@ -232,6 +233,12 @@ def snapshot(args, base):
     else:
         archive(source, commit, [str(RELATIVE)], base / "harness-snapshot")
         shutil.copytree(base / "harness-snapshot" / RELATIVE, controller / "efficiency")
+    context_helper = controller / "efficiency/review_context.py"
+    require(
+        context_helper.is_file()
+        or set(args.arms.split(",")).isdisjoint(REVIEW_CONTEXT_ARMS),
+        "Review-context helper is not available in the selected source revision",
+    )
     adapter = controller / "efficiency/adapter"
     require((adapter / "php-ast-agent").is_file(), "Adapter executable is not ready")
     shutil.copytree(adapter, runtime / "adapter")
@@ -241,7 +248,6 @@ def snapshot(args, base):
     (base / "tools").mkdir()
     launcher = base / "tools/php-ast-edit"
     shutil.copy2(controller / "efficiency/engine_proxy.py", launcher)
-    context_helper = controller / "efficiency/review_context.py"
     if context_helper.is_file():
         shutil.copy2(context_helper, base / "tools/review_context.py")
         # The adapter derives vendor/autoload.php from its executable's grandparent.
@@ -855,12 +861,7 @@ def run_one(base, row, config):
                 entry.get("event") == "experiment_error" for entry in audit["records"]
             )
             or any(
-                entry.get("context_mode") != row["variant"]
-                or not isinstance(entry.get("presented_stdout"), str)
-                or (
-                    row["variant"] == "review_locations"
-                    and entry["presented_stdout"] != entry.get("stdout")
-                )
+                not presentation_valid(entry, row["variant"])
                 for entry in audit["records"]
                 if entry.get("event") == "engine_result"
             )

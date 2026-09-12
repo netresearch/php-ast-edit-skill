@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
@@ -321,3 +322,95 @@ def augment(stdout: bytes, snapshot: WorkspaceSnapshot) -> bytes:
     if context is None:
         return stdout
     return _insert_context(stdout, context)
+
+
+def _json_object(value: str) -> dict[str, Any] | None:
+    try:
+        parsed = json.loads(value)
+    except ValueError:
+        return None
+    return parsed if isinstance(parsed, dict) else None
+
+
+def _context_requests(
+    report: dict[str, Any] | None, exit_code: int
+) -> set[tuple[str, int]]:
+    if exit_code != 0 or report is None or "reviewContext" in report:
+        return set()
+    return set(_line_request(report))
+
+
+def _review_entry_valid(entry: Any) -> bool:
+    return (
+        isinstance(entry, dict)
+        and isinstance(entry.get("file"), str)
+        and _valid_line(entry.get("line"))
+        and isinstance(entry.get("sha256"), str)
+        and re.fullmatch(r"[0-9a-fA-F]{64}", entry["sha256"]) is not None
+        and isinstance(entry.get("truncated"), bool)
+        and isinstance(entry.get("text"), str)
+        and len(entry["text"].encode("utf-8")) <= MAX_TEXT_BYTES
+    )
+
+
+def _review_locations_valid(
+    context: dict[str, Any], requests: set[tuple[str, int]]
+) -> bool:
+    entries = context["entries"]
+    locations = {(entry["file"], entry["line"]) for entry in entries}
+    return (
+        locations <= requests
+        and len(locations) == len(entries)
+        and len(entries) + context["omitted"] == len(requests)
+    )
+
+
+def _review_context_valid(context: Any, requests: set[tuple[str, int]]) -> bool:
+    fixed = _new_context()
+    return (
+        isinstance(context, dict)
+        and context.get("snapshot") == "before-command"
+        and context.get("meaning") == fixed["meaning"]
+        and context.get("limits") == fixed["limits"]
+        and isinstance(context.get("entries"), list)
+        and len(context["entries"]) <= MAX_ENTRIES
+        and all(_review_entry_valid(entry) for entry in context["entries"])
+        and type(context.get("omitted")) is int
+        and context["omitted"] >= 0
+        and _review_locations_valid(context, requests)
+        and _context_size(context) <= MAX_CONTEXT_BYTES
+    )
+
+
+def _treatment_presentation_valid(stdout: str, presented: str, exit_code: int) -> bool:
+    report = _json_object(stdout)
+    requests = _context_requests(report, exit_code)
+    if not requests:
+        return stdout == presented
+    augmented = _json_object(presented)
+    if augmented is None or not _review_context_valid(
+        augmented.get("reviewContext"), requests
+    ):
+        return False
+    expected = _insert_context(stdout.encode("utf-8"), augmented["reviewContext"])
+    return expected == presented.encode("utf-8")
+
+
+def presentation_valid(entry: dict[str, Any], mode: str) -> bool:
+    """Check actual output against the arm and original report, without file I/O."""
+
+    if (
+        mode not in ("review_locations", "review_excerpts")
+        or entry.get("context_mode") != mode
+        or not isinstance(entry.get("stdout"), str)
+        or not isinstance(entry.get("presented_stdout"), str)
+        or type(entry.get("exit_code")) is not int
+    ):
+        return False
+    stdout, presented = entry["stdout"], entry["presented_stdout"]
+    if mode == "review_locations":
+        return stdout == presented
+    try:
+        return _treatment_presentation_valid(stdout, presented, entry["exit_code"])
+    except (TypeError, ValueError):
+        return False
