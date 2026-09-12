@@ -159,9 +159,10 @@ class CompareTests(unittest.TestCase):
         self.assertTrue(output["all_tasks_numeric_criterion_passed"])
         with self.assertRaises(ValueError):
             unchanged_compare.compare(report)
+        legacy_report = self.report()
         with self.assertRaises(ValueError):
             unchanged_compare.compare(
-                self.report(), arms=unchanged_compare.CHECK_REUSE_ARMS
+                legacy_report, arms=unchanged_compare.CHECK_REUSE_ARMS
             )
 
         with tempfile.TemporaryDirectory(prefix="check-reuse-compare-") as directory:
