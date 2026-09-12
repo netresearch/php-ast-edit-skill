@@ -854,6 +854,16 @@ def run_one(base, row, config):
             or any(
                 entry.get("event") == "experiment_error" for entry in audit["records"]
             )
+            or any(
+                entry.get("context_mode") != row["variant"]
+                or not isinstance(entry.get("presented_stdout"), str)
+                or (
+                    row["variant"] == "review_locations"
+                    and entry["presented_stdout"] != entry.get("stdout")
+                )
+                for entry in audit["records"]
+                if entry.get("event") == "engine_result"
+            )
         ):
             result["accounting_errors"].append("Review-context intervention failed")
     result["adapter_audit"] = audit_records(evidence / "adapter-state/audit.jsonl")

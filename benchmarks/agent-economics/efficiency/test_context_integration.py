@@ -571,7 +571,43 @@ class InterventionAbortTests(unittest.TestCase):
     def test_request_without_result_stops_even_without_an_explicit_error_marker(self):
         self.assert_stops([{"event": "engine_request", "id": "unfinished"}])
 
-    def assert_stops(self, records):
+    def test_missing_or_wrong_presentation_identity_stops_after_retaining_cost(self):
+        response = {
+            "event": "engine_result",
+            "id": "write",
+            "context_mode": "review_excerpts",
+            "presented_stdout": "{}",
+            "stdout": "{}",
+        }
+        for change in (
+            {"context_mode": None},
+            {"context_mode": "review_locations"},
+            {"presented_stdout": None},
+        ):
+            with self.subTest(change=change):
+                self.assert_stops(
+                    [
+                        {"event": "engine_request", "id": "write"},
+                        {**response, **change},
+                    ]
+                )
+
+    def test_control_with_changed_stdout_is_an_intervention_failure(self):
+        self.assert_stops(
+            [
+                {"event": "engine_request", "id": "write"},
+                {
+                    "event": "engine_result",
+                    "id": "write",
+                    "context_mode": "review_locations",
+                    "stdout": "original",
+                    "presented_stdout": "changed",
+                },
+            ],
+            variant="review_locations",
+        )
+
+    def assert_stops(self, records, variant="review_excerpts"):
         with tempfile.TemporaryDirectory() as name:
             base = Path(name)
             evidence, work = base / "evidence", base / "work"
@@ -584,7 +620,7 @@ class InterventionAbortTests(unittest.TestCase):
             )
             row = {
                 "run_id": "run001",
-                "variant": "review_excerpts",
+                "variant": variant,
                 "model_key": "haiku",
                 "evidence": str(evidence),
                 "work": str(work),
