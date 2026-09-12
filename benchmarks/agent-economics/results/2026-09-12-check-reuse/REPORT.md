@@ -53,8 +53,9 @@ All 24 attempts completed without timeouts or accounting/isolation errors. No ru
 was replaced, rerun, refined, added or dropped. No competing local tests ran during
 candidate timing; operator activity was lightweight progress and trace inspection.
 The publication branch subsequently moves a test fixture constructor outside an
-exception assertion to address a review finding. It changes no measured candidate,
-controller, instruction, comparator arithmetic or published evidence.
+exception assertion and requires exactly the registered ordered arm and task lists
+at comparator import. The campaign already has those lists. These review fixes change
+no measured candidate, controller, instruction, arithmetic or published evidence.
 
 ## Preregistered paired outcome
 

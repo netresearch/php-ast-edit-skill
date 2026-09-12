@@ -174,6 +174,24 @@ class CompareTests(unittest.TestCase):
         self.assertEqual(status, 0)
         self.assertEqual(json.loads(output_text.getvalue())["scheduled"], 24)
 
+    def test_duplicate_or_reordered_configured_arms_are_rejected(self):
+        for arms in (unchanged_compare.ARMS, unchanged_compare.CHECK_REUSE_ARMS):
+            for configured in ([*arms, arms[0]], list(reversed(arms))):
+                with self.subTest(arms=arms, configured=configured):
+                    report = self.report(arms)
+                    report["config"]["arms"] = configured
+                    with self.assertRaises(ValueError):
+                        unchanged_compare.compare(report, arms=arms)
+
+    def test_duplicate_or_reordered_configured_tasks_are_rejected(self):
+        tasks = unchanged_compare.TASKS
+        for configured in ([*tasks, tasks[0]], list(reversed(tasks))):
+            with self.subTest(configured=configured):
+                report = self.report()
+                report["config"]["task_ids"] = configured
+                with self.assertRaises(ValueError):
+                    unchanged_compare.compare(report)
+
     def test_schema_config_types_are_required(self):
         report = self.report()
         report["config"]["arms"] = {arm: True for arm in unchanged_compare.ARMS}

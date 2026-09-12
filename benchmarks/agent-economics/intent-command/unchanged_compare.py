@@ -60,10 +60,10 @@ def _validate_config(
     if not isinstance(config, dict):
         raise CompareError("report config is required")
     configured_arms = config.get("arms")
-    if not isinstance(configured_arms, list) or set(configured_arms) != set(arms):
+    if configured_arms != list(arms):
         raise CompareError("report config has the wrong arms")
     configured_tasks = config.get("task_ids")
-    if not isinstance(configured_tasks, list) or set(configured_tasks) != set(TASKS):
+    if configured_tasks != list(TASKS):
         raise CompareError("report config has the wrong tasks")
     if type(config.get("repetitions")) is not int or config["repetitions"] != 6:
         raise CompareError("report config must specify six repetitions")
