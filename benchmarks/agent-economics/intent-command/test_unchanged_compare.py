@@ -108,6 +108,33 @@ class CompareTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             unchanged_compare.compare(extra)
 
+    def test_exact_threshold_is_accepted_but_no_tolerance_expands_it(self):
+        for token_third, wall_fourth, expected in (
+            (800, 11, True),
+            (801, 11, False),
+            (800, 11.000000000001, False),
+        ):
+            report = self.report()
+            tokens = [100, 100, token_third, 900, 1000, 1000]
+            wall = [5, 5, 9, wall_fourth, 15, 15]
+            for row in report["runs"]:
+                index = row["repetition"] - 1
+                treatment = row["arm"] == unchanged_compare.ARMS[1]
+                count = tokens[index] if treatment else 1000
+                row["metrics"].update(
+                    total_tokens=count,
+                    input_tokens=count,
+                    wall_ms=wall[index] if treatment else 10,
+                )
+            with self.subTest(token_third=token_third, wall_fourth=wall_fourth):
+                output = unchanged_compare.compare(report)
+                self.assertIs(output["all_tasks_numeric_criterion_passed"], expected)
+                if expected:
+                    self.assertEqual(
+                        output["tasks"][0]["paired_median_ratios"]["total_tokens"], 0.85
+                    )
+                    self.assertEqual(output["tasks"][0]["token_saving_pairs"], 4)
+
     def test_model_and_metric_validation_is_strict(self):
         report = self.report()
         report["runs"][1]["reported_model"] = "other"

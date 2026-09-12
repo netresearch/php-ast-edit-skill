@@ -78,6 +78,8 @@ most 0.85, median wall-time ratio at most 1.0, and at least four of six pairs mu
 save tokens. All 24 attempts must pass independent final-code, protected-file,
 candidate-check, AST-route and supported-final-claim gates. Report cell medians too,
 but do not substitute them for this criterion. Instruction adherence stays separate.
+Gate comparisons use exact rational ratios of integer token counts and serialized
+decimal wall times; floating-point presentation does not move the thresholds.
 
 Six pairs per task remain exploratory even if the criterion passes. Keep the
 feature isolated from the production CLI and loaded skill; a larger, separately

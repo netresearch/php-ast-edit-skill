@@ -8,6 +8,7 @@ import json
 import math
 import statistics
 import sys
+from fractions import Fraction
 from pathlib import Path
 from typing import Any
 
@@ -178,6 +179,14 @@ def _median(values: list[int | float | None]) -> int | float | None:
     return statistics.median(usable) if usable else None
 
 
+def _exact_median_ratio(control, treatment, metric):
+    return statistics.median(
+        Fraction(str(treatment[index]["metrics"][metric]))
+        / Fraction(str(control[index]["metrics"][metric]))
+        for index in REPETITIONS
+    )
+
+
 def _task_result(task: str, rows: list[dict[str, Any]]) -> dict[str, Any]:
     by_arm = {
         arm: {row["repetition"]: row for row in rows if row["arm"] == arm}
@@ -213,14 +222,15 @@ def _task_result(task: str, rows: list[dict[str, Any]]) -> dict[str, Any]:
         metric: _ratio(medians[ARMS[1]][metric], medians[ARMS[0]][metric])
         for metric in METRICS
     }
-    token_wins = sum(pair["ratios"]["total_tokens"] < 1 for pair in pairs)
-    passed = (
-        paired_medians["total_tokens"] is not None
-        and paired_medians["wall_ms"] is not None
-        and paired_medians["total_tokens"] <= 0.85
-        and paired_medians["wall_ms"] <= 1.0
-        and token_wins >= 4
+    exact_tokens = _exact_median_ratio(control, treatment, "total_tokens")
+    exact_wall = _exact_median_ratio(control, treatment, "wall_ms")
+    paired_medians.update(total_tokens=float(exact_tokens), wall_ms=float(exact_wall))
+    token_wins = sum(
+        treatment[index]["metrics"]["total_tokens"]
+        < control[index]["metrics"]["total_tokens"]
+        for index in REPETITIONS
     )
+    passed = exact_tokens <= Fraction(17, 20) and exact_wall <= 1 and token_wins >= 4
     return {
         "task_id": task,
         "n_pairs": len(pairs),
