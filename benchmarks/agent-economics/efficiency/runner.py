@@ -49,7 +49,18 @@ REVIEW_CONTEXT_ARMS = (
     "unchanged_locations",
     "unchanged_excerpts",
 )
-EXACT_COMMAND_ARMS = ("exact_invocation", *REVIEW_CONTEXT_ARMS)
+CHECK_REUSE_ARMS = ("check_reuse_control", "check_reuse_guidance")
+CHECK_REUSE_GUIDANCE = (
+    "A requested check is satisfied by a successful project-scoped `verify` entry "
+    "for the same command and working directory, together with `alreadyRun`. "
+    "Do not execute that same check again merely to confirm "
+    "it after read-only review. Reuse it only while its files, dependencies, "
+    "configuration, tool and environment are unchanged. Failed, missing, differently "
+    "scoped or stale checks still need action. Rerun when the task explicitly requires "
+    "a fresh or independent execution. Review unresolved warnings separately; "
+    "passing a check does not classify references or establish task completion."
+)
+EXACT_COMMAND_ARMS = ("exact_invocation", *REVIEW_CONTEXT_ARMS, *CHECK_REUSE_ARMS)
 EXPERIMENTAL_ARMS = ("minimal_intent", "delegated_intent", *EXACT_COMMAND_ARMS)
 SUPPORTED_ARMS = ARMS + EXPERIMENTAL_ARMS
 # The two arms that carry a project check. Both get `check.php` and the same task clause;
@@ -296,6 +307,7 @@ def variants(base):
     }
     for arm in EXACT_COMMAND_ARMS:
         instructions[arm] = instructions["delegated_intent"]
+    instructions[CHECK_REUSE_ARMS[1]] += " " + CHECK_REUSE_GUIDANCE
     return instructions
 
 
