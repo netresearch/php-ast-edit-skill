@@ -415,6 +415,8 @@ class ExperimentalArmTests(unittest.TestCase):
                 "unchanged_excerpts",
                 "check_reuse_control",
                 "check_reuse_guidance",
+                "shared_report_control",
+                "shared_report_factored",
             ),
         )
         rows = runner.balanced_order(["fixture"], seed=1, model_keys=("haiku",))

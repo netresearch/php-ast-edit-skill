@@ -18,6 +18,7 @@ from pathlib import Path
 
 from native import collect, read_events, require, summarize, validate_init
 from review_context import presentation_valid
+from shared_report import presentation_valid as shared_presentation_valid
 
 HERE = Path(__file__).resolve().parent
 RELATIVE = Path("benchmarks/agent-economics/efficiency")
@@ -50,6 +51,7 @@ REVIEW_CONTEXT_ARMS = (
     "unchanged_excerpts",
 )
 CHECK_REUSE_ARMS = ("check_reuse_control", "check_reuse_guidance")
+SHARED_REPORT_ARMS = ("shared_report_control", "shared_report_factored")
 CHECK_REUSE_GUIDANCE = (
     "A requested check is satisfied by a successful project-scoped `verify` entry "
     "for the same command and working directory, together with `alreadyRun`. "
@@ -60,7 +62,12 @@ CHECK_REUSE_GUIDANCE = (
     "a fresh or independent execution. Review unresolved warnings separately; "
     "passing a check does not classify references or establish task completion."
 )
-EXACT_COMMAND_ARMS = ("exact_invocation", *REVIEW_CONTEXT_ARMS, *CHECK_REUSE_ARMS)
+EXACT_COMMAND_ARMS = (
+    "exact_invocation",
+    *REVIEW_CONTEXT_ARMS,
+    *CHECK_REUSE_ARMS,
+    *SHARED_REPORT_ARMS,
+)
 EXPERIMENTAL_ARMS = ("minimal_intent", "delegated_intent", *EXACT_COMMAND_ARMS)
 SUPPORTED_ARMS = ARMS + EXPERIMENTAL_ARMS
 # The two arms that carry a project check. Both get `check.php` and the same task clause;
@@ -250,6 +257,12 @@ def snapshot(args, base):
         archive(source, commit, [str(RELATIVE)], base / "harness-snapshot")
         shutil.copytree(base / "harness-snapshot" / RELATIVE, controller / "efficiency")
     context_helper = controller / "efficiency/review_context.py"
+    shared_helper = controller / "efficiency/shared_report.py"
+    require(
+        shared_helper.is_file()
+        or set(args.arms.split(",")).isdisjoint(SHARED_REPORT_ARMS),
+        "Shared-report helper is not available in the selected source revision",
+    )
     require(
         context_helper.is_file()
         or set(args.arms.split(",")).isdisjoint(REVIEW_CONTEXT_ARMS),
@@ -264,13 +277,15 @@ def snapshot(args, base):
     (base / "tools").mkdir()
     launcher = base / "tools/php-ast-edit"
     shutil.copy2(controller / "efficiency/engine_proxy.py", launcher)
-    if context_helper.is_file():
-        shutil.copy2(context_helper, base / "tools/review_context.py")
+    if context_helper.is_file() or shared_helper.is_file():
         # The adapter derives vendor/autoload.php from its executable's grandparent.
         adapter_proxy = runtime / "review-proxy"
         adapter_proxy.mkdir()
         shutil.copy2(launcher, adapter_proxy / "php-ast-edit")
-        shutil.copy2(context_helper, adapter_proxy / "review_context.py")
+        for helper in (context_helper, shared_helper):
+            if helper.is_file():
+                shutil.copy2(helper, base / "tools" / helper.name)
+                shutil.copy2(helper, adapter_proxy / helper.name)
         (adapter_proxy / "php-ast-edit").chmod(0o755)
     launcher.chmod(0o755)
     return commit, status
@@ -724,6 +739,10 @@ def candidate_environment(base, evidence, variant=None):
     env["PHP_AST_AGENT_STATE_DIR"] = str(evidence / "adapter-state")
     env.pop("PHP_AST_REVIEW_CONTEXT", None)
     env.pop("PHP_AST_REVIEW_FIXTURE", None)
+    env.pop("PHP_AST_SHARED_REPORT", None)
+    if variant in SHARED_REPORT_ARMS:
+        env["PHP_AST_SHARED_REPORT"] = variant
+        env["PHP_AST_EDIT_BIN"] = str(base / "runtime/review-proxy/php-ast-edit")
     if variant in REVIEW_CONTEXT_ARMS:
         env["PHP_AST_REVIEW_CONTEXT"] = variant
         env["PHP_AST_REVIEW_FIXTURE"] = str(evidence / INITIAL_HASHES)
@@ -859,10 +878,15 @@ def run_one(base, row, config):
     except (ValueError, OSError, subprocess.TimeoutExpired) as error:
         result["grading_error"] = str(error)
     result["engine_audit"] = audit_records(evidence / "engine-audit.jsonl")
-    if row["variant"] in REVIEW_CONTEXT_ARMS:
+    if row["variant"] in (*REVIEW_CONTEXT_ARMS, *SHARED_REPORT_ARMS):
+        validator = (
+            shared_presentation_valid
+            if row["variant"] in SHARED_REPORT_ARMS
+            else presentation_valid
+        )
         audit = result["engine_audit"]
         requests = {
-            entry.get("id")
+            entry.get("id"): entry.get("argv")
             for entry in audit["records"]
             if entry.get("event") == "engine_request"
         }
@@ -873,17 +897,25 @@ def run_one(base, row, config):
         }
         if (
             audit["errors"]
-            or requests != responses
+            or set(requests) != responses
             or any(
                 entry.get("event") == "experiment_error" for entry in audit["records"]
             )
             or any(
-                not presentation_valid(entry, row["variant"], root=Path(row["work"]))
+                not (
+                    validator(entry, row["variant"], argv=requests.get(entry.get("id")))
+                    if row["variant"] in SHARED_REPORT_ARMS
+                    else validator(entry, row["variant"], root=Path(row["work"]))
+                )
                 for entry in audit["records"]
                 if entry.get("event") == "engine_result"
             )
         ):
-            result["accounting_errors"].append("Review-context intervention failed")
+            result["accounting_errors"].append(
+                "Shared-report intervention failed"
+                if row["variant"] in SHARED_REPORT_ARMS
+                else "Review-context intervention failed"
+            )
     result["adapter_audit"] = audit_records(evidence / "adapter-state/audit.jsonl")
     result["adherence_review"] = (
         "Pending trace review; supplied arm does not prove instruction compliance"

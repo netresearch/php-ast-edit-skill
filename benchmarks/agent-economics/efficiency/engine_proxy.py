@@ -114,12 +114,28 @@ def main():
         check=False,
     )
     presented = result.stdout
+    shared_mode = os.environ.get("PHP_AST_SHARED_REPORT")
+    shared_eligible = (
+        result.returncode == 0 and bool(args) and args[0] in ("rename", "apply")
+    )
     try:
+        if shared_mode is not None:
+            import shared_report
+
+            if mode is not None or shared_mode not in (
+                "shared_report_control",
+                "shared_report_factored",
+            ):
+                raise ValueError("Unknown or conflicting shared-report mode")
+            if shared_eligible:
+                factored = shared_report.factor(result.stdout)
+                if shared_mode == "shared_report_factored":
+                    presented = factored
         if snapshot is not None and result.returncode == 0:
             augmented = augment_for_mode(review_context, result.stdout, snapshot, mode)
             if mode in ("review_excerpts", "unchanged_excerpts"):
                 presented = augmented
-    except (ValueError, OSError, KeyError, TypeError) as error:
+    except (ValueError, OSError, KeyError, TypeError, ImportError) as error:
         append({"event": "experiment_error", "id": identifier, "error": str(error)})
     append(
         {
@@ -128,6 +144,15 @@ def main():
             "exit_code": result.returncode,
             "stdout": result.stdout.decode(errors="replace"),
             "stderr": result.stderr.decode(errors="replace"),
+            **(
+                {
+                    "shared_report_mode": shared_mode,
+                    "shared_report_eligible": shared_eligible,
+                    "presented_stdout": presented.decode(errors="replace"),
+                }
+                if shared_mode
+                else {}
+            ),
             **(
                 {
                     "context_mode": mode,
