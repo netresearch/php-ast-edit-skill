@@ -33,6 +33,14 @@ tests filtered context against original reports in new contemporaneous pairs.
 Median paired tokens increase 36.2% on the small task and 13.2% across files;
 paired wall time increases 27.3% and 40.0%. All 24 edits and 23 final explanations
 pass. Neither task passes the registered numeric gate; the prototype is not adopted.
+
+The [24-run check-reuse instruction study](agent-economics/results/2026-09-12-check-reuse/REPORT.md)
+adds 84 words to the short delegated instructions. Median paired tokens fall 11.8%
+on the small rename and 31.3% across files; wall time falls 6.8% and 4.9%. Paired
+tool calls are unchanged and 17.0% higher. All 24 edits and 23 final explanations
+pass, but the small-task numeric gate and cross-file repeat-check mechanism fail.
+This instruction comparison does not measure the installed full skill against text edits.
+
 Read the [execution and trust boundaries](TRUST.md) before grading candidate code or
 importing evidence; they also record the narrowly scoped static-analysis decisions.
 

@@ -187,6 +187,13 @@ paired wall time rises 27.3% and 40.0%. All 24 edits are correct, with 23 suppor
 final explanations. Fewer reads of warning locations are outweighed by more other
 reads and repeated checks in these attempts. The filtered context stays experimental.
 
+The [24-run check-reuse instruction study](benchmarks/agent-economics/results/2026-09-12-check-reuse/REPORT.md)
+reduces median paired total tokens by 11.8% on the small rename and 31.3% across files;
+wall time falls 6.8% and 4.9%. Tool calls are unchanged and 17.0% higher, respectively.
+All 24 code outcomes and 23 final explanations pass. Cross-file repeated checks stay
+at 6→6, so the proposed mechanism is unconfirmed. The overall registered
+criterion fails; this compares short benchmark instructions, not the installed full skill.
+
 The [36-run v0.8.0 Haiku pilot](benchmarks/agent-economics/results/2026-09-11-v080-haiku/REPORT.md) shows why the installed workflow needs its own measurement. One small edit saved 31.1% of tokens, while three same-file changes used 38.6% more and an unambiguous cross-file rename used 33.2% more. A separate instruction follow-up also lost. The report retains failed completions, a corrected fixture ambiguity and all raw attempts; the extra method-rename instructions were withdrawn.
 
 The [30-run public-source verification experiment](benchmarks/symbol-intent/results/2026-09-07-real-php/REPORT.md) compares an **experimental semantic rename workflow** with text edits on one six-file PHP extraction. With the same 17 existing tests actually executed on every final result, the integrated workflow used median 1 versus 16 tool calls, 12,212 versus 124,133.5 tokens including cache use, and 16.43 versus 37.76 seconds. All thirty changes were correct; native median list-price cost fell 66.4%. Fresh uncached input was nearly unchanged. These gains apply to this composite resolver, AST and verification experiment, not the installed skill in arbitrary PHP projects. The 90.2% splits into −75.5% from semantic editing and a further −59.9% from integrating the project's checks, so neither half accounts for it alone. The [recomputation](benchmarks/symbol-intent/results/2026-09-07-real-php/recompute/) runs in the test suite and fails if these figures stop following from the report's own tables.
