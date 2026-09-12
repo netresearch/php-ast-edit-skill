@@ -70,31 +70,86 @@ def augment_for_mode(context, stdout, snapshot, mode):
     return context.augment(stdout, snapshot)
 
 
+def _snapshot_for_mode(args, mode):
+    if mode is None:
+        return None, None
+    import review_context
+
+    if mode not in (
+        "review_locations",
+        "review_excerpts",
+        "unchanged_locations",
+        "unchanged_excerpts",
+    ):
+        raise ValueError("Unknown review-context experiment mode")
+    if not args or args[0] not in ("rename", "apply"):
+        return review_context, None
+    allowed_files = json.loads(Path(os.environ["PHP_AST_REVIEW_FIXTURE"]).read_text())
+    return review_context, review_context.capture(Path.cwd(), list(allowed_files))
+
+
+def _shared_eligibility(args, result):
+    return result.returncode == 0 and bool(args) and args[0] in ("rename", "apply")
+
+
+def _present_output(args, result, mode, snapshot, context, shared_mode):
+    presented = result.stdout
+    eligible = _shared_eligibility(args, result)
+    if shared_mode is not None:
+        import shared_report
+
+        if mode is not None or shared_mode not in (
+            "shared_report_control",
+            "shared_report_factored",
+        ):
+            raise ValueError("Unknown or conflicting shared-report mode")
+        if eligible:
+            factored = shared_report.factor(result.stdout)
+            if shared_mode == "shared_report_factored":
+                presented = factored
+    if snapshot is not None and result.returncode == 0:
+        augmented = augment_for_mode(context, result.stdout, snapshot, mode)
+        if mode in ("review_excerpts", "unchanged_excerpts"):
+            presented = augmented
+    return presented, eligible
+
+
+def _result_record(identifier, result, presented, mode, shared_mode, eligible):
+    record = {
+        "event": "engine_result",
+        "id": identifier,
+        "exit_code": result.returncode,
+        "stdout": result.stdout.decode(errors="replace"),
+        "stderr": result.stderr.decode(errors="replace"),
+    }
+    if shared_mode:
+        record.update(
+            {
+                "shared_report_mode": shared_mode,
+                "shared_report_eligible": eligible,
+                "presented_stdout": presented.decode(errors="replace"),
+            }
+        )
+    if mode:
+        record.update(
+            {
+                "context_mode": mode,
+                "presented_stdout": presented.decode(errors="replace"),
+            }
+        )
+    return record
+
+
 def main():
     args = sys.argv[1:]
     identifier = uuid.uuid4().hex
-    forwarded, captured = (None, {})
-    if args and args[0] == "apply":
-        forwarded, captured = capture_input(args)
+    forwarded, captured = (
+        capture_input(args) if args and args[0] == "apply" else (None, {})
+    )
     append({"event": "engine_request", "id": identifier, "argv": args, **captured})
     mode = os.environ.get("PHP_AST_REVIEW_CONTEXT")
-    snapshot = None
     try:
-        if mode is not None:
-            import review_context
-
-            if mode not in (
-                "review_locations",
-                "review_excerpts",
-                "unchanged_locations",
-                "unchanged_excerpts",
-            ):
-                raise ValueError("Unknown review-context experiment mode")
-            if args and args[0] in ("rename", "apply"):
-                allowed_files = json.loads(
-                    Path(os.environ["PHP_AST_REVIEW_FIXTURE"]).read_text()
-                )
-                snapshot = review_context.capture(Path.cwd(), list(allowed_files))
+        context, snapshot = _snapshot_for_mode(args, mode)
     except (
         ValueError,
         OSError,
@@ -114,29 +169,18 @@ def main():
         check=False,
     )
     presented = result.stdout
+    shared_mode = os.environ.get("PHP_AST_SHARED_REPORT")
+    shared_eligible = _shared_eligibility(args, result)
     try:
-        if snapshot is not None and result.returncode == 0:
-            augmented = augment_for_mode(review_context, result.stdout, snapshot, mode)
-            if mode in ("review_excerpts", "unchanged_excerpts"):
-                presented = augmented
-    except (ValueError, OSError, KeyError, TypeError) as error:
+        presented, shared_eligible = _present_output(
+            args, result, mode, snapshot, context, shared_mode
+        )
+    except (ValueError, OSError, KeyError, TypeError, ImportError) as error:
         append({"event": "experiment_error", "id": identifier, "error": str(error)})
     append(
-        {
-            "event": "engine_result",
-            "id": identifier,
-            "exit_code": result.returncode,
-            "stdout": result.stdout.decode(errors="replace"),
-            "stderr": result.stderr.decode(errors="replace"),
-            **(
-                {
-                    "context_mode": mode,
-                    "presented_stdout": presented.decode(errors="replace"),
-                }
-                if mode
-                else {}
-            ),
-        }
+        _result_record(
+            identifier, result, presented, mode, shared_mode, shared_eligible
+        )
     )
     sys.stdout.buffer.write(presented)
     sys.stderr.buffer.write(result.stderr)

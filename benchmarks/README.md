@@ -41,6 +41,13 @@ tool calls are unchanged and 17.0% higher. All 24 edits and 23 final explanation
 pass, but the small-task numeric gate and cross-file repeat-check mechanism fail.
 This instruction comparison does not measure the installed full skill against text edits.
 
+The [24-run shared-metadata study](agent-economics/results/2026-09-12-shared-report/REPORT.md)
+factors identical per-file metadata while preserving all diffs and facts. Cross-file
+median paired tokens fall 43.7%, time 30.9% and calls 14.1%; its numeric gate passes.
+The unchanged single-file A/A control varies strongly (+65.3% paired tokens), and
+only 19/24 final explanations pass despite 24 correct code outcomes. The overall
+quality gate fails, so the projection remains benchmark-only.
+
 Read the [execution and trust boundaries](TRUST.md) before grading candidate code or
 importing evidence; they also record the narrowly scoped static-analysis decisions.
 

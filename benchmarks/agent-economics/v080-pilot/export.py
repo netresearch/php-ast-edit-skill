@@ -23,6 +23,7 @@ CONTROLLER = (
     "controller/efficiency/native.py",
     "controller/efficiency/engine_proxy.py",
     "controller/efficiency/review_context.py",
+    "controller/efficiency/shared_report.py",
 )
 EVIDENCE = (
     "argv.json",
