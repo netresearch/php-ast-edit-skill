@@ -19,7 +19,12 @@ import runner
 
 HERE = Path(__file__).resolve().parent
 PROXY = HERE / "engine_proxy.py"
-REVIEW_ARMS = ("review_locations", "review_excerpts")
+REVIEW_ARMS = (
+    "review_locations",
+    "review_excerpts",
+    "unchanged_locations",
+    "unchanged_excerpts",
+)
 LEGACY_ARMS = (
     "contextual_patch",
     "full_skill",

@@ -77,7 +77,12 @@ def main():
         if mode is not None:
             import review_context
 
-            if mode not in ("review_locations", "review_excerpts"):
+            if mode not in (
+                "review_locations",
+                "review_excerpts",
+                "unchanged_locations",
+                "unchanged_excerpts",
+            ):
                 raise ValueError("Unknown review-context experiment mode")
             if args and args[0] in ("rename", "apply"):
                 allowed_files = json.loads(
@@ -105,8 +110,13 @@ def main():
     presented = result.stdout
     try:
         if snapshot is not None and result.returncode == 0:
-            augmented = review_context.augment(result.stdout, snapshot)
-            if mode == "review_excerpts":
+            if mode in ("unchanged_locations", "unchanged_excerpts"):
+                augmented = review_context.augment(
+                    result.stdout, snapshot, unchanged_only=True
+                )
+            else:
+                augmented = review_context.augment(result.stdout, snapshot)
+            if mode in ("review_excerpts", "unchanged_excerpts"):
                 presented = augmented
     except (ValueError, OSError, KeyError, TypeError) as error:
         append({"event": "experiment_error", "id": identifier, "error": str(error)})

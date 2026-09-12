@@ -43,7 +43,12 @@ ARMS = (
 )
 # Experimental arms are opt-in so the established default schedule and its
 # validation remain unchanged for released protocols.
-REVIEW_CONTEXT_ARMS = ("review_locations", "review_excerpts")
+REVIEW_CONTEXT_ARMS = (
+    "review_locations",
+    "review_excerpts",
+    "unchanged_locations",
+    "unchanged_excerpts",
+)
 EXACT_COMMAND_ARMS = ("exact_invocation", *REVIEW_CONTEXT_ARMS)
 EXPERIMENTAL_ARMS = ("minimal_intent", "delegated_intent", *EXACT_COMMAND_ARMS)
 SUPPORTED_ARMS = ARMS + EXPERIMENTAL_ARMS
@@ -861,7 +866,7 @@ def run_one(base, row, config):
                 entry.get("event") == "experiment_error" for entry in audit["records"]
             )
             or any(
-                not presentation_valid(entry, row["variant"])
+                not presentation_valid(entry, row["variant"], root=Path(row["work"]))
                 for entry in audit["records"]
                 if entry.get("event") == "engine_result"
             )

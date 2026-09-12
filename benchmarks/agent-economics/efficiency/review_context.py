@@ -22,10 +22,15 @@ MAX_TOTAL_BYTES = 4 * 1024 * 1024
 MAX_ENTRIES = 20
 MAX_TEXT_BYTES = 240
 MAX_CONTEXT_BYTES = 8192
+UNCHANGED_MODES = ("unchanged_locations", "unchanged_excerpts")
 
 
 class SnapshotError(ValueError):
     """The pre-command workspace could not be captured safely."""
+
+
+class ReportError(ValueError):
+    """The engine report cannot safely classify unchanged-file context."""
 
 
 @dataclass(frozen=True)
@@ -274,13 +279,11 @@ def _add_request(
         context["omitted"] += 1
 
 
-def _context_for(
-    report: dict[str, Any], snapshot: WorkspaceSnapshot
-) -> dict[str, Any] | None:
-    requests = list(_line_request(report))
-    if not requests:
-        return None
-    context = _new_context()
+def _fill_context(
+    context: dict[str, Any],
+    snapshot: WorkspaceSnapshot,
+    requests: list[tuple[str, int]],
+) -> dict[str, Any]:
     seen: set[tuple[str, int]] = set()
     for file_name, line_number in requests:
         _add_request(context, seen, snapshot, file_name, line_number)
@@ -288,6 +291,84 @@ def _context_for(
         context["entries"].pop()
         context["omitted"] += 1
     return context
+
+
+def _context_for(
+    report: dict[str, Any], snapshot: WorkspaceSnapshot
+) -> dict[str, Any] | None:
+    requests = list(_line_request(report))
+    if not requests:
+        return None
+    return _fill_context(_new_context(), snapshot, requests)
+
+
+def _lexical_root(root: Path | str | None) -> PurePosixPath:
+    if not isinstance(root, (str, PurePosixPath)) or "\0" in str(root):
+        raise ReportError("unchanged-file context needs an absolute workspace root")
+    path = PurePosixPath(root)
+    if not path.is_absolute() or ".." in path.parts:
+        raise ReportError("unchanged-file context needs an absolute workspace root")
+    return path
+
+
+def _relative_report_path(root: PurePosixPath, name: str) -> str:
+    if not isinstance(name, str) or not name or "\0" in name:
+        raise ReportError("report path must be a nonempty string")
+    path = PurePosixPath(name)
+    if ".." in path.parts:
+        raise ReportError("report path must not traverse parent directories")
+    if path.is_absolute():
+        path = path.relative_to(root)
+    if not path.parts:
+        raise ReportError("report path must name a contained file")
+    return path.as_posix()
+
+
+def _changed_files(report: dict[str, Any], root: PurePosixPath) -> set[str]:
+    files = report.get("files")
+    if not isinstance(files, list):
+        raise ReportError("unchanged-file context requires a files array")
+    states: dict[str, bool] = {}
+    for item in files:
+        if not isinstance(item, dict) or type(item.get("changed")) is not bool:
+            raise ReportError("report files require a path and a boolean changed field")
+        dry_run = item.get("dryRun", False)
+        if type(dry_run) is not bool:
+            raise ReportError("report dryRun field must be a boolean")
+        name = _relative_report_path(root, item.get("path"))
+        if name in states:
+            raise ReportError("report files contain a duplicate canonical path")
+        states[name] = item["changed"] and not dry_run
+    return {name for name, changed in states.items() if changed}
+
+
+def _unchanged_requests(
+    report: dict[str, Any], root: Path | str | None
+) -> tuple[list[tuple[str, int]], int]:
+    requests = list(_line_request(report))
+    if not requests:
+        return [], 0
+    workspace = _lexical_root(root)
+    changed = _changed_files(report, workspace)
+    canonical = dict.fromkeys(
+        (_relative_report_path(workspace, name), line) for name, line in requests
+    )
+    retained = [request for request in canonical if request[0] not in changed]
+    return retained, len(canonical) - len(retained)
+
+
+def _unchanged_context_for(
+    report: dict[str, Any], snapshot: WorkspaceSnapshot
+) -> dict[str, Any] | None:
+    requests, excluded = _unchanged_requests(report, snapshot.root)
+    if not requests and not excluded:
+        return None
+    context = {
+        **_new_context(),
+        "scope": "unchanged-files",
+        "excludedChanged": excluded,
+    }
+    return _fill_context(context, snapshot, requests)
 
 
 def _insert_context(stdout: bytes, context: dict[str, Any]) -> bytes:
@@ -309,7 +390,9 @@ def _insert_context(stdout: bytes, context: dict[str, Any]) -> bytes:
     return stdout[:insert_at] + insertion + stdout[insert_at:]
 
 
-def augment(stdout: bytes, snapshot: WorkspaceSnapshot) -> bytes:
+def augment(
+    stdout: bytes, snapshot: WorkspaceSnapshot, *, unchanged_only: bool = False
+) -> bytes:
     """Add bounded review context while preserving all existing report values."""
 
     try:
@@ -318,7 +401,11 @@ def augment(stdout: bytes, snapshot: WorkspaceSnapshot) -> bytes:
         return stdout
     if not isinstance(report, dict) or "reviewContext" in report:
         return stdout
-    context = _context_for(report, snapshot)
+    context = (
+        _unchanged_context_for(report, snapshot)
+        if unchanged_only
+        else _context_for(report, snapshot)
+    )
     if context is None:
         return stdout
     return _insert_context(stdout, context)
@@ -396,11 +483,37 @@ def _treatment_presentation_valid(stdout: str, presented: str, exit_code: int) -
     return expected == presented.encode("utf-8")
 
 
-def presentation_valid(entry: dict[str, Any], mode: str) -> bool:
+def _unchanged_presentation_valid(
+    entry: dict[str, Any], mode: str, root: Path | str | None
+) -> bool:
+    stdout, presented = entry["stdout"], entry["presented_stdout"]
+    report = _json_object(stdout)
+    if not _context_requests(report, entry["exit_code"]):
+        return stdout == presented
+    requests, excluded = _unchanged_requests(report, root)
+    if mode == UNCHANGED_MODES[0]:
+        return stdout == presented
+    augmented = _json_object(presented)
+    if augmented is None:
+        return False
+    context = augmented.get("reviewContext")
+    if (
+        not _review_context_valid(context, set(requests))
+        or context.get("scope") != "unchanged-files"
+        or type(context.get("excludedChanged")) is not int
+        or context["excludedChanged"] != excluded
+    ):
+        return False
+    return _insert_context(stdout.encode("utf-8"), context) == presented.encode("utf-8")
+
+
+def presentation_valid(
+    entry: dict[str, Any], mode: str, *, root: Path | str | None = None
+) -> bool:
     """Check actual output against the arm and original report, without file I/O."""
 
     if (
-        mode not in ("review_locations", "review_excerpts")
+        mode not in ("review_locations", "review_excerpts", *UNCHANGED_MODES)
         or entry.get("context_mode") != mode
         or not isinstance(entry.get("stdout"), str)
         or not isinstance(entry.get("presented_stdout"), str)
@@ -411,6 +524,8 @@ def presentation_valid(entry: dict[str, Any], mode: str) -> bool:
     if mode == "review_locations":
         return stdout == presented
     try:
+        if mode in UNCHANGED_MODES:
+            return _unchanged_presentation_valid(entry, mode, root)
         return _treatment_presentation_valid(stdout, presented, entry["exit_code"])
     except (TypeError, ValueError):
         return False
