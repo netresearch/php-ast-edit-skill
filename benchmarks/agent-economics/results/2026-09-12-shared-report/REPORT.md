@@ -198,4 +198,6 @@ python3 "$comparator_dir/shared_compare.py" /tmp/shared-report-summary.json \
 
 Post-measurement publication fixes make the comparison CLI executable, simplify
 equivalent proxy/validator control flow and tighten two test assertions for CI.
+Additional single-file collision tests preserve the preregistered reserved-key
+rejection: byte identity applies to legitimate reports, not namespace conflicts.
 They do not alter the frozen campaign, its evidence or registered comparison.

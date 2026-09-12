@@ -80,6 +80,12 @@ class SharedReportTests(unittest.TestCase):
             projected["files"][1]["warnings"], ["lint skipped", "missing check"]
         )
 
+    def test_reserved_names_are_rejected_even_for_single_file_reports(self) -> None:
+        for key in (shared_report.FILE_DEFAULTS, shared_report.FILE_DEFAULTS_MEANING):
+            raw = _raw({key: {}, "files": [_file("one.php")]})
+            with self.subTest(key=key), self.assertRaises(ValueError):
+                shared_report.factor(raw)
+
     def test_reserved_names_and_restore_overrides_are_rejected(self) -> None:
         reserved_raw = _raw({"fileDefaults": {}, "files": [{}, {}]})
         with self.assertRaises(ValueError):
