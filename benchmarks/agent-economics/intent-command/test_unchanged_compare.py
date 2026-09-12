@@ -151,6 +151,22 @@ class CompareTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             unchanged_compare.compare(report)
 
+    def test_mixed_integer_decimal_walls_preserve_exact_threshold(self):
+        for fourth, expected in (
+            (Decimal(11), True),
+            (Decimal("11.00000000000000000001"), False),
+        ):
+            report = self.report()
+            walls = [5, 5, 9, fourth, 15, 15]
+            for row in report["runs"]:
+                treatment = row["arm"] == unchanged_compare.ARMS[1]
+                row["metrics"]["wall_ms"] = (
+                    walls[row["repetition"] - 1] if treatment else 10
+                )
+            with self.subTest(fourth=fourth):
+                result = unchanged_compare.compare(report)
+                self.assertIs(result["all_tasks_numeric_criterion_passed"], expected)
+
     def test_check_reuse_arms_are_opt_in_and_use_the_same_comparator(self):
         report = self.report(unchanged_compare.CHECK_REUSE_ARMS)
         output = unchanged_compare.compare(

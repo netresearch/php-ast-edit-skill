@@ -189,6 +189,8 @@ def _ratio(after: Any, before: Any) -> Any:
 
 def _median(values: list[Any]) -> Any:
     usable = [value for value in values if value is not None]
+    if any(isinstance(value, Decimal) for value in usable):
+        usable = [Decimal(str(value)) for value in usable]
     return statistics.median(usable) if usable else None
 
 
