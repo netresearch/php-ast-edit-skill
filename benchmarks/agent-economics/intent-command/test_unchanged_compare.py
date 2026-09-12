@@ -9,14 +9,16 @@ import unittest
 from decimal import Decimal
 from pathlib import Path
 
+import check_reuse_compare
 import unchanged_compare
 
 
 class CompareTests(unittest.TestCase):
-    def report(self):
+    def report(self, arms=None):
+        arms = unchanged_compare.ARMS if arms is None else arms
         rows = []
         for task in unchanged_compare.TASKS:
-            for arm in unchanged_compare.ARMS:
+            for arm in arms:
                 for repetition in unchanged_compare.REPETITIONS:
                     base_metrics = {
                         metric: 10 if metric != "wall_ms" else 100
@@ -28,7 +30,7 @@ class CompareTests(unittest.TestCase):
                         cache_read_input_tokens=0,
                         output_tokens=0,
                     )
-                    if arm == unchanged_compare.ARMS[1]:
+                    if arm == arms[1]:
                         base_metrics["total_tokens"] = 8
                         base_metrics.update(
                             input_tokens=8,
@@ -55,7 +57,7 @@ class CompareTests(unittest.TestCase):
             "attempted": 24,
             "scheduled": 24,
             "config": {
-                "arms": list(unchanged_compare.ARMS),
+                "arms": list(arms),
                 "task_ids": list(unchanged_compare.TASKS),
                 "model_keys": ["haiku"],
                 "models": {"haiku": {"id": "claude-haiku-4-5-20251001"}},
@@ -148,6 +150,47 @@ class CompareTests(unittest.TestCase):
             row["reported_model"] = "other-haiku"
         with self.assertRaises(ValueError):
             unchanged_compare.compare(report)
+
+    def test_check_reuse_arms_are_opt_in_and_use_the_same_comparator(self):
+        report = self.report(unchanged_compare.CHECK_REUSE_ARMS)
+        output = unchanged_compare.compare(
+            report, arms=unchanged_compare.CHECK_REUSE_ARMS
+        )
+        self.assertTrue(output["all_tasks_numeric_criterion_passed"])
+        with self.assertRaises(ValueError):
+            unchanged_compare.compare(report)
+        legacy_report = self.report()
+        with self.assertRaises(ValueError):
+            unchanged_compare.compare(
+                legacy_report, arms=unchanged_compare.CHECK_REUSE_ARMS
+            )
+
+        with tempfile.TemporaryDirectory(prefix="check-reuse-compare-") as directory:
+            path = Path(directory) / "report.json"
+            path.write_text(json.dumps(report))
+            output_text = io.StringIO()
+            with contextlib.redirect_stdout(output_text):
+                status = check_reuse_compare.main([str(path)])
+        self.assertEqual(status, 0)
+        self.assertEqual(json.loads(output_text.getvalue())["scheduled"], 24)
+
+    def test_duplicate_or_reordered_configured_arms_are_rejected(self):
+        for arms in (unchanged_compare.ARMS, unchanged_compare.CHECK_REUSE_ARMS):
+            for configured in ([*arms, arms[0]], list(reversed(arms))):
+                with self.subTest(arms=arms, configured=configured):
+                    report = self.report(arms)
+                    report["config"]["arms"] = configured
+                    with self.assertRaises(ValueError):
+                        unchanged_compare.compare(report, arms=arms)
+
+    def test_duplicate_or_reordered_configured_tasks_are_rejected(self):
+        tasks = unchanged_compare.TASKS
+        for configured in ([*tasks, tasks[0]], list(reversed(tasks))):
+            with self.subTest(configured=configured):
+                report = self.report()
+                report["config"]["task_ids"] = configured
+                with self.assertRaises(ValueError):
+                    unchanged_compare.compare(report)
 
     def test_schema_config_types_are_required(self):
         report = self.report()

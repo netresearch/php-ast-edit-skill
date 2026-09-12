@@ -1,0 +1,330 @@
+{
+  "all_tasks_numeric_criterion_passed": false,
+  "attempted": 24,
+  "native_cost_usd": 0.7817936000000001,
+  "oracle_passes": 24,
+  "quality_gate": "Separate independent trace review; oracle passes do not infer claims approval",
+  "scheduled": 24,
+  "tasks": [
+    {
+      "medians": {
+        "check_reuse_control": {
+          "cache_creation_input_tokens": 4421.0,
+          "cache_read_input_tokens": 46267.0,
+          "cost_usd": 0.0225326,
+          "failed_tool_calls": 0.0,
+          "input_tokens": 37.0,
+          "output_tokens": 1829.5,
+          "tool_calls": 5.5,
+          "total_tokens": 52391.5,
+          "visible_primary_rounds": 4.5,
+          "wall_ms": 21276.496544509428
+        },
+        "check_reuse_guidance": {
+          "cache_creation_input_tokens": 4422.0,
+          "cache_read_input_tokens": 40033.5,
+          "cost_usd": 0.022372850000000003,
+          "failed_tool_calls": 0.0,
+          "input_tokens": 33.0,
+          "output_tokens": 1898.5,
+          "tool_calls": 5.0,
+          "total_tokens": 46387.0,
+          "visible_primary_rounds": 4.0,
+          "wall_ms": 19850.10097149643
+        }
+      },
+      "n_pairs": 6,
+      "numeric_criterion_passed": false,
+      "paired_median_ratios": {
+        "cache_creation_input_tokens": 0.9768946268176701,
+        "cache_read_input_tokens": 0.8651291842829143,
+        "cost_usd": 0.9530150789231067,
+        "failed_tool_calls": null,
+        "input_tokens": 0.9024390243902439,
+        "output_tokens": 0.923883484716691,
+        "tool_calls": 1.0,
+        "total_tokens": 0.8816964532162727,
+        "visible_primary_rounds": 0.9,
+        "wall_ms": 0.9321082161106466
+      },
+      "pairs": [
+        {
+          "control": "run018",
+          "ratios": {
+            "cache_creation_input_tokens": 0.8456375838926175,
+            "cache_read_input_tokens": 0.5501263689974726,
+            "cost_usd": 0.7680085103508831,
+            "failed_tool_calls": null,
+            "input_tokens": 0.6097560975609756,
+            "output_tokens": 0.8154981549815498,
+            "tool_calls": 0.6666666666666666,
+            "total_tokens": 0.5812811242240262,
+            "visible_primary_rounds": 0.6,
+            "wall_ms": 0.6702294508275273
+          },
+          "repetition": 1,
+          "treatment": "run017"
+        },
+        {
+          "control": "run008",
+          "ratios": {
+            "cache_creation_input_tokens": 1.0924034869240349,
+            "cache_read_input_tokens": 0.7712346464588034,
+            "cost_usd": 1.0510832448290481,
+            "failed_tool_calls": null,
+            "input_tokens": 0.8048780487804879,
+            "output_tokens": 1.1970284237726099,
+            "tool_calls": 1.25,
+            "total_tokens": 0.8051683633516054,
+            "visible_primary_rounds": 0.8,
+            "wall_ms": 1.0359025144225467
+          },
+          "repetition": 2,
+          "treatment": "run007"
+        },
+        {
+          "control": "run021",
+          "ratios": {
+            "cache_creation_input_tokens": 0.9808580858085808,
+            "cache_read_input_tokens": 0.9851744400462223,
+            "cost_usd": 0.9638984412526088,
+            "failed_tool_calls": null,
+            "input_tokens": 1.0,
+            "output_tokens": 0.9404934687953556,
+            "tool_calls": 1.2,
+            "total_tokens": 0.9828183777843527,
+            "visible_primary_rounds": 1.0,
+            "wall_ms": 0.8895206785466234
+          },
+          "repetition": 3,
+          "treatment": "run022"
+        },
+        {
+          "control": "run005",
+          "ratios": {
+            "cache_creation_input_tokens": 0.9729311678267595,
+            "cache_read_input_tokens": 0.9590237221070254,
+            "cost_usd": 0.9421317165936044,
+            "failed_tool_calls": null,
+            "input_tokens": 1.0,
+            "output_tokens": 0.9072735006380264,
+            "tool_calls": 1.0,
+            "total_tokens": 0.95822454308094,
+            "visible_primary_rounds": 1.0,
+            "wall_ms": 0.97469575367467
+          },
+          "repetition": 4,
+          "treatment": "run006"
+        },
+        {
+          "control": "run024",
+          "ratios": {
+            "cache_creation_input_tokens": 1.0409423604757548,
+            "cache_read_input_tokens": 1.3547775051228212,
+            "cost_usd": 1.1278278914943896,
+            "failed_tool_calls": null,
+            "input_tokens": 1.2424242424242424,
+            "output_tokens": 1.1118047673098752,
+            "tool_calls": 1.0,
+            "total_tokens": 1.3153011204481793,
+            "visible_primary_rounds": 1.25,
+            "wall_ms": 1.4381227819609625
+          },
+          "repetition": 5,
+          "treatment": "run023"
+        },
+        {
+          "control": "run011",
+          "ratios": {
+            "cache_creation_input_tokens": 0.6429732868757259,
+            "cache_read_input_tokens": 0.4480535894843276,
+            "cost_usd": 0.5881182898773006,
+            "failed_tool_calls": null,
+            "input_tokens": 0.5151515151515151,
+            "output_tokens": 0.5983061101028433,
+            "tool_calls": 0.16666666666666666,
+            "total_tokens": 0.47197646593927683,
+            "visible_primary_rounds": 0.5,
+            "wall_ms": 0.7223569951674644
+          },
+          "repetition": 6,
+          "treatment": "run012"
+        }
+      ],
+      "ratios_of_medians": {
+        "cache_creation_input_tokens": 1.0002261931689662,
+        "cache_read_input_tokens": 0.8652711435796572,
+        "cost_usd": 0.9929102722277945,
+        "failed_tool_calls": null,
+        "input_tokens": 0.8918918918918919,
+        "output_tokens": 1.0377152227384532,
+        "tool_calls": 0.9090909090909091,
+        "total_tokens": 0.8853917143048013,
+        "visible_primary_rounds": 0.8888888888888888,
+        "wall_ms": 0.9329590954963358
+      },
+      "task_id": "method-and-literal",
+      "token_saving_pairs": 5
+    },
+    {
+      "medians": {
+        "check_reuse_control": {
+          "cache_creation_input_tokens": 7975.5,
+          "cache_read_input_tokens": 138476.0,
+          "cost_usd": 0.04703010000000001,
+          "failed_tool_calls": 0.0,
+          "input_tokens": 85.0,
+          "output_tokens": 3308.0,
+          "tool_calls": 9.5,
+          "total_tokens": 150286.5,
+          "visible_primary_rounds": 10.5,
+          "wall_ms": 42537.46236150619
+        },
+        "check_reuse_guidance": {
+          "cache_creation_input_tokens": 7348.0,
+          "cache_read_input_tokens": 85658.0,
+          "cost_usd": 0.0385103,
+          "failed_tool_calls": 0.0,
+          "input_tokens": 57.0,
+          "output_tokens": 3057.5,
+          "tool_calls": 10.0,
+          "total_tokens": 96042.5,
+          "visible_primary_rounds": 7.0,
+          "wall_ms": 38836.16778900614
+        }
+      },
+      "n_pairs": 6,
+      "numeric_criterion_passed": true,
+      "paired_median_ratios": {
+        "cache_creation_input_tokens": 0.9553082221886666,
+        "cache_read_input_tokens": 0.6606300665183141,
+        "cost_usd": 0.9079278200894088,
+        "failed_tool_calls": null,
+        "input_tokens": 0.6983476910040955,
+        "output_tokens": 0.9507198802917833,
+        "tool_calls": 1.1704545454545454,
+        "total_tokens": 0.6872867603765702,
+        "visible_primary_rounds": 0.6944444444444444,
+        "wall_ms": 0.9505068315380177
+      },
+      "pairs": [
+        {
+          "control": "run016",
+          "ratios": {
+            "cache_creation_input_tokens": 1.0042823773682845,
+            "cache_read_input_tokens": 1.602664341131894,
+            "cost_usd": 1.144985101860569,
+            "failed_tool_calls": null,
+            "input_tokens": 1.4923076923076923,
+            "output_tokens": 0.9914340101522843,
+            "tool_calls": 1.375,
+            "total_tokens": 1.5435334507837557,
+            "visible_primary_rounds": 1.5,
+            "wall_ms": 1.017443605407001
+          },
+          "repetition": 1,
+          "treatment": "run015"
+        },
+        {
+          "control": "run009",
+          "ratios": {
+            "cache_creation_input_tokens": 0.8768508486818346,
+            "cache_read_input_tokens": 0.3697263442806112,
+            "cost_usd": 0.7049590926099685,
+            "failed_tool_calls": null,
+            "input_tokens": 0.4336283185840708,
+            "output_tokens": 0.9100057504312824,
+            "tool_calls": 0.7692307692307693,
+            "total_tokens": 0.3998390433447385,
+            "visible_primary_rounds": 0.42857142857142855,
+            "wall_ms": 0.8957260501012426
+          },
+          "repetition": 2,
+          "treatment": "run010"
+        },
+        {
+          "control": "run003",
+          "ratios": {
+            "cache_creation_input_tokens": 1.065249483318571,
+            "cache_read_input_tokens": 1.4241063231783964,
+            "cost_usd": 1.1114169475894995,
+            "failed_tool_calls": null,
+            "input_tokens": 1.3265306122448979,
+            "output_tokens": 1.0040295500335796,
+            "tool_calls": 1.4285714285714286,
+            "total_tokens": 1.3783683191901146,
+            "visible_primary_rounds": 1.3333333333333333,
+            "wall_ms": 1.0052876129747927
+          },
+          "repetition": 3,
+          "treatment": "run004"
+        },
+        {
+          "control": "run019",
+          "ratios": {
+            "cache_creation_input_tokens": 1.0584986474301172,
+            "cache_read_input_tokens": 0.8177554294706689,
+            "cost_usd": 1.029995987349692,
+            "failed_tool_calls": null,
+            "input_tokens": 0.8350515463917526,
+            "output_tokens": 1.1905277401894452,
+            "tool_calls": 1.0909090909090908,
+            "total_tokens": 0.8378017691241638,
+            "visible_primary_rounds": 0.8333333333333334,
+            "wall_ms": 1.1710993633462123
+          },
+          "repetition": 4,
+          "treatment": "run020"
+        },
+        {
+          "control": "run014",
+          "ratios": {
+            "cache_creation_input_tokens": 0.8802264248038081,
+            "cache_read_input_tokens": 0.5035047035659593,
+            "cost_usd": 0.7858596528291255,
+            "failed_tool_calls": null,
+            "input_tokens": 0.5616438356164384,
+            "output_tokens": 0.9000321440051431,
+            "tool_calls": 1.25,
+            "total_tokens": 0.5367717516289766,
+            "visible_primary_rounds": 0.5555555555555556,
+            "wall_ms": 0.6815491067705534
+          },
+          "repetition": 5,
+          "treatment": "run013"
+        },
+        {
+          "control": "run002",
+          "ratios": {
+            "cache_creation_input_tokens": 0.9063340670090486,
+            "cache_read_input_tokens": 0.23794950700600193,
+            "cost_usd": 0.5832522003082082,
+            "failed_tool_calls": null,
+            "input_tokens": 0.3142857142857143,
+            "output_tokens": 0.6322170900692841,
+            "tool_calls": 0.5833333333333334,
+            "total_tokens": 0.27423033672105407,
+            "visible_primary_rounds": 0.3076923076923077,
+            "wall_ms": 0.46227037878529076
+          },
+          "repetition": 6,
+          "treatment": "run001"
+        }
+      ],
+      "ratios_of_medians": {
+        "cache_creation_input_tokens": 0.9213215472384176,
+        "cache_read_input_tokens": 0.6185765042317802,
+        "cost_usd": 0.8188436767091711,
+        "failed_tool_calls": null,
+        "input_tokens": 0.6705882352941176,
+        "output_tokens": 0.9242744860943168,
+        "tool_calls": 1.0526315789473684,
+        "total_tokens": 0.6390627235313884,
+        "visible_primary_rounds": 0.6666666666666666,
+        "wall_ms": 0.9129874146923843
+      },
+      "task_id": "cross-file-rename-clarified",
+      "token_saving_pairs": 4
+    }
+  ]
+}

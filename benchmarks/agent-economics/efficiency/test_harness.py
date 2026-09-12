@@ -413,6 +413,8 @@ class ExperimentalArmTests(unittest.TestCase):
                 "review_excerpts",
                 "unchanged_locations",
                 "unchanged_excerpts",
+                "check_reuse_control",
+                "check_reuse_guidance",
             ),
         )
         rows = runner.balanced_order(["fixture"], seed=1, model_keys=("haiku",))
@@ -496,6 +498,55 @@ class ExperimentalArmTests(unittest.TestCase):
                 arms=("minimal_intent_typo",),
                 model_keys=("haiku",),
             )
+
+
+class CheckReuseTests(unittest.TestCase):
+    def test_only_treatment_system_paragraph_changes(self):
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            skill = base / "runtime/skills/php-structured-edit"
+            skill.mkdir(parents=True)
+            (skill / "SKILL.md").write_text("Fixture skill body.\n")
+            instructions = runner.variants(base)
+            control, treatment = runner.CHECK_REUSE_ARMS
+            self.assertEqual(instructions[control], instructions["exact_invocation"])
+            self.assertEqual(
+                runner.system_instructions(treatment, instructions[treatment]),
+                runner.system_instructions(control, instructions[control])
+                + " "
+                + runner.CHECK_REUSE_GUIDANCE,
+            )
+            template = {
+                "intent": {
+                    "method": "Demo::old",
+                    "to": "newName",
+                    "file": "Demo.php",
+                    "path": ".",
+                }
+            }
+            self.assertEqual(
+                runner.intent_prompt(template, control),
+                runner.intent_prompt(template, treatment),
+            )
+            for phrase in ("Demo", "Product", "CrossFile", "check.php"):
+                self.assertNotIn(phrase, runner.CHECK_REUSE_GUIDANCE)
+
+    def test_new_arms_keep_original_engine_environment(self):
+        base = Path("/tmp/check-reuse-environment-fixture")
+        evidence = base / "evidence"
+        with patch.dict(
+            os.environ,
+            {
+                "PHP_AST_REVIEW_CONTEXT": "unchanged_excerpts",
+                "PHP_AST_REVIEW_FIXTURE": "inherited",
+            },
+        ):
+            expected = runner.candidate_environment(base, evidence, "exact_invocation")
+            for arm in runner.CHECK_REUSE_ARMS:
+                actual = runner.candidate_environment(base, evidence, arm)
+                self.assertEqual(actual, expected)
+                self.assertNotIn("PHP_AST_REVIEW_CONTEXT", actual)
+                self.assertNotIn("PHP_AST_REVIEW_FIXTURE", actual)
 
 
 class ExactInvocationTests(unittest.TestCase):
