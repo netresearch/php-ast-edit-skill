@@ -28,6 +28,11 @@ tests bounded raw context beside unresolved rename warnings. Cross-file median
 tokens fall 15.3%, time 16.0% and calls 10%; small-task tokens rise 20.8% and time
 4.3%. All 24 edits pass, while 19 final claims pass review. The two-task adoption
 criterion fails, so excerpts remain an isolated benchmark prototype.
+The [24-run unchanged-file excerpt study](agent-economics/results/2026-09-12-unchanged-context/REPORT.md)
+tests filtered context against original reports in new contemporaneous pairs.
+Median paired tokens increase 36.2% on the small task and 13.2% across files;
+paired wall time increases 27.3% and 40.0%. All 24 edits and 23 final explanations
+pass. Neither task passes the registered numeric gate; the prototype is not adopted.
 Read the [execution and trust boundaries](TRUST.md) before grading candidate code or
 importing evidence; they also record the narrowly scoped static-analysis decisions.
 
