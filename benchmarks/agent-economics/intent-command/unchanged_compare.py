@@ -27,6 +27,7 @@ METRICS = (
 )
 TASKS = ("method-and-literal", "cross-file-rename-clarified")
 ARMS = ("unchanged_locations", "unchanged_excerpts")
+CHECK_REUSE_ARMS = ("check_reuse_control", "check_reuse_guidance")
 REPETITIONS = range(1, 7)
 TOKEN_PARTS = (
     "input_tokens",
@@ -52,12 +53,14 @@ def _number(value: Any, field: str) -> int | float | Decimal:
     return value
 
 
-def _validate_config(report: dict[str, Any]) -> tuple[list[str], dict[str, str]]:
+def _validate_config(
+    report: dict[str, Any], *, arms: tuple[str, str] = ARMS
+) -> tuple[list[str], dict[str, str]]:
     config = report.get("config")
     if not isinstance(config, dict):
         raise CompareError("report config is required")
     configured_arms = config.get("arms")
-    if not isinstance(configured_arms, list) or set(configured_arms) != set(ARMS):
+    if not isinstance(configured_arms, list) or set(configured_arms) != set(arms):
         raise CompareError("report config has the wrong arms")
     configured_tasks = config.get("task_ids")
     if not isinstance(configured_tasks, list) or set(configured_tasks) != set(TASKS):
@@ -103,13 +106,14 @@ def _validate_row(
     models: set[str],
     configured_models: list[str],
     identities: dict[str, str],
+    arms: tuple[str, str],
 ) -> None:
     if not isinstance(row, dict):
         raise CompareError("each run must be an object")
     task, arm, repetition = row.get("task_id"), row.get("arm"), row.get("repetition")
     if (
         task not in TASKS
-        or arm not in ARMS
+        or arm not in arms
         or type(repetition) is not int
         or repetition not in REPETITIONS
     ):
@@ -135,7 +139,9 @@ def _validate_row(
     _validate_metrics(row.get("metrics"))
 
 
-def _validate_report(report: dict[str, Any]) -> list[dict[str, Any]]:
+def _validate_report(
+    report: dict[str, Any], *, arms: tuple[str, str] = ARMS
+) -> list[dict[str, Any]]:
     if not isinstance(report, dict) or report.get("schema_version") != 1:
         raise CompareError("report schema_version must be 1")
     if report.get("attempted") != 24 or report.get("scheduled") != 24:
@@ -145,7 +151,7 @@ def _validate_report(report: dict[str, Any]) -> list[dict[str, Any]]:
     rows = report.get("runs")
     if not isinstance(rows, list) or len(rows) != 24:
         raise CompareError("report must contain exactly 24 runs")
-    configured_models, identities = _validate_config(report)
+    configured_models, identities = _validate_config(report, arms=arms)
 
     seen_ids: set[str] = set()
     seen_pairs: set[tuple[str, str, int]] = set()
@@ -158,11 +164,12 @@ def _validate_report(report: dict[str, Any]) -> list[dict[str, Any]]:
             models,
             configured_models,
             identities,
+            arms,
         )
     expected_pairs = {
         (task, arm, repetition)
         for task in TASKS
-        for arm in ARMS
+        for arm in arms
         for repetition in REPETITIONS
     }
     if seen_pairs != expected_pairs:
@@ -193,12 +200,14 @@ def _exact_median_ratio(control, treatment, metric):
     )
 
 
-def _task_result(task: str, rows: list[dict[str, Any]]) -> dict[str, Any]:
+def _task_result(
+    task: str, rows: list[dict[str, Any]], *, arms: tuple[str, str] = ARMS
+) -> dict[str, Any]:
     by_arm = {
         arm: {row["repetition"]: row for row in rows if row["arm"] == arm}
-        for arm in ARMS
+        for arm in arms
     }
-    control, treatment = by_arm[ARMS[0]], by_arm[ARMS[1]]
+    control, treatment = by_arm[arms[0]], by_arm[arms[1]]
     pairs = []
     for repetition in REPETITIONS:
         before, after = control[repetition], treatment[repetition]
@@ -225,7 +234,7 @@ def _task_result(task: str, rows: list[dict[str, Any]]) -> dict[str, Any]:
         for metric in METRICS
     }
     ratios_of_medians = {
-        metric: _ratio(medians[ARMS[1]][metric], medians[ARMS[0]][metric])
+        metric: _ratio(medians[arms[1]][metric], medians[arms[0]][metric])
         for metric in METRICS
     }
     exact_tokens = _exact_median_ratio(control, treatment, "total_tokens")
@@ -249,12 +258,12 @@ def _task_result(task: str, rows: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
-def compare(report: dict[str, Any]) -> dict[str, Any]:
+def compare(report: dict[str, Any], *, arms: tuple[str, str] = ARMS) -> dict[str, Any]:
     """Return paired metrics, rejecting incomplete or ambiguous campaigns."""
 
-    rows = _validate_report(report)
+    rows = _validate_report(report, arms=arms)
     tasks = [
-        _task_result(task, [row for row in rows if row["task_id"] == task])
+        _task_result(task, [row for row in rows if row["task_id"] == task], arms=arms)
         for task in TASKS
     ]
     return {
@@ -276,13 +285,13 @@ def _json_default(value: Any) -> float:
     raise TypeError(f"Object of type {type(value).__name__} is not JSON serializable")
 
 
-def main(argv: list[str] | None = None) -> int:
+def main(argv: list[str] | None = None, *, arms: tuple[str, str] = ARMS) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("report", type=Path)
     args = parser.parse_args(sys.argv[1:] if argv is None else argv)
     try:
         report = json.loads(args.report.read_text(), parse_float=Decimal)
-        output = compare(report)
+        output = compare(report, arms=arms)
     except (OSError, TypeError, json.JSONDecodeError, CompareError) as error:
         print(f"unchanged_compare.py: {error}", file=sys.stderr)
         return 1
