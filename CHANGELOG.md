@@ -6,6 +6,21 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Added
+
+- `benchmarks/agent-economics/results/2026-09-12-final-guidance/` — a preregistered 40-session study of whether a 64-word evidence-bound final-guidance instruction reduces cost and improves final explanations. Both preregistered gates fail. On the cross-file rename, median paired ratios improve (16.8% total tokens, 12.4% wall time, 13.4% calls) but only seven of ten pairs save tokens against the required nine, and across those same pairs total tokens instead rise 3.0% with calls unchanged at 67. On the small rename, paired tokens rise 1.4% and wall time 7.0%. All 40 code states, protected-file checks, project checks and AST write routes pass; 13 of 20 treatment finals are both supported and complete against 10 of 20 controls, which does not establish a reliable reduction in explanation errors. Retained as a failed experiment — the production CLI and the installed skill defaults do not change
+- `benchmarks/agent-economics/results/2026-09-12-shared-report/` — shared-report outcomes and A/A variability from the same harness
+
+### Fixed
+
+- Benchmark timings written with mixed decimal representations are compared numerically instead of as strings
+
+### Changed
+
+- Benchmark report presentation is split into isolated stages, and multi-file report factoring is covered as lossless
+- Reserved-key rejection is retained for single-file reports
+- Fixture paths and benchmark assertions clarified; the expected schedule assertion is now explicit
+
 ## [0.9.0] - 2026-09-12
 
 ### Fixed
