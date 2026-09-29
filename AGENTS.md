@@ -128,7 +128,8 @@ The repository's default `GITHUB_TOKEN` is read-only, so every caller job declar
 - [operations.md](skills/php-structured-edit/references/operations.md) — edit schema, targets, guards, parseAs contexts, operation catalog
 - [formatting-contract.md](skills/php-structured-edit/references/formatting-contract.md) — the precondition, the tools that can and cannot canonicalise, the fallback
 - [enforcement.md](skills/php-structured-edit/references/enforcement.md) — wiring the PreToolUse gate
-- [README.md](README.md) — installation, usage, transaction safety
+- [README.md](README.md) — installation, usage, transaction safety, tests, dependencies and policies
+- [SECURITY-ASSURANCE.md](docs/SECURITY-ASSURANCE.md) — threat model, trust boundaries, countermeasures and limits
 - [installation.md](docs/installation.md) — source, Composer and executable release installations
 - [benchmarks](benchmarks/README.md) — fair comparison protocol and evidence requirements
 - [skill invocation](benchmarks/skill-invocation/README.md) — whether the model reaches for the skill at all
