@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: Netresearch DTT GmbH
+
 """Verify evidence selection and refusal before creating an export directory."""
 
 import importlib.util

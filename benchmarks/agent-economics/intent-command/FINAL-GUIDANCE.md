@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: CC-BY-SA-4.0 -->
+<!-- SPDX-FileCopyrightText: Netresearch DTT GmbH -->
+
 # Prospective evidence-bound final-response experiment
 
 The shared-report campaign produced correct code in all 24 sessions but unsupported

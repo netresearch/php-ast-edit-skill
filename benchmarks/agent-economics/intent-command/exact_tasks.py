@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: Netresearch DTT GmbH
 """Attach identical operator-selected rename targets to existing intent tasks."""
 
 from __future__ import annotations

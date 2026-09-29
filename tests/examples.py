@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: Netresearch DTT GmbH
 """Run the apply documents printed in README.md and SKILL.md, exactly as printed.
 
 A documented example is a claim twice over: that it works, and that it shows what the

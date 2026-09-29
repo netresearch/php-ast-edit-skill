@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: Netresearch DTT GmbH
 # Test entrypoint. Picked up by the tests.yml reusable (tests/**/*.sh) and runnable locally.
 set -euo pipefail
 

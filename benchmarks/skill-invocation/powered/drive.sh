@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: Netresearch DTT GmbH
 # shellcheck disable=SC2016 # backticks in the sed patterns are Markdown, matched literally
 # The powered round: two tasks, two arms, N runs of each, interleaved. See PROTOCOL.md.
 #

@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: Netresearch DTT GmbH
 # The skill tells agents to drive the CLI, not the Editor class: these are the argument
 # shapes, output fields and exit codes SKILL.md promises. tests/run.php and tests/matrix.php
 # both bypass all of it.

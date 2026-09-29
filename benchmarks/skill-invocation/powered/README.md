@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: CC-BY-SA-4.0 -->
+<!-- SPDX-FileCopyrightText: Netresearch DTT GmbH -->
+
 # Powered round: status and recovery
 
 **Status on 2026-09-11: protocol recovered; original raw data unavailable here.**

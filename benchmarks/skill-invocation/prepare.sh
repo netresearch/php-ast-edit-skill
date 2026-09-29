@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: Netresearch DTT GmbH
 # Build the isolated configuration directories the arms run in.
 #
 # Each holds credentials, a minimal settings.json and — for every arm but `free` — one

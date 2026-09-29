@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: Netresearch DTT GmbH
 """What --task keeps apart, and what happens without it.
 
 A working root holds one result file per run and nothing in the name says which task the

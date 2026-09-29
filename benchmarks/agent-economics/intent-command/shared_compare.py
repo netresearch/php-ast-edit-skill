@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: Netresearch DTT GmbH
 """Compare shared report metadata; the unchanged single-file task is an A/A control."""
 
 import argparse

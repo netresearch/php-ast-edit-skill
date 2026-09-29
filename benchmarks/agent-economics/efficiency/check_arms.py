@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: Netresearch DTT GmbH
 """Summarize the check arms: did the model run a check the tool had already run?
 
 Reads one or more prepared campaign directories and reports, per arm, the manipulation

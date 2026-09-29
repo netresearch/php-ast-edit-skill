@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: Netresearch DTT GmbH
 """Generate the one clarified cross-file follow-up fixture.
 
 This module loads the original generator without changing its source or manifest.

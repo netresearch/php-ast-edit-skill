@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: Netresearch DTT GmbH
+
 """Offline campaign-directory and native-timing regressions; no model calls."""
 
 import hashlib

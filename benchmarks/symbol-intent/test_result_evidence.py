@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: Netresearch DTT GmbH
+
 """Evidence proves byte preservation, not resolver coverage or runtime behavior."""
 
 import argparse

@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: Netresearch DTT GmbH
+
 """Offline shared-report arm, real proxy and controller-stop boundaries."""
 
 import base64

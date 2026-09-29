@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: Netresearch DTT GmbH
 """The enforcement gate's behaviour table.
 
 A gate is only worth what it lets through. Both directions matter here: a miss makes the

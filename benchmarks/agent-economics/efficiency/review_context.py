@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: Netresearch DTT GmbH
+
 """Bounded, report-driven source excerpts for the rename experiment.
 
 This module deliberately does not inspect the working tree while augmenting a

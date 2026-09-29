@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: CC-BY-SA-4.0 -->
+<!-- SPDX-FileCopyrightText: Netresearch DTT GmbH -->
+
 # AGENTS.md — php-ast-edit-skill
 
 PHP CLI plus Agent Skill for AST-native PHP source mutations.

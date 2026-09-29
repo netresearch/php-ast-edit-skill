@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: Netresearch DTT GmbH
+
 """Offline review-context arm and proxy boundaries; no candidate model calls."""
 
 import base64

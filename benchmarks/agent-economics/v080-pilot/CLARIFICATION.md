@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: CC-BY-SA-4.0 -->
+<!-- SPDX-FileCopyrightText: Netresearch DTT GmbH -->
+
 # Prospective clarification of the cross-file fixture
 
 Recorded on 2026-09-11 after original run006 and before any clarified candidate.

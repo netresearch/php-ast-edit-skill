@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: CC-BY-SA-4.0 -->
+<!-- SPDX-FileCopyrightText: Netresearch DTT GmbH -->
+
 # Limits and alternatives for PHP refactoring
 
 Choose the tool by the task and the evidence available in the project.

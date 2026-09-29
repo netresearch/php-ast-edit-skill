@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: CC-BY-SA-4.0 -->
+<!-- SPDX-FileCopyrightText: Netresearch DTT GmbH -->
+
 # Prospective post-rename evidence and guidance ablation
 
 This is a new experiment. The completed 27-run symbol-intent pilot motivates the

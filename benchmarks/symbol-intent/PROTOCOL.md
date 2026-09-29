@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: CC-BY-SA-4.0 -->
+<!-- SPDX-FileCopyrightText: Netresearch DTT GmbH -->
+
 # Prospective Haiku cross-file rename pilot
 
 This new pilot does not amend or replace the completed 120-run efficiency study.

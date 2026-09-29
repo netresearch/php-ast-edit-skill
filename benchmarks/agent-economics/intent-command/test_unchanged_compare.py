@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: Netresearch DTT GmbH
+
 """Offline schema and paired-metric tests for unchanged_compare.py."""
 
 import contextlib

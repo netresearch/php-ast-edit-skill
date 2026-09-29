@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: CC-BY-SA-4.0 -->
+<!-- SPDX-FileCopyrightText: Netresearch DTT GmbH -->
+
 # Install php-ast-edit and its agent skill
 
 The editor and the instructions are separate components. The editor needs PHP 8.2+,

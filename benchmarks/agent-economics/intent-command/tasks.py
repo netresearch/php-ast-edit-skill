@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: Netresearch DTT GmbH
 """Build the bounded intent-command economics manifest.
 
 The two task bodies are existing fixtures.  This manifest only adds the same

@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: Netresearch DTT GmbH
 # One arm of one measurement: a fresh checkout, an isolated Claude Code configuration,
 # one `claude -p`.
 #

@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: Netresearch DTT GmbH
+
 """Independent instruction-only final-guidance contract; no candidate calls."""
 
 import hashlib

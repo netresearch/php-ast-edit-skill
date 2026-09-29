@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: CC-BY-SA-4.0 -->
+<!-- SPDX-FileCopyrightText: Netresearch DTT GmbH -->
+
 # PHP AST Edit v0.8.0: Haiku workflow pilot
 
 Prospective protocol, 2026-09-11. This is a new experiment. It neither replaces nor

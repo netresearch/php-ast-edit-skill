@@ -1,5 +1,9 @@
 <?php
 
+/*
+ * SPDX-License-Identifier: MIT
+ * SPDX-FileCopyrightText: Netresearch DTT GmbH
+ */
 declare (strict_types=1);
 /*
  * The rules this repository is written to.
@@ -48,5 +52,13 @@ return (new PhpCsFixer\Config())
             'trailing_comma_in_multiline' => ['elements' => ['arrays', 'arguments', 'parameters']],
             'array_syntax' => ['syntax' => 'short'],
             'no_superfluous_phpdoc_tags' => false,
+            // Every PHP file carries its licence and copyright notice; `php-cs-fixer fix` adds a missing one,
+            // so the Formatting gate fails on a new file without it.
+            'header_comment' => [
+                'header' => "SPDX-License-Identifier: MIT\nSPDX-FileCopyrightText: Netresearch DTT GmbH",
+                'comment_type' => 'comment',
+                'location' => 'after_open',
+                'separate' => 'bottom',
+            ],
         ]
     );

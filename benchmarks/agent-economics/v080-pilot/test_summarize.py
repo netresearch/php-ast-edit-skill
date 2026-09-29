@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: Netresearch DTT GmbH
 """Synthetic regression tests for the bounded offline pilot reporter."""
 
 from __future__ import annotations

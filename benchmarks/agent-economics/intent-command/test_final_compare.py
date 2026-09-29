@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: Netresearch DTT GmbH
+
 """Prospective forty-attempt gate: robust wins, exact thresholds, no dropped runs."""
 
 import copy

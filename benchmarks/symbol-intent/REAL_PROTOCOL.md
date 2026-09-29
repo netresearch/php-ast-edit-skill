@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: CC-BY-SA-4.0 -->
+<!-- SPDX-FileCopyrightText: Netresearch DTT GmbH -->
+
 # Prospective rename with actual final-byte behavior verification
 
 This is a separate thirty-candidate experiment on a small extraction of public PHP

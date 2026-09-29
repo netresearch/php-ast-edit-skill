@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: Netresearch DTT GmbH
+
 """Held-out fixture and independent-oracle tests; no candidate model calls."""
 
 from __future__ import annotations

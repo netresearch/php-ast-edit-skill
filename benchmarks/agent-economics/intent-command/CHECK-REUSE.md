@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: CC-BY-SA-4.0 -->
+<!-- SPDX-FileCopyrightText: Netresearch DTT GmbH -->
+
 # Prospective check-reuse instruction experiment
 
 PR #86 observed repeated project checks after a successful AST rename. The original

@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: CC-BY-SA-4.0 -->
+<!-- SPDX-FileCopyrightText: Netresearch DTT GmbH -->
+
 # Does the model reach for the skill?
 
 Every other measurement in this repository asks whether an AST edit is cheaper than a

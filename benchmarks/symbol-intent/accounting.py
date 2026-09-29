@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: Netresearch DTT GmbH
+
 """Keep main-loop usage separate from whole-call modelUsage (SDK documented scopes)."""
 
 import math

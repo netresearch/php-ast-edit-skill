@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: Netresearch DTT GmbH
 """Freeze and evaluate a separate 2x2 result-evidence and verification-guidance pilot."""
 
 import argparse

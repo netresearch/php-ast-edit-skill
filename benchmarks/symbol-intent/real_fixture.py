@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: Netresearch DTT GmbH
 """Pinned public-source extraction, behavior checker, and separate hidden oracle.
 
 Only disposable exports contain PHP. The candidate-facing ``check`` command never

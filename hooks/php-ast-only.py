@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: Netresearch DTT GmbH
 """PreToolUse gate: PHP syntax may only be written through php-ast-edit.
 
 The skill and AGENTS.md already state the rule, but an instruction cannot be

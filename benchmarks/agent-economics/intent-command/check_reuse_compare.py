@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: Netresearch DTT GmbH
 """Compare the paired check-reuse instruction arms."""
 
 from unchanged_compare import CHECK_REUSE_ARMS

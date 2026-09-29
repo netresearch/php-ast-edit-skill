@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: Netresearch DTT GmbH
+
 """CLI microbenchmark; no model calls. All edits affect disposable fixtures only."""
 
 import argparse

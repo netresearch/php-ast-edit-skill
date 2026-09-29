@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: Netresearch DTT GmbH
 """Produce a descriptive, offline report for one prepared v0.8 campaign.
 
 The campaign is an operator-selected evidence directory.  This program only reads
