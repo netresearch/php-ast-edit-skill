@@ -44,7 +44,8 @@ return (new PhpCsFixer\Config())
                     'phpdoc',
                 ],
             ],
-            // The licence header sits directly after the tag here, so no blank line between them.
+            // The canonical printer writes one blank line after the opening tag itself, and the licence
+            // header follows it; the tree comes out the same with this rule on or off.
             'blank_line_after_opening_tag' => false,
             'single_line_empty_body' => true,
             'no_unused_imports' => true,
