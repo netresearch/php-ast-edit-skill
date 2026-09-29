@@ -11,3 +11,5 @@ jobs:
     permissions:
       contents: read
     uses: netresearch/skill-repo-skill/.github/workflows/validate.yml@main
+    with:
+      shellcheck-severity: style
