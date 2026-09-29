@@ -256,6 +256,46 @@ python3 benchmarks/cli_microbenchmark.py --repetitions 30 --output /tmp/php-ast-
 
 The suite includes grammar, semantic regression, transaction, formatting, CLI, distribution, and documentation examples. Supported host runtimes are PHP 8.2–8.5; newer target syntax still needs validation on its intended runtime. See [AGENTS.md](AGENTS.md), [CHANGELOG.md](CHANGELOG.md), and the [contribution template](.github/pull_request_template.md).
 
+### Tests
+
+Run `composer install` first; `tests/run.sh` exits 2 without `vendor/autoload.php`. The suite needs PHP 8.2+ with the extensions CI installs (`json`, `tokenizer`, `phar`, `mbstring`, `posix`), Python 3 (standard library only), Bash, Git and `jq`. The distribution part installs packages through Composer and needs network access; `bash tests/run.sh --runtime-only` skips it.
+
+- `tests/*.php`, `tests/cli.sh` and the Python tests in `tests/` cover the editor: grammar and operation matrix, renames, transactions and rollback, verification commands, formatting and `doctor`, the CLI surface and exit codes, and the enforcement hook. `tests/corpus.php` round-trips php-parser's own source.
+- `docs/quickstart.sh` and `tests/examples.py` run the documented examples; `tests/catalog.php` checks that code, `contexts` output and the operation reference agree.
+- `tests/recompute.sh` and the `benchmarks/**/test_*.py` suites recompute published figures and check benchmark oracles without model calls.
+- `tests/distribution.sh` installs the package into clean Composer projects and builds and installs the PHAR and release archives.
+- The one case that runs the real Phpactor resolver is opt-in: set `PHP_AST_EDIT_PHPACTOR_TEST` to the pinned PHAR (see `.github/workflows/php-tests.yml` for the download and checksum).
+
+`tests/run.sh` runs every part in its own `::group::` block, keeps going after a failure, and ends with `OK: all checks passed.` or `FAIL: at least one check failed.` with exit 1. Look for the group whose script reported a failure; its output names the check that did not hold.
+
+In CI, every push and pull request runs `bash tests/run.sh --runtime-only` on PHP 8.2, 8.3, 8.4 and 8.5 with the real Phpactor case (`php-tests.yml`), the distribution suite on PHP 8.2 and 8.5 (`distribution.yml`), and Skill Tests (`tests.yml`), which runs `tests/**/*.sh`, `tests/**/*.py` and `tests/run.php` on PHP 8.3.
+
+**Test policy:** a pull request that adds or changes behaviour of the editor, the wrapper, the hook or a shipped script adds or updates a test in `tests/` (or the benchmark suite it belongs to) that fails without the change. Passing the existing suite is not enough for new functionality; reviewers check this before approving.
+
+### Dependencies
+
+- **Runtime:** `composer.json` `require` — PHP 8.2+, `ext-json`, `ext-tokenizer`, `composer-runtime-api`, `nikic/php-parser` (the parser and printer the editor is built on) and `netresearch/composer-agent-skill-plugin` (registers the skill when the package is installed through Composer; `allow-plugins` keeps it disabled in this repository).
+- **Development:** `require-dev` — `friendsofphp/php-cs-fixer` for `composer cgl` and the Formatting gate.
+- **Obtained from:** Packagist through Composer. There is deliberately no `composer.lock` (see [AGENTS.md](AGENTS.md)): every install resolves the newest versions inside the declared ranges. A release build records the resolved runtime packages with version, source and licence in `runtime-dependencies.json`, published and checksummed with the release (`scripts/build-release.sh`).
+- **Optional tool:** Phpactor, configured by the user for project-wide method renames. The editor runs only the pinned release, checked by SHA-256 (`src/PhpactorReferenceFinder.php`).
+- **Python and shell:** tests and benchmark tooling use the Python standard library only; there is no Python manifest.
+- **CI:** third-party GitHub Actions are pinned to commit SHAs; the shared workflows come from `netresearch/skill-repo-skill` and `netresearch/.github` at `main`.
+- **Tracking and updates:** Renovate (`renovate.json`, extending the organisation preset `netresearch/renovate-config`) proposes updates as pull requests; `auto-merge-deps.yml` (an organisation reusable workflow) merges dependency update pull requests after their checks pass. A new dependency is added in a pull request that changes `composer.json` and is reviewed there, including its licence against the organisation policy below.
+
+### Governance and policies
+
+This repository follows the Netresearch organisation policies:
+
+- [Governance](https://github.com/netresearch/.github/blob/main/GOVERNANCE.md): ownership, roles, how decisions are made and disputes resolved, and continuity.
+- [Roadmap](https://github.com/netresearch/.github/blob/main/ROADMAP.md): planned and explicitly excluded work for the coming year.
+- [Handling of dependency and code analysis findings](https://github.com/netresearch/.github/blob/main/SECURITY.md#handling-of-dependency-and-code-analysis-findings): thresholds, deadlines and the exception process for dependency (SCA) and static analysis (SAST) findings.
+- [Secret management](https://github.com/netresearch/.github/blob/main/SECURITY.md#secret-management): how CI and release credentials are stored, accessed and rotated.
+- [Access roster](https://github.com/netresearch/.github/blob/main/docs/access-roster.md): who holds administrative access to this repository and the organisation.
+
+The security assurance case for this repository (threat model, trust boundaries, countermeasures and limits) is in [docs/SECURITY-ASSURANCE.md](docs/SECURITY-ASSURANCE.md).
+
+Checks that run on every push and pull request in this repository: Validate (`validate.yml`: skill structure, plugin manifest sync, markdownlint, yamllint, actionlint, JSON syntax, ShellCheck at style severity, ruff, checkpoint schemas), Eval Validate, Harness Verify, Skill Tests, Formatting, PHP Tests and Distribution. Pull requests from collaborators with write access are approved automatically by `pr-quality.yml`. No dependency-review, Composer Audit, static-security (SAST) or secret-scanning workflow runs in this repository.
+
 ## Related skills
 
  [php-modernization](https://github.com/netresearch/php-modernization-skill) for modernization decisions and [file-search](https://github.com/netresearch/file-search-skill) for discovery.
