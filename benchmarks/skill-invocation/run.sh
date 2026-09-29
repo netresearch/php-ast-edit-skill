@@ -43,7 +43,10 @@ for autoload in "$REPO/.Build/vendor/composer/installed.php" "$REPO/vendor/compo
   # The declared path is printed, not the resolved one: the case that matters is a
   # root package pointing at a directory an earlier run deleted, where realpath gives
   # nothing back and a message built on it would name the problem as an empty string.
+  # The single quotes are PHP source for `php -r`; its `$` must reach PHP unexpanded.
+  # shellcheck disable=SC2016
   declared=$(php -r '$d=require $argv[1]; echo $d["root"]["install_path"] ?? "";' "$autoload")
+  # shellcheck disable=SC2016
   root=$(php -r 'echo realpath($argv[1]) ?: "";' "$declared")
   [[ "$root" == "$(cd "$REPO" && pwd -P)" ]] || {
     echo "$REPO has an autoloader whose root package is '$declared'." >&2
