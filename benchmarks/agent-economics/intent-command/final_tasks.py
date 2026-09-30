@@ -305,7 +305,7 @@ def main() -> None:
         print(data, end="")
         return
     destination.parent.mkdir(parents=True, exist_ok=True)  # NOSONAR(S8707)
-    destination.write_text(data)
+    destination.write_text(data)  # NOSONAR(S8707)
 
 
 if __name__ == "__main__":
