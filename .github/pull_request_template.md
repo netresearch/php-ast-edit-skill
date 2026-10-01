@@ -9,6 +9,7 @@
 ## Checklist
 
 - [ ] `bash tests/run.sh` passes locally after `composer install`, including clean-install and release-artifact tests.
+- [ ] New or changed behaviour comes with a test that fails without the change (see the test policy in the README).
 - [ ] `.php` files were edited through `bin/php-ast-edit`, not `sed`, regex, or raw string replacement.
 - [ ] Version changes went into the root `plugin.json` and `.claude-plugin/plugin.json` was regenerated, not hand-edited.
 - [ ] New or changed operations are documented in `skills/php-structured-edit/references/operations.md`.

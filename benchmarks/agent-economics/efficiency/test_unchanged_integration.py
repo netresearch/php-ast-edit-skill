@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: Netresearch DTT GmbH
+
 """Real proxy/selection boundaries for the unchanged-file experiment; no models."""
 
 import hashlib

@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: CC-BY-SA-4.0 -->
+<!-- SPDX-FileCopyrightText: Netresearch DTT GmbH -->
+
 # Prospective shared-file metadata experiment
 
 Repeated per-file metadata makes multi-file compact reports larger without adding

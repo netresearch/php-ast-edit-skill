@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: Netresearch DTT GmbH
+
 """Frozen entrypoint contract and conservative pre-invocation observations."""
 
 import json

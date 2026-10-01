@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: Netresearch DTT GmbH
+
 """Offline contract tests for the opt-in unchanged-file excerpt experiment."""
 
 import hashlib

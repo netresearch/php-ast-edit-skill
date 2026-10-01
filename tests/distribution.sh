@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: Netresearch DTT GmbH
+
 # shellcheck shell=bash
 # Exercise installed parsing and mutation, not just the dependency-free help command.
 set -euo pipefail

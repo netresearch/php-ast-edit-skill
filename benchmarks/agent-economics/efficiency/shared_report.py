@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: Netresearch DTT GmbH
+
 """Losslessly factor metadata shared by every file in an engine report."""
 
 from __future__ import annotations

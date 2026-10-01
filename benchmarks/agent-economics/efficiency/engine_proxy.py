@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: Netresearch DTT GmbH
 """Capture engine calls; opt-in synthetic experiments may add review excerpts."""
 
 import hashlib

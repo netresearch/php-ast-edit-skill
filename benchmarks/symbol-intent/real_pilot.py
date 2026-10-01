@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: Netresearch DTT GmbH
 """Prospective public-PHP rename trial with final-byte behavior-test receipts."""
 
 import argparse

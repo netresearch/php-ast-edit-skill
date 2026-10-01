@@ -1,4 +1,6 @@
 #!/bin/sh
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: Netresearch DTT GmbH
 # shellcheck disable=SC2016 # the patterns name PHP variables; `$` is meant literally
 # All three changes, the rename complete at both ends, and the new method actually used.
 #

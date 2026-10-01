@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: Netresearch DTT GmbH
 """Prepare/run the prospective synthetic pilot. Preparation never calls a model."""
 
 import argparse

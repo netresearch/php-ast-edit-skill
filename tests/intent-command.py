@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: Netresearch DTT GmbH
 """Regression tests for the declaration-first ``php-ast-edit rename`` command.
 
 The fixtures are disposable PHP projects.  They deliberately exercise the command through

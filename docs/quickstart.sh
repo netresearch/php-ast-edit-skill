@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: Netresearch DTT GmbH
+
 # shellcheck shell=bash
 # Executable documentation: no network and no project-wide formatting changes.
 set -euo pipefail

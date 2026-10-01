@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: Netresearch DTT GmbH
+
 """The primary multi-file gate must not relabel the A/A control as treatment."""
 
 import unittest

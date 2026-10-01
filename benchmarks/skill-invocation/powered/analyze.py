@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: Netresearch DTT GmbH
 """Account for every planned run before applying the historical protocol's tests.
 
 Usage: analyze.py <BENCH>            the report for a finished round

@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: Netresearch DTT GmbH
 """Local benchmark adapter: revisions bind reads to the existing AST engine's writes."""
 
 import argparse

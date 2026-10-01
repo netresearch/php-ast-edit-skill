@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: Netresearch DTT GmbH
+
 """Materialize isolated tasks, grade behavior, and import measured agent-run records."""
 
 import argparse

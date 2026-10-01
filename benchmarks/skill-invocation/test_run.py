@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: Netresearch DTT GmbH
 """What run.sh does with the subject's dependencies.
 
 An arm is a full Claude Code session with a real repository in front of it, so it may

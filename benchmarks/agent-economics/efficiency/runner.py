@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: Netresearch DTT GmbH
+
 """Prepare and run the bounded arm experiment; prepare/validate call no models."""
 
 import argparse

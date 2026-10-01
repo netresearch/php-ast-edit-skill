@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: CC-BY-SA-4.0 -->
+<!-- SPDX-FileCopyrightText: Netresearch DTT GmbH -->
+
 # Enforcing AST-only PHP writes
 
 `SKILL.md` and `AGENTS.md` state the rule, but a rule is an instruction, not a control. After the fact an identical result gives no clue whether it came from an AST transaction or from `sed` — so enforcement has to happen **before** the write.

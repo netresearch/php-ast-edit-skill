@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: Netresearch DTT GmbH
+
 """Offline manifest and oracle falsification tests; no model calls."""
 
 from __future__ import annotations

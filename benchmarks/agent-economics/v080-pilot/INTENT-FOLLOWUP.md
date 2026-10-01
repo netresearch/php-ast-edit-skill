@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: CC-BY-SA-4.0 -->
+<!-- SPDX-FileCopyrightText: Netresearch DTT GmbH -->
+
 # Prospective declaration-first instruction follow-up
 
 Recorded after the original 24 and clarified 6 candidate runs, before this campaign.

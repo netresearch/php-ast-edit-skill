@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: CC-BY-SA-4.0 -->
+<!-- SPDX-FileCopyrightText: Netresearch DTT GmbH -->
+
 # Prospective unchanged-file context experiment
 
 This new campaign follows PR #85's completed source-excerpt experiment. It neither

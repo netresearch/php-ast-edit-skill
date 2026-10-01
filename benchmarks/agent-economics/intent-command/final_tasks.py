@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: Netresearch DTT GmbH
 """Generate held-out method-rename fixtures for offline and paid evaluation."""
 
 from __future__ import annotations
@@ -303,7 +305,7 @@ def main() -> None:
         print(data, end="")
         return
     destination.parent.mkdir(parents=True, exist_ok=True)  # NOSONAR(S8707)
-    destination.write_text(data)
+    destination.write_text(data)  # NOSONAR(S8707)
 
 
 if __name__ == "__main__":

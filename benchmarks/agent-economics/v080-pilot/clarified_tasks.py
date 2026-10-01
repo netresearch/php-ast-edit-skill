@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: Netresearch DTT GmbH
 """Generate the one clarified cross-file follow-up fixture.
 
 This module loads the original generator without changing its source or manifest.
@@ -100,7 +102,7 @@ def main() -> None:
     # This offline controller accepts an operator-selected output path directly;
     # it is not model/task-derived and has no restricted output-root contract.
     destination.parent.mkdir(parents=True, exist_ok=True)  # NOSONAR(S8707)
-    destination.write_text(data)
+    destination.write_text(data)  # NOSONAR(S8707)
 
 
 if __name__ == "__main__":

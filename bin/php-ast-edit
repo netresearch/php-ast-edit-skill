@@ -1,6 +1,10 @@
 #!/usr/bin/env php
 <?php
-declare(strict_types=1);
+/*
+ * SPDX-License-Identifier: MIT
+ * SPDX-FileCopyrightText: Netresearch DTT GmbH
+ */
+declare (strict_types=1);
 
 $root = dirname(__DIR__);
 $autoload = $_composer_autoload_path ?? (is_file($root . '/vendor/autoload.php') ? $root . '/vendor/autoload.php' : $root . '/../../autoload.php');

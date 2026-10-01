@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: Netresearch DTT GmbH
+
 # shellcheck shell=bash
 # Build in isolation: a developer's vendor/ must never leak into release artifacts.
 set -euo pipefail

@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: Netresearch DTT GmbH
 """Generate the four bounded fixtures for the v0.8 Haiku A/B pilot.
 
 The source strings are deliberately kept here, rather than in generated files, so a

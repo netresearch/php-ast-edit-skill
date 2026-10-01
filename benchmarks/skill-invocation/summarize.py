@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: Netresearch DTT GmbH
 """Read the arms' result files and report invocation rate and medians.
 
 The headline number is the invocation rate, not the token count. A run in which the

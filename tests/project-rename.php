@@ -1,5 +1,10 @@
 <?php
 
+/*
+ * SPDX-License-Identifier: MIT
+ * SPDX-FileCopyrightText: Netresearch DTT GmbH
+ */
+
 declare(strict_types=1);
 
 // rename_method across a project: the hierarchy from the sources and Composer's tables, the

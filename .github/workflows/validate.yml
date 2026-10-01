@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: Netresearch DTT GmbH
+
 name: Validate
 
 on:
@@ -11,3 +14,5 @@ jobs:
     permissions:
       contents: read
     uses: netresearch/skill-repo-skill/.github/workflows/validate.yml@main
+    with:
+      shellcheck-severity: style

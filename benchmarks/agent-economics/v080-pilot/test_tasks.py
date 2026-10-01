@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: Netresearch DTT GmbH
+
 """Offline contract tests for the v0.8 pilot task generator."""
 
 from __future__ import annotations

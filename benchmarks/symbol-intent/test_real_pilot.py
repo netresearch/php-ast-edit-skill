@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: Netresearch DTT GmbH
+
 """Offline design, receipt and execution-boundary regressions; no model calls."""
 
 import argparse

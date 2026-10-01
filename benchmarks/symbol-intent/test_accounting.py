@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: Netresearch DTT GmbH
+
 """Different documented usage scopes must not hide missing or impossible counters."""
 
 import copy

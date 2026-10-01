@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: Netresearch DTT GmbH
 """Compare the forty preregistered final-guidance attempts without dropping failures."""
 
 from __future__ import annotations

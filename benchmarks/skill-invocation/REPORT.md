@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: CC-BY-SA-4.0 -->
+<!-- SPDX-FileCopyrightText: Netresearch DTT GmbH -->
+
 # What it costs to reach for the tool
 
 Haiku 4.5, isolated configurations, a real TYPO3 extension that declares both a

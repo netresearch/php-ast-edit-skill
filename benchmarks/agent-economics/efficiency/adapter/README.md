@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: CC-BY-SA-4.0 -->
+<!-- SPDX-FileCopyrightText: Netresearch DTT GmbH -->
+
 # Experimental revision adapter
 
 This local benchmark helper combines source reads, mandatory snapshot guards, and

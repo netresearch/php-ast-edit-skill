@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: CC-BY-SA-4.0 -->
+<!-- SPDX-FileCopyrightText: Netresearch DTT GmbH -->
+
 # Measuring PHP AST editing: CLI performance and complete agent tasks
 
 The CLI microbenchmark measures local processes. The agent harness measures whether a

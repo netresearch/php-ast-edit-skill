@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: Netresearch DTT GmbH
+
 """Offline target and direct invocation checks; never invoke a candidate model."""
 
 import json

@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: CC-BY-SA-4.0 -->
+<!-- SPDX-FileCopyrightText: Netresearch DTT GmbH -->
+
 # Prospective continuation guidance trial
 
 `real-php-guidance-v1` is a new twenty-candidate profile of `real_pilot.py`.

@@ -1,5 +1,9 @@
 <?php
 
+/*
+ * SPDX-License-Identifier: MIT
+ * SPDX-FileCopyrightText: Netresearch DTT GmbH
+ */
 declare (strict_types=1);
 /*
  * The rules this repository is written to.
@@ -40,7 +44,10 @@ return (new PhpCsFixer\Config())
                     'phpdoc',
                 ],
             ],
-            // The licence header sits directly after the tag here, so no blank line between them.
+            // The canonical printer writes one blank line after the opening tag itself, and the licence
+            // header follows it; the tree comes out the same with this rule on or off. `header_comment`
+            // below separates the header on both sides, so a header the fixer adds to a new file gets
+            // the same blank line and one `composer cgl` reaches the fixed point.
             'blank_line_after_opening_tag' => false,
             'single_line_empty_body' => true,
             'no_unused_imports' => true,
@@ -48,5 +55,13 @@ return (new PhpCsFixer\Config())
             'trailing_comma_in_multiline' => ['elements' => ['arrays', 'arguments', 'parameters']],
             'array_syntax' => ['syntax' => 'short'],
             'no_superfluous_phpdoc_tags' => false,
+            // Every PHP file carries its licence and copyright notice; `php-cs-fixer fix` adds a missing one,
+            // so the Formatting gate fails on a new file without it.
+            'header_comment' => [
+                'header' => "SPDX-License-Identifier: MIT\nSPDX-FileCopyrightText: Netresearch DTT GmbH",
+                'comment_type' => 'comment',
+                'location' => 'after_open',
+                'separate' => 'both',
+            ],
         ]
     );

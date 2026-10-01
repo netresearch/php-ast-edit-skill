@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: Netresearch DTT GmbH
+
 """Bounded stdio client for the pinned Phpactor rename protocol; never applies edits."""
 
 import json

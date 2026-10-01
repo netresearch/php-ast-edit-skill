@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: Netresearch DTT GmbH
 # Published numbers are claims. This asserts the transcription against the report it
 # came from, then checks the report's own category sums and the derived comparisons.
 # A recomputation that never reads the source only launders the figures it restates.

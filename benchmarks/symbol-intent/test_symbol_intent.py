@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: Netresearch DTT GmbH
+
 """Offline and optional pinned-Phpactor integration checks; no model calls."""
 
 import argparse

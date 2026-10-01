@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: CC-BY-SA-4.0 -->
+<!-- SPDX-FileCopyrightText: Netresearch DTT GmbH -->
+
 # Complete-agent economics
 
 The [instruction and discovery experiments](results/2026-09-11-intent-instructions/REPORT.md)

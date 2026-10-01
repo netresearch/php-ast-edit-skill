@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: Netresearch DTT GmbH
+
 """Offline fixture-oracle checks and opt-in public-source PHPUnit checks."""
 
 import json

@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: Netresearch DTT GmbH
 """Experimental method-rename planning for trusted, self-contained PHP workspaces.
 
 Phpactor resolves references. A batched AST helper validates every returned name and

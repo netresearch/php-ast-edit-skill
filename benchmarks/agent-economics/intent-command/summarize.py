@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: Netresearch DTT GmbH
 """Add direct intent-command accounting to the released offline reporter.
 
 The v0.8 reporter remains the source of truth for evidence paths, native metrics,

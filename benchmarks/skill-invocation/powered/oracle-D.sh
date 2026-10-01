@@ -1,4 +1,6 @@
 #!/bin/sh
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: Netresearch DTT GmbH
 # A public method renamed across the project: declaration and every call, and the project's
 # own unit tests still passing.
 #

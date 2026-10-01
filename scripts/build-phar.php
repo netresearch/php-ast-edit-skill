@@ -1,5 +1,10 @@
 <?php
 
+/*
+ * SPDX-License-Identifier: MIT
+ * SPDX-FileCopyrightText: Netresearch DTT GmbH
+ */
+
 declare(strict_types=1);
 $root = dirname(__DIR__);
 $vendorAutoload = $root . '/vendor/autoload.php';

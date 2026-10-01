@@ -1,4 +1,6 @@
 ---
+# SPDX-License-Identifier: CC-BY-SA-4.0
+# SPDX-FileCopyrightText: Netresearch DTT GmbH
 name: php-structured-edit
 description: "Use when changing PHP source: method or variable renames, declarations, statements, expressions, imports, literals and file creation/deletion. Provides guarded AST writes and project method discovery. Use ordinary search for reads; not for read-only questions or non-PHP edits."
 ---

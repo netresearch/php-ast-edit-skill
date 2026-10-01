@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: Netresearch DTT GmbH
 """Copy an explicit evidence allowlist from a completed local pilot campaign."""
 
 import argparse
