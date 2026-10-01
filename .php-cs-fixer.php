@@ -45,7 +45,9 @@ return (new PhpCsFixer\Config())
                 ],
             ],
             // The canonical printer writes one blank line after the opening tag itself, and the licence
-            // header follows it; the tree comes out the same with this rule on or off.
+            // header follows it; the tree comes out the same with this rule on or off. `header_comment`
+            // below separates the header on both sides, so a header the fixer adds to a new file gets
+            // the same blank line and one `composer cgl` reaches the fixed point.
             'blank_line_after_opening_tag' => false,
             'single_line_empty_body' => true,
             'no_unused_imports' => true,
@@ -59,7 +61,7 @@ return (new PhpCsFixer\Config())
                 'header' => "SPDX-License-Identifier: MIT\nSPDX-FileCopyrightText: Netresearch DTT GmbH",
                 'comment_type' => 'comment',
                 'location' => 'after_open',
-                'separate' => 'bottom',
+                'separate' => 'both',
             ],
         ]
     );
