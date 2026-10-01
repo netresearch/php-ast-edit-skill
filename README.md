@@ -294,7 +294,7 @@ This repository follows the Netresearch organisation policies:
 
 The security assurance case for this repository (threat model, trust boundaries, countermeasures and limits) is in [docs/SECURITY-ASSURANCE.md](docs/SECURITY-ASSURANCE.md).
 
-Checks that run on every push and pull request in this repository: Validate (`validate.yml`: skill structure, plugin manifest sync, markdownlint, yamllint, actionlint, JSON syntax, ShellCheck at style severity, ruff, checkpoint schemas), Eval Validate, Harness Verify, Skill Tests, Formatting, PHP Tests and Distribution. Pull requests from collaborators with write access are approved automatically by `pr-quality.yml`. No dependency-review, Composer Audit, static-security (SAST) or secret-scanning workflow runs in this repository.
+Checks that run on every push and pull request in this repository: Validate (`validate.yml`: skill structure, plugin manifest sync, markdownlint, yamllint, actionlint, JSON syntax, ShellCheck at style severity, ruff, checkpoint schemas), Eval Validate, Harness Verify, Skill Tests, Formatting, PHP Tests and Distribution. Pull requests from collaborators with write access are approved automatically by `pr-quality.yml`, and `auto-merge-deps.yml` runs on every pull request but is skipped unless Renovate or Dependabot opened it. Configured outside the workflow files, CodeQL default setup (actions, python), SonarCloud Code Analysis (SonarCloud automatic analysis), the DCO check and the CodeRabbit review status also run on pull requests. No dependency-review, Composer Audit or secret-scanning check runs in this repository, and no SAST beyond CodeQL and SonarCloud.
 
 ## Related skills
 

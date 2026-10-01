@@ -69,5 +69,5 @@ Which checks must pass before a pull request can merge is set in the branch prot
 - The transaction is not atomic for the operating system: concurrent readers can see some files written and others not, and side effects of configured commands are outside the rollback (README, "Guarantees and limits").
 - Parsing and `php -l` show that the output is syntactically valid PHP, not that it behaves correctly. Run the project's tests.
 - The enforcement hook is a linter-like aid with documented bypasses, not a security boundary (`skills/php-structured-edit/references/enforcement.md`).
-- This repository's CI runs no dependency-review, software-composition, static-security or secret-scanning workflow of its own; the organisation's policy on such findings is linked from the README.
+- This repository's CI runs no dependency-review, software-composition, static-security or secret-scanning workflow of its own; static analysis on pull requests comes only from CodeQL default setup and SonarCloud automatic analysis, configured outside the repository. The organisation's policy on such findings is linked from the README.
 - Security fixes follow the supported-versions rules of the organisation's security policy; older releases may not receive them.
