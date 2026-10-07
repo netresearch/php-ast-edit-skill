@@ -76,9 +76,9 @@ final class RepositoryConfig
             $candidate = $directory . DIRECTORY_SEPARATOR . self::FILE;
 
             if (is_file($candidate)) {
-                self::assertOwnedBy($candidate, $owner);
+                $raw = self::readOwned($candidate, $owner);
 
-                return self::fromFile($candidate);
+                return self::fromJson($raw, $candidate);
             }
             $parent = dirname($directory);
 
@@ -97,53 +97,7 @@ final class RepositoryConfig
             throw new EditException('Cannot read ' . $path);
         }
 
-        try {
-            $data = json_decode($raw, true, 32, JSON_THROW_ON_ERROR);
-        } catch (\JsonException $failure) {
-            throw new EditException(sprintf('%s is not valid JSON: %s', $path, $failure->getMessage()));
-        }
-
-        if (!is_array($data)) {
-            throw new EditException($path . ' must contain a JSON object.');
-        }
-        $width = $data['printWidth'] ?? CanonicalPrinter::DEFAULT_WIDTH;
-
-        if (!is_int($width)) {
-            throw new EditException($path . ': printWidth must be an integer.');
-        }
-        self::assertWidth($width, $path . ': ');
-        $exclude = $data['exclude'] ?? [];
-
-        if (!is_array($exclude)) {
-            throw new EditException($path . ': exclude must be an array of paths.');
-        }
-        self::assertExclusions($exclude, $path . ': ');
-        $formatter = $data['formatter'] ?? null;
-
-        if ($formatter !== null) {
-            if (!is_array($formatter)) {
-                throw new EditException($path . ": formatter must be an array of command arguments.");
-            }
-            self::assertFormatter($formatter, $path . ": ");
-            $formatter = array_values(array_map(strval(...), $formatter));
-        }
-
-        $verify = self::verificationFromJson($raw, $path);
-        $phpactor = $data['phpactor'] ?? null;
-
-        if ($phpactor !== null && (!is_string($phpactor) || $phpactor === '')) {
-            throw new EditException($path . ': phpactor must be the path to phpactor.phar.');
-        }
-
-        return new self(
-            (bool) ($data['canonical'] ?? false),
-            $width,
-            $path,
-            array_values(array_map(strval(...), $exclude)),
-            $formatter,
-            $verify,
-            $phpactor,
-        );
+        return self::fromJson($raw, $path);
     }
 
     /**
@@ -469,16 +423,42 @@ final class RepositoryConfig
         }
     }
 
-    /** The declaration may name commands, so only a copy owned by `$owner` is read. */
-    private static function assertOwnedBy(string $path, int|false $owner): void
+    /**
+     * The declaration's bytes, read only when `$owner` owns the file.
+     *
+     * The owner is taken from the open stream and the bytes from the same stream, so the file
+     * that was checked is the file that is parsed even if the path is replaced in between.
+     */
+    private static function readOwned(string $path, int|false $owner): string
     {
-        if ($owner === false || @fileowner($path) !== $owner) {
+        $handle = $owner === false ? false : @fopen($path, 'rb');
+
+        if ($handle === false) {
             throw new EditException(
-                sprintf(
-                    '%s is not owned by the current user; a declaration names commands this tool runs, so only one the current user owns is read.',
-                    $path,
-                ),
+                $owner === false ? $path . ' is not owned by the current user; a declaration names commands this tool runs, so only one the current user owns is read.' : 'Cannot read ' . $path,
             );
+        }
+
+        try {
+            $stat = fstat($handle);
+
+            if ($stat === false || $stat['uid'] !== $owner) {
+                throw new EditException(
+                    sprintf(
+                        '%s is not owned by the current user; a declaration names commands this tool runs, so only one the current user owns is read.',
+                        $path,
+                    ),
+                );
+            }
+            $raw = stream_get_contents($handle);
+
+            if ($raw === false) {
+                throw new EditException('Cannot read ' . $path);
+            }
+
+            return $raw;
+        } finally {
+            fclose($handle);
         }
     }
 
@@ -505,5 +485,57 @@ final class RepositoryConfig
         }
 
         return $directory;
+    }
+
+    /** @param string $path where `$raw` was read from, for messages and for `path` */
+    private static function fromJson(string $raw, string $path): self
+    {
+        try {
+            $data = json_decode($raw, true, 32, JSON_THROW_ON_ERROR);
+        } catch (\JsonException $failure) {
+            throw new EditException(sprintf('%s is not valid JSON: %s', $path, $failure->getMessage()));
+        }
+
+        if (!is_array($data)) {
+            throw new EditException($path . ' must contain a JSON object.');
+        }
+        $width = $data['printWidth'] ?? CanonicalPrinter::DEFAULT_WIDTH;
+
+        if (!is_int($width)) {
+            throw new EditException($path . ': printWidth must be an integer.');
+        }
+        self::assertWidth($width, $path . ': ');
+        $exclude = $data['exclude'] ?? [];
+
+        if (!is_array($exclude)) {
+            throw new EditException($path . ': exclude must be an array of paths.');
+        }
+        self::assertExclusions($exclude, $path . ': ');
+        $formatter = $data['formatter'] ?? null;
+
+        if ($formatter !== null) {
+            if (!is_array($formatter)) {
+                throw new EditException($path . ": formatter must be an array of command arguments.");
+            }
+            self::assertFormatter($formatter, $path . ": ");
+            $formatter = array_values(array_map(strval(...), $formatter));
+        }
+
+        $verify = self::verificationFromJson($raw, $path);
+        $phpactor = $data['phpactor'] ?? null;
+
+        if ($phpactor !== null && (!is_string($phpactor) || $phpactor === '')) {
+            throw new EditException($path . ': phpactor must be the path to phpactor.phar.');
+        }
+
+        return new self(
+            (bool) ($data['canonical'] ?? false),
+            $width,
+            $path,
+            array_values(array_map(strval(...), $exclude)),
+            $formatter,
+            $verify,
+            $phpactor,
+        );
     }
 }
