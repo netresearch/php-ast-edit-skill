@@ -48,21 +48,41 @@ final class RepositoryConfig
         public readonly ?string $phpactor = null,
     ) {}
 
-    /** Walk up from a file or directory until the marker turns up. */
+    /**
+     * Walk up from a file or directory until the marker turns up, without leaving the project.
+     *
+     * The declaration names commands this tool runs (`formatter`, `verify`, `phpactor`), so it
+     * is read only from the project the file belongs to: the search stops at the version-control
+     * root (the nearest directory holding .git), so a package inside a monorepo still finds the
+     * root's declaration; outside version control it stops at the nearest directory holding
+     * composer.json, and a file in neither is looked up beside itself only. A declaration owned
+     * by somebody else is refused: compared with the current user where PHP's POSIX extension
+     * is loaded, otherwise with the owner of the directory the search starts in.
+     */
     public static function discover(string $start): self
     {
         $directory = is_dir($start) ? $start : dirname($start);
+
+        // A file being created may sit in directories that do not exist yet; start from the
+        // deepest one that does.
+        while (!is_dir($directory) && dirname($directory) !== $directory) {
+            $directory = dirname($directory);
+        }
         $directory = realpath($directory) ?: $directory;
+        $boundary = self::searchBoundary($directory);
+        $owner = function_exists('posix_geteuid') ? posix_geteuid() : @fileowner($directory);
 
         while (true) {
             $candidate = $directory . DIRECTORY_SEPARATOR . self::FILE;
 
             if (is_file($candidate)) {
+                self::assertOwnedBy($candidate, $owner);
+
                 return self::fromFile($candidate);
             }
             $parent = dirname($directory);
 
-            if ($parent === $directory) {
+            if ($directory === $boundary || $parent === $directory) {
                 return new self(false, CanonicalPrinter::DEFAULT_WIDTH, null);
             }
             $directory = $parent;
@@ -447,5 +467,43 @@ final class RepositoryConfig
                 );
             }
         }
+    }
+
+    /** The declaration may name commands, so only a copy owned by `$owner` is read. */
+    private static function assertOwnedBy(string $path, int|false $owner): void
+    {
+        if ($owner === false || @fileowner($path) !== $owner) {
+            throw new EditException(
+                sprintf(
+                    '%s is not owned by the current user; a declaration names commands this tool runs, so only one the current user owns is read.',
+                    $path,
+                ),
+            );
+        }
+    }
+
+    /**
+     * Where the search for the declaration stops: the nearest directory holding .git, else the
+     * nearest holding composer.json, else the start directory itself.
+     */
+    private static function searchBoundary(string $directory): string
+    {
+        foreach (['.git', 'composer.json'] as $marker) {
+            $current = $directory;
+
+            while (true) {
+                if (file_exists($current . DIRECTORY_SEPARATOR . $marker)) {
+                    return $current;
+                }
+                $parent = dirname($current);
+
+                if ($parent === $current) {
+                    break;
+                }
+                $current = $parent;
+            }
+        }
+
+        return $directory;
     }
 }
