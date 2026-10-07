@@ -48,21 +48,41 @@ final class RepositoryConfig
         public readonly ?string $phpactor = null,
     ) {}
 
-    /** Walk up from a file or directory until the marker turns up. */
+    /**
+     * Walk up from a file or directory until the marker turns up, without leaving the project.
+     *
+     * The declaration names commands this tool runs (`formatter`, `verify`, `phpactor`), so it
+     * is read only from the project the file belongs to: the search stops at the version-control
+     * root (the nearest directory holding .git), so a package inside a monorepo still finds the
+     * root's declaration; outside version control it stops at the nearest directory holding
+     * composer.json, and a file in neither is looked up beside itself only. A declaration owned
+     * by somebody else is refused: compared with the current user where PHP's POSIX extension
+     * is loaded, otherwise with the owner of the directory the search starts in.
+     */
     public static function discover(string $start): self
     {
         $directory = is_dir($start) ? $start : dirname($start);
+
+        // A file being created may sit in directories that do not exist yet; start from the
+        // deepest one that does.
+        while (!is_dir($directory) && dirname($directory) !== $directory) {
+            $directory = dirname($directory);
+        }
         $directory = realpath($directory) ?: $directory;
+        $boundary = self::searchBoundary($directory);
+        $owner = function_exists('posix_geteuid') ? posix_geteuid() : @fileowner($directory);
 
         while (true) {
             $candidate = $directory . DIRECTORY_SEPARATOR . self::FILE;
 
             if (is_file($candidate)) {
-                return self::fromFile($candidate);
+                $raw = self::readOwned($candidate, $owner);
+
+                return self::fromJson($raw, $candidate);
             }
             $parent = dirname($directory);
 
-            if ($parent === $directory) {
+            if ($directory === $boundary || $parent === $directory) {
                 return new self(false, CanonicalPrinter::DEFAULT_WIDTH, null);
             }
             $directory = $parent;
@@ -77,53 +97,7 @@ final class RepositoryConfig
             throw new EditException('Cannot read ' . $path);
         }
 
-        try {
-            $data = json_decode($raw, true, 32, JSON_THROW_ON_ERROR);
-        } catch (\JsonException $failure) {
-            throw new EditException(sprintf('%s is not valid JSON: %s', $path, $failure->getMessage()));
-        }
-
-        if (!is_array($data)) {
-            throw new EditException($path . ' must contain a JSON object.');
-        }
-        $width = $data['printWidth'] ?? CanonicalPrinter::DEFAULT_WIDTH;
-
-        if (!is_int($width)) {
-            throw new EditException($path . ': printWidth must be an integer.');
-        }
-        self::assertWidth($width, $path . ': ');
-        $exclude = $data['exclude'] ?? [];
-
-        if (!is_array($exclude)) {
-            throw new EditException($path . ': exclude must be an array of paths.');
-        }
-        self::assertExclusions($exclude, $path . ': ');
-        $formatter = $data['formatter'] ?? null;
-
-        if ($formatter !== null) {
-            if (!is_array($formatter)) {
-                throw new EditException($path . ": formatter must be an array of command arguments.");
-            }
-            self::assertFormatter($formatter, $path . ": ");
-            $formatter = array_values(array_map(strval(...), $formatter));
-        }
-
-        $verify = self::verificationFromJson($raw, $path);
-        $phpactor = $data['phpactor'] ?? null;
-
-        if ($phpactor !== null && (!is_string($phpactor) || $phpactor === '')) {
-            throw new EditException($path . ': phpactor must be the path to phpactor.phar.');
-        }
-
-        return new self(
-            (bool) ($data['canonical'] ?? false),
-            $width,
-            $path,
-            array_values(array_map(strval(...), $exclude)),
-            $formatter,
-            $verify,
-            $phpactor,
-        );
+        return self::fromJson($raw, $path);
     }
 
     /**
@@ -447,5 +421,121 @@ final class RepositoryConfig
                 );
             }
         }
+    }
+
+    /**
+     * The declaration's bytes, read only when `$owner` owns the file.
+     *
+     * The owner is taken from the open stream and the bytes from the same stream, so the file
+     * that was checked is the file that is parsed even if the path is replaced in between.
+     */
+    private static function readOwned(string $path, int|false $owner): string
+    {
+        $handle = $owner === false ? false : @fopen($path, 'rb');
+
+        if ($handle === false) {
+            throw new EditException(
+                $owner === false ? $path . ' is not owned by the current user; a declaration names commands this tool runs, so only one the current user owns is read.' : 'Cannot read ' . $path,
+            );
+        }
+
+        try {
+            $stat = fstat($handle);
+
+            if ($stat === false || $stat['uid'] !== $owner) {
+                throw new EditException(
+                    sprintf(
+                        '%s is not owned by the current user; a declaration names commands this tool runs, so only one the current user owns is read.',
+                        $path,
+                    ),
+                );
+            }
+            $raw = stream_get_contents($handle);
+
+            if ($raw === false) {
+                throw new EditException('Cannot read ' . $path);
+            }
+
+            return $raw;
+        } finally {
+            fclose($handle);
+        }
+    }
+
+    /**
+     * Where the search for the declaration stops: the nearest directory holding .git, else the
+     * nearest holding composer.json, else the start directory itself.
+     */
+    private static function searchBoundary(string $directory): string
+    {
+        foreach (['.git', 'composer.json'] as $marker) {
+            $current = $directory;
+
+            while (true) {
+                if (file_exists($current . DIRECTORY_SEPARATOR . $marker)) {
+                    return $current;
+                }
+                $parent = dirname($current);
+
+                if ($parent === $current) {
+                    break;
+                }
+                $current = $parent;
+            }
+        }
+
+        return $directory;
+    }
+
+    /** @param string $path where `$raw` was read from, for messages and for `path` */
+    private static function fromJson(string $raw, string $path): self
+    {
+        try {
+            $data = json_decode($raw, true, 32, JSON_THROW_ON_ERROR);
+        } catch (\JsonException $failure) {
+            throw new EditException(sprintf('%s is not valid JSON: %s', $path, $failure->getMessage()));
+        }
+
+        if (!is_array($data)) {
+            throw new EditException($path . ' must contain a JSON object.');
+        }
+        $width = $data['printWidth'] ?? CanonicalPrinter::DEFAULT_WIDTH;
+
+        if (!is_int($width)) {
+            throw new EditException($path . ': printWidth must be an integer.');
+        }
+        self::assertWidth($width, $path . ': ');
+        $exclude = $data['exclude'] ?? [];
+
+        if (!is_array($exclude)) {
+            throw new EditException($path . ': exclude must be an array of paths.');
+        }
+        self::assertExclusions($exclude, $path . ': ');
+        $formatter = $data['formatter'] ?? null;
+
+        if ($formatter !== null) {
+            if (!is_array($formatter)) {
+                throw new EditException($path . ": formatter must be an array of command arguments.");
+            }
+            self::assertFormatter($formatter, $path . ": ");
+            $formatter = array_values(array_map(strval(...), $formatter));
+        }
+
+        $verify = self::verificationFromJson($raw, $path);
+        $phpactor = $data['phpactor'] ?? null;
+
+        if ($phpactor !== null && (!is_string($phpactor) || $phpactor === '')) {
+            throw new EditException($path . ': phpactor must be the path to phpactor.phar.');
+        }
+
+        return new self(
+            (bool) ($data['canonical'] ?? false),
+            $width,
+            $path,
+            array_values(array_map(strval(...), $exclude)),
+            $formatter,
+            $verify,
+            $phpactor,
+        );
     }
 }

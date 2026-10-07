@@ -9,6 +9,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Security
+
+- `.php-ast-edit.json` is read only from the edited file's project: the search stops at the nearest directory holding `.git`, outside version control at the nearest holding `composer.json`, and outside both only the file's own directory (for a file being created, its deepest existing directory) is checked. A declaration whose owner is not the current user is refused; without PHP's POSIX extension the owner is compared with that of the directory the search starts in.
+
 ## [1.0.0] - 2026-09-16
 
 ### Added

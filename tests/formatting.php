@@ -56,8 +56,11 @@ function workspace(): string
 }
 function removeTree(string $directory): void
 {
-    foreach (glob($directory . '/*') ?: [] as $entry) {
-        is_dir($entry) ? removeTree($entry) : @unlink($entry);
+    // scandir() rather than glob('*'): the fixtures hold dotfiles (.editorconfig,
+    // .php-ast-edit.json, .git) that glob() skips, and the directory then stays behind.
+    foreach (array_diff(scandir($directory) ?: [], ['.', '..']) as $name) {
+        $entry = $directory . '/' . $name;
+        is_dir($entry) && !is_link($entry) ? removeTree($entry) : @unlink($entry);
     }
     @rmdir($directory);
 }
@@ -994,6 +997,58 @@ check(
     'the root is where composer.json is',
     RepositoryConfig::rootFor($dir . '/a.php') === realpath($dir),
 );
+// The declaration is read from the project the file belongs to, never from above it.
+mkdir($dir . '/project/sub', 0700, true);
+file_put_contents($dir . '/project/composer.json', "{}\n");
+file_put_contents($dir . '/project/sub/b.php', "<?php\n");
+check(
+    'a declaration above the project root is not read',
+    RepositoryConfig::discover($dir . '/project/sub/b.php')->path === null,
+);
+RepositoryConfig::write($dir . '/project', 90);
+check(
+    'the project declaration is found from a subdirectory',
+    RepositoryConfig::discover($dir . '/project/sub/b.php')->width === 90,
+);
+// Inside version control the search runs to the repository root, past a package's own composer.json.
+$mono = sys_get_temp_dir() . '/php-ast-edit-mono-' . bin2hex(random_bytes(6));
+mkdir($mono . '/.git', 0700, true);
+mkdir($mono . '/packages/a/src', 0700, true);
+file_put_contents($mono . '/composer.json', "{}\n");
+file_put_contents($mono . '/packages/a/composer.json', "{}\n");
+file_put_contents($mono . '/packages/a/src/X.php', "<?php\n");
+RepositoryConfig::write($mono, 100);
+check(
+    'a package in a repository finds the declaration at the repository root',
+    RepositoryConfig::discover($mono . '/packages/a/src/X.php')->path === realpath($mono) . '/' . RepositoryConfig::FILE,
+);
+removeTree($mono);
+$loose = sys_get_temp_dir() . '/php-ast-edit-loose-' . bin2hex(random_bytes(6));
+mkdir($loose . '/sub', 0700, true);
+file_put_contents($loose . '/.php-ast-edit.json', "{\"canonical\": true}\n");
+file_put_contents($loose . '/sub/c.php', "<?php\n");
+check(
+    'outside a repository the declaration is read only beside the file',
+    RepositoryConfig::discover($loose . '/sub/c.php')->path === null && RepositoryConfig::discover($loose . '/c.php')->canonical,
+);
+removeTree($loose);
+
+if (function_exists('posix_geteuid') && posix_geteuid() !== 0 && is_file('/etc/hostname') && fileowner('/etc/hostname') !== posix_geteuid()) {
+    mkdir($dir . '/foreign', 0700, true);
+    file_put_contents($dir . '/foreign/composer.json', "{}\n");
+    symlink('/etc/hostname', $dir . '/foreign/' . RepositoryConfig::FILE);
+
+    try {
+        RepositoryConfig::discover($dir . '/foreign');
+        check('a declaration owned by another user is refused', false, 'accepted');
+    } catch (Throwable $throwable) {
+        check(
+            'a declaration owned by another user is refused',
+            str_contains($throwable->getMessage(), 'not owned by the current user'),
+            $throwable->getMessage(),
+        );
+    }
+}
 // A broken declaration must be named, not ignored.
 file_put_contents($dir . '/' . RepositoryConfig::FILE, "{ not json\n");
 
