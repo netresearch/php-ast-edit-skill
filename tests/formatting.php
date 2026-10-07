@@ -56,8 +56,11 @@ function workspace(): string
 }
 function removeTree(string $directory): void
 {
-    foreach (glob($directory . '/*') ?: [] as $entry) {
-        is_dir($entry) ? removeTree($entry) : @unlink($entry);
+    // scandir() rather than glob('*'): the fixtures hold dotfiles (.editorconfig,
+    // .php-ast-edit.json, .git) that glob() skips, and the directory then stays behind.
+    foreach (array_diff(scandir($directory) ?: [], ['.', '..']) as $name) {
+        $entry = $directory . '/' . $name;
+        is_dir($entry) && !is_link($entry) ? removeTree($entry) : @unlink($entry);
     }
     @rmdir($directory);
 }
