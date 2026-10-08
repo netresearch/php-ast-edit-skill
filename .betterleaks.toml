@@ -1,0 +1,11 @@
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: Netresearch DTT GmbH
+
+title = "php-ast-edit-skill Betterleaks configuration"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "SHA-256 file digests recorded in the benchmark results, not credentials"
+paths = ['''benchmarks/agent-economics/results/.+/runtime-sha256\.json''']
