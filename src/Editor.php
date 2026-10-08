@@ -938,6 +938,7 @@ final class Editor
                 $done[] = $transaction;
 
                 if ($transaction->mode === 'delete') {
+                    // nosemgrep: php.lang.security.unlink-use.unlink-use -- deletes the file the caller's own edit request names with mode delete; the editor acts with the caller's file permissions
                     if (!@unlink($transaction->path)) {
                         throw new EditException('Cannot delete ' . $transaction->path);
                     }
@@ -2390,6 +2391,7 @@ final class Editor
         try {
             $descriptors = [1 => ['file', $out, 'w'], 2 => ['file', $err, 'w']];
             $pipes = [];
+            // nosemgrep: php.lang.security.exec-use.exec-use -- argv array, no shell; the command comes from the project's own .php-ast-edit.json, trusted like Composer scripts (docs/SECURITY-ASSURANCE.md)
             $process = proc_open($command, $descriptors, $pipes, $root);
 
             if (!is_resource($process)) {
@@ -2411,7 +2413,9 @@ final class Editor
                 ),
             );
         } finally {
+            // nosemgrep: php.lang.security.unlink-use.unlink-use -- removes a scratch file this code created itself with tempnam(); the path is never user input
             @unlink($out);
+            // nosemgrep: php.lang.security.unlink-use.unlink-use -- removes a scratch file this code created itself with tempnam(); the path is never user input
             @unlink($err);
         }
     }

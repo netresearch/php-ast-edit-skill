@@ -239,6 +239,7 @@ def archive(source, commit, paths, destination):
             timeout=90,
             env=environment(),
         )
+    # nosemgrep: trailofbits.python.tarfile-extractall-traversal.tarfile-extractall-traversal -- archive was produced by git archive from the operator's own checkout just above, and filter="data" rejects absolute paths, traversal and escaping links
     with tarfile.open(temporary) as contents:
         contents.extractall(destination, filter="data")
     temporary.unlink()

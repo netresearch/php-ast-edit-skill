@@ -104,6 +104,7 @@ def runtime_identity():
 def invoke(argv, request, cwd):
     env = os.environ.copy()
     env["PHP_AST_INTENT_AUTOLOAD"] = str(RUNTIME / "vendor/autoload.php")
+    # nosemgrep: python.django.security.injection.command.subprocess-injection.subprocess-injection -- argv list, no shell; every caller passes a fixed php or LSP command of this benchmark harness
     process = subprocess.run(
         argv,
         input=encode(request),

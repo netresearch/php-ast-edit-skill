@@ -33,6 +33,7 @@ if (!is_dir($dist)) {
     mkdir($dist, 0777, true);
 }
 $target = $dist . '/php-ast-edit.phar';
+// nosemgrep: php.lang.security.unlink-use.unlink-use -- fixed path dist/php-ast-edit.phar inside this repository's own build directory
 @unlink($target);
 $phar = new Phar($target);
 $phar->startBuffering();

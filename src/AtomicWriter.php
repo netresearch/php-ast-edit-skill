@@ -43,6 +43,7 @@ final class AtomicWriter
 
         if ($temp === false || realpath(dirname($temp)) !== realpath($directory)) {
             if (is_string($temp) && is_file($temp)) {
+                // nosemgrep: php.lang.security.unlink-use.unlink-use -- removes the scratch file tempnam() just created next to the target after the directory check failed
                 @unlink($temp);
             }
 
@@ -62,6 +63,7 @@ final class AtomicWriter
             }
         } finally {
             if (is_file($temp)) {
+                // nosemgrep: php.lang.security.unlink-use.unlink-use -- removes the scratch file tempnam() created next to the target when the atomic rename did not happen
                 @unlink($temp);
             }
         }

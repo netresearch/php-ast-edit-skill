@@ -65,6 +65,7 @@ def extract(paths, destination):
         subprocess.run(
             ["git", "archive", COMMIT, *paths], cwd=SOURCE, stdout=output, check=True
         )
+    # nosemgrep: trailofbits.python.tarfile-extractall-traversal.tarfile-extractall-traversal -- archive was produced by git archive from the operator's own checkout just above, and filter="data" rejects absolute paths, traversal and escaping links
     with tarfile.open(archive) as source:
         source.extractall(destination, filter="data")
     archive.unlink()

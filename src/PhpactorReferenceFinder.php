@@ -171,6 +171,7 @@ final class PhpactorReferenceFinder implements ReferenceFinder
      */
     private function run(array $command, string $cwd, array $environment): array
     {
+        // nosemgrep: php.lang.security.exec-use.exec-use -- argv array, no shell; the PHAR path comes from the project's own .php-ast-edit.json or PHP_AST_EDIT_PHPACTOR, trusted like Composer scripts
         $process = proc_open(
             $command,
             [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']],
