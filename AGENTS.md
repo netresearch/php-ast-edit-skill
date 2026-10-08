@@ -111,8 +111,9 @@ PHP CLI plus Agent Skill for AST-native PHP source mutations.
 
 | Workflow | Source |
 | --- | --- |
-| `validate.yml`, `pr-quality.yml`, `harness-verify.yml`, `eval-validate.yml`, `tests.yml` | `netresearch/skill-repo-skill` reusables |
-| `auto-merge-deps.yml` | `netresearch/.github` reusable |
+| `validate.yml`, `lint.yml`, `pr-quality.yml`, `harness-verify.yml`, `eval-validate.yml`, `tests.yml` | `netresearch/skill-repo-skill` reusables |
+| `auto-merge-deps.yml`, `labeler.yml`, `scorecard.yml`, `check-template-drift.yml` | `netresearch/.github` reusables |
+| `security.yml` | `netresearch/.github` reusables (Betterleaks, zizmor, Dependency Review) and `netresearch/typo3-ci-workflows` (Composer Audit, Opengrep SAST) |
 | `formatting.yml` | repo-local — the two-step canonical gate |
 | `php-tests.yml` | repo-local — the reusable runs one PHP version; this carries the 8.2/8.3/8.4/8.5 matrix |
 | `distribution.yml` | repo-local — clean Composer installations and executable artifacts on PHP 8.2 and 8.5 |
