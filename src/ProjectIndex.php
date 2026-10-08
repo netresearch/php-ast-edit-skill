@@ -258,6 +258,7 @@ final class ProjectIndex
             '--',
             ...$pathspec,
         ];
+        // nosemgrep: php.lang.security.exec-use.exec-use -- argv array, no shell; fixed git ls-files invocation, caller pathspecs follow the -- separator
         $process = proc_open($command, [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes);
 
         if (!is_resource($process)) {

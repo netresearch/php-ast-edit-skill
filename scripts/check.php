@@ -51,6 +51,7 @@ $failed = false;
 
 foreach ($files as $file) {
     $command = escapeshellarg(PHP_BINARY) . ' -l ' . escapeshellarg($file) . ' 2>&1';
+    // nosemgrep: php.lang.security.exec-use.exec-use -- PHP_BINARY and the file path are each escapeshellarg()-quoted; the files are this repository's own tracked PHP sources
     exec($command, $output, $status);
 
     if ($status !== 0) {

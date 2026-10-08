@@ -29,10 +29,12 @@ final class PhpLint
 
         if ($input === false || $output === false) {
             if (is_string($input)) {
+                // nosemgrep: php.lang.security.unlink-use.unlink-use -- removes a scratch file this code created itself with tempnam(); the path is never user input
                 @unlink($input);
             }
 
             if (is_string($output)) {
+                // nosemgrep: php.lang.security.unlink-use.unlink-use -- removes a scratch file this code created itself with tempnam(); the path is never user input
                 @unlink($output);
             }
 
@@ -43,6 +45,7 @@ final class PhpLint
             if (file_put_contents($input, $source) === false) {
                 throw new EditException('PHP_LINT_FAILED: cannot write lint input.');
             }
+            // nosemgrep: php.lang.security.exec-use.exec-use -- argv array, no shell: PHP_BINARY -n -l on a scratch file; lint compiles and never executes the source
             $process = proc_open(
                 [PHP_BINARY, '-n', '-l', $input],
                 [
@@ -66,7 +69,9 @@ final class PhpLint
 
             return ['status' => 'passed', 'runtime' => $runtime];
         } finally {
+            // nosemgrep: php.lang.security.unlink-use.unlink-use -- removes a scratch file this code created itself with tempnam(); the path is never user input
             @unlink($input);
+            // nosemgrep: php.lang.security.unlink-use.unlink-use -- removes a scratch file this code created itself with tempnam(); the path is never user input
             @unlink($output);
         }
     }

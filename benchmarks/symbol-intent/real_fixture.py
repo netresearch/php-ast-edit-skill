@@ -230,6 +230,7 @@ def _junit(path):
     keys = ("tests", "assertions", "errors", "failures", "skipped")
     unknown = dict.fromkeys(keys)
     try:
+        # nosemgrep: python.lang.security.use-defused-xml-parse.use-defused-xml-parse -- parses the JUnit report that the benchmark's own phpunit run wrote moments earlier; no network or third-party input
         document = ET.parse(path).getroot()
         suites = [
             node for node in document.iter("testsuite") if not node.findall("testsuite")

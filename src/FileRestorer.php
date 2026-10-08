@@ -17,6 +17,7 @@ final class FileRestorer
     public function restore(FileTransaction $file): void
     {
         if (!$file->existed) {
+            // nosemgrep: php.lang.security.unlink-use.unlink-use -- rollback removes the file this same transaction created
             if ((is_file($file->path) || is_link($file->path)) && !@unlink($file->path)) {
                 throw new EditException('Cannot remove newly created ' . $file->path);
             }
@@ -27,6 +28,7 @@ final class FileRestorer
         if ($file->mode !== 'delete' || $file->linkTarget === null) {
             $path = $file->resolvedPath ?? $file->path;
 
+            // nosemgrep: php.lang.security.unlink-use.unlink-use -- rollback removes the symlink that replaced the file during this transaction, before the original bytes are written back
             if (is_link($path) && !@unlink($path)) {
                 throw new EditException('Cannot remove replacement symlink at ' . $path);
             }
@@ -38,6 +40,7 @@ final class FileRestorer
         }
 
         if ($file->linkTarget !== null && (!is_link($file->path) || readlink($file->path) !== $file->linkTarget)) {
+            // nosemgrep: php.lang.security.unlink-use.unlink-use -- rollback removes the path this transaction changed before the recorded symlink is recreated
             if ((file_exists($file->path) || is_link($file->path)) && !@unlink($file->path)) {
                 throw new EditException('Cannot restore symlink at ' . $file->path);
             }

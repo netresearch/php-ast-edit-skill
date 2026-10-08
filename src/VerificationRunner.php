@@ -137,10 +137,12 @@ final class VerificationRunner
 
         if ($out === false || $err === false) {
             if (is_string($out)) {
+                // nosemgrep: php.lang.security.unlink-use.unlink-use -- removes a scratch file this code created itself with tempnam(); the path is never user input
                 @unlink($out);
             }
 
             if (is_string($err)) {
+                // nosemgrep: php.lang.security.unlink-use.unlink-use -- removes a scratch file this code created itself with tempnam(); the path is never user input
                 @unlink($err);
             }
 
@@ -148,6 +150,7 @@ final class VerificationRunner
         }
 
         try {
+            // nosemgrep: php.lang.security.exec-use.exec-use -- argv array, no shell; the command comes from the project's own .php-ast-edit.json, trusted like Composer scripts (docs/SECURITY-ASSURANCE.md)
             $process = proc_open($command, [1 => ['file', $out, 'w'], 2 => ['file', $err, 'w']], $pipes, $root);
 
             if (!is_resource($process)) {
@@ -175,7 +178,9 @@ final class VerificationRunner
 
             return $result;
         } finally {
+            // nosemgrep: php.lang.security.unlink-use.unlink-use -- removes a scratch file this code created itself with tempnam(); the path is never user input
             @unlink($out);
+            // nosemgrep: php.lang.security.unlink-use.unlink-use -- removes a scratch file this code created itself with tempnam(); the path is never user input
             @unlink($err);
         }
     }
