@@ -4,7 +4,10 @@
 name: PR Quality Gates
 
 on:
-  pull_request_target:
+  # pull_request_target is required so the reusable can approve pull requests of
+  # collaborators with base-branch permissions. The reusable never checks out or
+  # runs the pull request's code (stated in its own header).
+  pull_request_target: # zizmor: ignore[dangerous-triggers]
     types: [opened, synchronize, reopened]
 
 permissions: {}
