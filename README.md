@@ -258,7 +258,7 @@ The suite includes grammar, semantic regression, transaction, formatting, CLI, d
 
 ### Tests
 
-Run `composer install` first; `tests/run.sh` exits 2 without `vendor/autoload.php`. The suite needs PHP 8.2+ with the extensions CI installs (`json`, `tokenizer`, `phar`, `mbstring`, `posix`), Python 3 (standard library only), Bash, Git and `jq`. The distribution part installs packages through Composer and needs network access; `bash tests/run.sh --runtime-only` skips it.
+Run `composer install` first; `tests/run.sh` exits 2 without `vendor/autoload.php`. The suite needs PHP 8.2+ with the extensions CI installs (`json`, `tokenizer`, `phar`, `mbstring`, `posix`), Python 3.11+ (standard library only), Bash, Git and `jq`. The distribution part installs packages through Composer and needs network access; `bash tests/run.sh --runtime-only` skips it.
 
 - `tests/*.php`, `tests/cli.sh` and the Python tests in `tests/` cover the editor: grammar and operation matrix, renames, transactions and rollback, verification commands, formatting and `doctor`, the CLI surface and exit codes, and the enforcement hook. `tests/corpus.php` round-trips php-parser's own source.
 - `docs/quickstart.sh` and `tests/examples.py` run the documented examples; `tests/catalog.php` checks that code, `contexts` output and the operation reference agree.
