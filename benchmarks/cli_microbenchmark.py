@@ -212,7 +212,7 @@ def benchmark(args):
     return {
         "schema_version": 1,
         "kind": "cli_microbenchmark",
-        "timestamp_utc": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        "timestamp_utc": datetime.datetime.now(datetime.UTC).isoformat(),
         "source_commit": commit,
         "working_tree_dirty": dirty,
         "environment": {

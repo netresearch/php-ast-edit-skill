@@ -8,7 +8,7 @@ compact reports around the unchanged `php-ast-edit` transaction engine. It is an
 experimental interface for trusted benchmark workspaces, not a filesystem sandbox
 or a production service.
 
-It needs Python 3.10+, POSIX file locking, PHP 8.2+, and a source runtime containing
+It needs Python 3.11+, POSIX file locking, PHP 8.2+, and a source runtime containing
 the engine and its Composer dependencies. Put this directory on `PATH` and set:
 
 ```bash
