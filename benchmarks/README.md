@@ -62,7 +62,7 @@ importing evidence; they also record the narrowly scoped static-analysis decisio
 
 ## Reproduce the local comparison
 
-Requirements: installed project dependencies, PHP, Python 3.10+, and Git.
+Requirements: installed project dependencies, PHP, Python 3.11+, and Git.
 
 ```bash
 XDEBUG_MODE=off python3 benchmarks/cli_microbenchmark.py --repetitions 30 --include-operation-help --output /tmp/php-ast-cli.json

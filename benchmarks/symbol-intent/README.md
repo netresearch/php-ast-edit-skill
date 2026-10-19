@@ -47,7 +47,7 @@ resolver error notifications, unexpected indexing scope and unsupported edits.
 
 ## Run
 
-Requires Linux, Python 3.10+, PHP 8.2+, installed engine dependencies and a downloaded
+Requires Linux, Python 3.11+, PHP 8.2+, installed engine dependencies and a downloaded
 Phpactor PHAR. The PHAR SHA-256 must be
 `8c0155380b9d7559a12f35ddf8d09c1dc23e72f1797498038251fc35ad15574d`.
 The digest is checked at runtime; the binary is not vendored.
