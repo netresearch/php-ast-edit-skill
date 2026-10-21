@@ -9,6 +9,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Changed
+
+- **Breaking (contributors):** the benchmarks and the test suite require Python 3.11 or later; Python 3.10 is no longer supported. The skill, the `php-ast-edit` CLI and the `php-ast-only.py` hook are unchanged ([#100](https://github.com/netresearch/php-ast-edit-skill/pull/100))
+
 ## [1.0.1] - 2026-10-07
 
 ### Security
