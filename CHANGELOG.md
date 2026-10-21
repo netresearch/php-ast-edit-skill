@@ -9,6 +9,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-10-21
+
 ### Changed
 
 - **Breaking (contributors):** the benchmarks and the test suite require Python 3.11 or later; Python 3.10 is no longer supported. The skill, the `php-ast-edit` CLI and the `php-ast-only.py` hook are unchanged ([#100](https://github.com/netresearch/php-ast-edit-skill/pull/100))
@@ -287,7 +289,8 @@ The historical figures below come from reported controlled runs comparing succes
 - `php-structured-edit` Agent Skill with the operation reference and a wrapper resolving the repository binary, `vendor/bin`, a local PHAR, or `PATH`.
 - PHAR build via `scripts/build-phar.php`.
 
-[Unreleased]: https://github.com/netresearch/php-ast-edit-skill/compare/v1.0.1...HEAD
+[Unreleased]: https://github.com/netresearch/php-ast-edit-skill/compare/v2.0.0...HEAD
+[2.0.0]: https://github.com/netresearch/php-ast-edit-skill/compare/v1.0.1...v2.0.0
 [1.0.1]: https://github.com/netresearch/php-ast-edit-skill/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/netresearch/php-ast-edit-skill/compare/v0.9.0...v1.0.0
 [0.9.0]: https://github.com/netresearch/php-ast-edit-skill/compare/v0.8.1...v0.9.0
