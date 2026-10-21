@@ -5,6 +5,7 @@ name: PHP Tests
 on:
   push:
   pull_request:
+  merge_group:
 permissions: {}
 jobs:
   tests:

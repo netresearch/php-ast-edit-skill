@@ -6,6 +6,7 @@ name: Distribution
 on:
   push:
   pull_request:
+  merge_group:
 
 permissions: {}
 
