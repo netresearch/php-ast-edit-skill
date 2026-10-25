@@ -25,7 +25,7 @@ Read-only shell work is untouched: `cat`, `grep`, `php -l`, `git diff` and frien
       {
         "matcher": "Edit|Write|MultiEdit|NotebookEdit|Bash",
         "hooks": [
-          {"type": "command", "command": "python3 /path/to/php-ast-edit-skill/hooks/php-ast-only.py"}
+          {"type": "command", "command": "uv run /path/to/php-ast-edit-skill/hooks/php-ast-only.py || true"}
         ]
       }
     ]
@@ -34,6 +34,8 @@ Read-only shell work is untouched: `cat`, `grep`, `php -l`, `git diff` and frien
 ```
 
 Put it in `~/.claude/settings.json` for every project, or in a project's `.claude/settings.json` to scope it to one repository.
+
+The command needs [uv](https://docs.astral.sh/uv/), which runs the hook on Python 3.11 or later whatever `python3` is on the host. `|| true` keeps the gate fail-open (see below): when uv cannot find or download a matching Python it exits 2, and Claude Code treats exit 2 as a block.
 
 ## Other harnesses
 

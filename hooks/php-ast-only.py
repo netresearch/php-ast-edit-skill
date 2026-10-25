@@ -1,6 +1,11 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run --script
 # SPDX-License-Identifier: MIT
 # SPDX-FileCopyrightText: Netresearch DTT GmbH
+#
+# /// script
+# requires-python = ">=3.11"
+# dependencies = []
+# ///
 """PreToolUse gate: PHP syntax may only be written through php-ast-edit.
 
 The skill and AGENTS.md already state the rule, but an instruction cannot be
@@ -15,7 +20,7 @@ Wire it into ~/.claude/settings.json (or a project .claude/settings.json):
           {
             "matcher": "Edit|Write|MultiEdit|NotebookEdit|Bash",
             "hooks": [
-              {"type": "command", "command": "python3 /path/to/hooks/php-ast-only.py"}
+              {"type": "command", "command": "uv run /path/to/hooks/php-ast-only.py || true"}
             ]
           }
         ]
