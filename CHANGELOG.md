@@ -9,6 +9,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [2.0.1] - 2026-11-04
+
 ### Changed
 
 - `hooks/php-ast-only.py` carries a PEP 723 block (`requires-python = ">=3.11"`, no dependencies) and the shebang `#!/usr/bin/env -S uv run --script`, and the wiring documented in `references/enforcement.md` starts it with `uv run /path/to/php-ast-edit-skill/hooks/php-ast-only.py || true`, so it runs on Python 3.11 or later instead of whichever `python3` comes first on `PATH`. The command needs uv; `|| true` keeps the hook fail-open when uv finds no matching Python and exits 2, which Claude Code would treat as a block. What the hook denies and allows is unchanged ([#107](https://github.com/netresearch/php-ast-edit-skill/pull/107))
@@ -293,7 +295,8 @@ The historical figures below come from reported controlled runs comparing succes
 - `php-structured-edit` Agent Skill with the operation reference and a wrapper resolving the repository binary, `vendor/bin`, a local PHAR, or `PATH`.
 - PHAR build via `scripts/build-phar.php`.
 
-[Unreleased]: https://github.com/netresearch/php-ast-edit-skill/compare/v2.0.0...HEAD
+[Unreleased]: https://github.com/netresearch/php-ast-edit-skill/compare/v2.0.1...HEAD
+[2.0.1]: https://github.com/netresearch/php-ast-edit-skill/compare/v2.0.0...v2.0.1
 [2.0.0]: https://github.com/netresearch/php-ast-edit-skill/compare/v1.0.1...v2.0.0
 [1.0.1]: https://github.com/netresearch/php-ast-edit-skill/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/netresearch/php-ast-edit-skill/compare/v0.9.0...v1.0.0
