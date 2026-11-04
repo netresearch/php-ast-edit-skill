@@ -9,6 +9,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Changed
+
+- `hooks/php-ast-only.py` carries a PEP 723 block (`requires-python = ">=3.11"`, no dependencies) and the shebang `#!/usr/bin/env -S uv run --script`, and the wiring documented in `references/enforcement.md` starts it with `uv run /path/to/php-ast-edit-skill/hooks/php-ast-only.py || true`, so it runs on Python 3.11 or later instead of whichever `python3` comes first on `PATH`. The command needs uv; `|| true` keeps the hook fail-open when uv finds no matching Python and exits 2, which Claude Code would treat as a block. What the hook denies and allows is unchanged ([#107](https://github.com/netresearch/php-ast-edit-skill/pull/107))
+
 ## [2.0.0] - 2026-10-21
 
 ### Changed
