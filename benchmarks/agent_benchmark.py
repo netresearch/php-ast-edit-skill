@@ -186,7 +186,8 @@ def validate_schema(value, schema, path="$", root=None):
         target = root
         for part in schema["$ref"].removeprefix("#/").split("/"):
             target = target[part]
-        return validate_schema(value, target, path, root)
+        validate_schema(value, target, path, root)
+        return
     types = {
         "object": lambda x: isinstance(x, dict),
         "array": lambda x: isinstance(x, list),

@@ -18,7 +18,8 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 import lsp
 import symbol_intent as intent
-from lsp import IntentError
+
+IntentError = lsp.IntentError
 
 
 def fixture(root, count):
