@@ -9,6 +9,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Fixed
+
+- `composer require` no longer unpacks `benchmarks/`: `.gitattributes` marks it `export-ignore`, so the Composer dist and the GitHub source archives of a tag leave it out. The release zips, tarballs and the PHAR are unchanged ([#115](https://github.com/netresearch/php-ast-edit-skill/pull/115))
+
 ## [2.0.1] - 2026-11-04
 
 ### Changed
