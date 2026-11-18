@@ -164,3 +164,13 @@ for archive in "$RELEASES/"*.zip "$RELEASES/"*.tar.gz; do
   # An unrelated working directory has neither a checkout nor project vendor/bin.
   (cd "$WORK" && smoke "$name" bash "$wrapper")
 done
+
+# The Composer dist of a tag is GitHub's zipball, built by git archive:
+# benchmarks/ stays out of it through .gitattributes export-ignore.
+archive_list="$(git -C "$ROOT" archive --worktree-attributes HEAD | tar -t)"
+[[ -n "$archive_list" ]]
+if grep -q '^benchmarks/' <<< "$archive_list"; then
+  echo "FAIL: git archive carries benchmarks/; .gitattributes must export-ignore it" >&2
+  exit 1
+fi
+echo "OK: the Composer dist (git archive) leaves out benchmarks/"
