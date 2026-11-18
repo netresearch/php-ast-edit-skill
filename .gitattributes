@@ -1,0 +1,7 @@
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: Netresearch DTT GmbH
+
+# Kept out of `git archive`, which builds the GitHub source archives and the
+# Composer dist (zipball) of a tag. scripts/build-release.sh selects its own
+# files and is not affected.
+/benchmarks export-ignore
