@@ -9,6 +9,17 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [2.0.2] - 2026-11-20
+
+### Changed
+
+- `benchmarks/skill-invocation/README.md`: with `hooks/php-ast-only.py` installed, a run is judged by three counts instead of the invocation rate — shell calls that run `php-ast-edit`, calls that set `PHP_AST_ONLY_OFF`, and loads of the skill (`Skill` calls and `Read` calls on `SKILL.md`) — because the hook's deny message names the command and a run can use it without loading the skill ([#116](https://github.com/netresearch/php-ast-edit-skill/pull/116))
+- The skill, the `php-ast-edit` CLI and the `php-ast-only.py` hook are unchanged; the release workflow runs harden-runner 2.22.4, cosign-installer 4.1.3 and action-gh-release 3.0.4 ([#108](https://github.com/netresearch/php-ast-edit-skill/pull/108), [#111](https://github.com/netresearch/php-ast-edit-skill/pull/111), [#112](https://github.com/netresearch/php-ast-edit-skill/pull/112), [#113](https://github.com/netresearch/php-ast-edit-skill/pull/113))
+
+### Fixed
+
+- `benchmarks/agent_benchmark.py`: the schema validator no longer returns a value on one path of a function that otherwise returns nothing, and `benchmarks/symbol-intent/test_symbol_intent.py` imports `lsp` once ([#114](https://github.com/netresearch/php-ast-edit-skill/pull/114))
+
 ## [2.0.1] - 2026-11-04
 
 ### Changed
@@ -295,7 +306,8 @@ The historical figures below come from reported controlled runs comparing succes
 - `php-structured-edit` Agent Skill with the operation reference and a wrapper resolving the repository binary, `vendor/bin`, a local PHAR, or `PATH`.
 - PHAR build via `scripts/build-phar.php`.
 
-[Unreleased]: https://github.com/netresearch/php-ast-edit-skill/compare/v2.0.1...HEAD
+[Unreleased]: https://github.com/netresearch/php-ast-edit-skill/compare/v2.0.2...HEAD
+[2.0.2]: https://github.com/netresearch/php-ast-edit-skill/compare/v2.0.1...v2.0.2
 [2.0.1]: https://github.com/netresearch/php-ast-edit-skill/compare/v2.0.0...v2.0.1
 [2.0.0]: https://github.com/netresearch/php-ast-edit-skill/compare/v1.0.1...v2.0.0
 [1.0.1]: https://github.com/netresearch/php-ast-edit-skill/compare/v1.0.0...v1.0.1
