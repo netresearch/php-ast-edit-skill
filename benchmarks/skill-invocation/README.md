@@ -81,3 +81,14 @@ skill added its listing to every request for nothing.
 Repetitions are not optional. Invocation is stochastic — the same description produced
 both a 7-turn run that called the skill and a 22-turn run that did not. A single run per
 arm cannot tell a description apart from a coin flip.
+
+With `hooks/php-ast-only.py` installed the invocation rate stops being the headline. The
+hook's deny message names `php-ast-edit` and `PHP_AST_ONLY_OFF`, so the model can take the
+command from the message and never load `SKILL.md`: one hook-arm run made 26 shell calls
+naming `php-ast-edit` and no `Skill` call. [REPORT.md](REPORT.md) has no invoked column
+for the gated arm on tasks B and C: under the gate the tool is the only way through, so a
+load count on its own says nothing about use. Count three things per run instead: shell
+calls that run `php-ast-edit`, calls that set `PHP_AST_ONLY_OFF`, and loads of the skill
+(`Skill` calls and `Read` calls on `SKILL.md`). A run with many of the first and no load
+works without the instructions; in a separate set of hook-arm runs, not recorded in
+REPORT.md, those that loaded the skill took about half the turns of those that did not.
